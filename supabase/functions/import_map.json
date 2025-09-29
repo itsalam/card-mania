@@ -1,0 +1,9 @@
+{
+  "imports": {
+    "@utils": "./_shared/utils.ts",
+    "@types": "./_shared/types.ts",
+    "@schema": "./_shared/supabase.d.ts",
+    "@image-fetch": "./_shared/image-fetch.ts",
+    "@supabase/supabase-js": "npm:@supabase/supabase-js@2.56.0"
+  }
+}

@@ -9,14 +9,16 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.smoodee.cardmania"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "package": "com.smoodee.cardmania"
     },
     "web": {
       "bundler": "metro",
@@ -31,9 +33,19 @@
           "image": "./assets/images/splash-icon.png",
           "imageWidth": 200,
           "resizeMode": "contain",
-          "backgroundColor": "#ffffff"
+          "backgroundColor": "#0C0C0C"
         }
-      ]
+      ],
+      "expo-asset",
+      ["expo-build-properties", {
+        "ios": {
+          "newArchEnabled": true
+        },
+        "android": {
+          "newArchEnabled": true,
+          "kotlinVersion": "1.6.21"
+        }
+      }]
     ],
     "experiments": {
       "typedRoutes": true

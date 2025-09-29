@@ -1,0 +1,1 @@
+alter table public.image_cache drop column key;

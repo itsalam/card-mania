@@ -10,6 +10,7 @@ import Animated, {
 import { ThemedView } from '@/components/ThemedView';
 import { useBottomTabOverflow } from '@/components/ui/TabBarBackground';
 import { useColorScheme } from '@/hooks/useColorScheme';
+import { SearchBar } from './search-bar';
 
 const HEADER_HEIGHT = 250;
 
@@ -23,7 +24,7 @@ export default function ParallaxScrollView({
   headerImage,
   headerBackgroundColor,
 }: Props) {
-  const colorScheme = useColorScheme() ?? 'light';
+  const {colorScheme} = useColorScheme() ?? 'light';
   const scrollRef = useAnimatedRef<Animated.ScrollView>();
   const scrollOffset = useScrollViewOffset(scrollRef);
   const bottom = useBottomTabOverflow();
@@ -46,11 +47,14 @@ export default function ParallaxScrollView({
 
   return (
     <ThemedView style={styles.container}>
+
+      <SearchBar/>
       <Animated.ScrollView
         ref={scrollRef}
         scrollEventThrottle={16}
         scrollIndicatorInsets={{ bottom }}
         contentContainerStyle={{ paddingBottom: bottom }}>
+
         <Animated.View
           style={[
             styles.header,
@@ -68,6 +72,7 @@ export default function ParallaxScrollView({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    position: 'relative',
   },
   header: {
     height: HEADER_HEIGHT,
@@ -75,8 +80,9 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    padding: 32,
+    // paddingVertical: 12,
     gap: 16,
     overflow: 'hidden',
+    backgroundColor: 'transparent',
   },
 });

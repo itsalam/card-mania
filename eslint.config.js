@@ -6,5 +6,6 @@ module.exports = defineConfig([
   expoConfig,
   {
     ignores: ['dist/*'],
+    "ignorePatterns": ["supabase/functions/**/*.ts"]
   },
 ]);
