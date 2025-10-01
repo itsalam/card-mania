@@ -7,7 +7,7 @@ module.exports = (async () => {
 
   config.resolver.assetExts = assetExts.filter(ext => ext !== 'svg');
   config.resolver.sourceExts = [...sourceExts, 'svg'];
-  config.transformer.babelTransformerPath = require.resolve('react-native-svg-transformer');
+  // config.transformer.babelTransformerPath = require.resolve('react-native-svg-transformer');
 
   return withNativeWind(config, { input: './global.css' });;
 })();

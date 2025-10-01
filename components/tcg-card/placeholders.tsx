@@ -41,7 +41,6 @@ export function LoadingImagePlaceholder({
   isLoading,
   ...props
 }: { isLoading?: boolean } & ComponentProps<typeof CardPlaceholderImage>) {
-  console.log({ isLoading })
   return (
     <View>
       <CardPlaceholderImage isLoading={isLoading} {...props}></CardPlaceholderImage>

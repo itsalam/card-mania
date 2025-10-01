@@ -1,19 +1,31 @@
-import { z } from 'zod'
+import { Json } from "@/store/supabase";
+import { z } from "zod";
+
+export const JsonSchema: z.ZodType<Json> = z.lazy(() =>
+  z.union([
+    z.string(),
+    z.number(),
+    z.boolean(),
+    z.null(),
+    z.array(JsonSchema),
+    z.record(z.string(), JsonSchema), // keys are strings by default
+  ])
+);
 
 export type PriceEntry = {
-  id: string
-  name: string
-  set: string
-  latestPrice: number | null
-  gradesPrices: Record<string, number>
-  genre: string
-  lastUpdated: string
-}
+  id: string;
+  name: string;
+  set: string;
+  latestPrice: number | null;
+  gradesPrices: Record<string, number>;
+  genre: string;
+  lastUpdated: string;
+};
 
 export type PriceChartingData = {
-  date: string
-  gradesPrices: Record<string, number>
-}
+  date: string;
+  gradesPrices: Record<string, number>;
+};
 
 export const Card = z.object({
   id: z.string(),
@@ -31,10 +43,10 @@ export const Card = z.object({
   back_image_id: z.string().optional().nullable(),
   extra_image_ids: z.array(z.string()).optional().nullable(),
 
-  grades_prices: z.record(z.string(), z.number().nullable()),
+  grades_prices: JsonSchema,
   release_date: z.string().nullable(),
   genre: z.string().optional(),
   last_updated: z.string().optional(),
-})
+});
 
-export type TCard = z.infer<typeof Card>
+export type TCard = z.infer<typeof Card>;

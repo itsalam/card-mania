@@ -1,5 +1,4 @@
-
-import { FolderTabList, FolderTabsContainer, FolderTabTrigger } from '@/components/FolderTabs'
+import { FolderTabList, FolderTabsContainer, FolderTabTrigger } from '@/components/tabs/FolderTabs'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -7,7 +6,7 @@ import {
   DropdownMenuContent,
   DropdownMenuLabel,
   DropdownMenuSeparator,
-  DropdownMenuTrigger
+  DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Tabs, TabsContent } from '@/components/ui/tabs'
 import { Text } from '@/components/ui/text'
@@ -34,20 +33,23 @@ const tabContent: Record<TabValue, React.ReactNode> = {
 }
 
 export default function HomeScreen() {
-  const { currentPage, setCurrentPage } = useHomePageStore();
+  const { currentPage, setCurrentPage } = useHomePageStore()
   const insets = useSafeAreaInsets()
   return (
-    <SafeAreaView className="flex-1 w-full h-full overflow-visible" style={{ paddingTop: insets.top }}>
+    <SafeAreaView
+      className="flex-1 w-full h-full overflow-visible"
+      style={{ paddingTop: insets.top }}
+    >
       <SearchBar />
       <Tabs className="flex-1 gap-0" value={currentPage} onValueChange={setCurrentPage}>
-        <FolderTabList >
-          <View className='flex flex-row items-end justify-start gap-2'>
-                      {tabValues.map((tab) => (
-            <FolderTabTrigger key={tab} value={tab}>
-              {React.createElement(tabIcons[tab], { size: 16 })}
-              <Text className="text-xl">{tab.charAt(0).toUpperCase() + tab.slice(1)}</Text>
-            </FolderTabTrigger>
-          ))}
+        <FolderTabList>
+          <View className="flex flex-row items-end justify-start gap-2">
+            {tabValues.map((tab) => (
+              <FolderTabTrigger key={tab} value={tab}>
+                {React.createElement(tabIcons[tab], { size: 16 })}
+                <Text className="text-xl">{tab.charAt(0).toUpperCase() + tab.slice(1)}</Text>
+              </FolderTabTrigger>
+            ))}
           </View>
 
           <TabOptions currentTab={currentPage} />
@@ -65,15 +67,18 @@ export default function HomeScreen() {
 }
 
 const TabOptions = ({ currentTab }: { currentTab: string }) => {
-    const { colorScheme, setColorScheme } = useColorScheme();
-    const PageMenu = {
-      explore: ExplorePageMenu,
-    }[currentTab];
+  const { colorScheme, setColorScheme } = useColorScheme()
+  const PageMenu = {
+    explore: ExplorePageMenu,
+  }[currentTab]
   return (
-    <DropdownMenu className='place-self-end justify-self-end'>
+    <DropdownMenu className="place-self-end justify-self-end">
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" className="p-2 rounded-t-md rounded-b-none border border-b-0 border-neutral-300 translate-y-px px-3">
-          <Menu size={16}/>
+        <Button
+          variant="ghost"
+          className="p-2 rounded-t-md rounded-b-none border border-b-0 border-neutral-300 translate-y-px px-3"
+        >
+          <Menu size={16} />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent className="w-52">
@@ -82,11 +87,17 @@ const TabOptions = ({ currentTab }: { currentTab: string }) => {
         <DropdownMenuLabel>Display Options</DropdownMenuLabel>
 
         <DropdownMenuSeparator />
-        <DropdownMenuCheckboxItem checked={colorScheme === 'light'} onCheckedChange={() => setColorScheme('light')}>
+        <DropdownMenuCheckboxItem
+          checked={colorScheme === 'light'}
+          onCheckedChange={() => setColorScheme('light')}
+        >
           <Text>Light</Text>
         </DropdownMenuCheckboxItem>
-        <DropdownMenuCheckboxItem checked={colorScheme === 'dark'} onCheckedChange={() => setColorScheme('dark')}>
-    <Text>Dark</Text>
+        <DropdownMenuCheckboxItem
+          checked={colorScheme === 'dark'}
+          onCheckedChange={() => setColorScheme('dark')}
+        >
+          <Text>Dark</Text>
         </DropdownMenuCheckboxItem>
       </DropdownMenuContent>
     </DropdownMenu>

@@ -1,4 +1,5 @@
 'use client'
+import { useWishlistTotal } from '@/client/card/wishlist'
 // Modified by @vincentlam
 /**
  * @author: @kokonutui
@@ -14,7 +15,7 @@ import { Text } from '@/components/ui/text'
 import { cn } from '@/lib/utils'
 import { AnimatePresence, MotiText, MotiView } from 'moti'
 import { motifySvg } from 'moti/svg'
-import { useReducer } from 'react'
+import { useMemo, useReducer } from 'react'
 import { Pressable, View } from 'react-native'
 import { Easing } from 'react-native-reanimated'
 import { Circle, Defs, LinearGradient, Stop, Svg } from 'react-native-svg'
@@ -39,7 +40,7 @@ interface CircleProgressProps {
 const activities: ActivityData[] = [
   {
     label: 'SEEKING',
-    value: 479/800 * 100,
+    value: (479 / 800) * 100,
     color: '#FF2D55',
     size: 200,
     current: 479,
@@ -182,6 +183,15 @@ export default function CollectionBreakdown({
   className?: string
 }) {
   const [visible, toggle] = useReducer((s) => !s, true)
+  const { data: wishlistTotal, ...wishlistReq } = useWishlistTotal()
+  const totals = useMemo(() => {
+    console.log('wishlistTotal', { wishlistTotal, wishlistReq })
+    const seeking = activities[0]
+    const selling = activities[1]
+    const holding = activities[2]
+    seeking.target = wishlistTotal ?? 0
+    return [seeking, selling, holding]
+  }, [wishlistTotal])
 
   return (
     <View
@@ -205,7 +215,7 @@ export default function CollectionBreakdown({
           <View className="relative w-[180px] h-[180px]">
             <AnimatePresence>
               {visible &&
-                activities.map((activity, index) => (
+                totals.map((activity, index) => (
                   <CircleProgress key={activity.label} data={activity} index={index} />
                 ))}
             </AnimatePresence>

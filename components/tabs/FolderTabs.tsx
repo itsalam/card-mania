@@ -1,6 +1,6 @@
 import { cn } from '@/lib/utils/cn'
 import { View } from 'react-native'
-import { TabsList, TabsTrigger } from './ui/tabs'
+import { TabsList, TabsTrigger } from '../ui/tabs'
 
 export function FolderTabList({ className, ...props }: React.ComponentProps<typeof TabsList>) {
   return (
@@ -14,7 +14,10 @@ export function FolderTabList({ className, ...props }: React.ComponentProps<type
   )
 }
 
-export function FolderTabTrigger({ className, ...props }: React.ComponentProps<typeof TabsTrigger>) {
+export function FolderTabTrigger({
+  className,
+  ...props
+}: React.ComponentProps<typeof TabsTrigger>) {
   return (
     <TabsTrigger
       className={cn(
@@ -32,10 +35,7 @@ export function FolderTabsContainer({
 }: React.ComponentProps<typeof TabsList>) {
   return (
     <View
-      className={cn(
-        'flex flex-col flex-1 pt-2 border-t border-neutral-300 z-tab mb-12 bg-background-0/60 ',
-        className
-      )}
+      className={cn('flex-1 pt-2 border-t border-neutral-300 z-tab bg-background-0/60 ', className)}
       {...props}
     />
   )

@@ -1,4 +1,6 @@
+import { useToggleWishlist, ViewParams } from '@/client/card/wishlist'
 import { useImageProxy } from '@/client/image-proxy'
+import { CollectionsIcon, WishlistedIcon } from '@/components/icons'
 import { Card } from '@/components/ui/card'
 import { Text } from '@/components/ui/text'
 import { formatPrice } from '@/components/utils'
@@ -10,25 +12,30 @@ import { useStores } from '@/store/provider'
 import { router } from 'expo-router'
 import { useRef } from 'react'
 import { Pressable, View } from 'react-native'
+import { Button, Colors } from 'react-native-ui-lib'
 import { LiquidGlassCard } from '../GlassCard'
+import { getDefaultPrice } from '../helpers'
 import { LoadingImagePlaceholder } from '../placeholders'
 
 export function ListCard({
   card,
   expanded = true,
   isLoading = false,
+  isWishlisted = false,
   className,
+  viewParams,
 }: {
   card: TCard
   expanded?: boolean
   isLoading?: boolean
+  isWishlisted?: boolean
   className?: string
+  viewParams?: ViewParams
 }) {
   const {
     data: image,
     isLoading: isImageLoading,
     status,
-    ...imgProxyRest
   } = useImageProxy({
     variant: 'thumb',
     shape: 'card',
@@ -40,6 +47,8 @@ export function ListCard({
   const { setPrefetchData } = useStores().cardStore.getInitialState()
   const cardElement = useRef<typeof Card>(null)
   const { hiddenId, setHiddenId } = useOverlay()
+
+  const toggleWishList = useToggleWishlist()
 
   const handlePress = () => {
     const positionPromise = measureInWindowAsync(cardElement as unknown as React.RefObject<View>)
@@ -53,10 +62,10 @@ export function ListCard({
     })
   }
 
-  const displayPrice = card?.latest_price ?? card?.grades_prices['ungraded']
+  const [grade, displayPrice] = getDefaultPrice(card)
   return (
     <Pressable onPress={() => handlePress()}>
-      <View className={cn(className)}>
+      <View className={cn(expanded && 'flex flex-row items-center gap-2 p-2 w-full', className)}>
         <LiquidGlassCard
           onPress={() => handlePress()}
           variant="primary"
@@ -66,7 +75,7 @@ export function ListCard({
         >
           <LoadingImagePlaceholder
             source={{ uri: image, cacheKey: card?.id }}
-            isLoading={true || isImageLoading}
+            isLoading={isLoading || isImageLoading}
           />
         </LiquidGlassCard>
         {expanded && (
@@ -78,8 +87,8 @@ export function ListCard({
               <Text className="text-lg font-bold text-wrap leading-none">{card?.name}</Text>
             </View>
 
-            <View className="self-stretch flex-1 flex flex-row items-start justify-between">
-              <View className="items-start">
+            <View className="self-stretch flex-1 flex flex-row items-stretch justify-between">
+              <View className="flex-1 flex flex-col justify-start">
                 {displayPrice ? (
                   <Text className="text-3xl font-bold">{formatPrice(displayPrice)}</Text>
                 ) : (
@@ -87,9 +96,45 @@ export function ListCard({
                     $0.00-
                   </Text>
                 )}
-                <Text className="text-xs text-muted-foreground text-right">
-                  Quantity: {card?.quantity ?? 0}
-                </Text>
+              </View>
+
+              <View className="flex flex-row gap-1 items-end justify-end">
+                <Button
+                  outline={!isWishlisted}
+                  onPress={() => {
+                    toggleWishList.mutate({
+                      kind: 'card',
+                      id: card.id,
+                      viewParams,
+                      p_metadata: { grades: [grade].filter(Boolean) },
+                    })
+                  }}
+                  size="small"
+                  round
+                  outlineWidth={1.5}
+                  iconSource={() => (
+                    <WishlistedIcon
+                      height={20}
+                      width={20}
+                      strokeWidth={2.5}
+                      fill={isWishlisted ? Colors.$outlineDefault : Colors.$outlinePrimary}
+                      // stroke={Colors.$outlinePrimary}
+                    />
+                  )}
+                />
+                <Button
+                  outline={true}
+                  // onPress={() => toggleWishList.mutate({ kind: 'card', id: card.id })}
+                  size="small"
+                  round
+                  iconSource={() => (
+                    <CollectionsIcon
+                      size={20}
+                      strokeWidth={2.5}
+                      fill={isWishlisted ? Colors.$outlineDefault : Colors.$outlinePrimary}
+                    />
+                  )}
+                />
               </View>
             </View>
           </View>

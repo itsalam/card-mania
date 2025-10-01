@@ -1,8 +1,8 @@
 import { useCardQuery } from '@/client/card'
+import { useIsWishlisted } from '@/client/card/wishlist'
 import { ExpandableCard } from '@/components/content-card'
 import { LiquidGlassCard } from '@/components/tcg-card/GlassCard'
 import { ListCard } from '@/components/tcg-card/views/ListCard'
-import { cn } from '@/lib/utils'
 import { useRecentViews } from '@/store/functions/hooks'
 import { Database } from '@/store/supabase'
 import React, { ComponentProps } from 'react'
@@ -19,22 +19,24 @@ export function RecentlyViewedCard({
 }: ComponentProps<typeof LiquidGlassCard> & {
   isOpen?: boolean
   item: Database['public']['Tables']['recent_views']['Row']
+  isWishlisted?: boolean
 }) {
   const { data, loading, error } = useCardQuery(item.item_id)
 
-  return (
-    <ListCard
-      isLoading={loading}
-      expanded={isOpen}
-      card={data}
-      className={cn(isOpen && 'flex flex-row items-center gap-2 p-2 w-full')}
-      {...props}
-    />
-  )
+  if (error || !data) {
+    return null
+  }
+
+  return <ListCard isLoading={loading} expanded={isOpen} card={data} {...props} />
 }
 
 export function RecentlyViewed() {
   const { data: recentViews } = useRecentViews()
+
+  const { data: wishlistedIds, error } = useIsWishlisted(
+    'card',
+    recentViews?.map((item) => item.item_id) || []
+  )
 
   return (
     <ExpandableCard
@@ -42,7 +44,13 @@ export function RecentlyViewed() {
       itemWidth={ITEM_WIDTH}
       containerClassNames="gap-6 px-6"
       items={recentViews ?? []}
-      renderItem={({ isOpen, item }) => <RecentlyViewedCard isOpen={isOpen} item={item} />}
+      renderItem={({ isOpen, item }, index) => (
+        <RecentlyViewedCard
+          isOpen={isOpen}
+          item={item}
+          isWishlisted={wishlistedIds?.has(`${item.item_id}`) ?? false}
+        />
+      )}
     />
   )
 }

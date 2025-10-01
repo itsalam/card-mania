@@ -6,7 +6,7 @@ import { cardStyle } from './styles'
 
 type ICardProps = ComponentProps<typeof View> &
   ViewProps &
-  NativeMethods &
+  Partial<NativeMethods> &
   VariantProps<typeof cardStyle> & { className?: string }
 
 const Card = React.forwardRef<React.ComponentRef<typeof View>, ICardProps>(function Card(

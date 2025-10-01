@@ -1,12 +1,27 @@
-import { CardsIcon, CollectionsIcon, OwnedIcon, PriceIcon, SealedIcon, SetsIcon, UnownedIcon, WishlistedIcon } from '@/components/icons'
+import {
+  CardsIcon,
+  CollectionsIcon,
+  OwnedIcon,
+  PriceIcon,
+  SealedIcon,
+  SetsIcon,
+  UnownedIcon,
+  WishlistedIcon,
+} from '@/components/icons'
 import { Badge } from '@/components/ui/badge'
 import { Text } from '@/components/ui/text'
 import { cn } from '@/lib/utils'
 import * as Haptics from 'expo-haptics'
+import { LucideProps } from 'lucide-react-native'
 import { ComponentProps } from 'react'
 import { View } from 'react-native'
 import { Gesture, GestureDetector } from 'react-native-gesture-handler'
-import Animated, { runOnJS, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated'
+import Animated, {
+  runOnJS,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated'
 import { DisplayFilterLabels, FiltersKeys } from './providers'
 
 const AnimatedView = Animated.createAnimatedComponent(View)
@@ -20,13 +35,23 @@ const LabelToBadgeIcon = {
   owned: OwnedIcon,
   wishlisted: WishlistedIcon,
   unowned: UnownedIcon,
-} as Record<FiltersKeys, (props: any) => React.ReactNode >
+} as Record<FiltersKeys, (props: LucideProps) => React.JSX.Element>
 
-
-export function FilterBadge({ filterKey, title, ...props }: ComponentProps<typeof ToggleBadge> & { filterKey: FiltersKeys }) {
+export function FilterBadge({
+  filterKey,
+  title,
+  ...props
+}: ComponentProps<typeof ToggleBadge> & { filterKey: FiltersKeys }) {
   const Icon = LabelToBadgeIcon[filterKey as FiltersKeys]
   title = title || DisplayFilterLabels[filterKey as FiltersKeys]
-  return <ToggleBadge className='text-foreground' icon={<Icon width={20} height={20} stroke="currentColor" style={{ stroke: "currentColor" }}/>} title={title} {...props}/>
+  return (
+    <ToggleBadge
+      className="text-foreground"
+      icon={<Icon width={20} height={20} stroke="currentColor" fill="currentColor" />}
+      title={title}
+      {...props}
+    />
+  )
 }
 
 export function ToggleBadge({
@@ -94,10 +119,11 @@ export function BaseBadge({
   icon?: React.ReactNode
   children?: React.ReactNode
 }) {
-
-
   return (
-    <Badge className={cn('text-lg px-4 py-2 bg-tertiary-600 text-tertiary-foreground', className)} {...props}>
+    <Badge
+      className={cn('text-lg px-4 py-2 bg-tertiary-600 text-tertiary-foreground', className)}
+      {...props}
+    >
       {icon}
       <Text>{title}</Text>
       {children}

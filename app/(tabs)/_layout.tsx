@@ -4,7 +4,7 @@ import React from 'react'
 import { Platform } from 'react-native'
 
 // Keep your haptics + background
-import { HapticTab } from '@/components/HapticTab'
+import { HapticTab } from '@/components/tabs/HapticTab'
 import { Colors } from '@/constants/Colors'
 import { useColorScheme } from '@/hooks/useColorScheme'
 
@@ -33,11 +33,11 @@ export default function TabLayout() {
           tabBarStyle: {
             zIndex: 10,
             ...Platform.select({
-                ios: { position: 'relative' },
-                default: {},
-          })},
+              ios: { position: 'relative' },
+              default: {},
+            }),
+          },
         }}
-        
       >
         <Tabs.Screen
           name="index"
@@ -81,7 +81,6 @@ export default function TabLayout() {
             tabBarIcon: ({ color }) => <User size={28} color={color} />,
           }}
         />
-        
       </Tabs>
 
       <PortalHost name="searchbar" />

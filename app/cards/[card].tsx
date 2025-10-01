@@ -1,9 +1,10 @@
 import { useCardQuery } from '@/client/card'
+import { useIsWishlisted, useToggleWishlist } from '@/client/card/wishlist'
 import { usePriceChartingDataBatch } from '@/client/chart-data'
 import { BlurBackground } from '@/components/Background'
 import PriceGraph from '@/components/graphs/PriceGraph'
-import { WishlistedIcon } from '@/components/icons'
 import { LiquidGlassCard } from '@/components/tcg-card/GlassCard'
+import { getDefaultPrice } from '@/components/tcg-card/helpers'
 import { Heading } from '@/components/ui/heading'
 import { Text } from '@/components/ui/text'
 import { formatLabel, formatPrice } from '@/components/utils'
@@ -12,12 +13,23 @@ import { useOverlayStore } from '@/features/overlay/provider'
 import { useAnimateFromPosition } from '@/features/overlay/utils'
 import { useNavigation, useRoute } from '@react-navigation/native'
 import { Image } from 'expo-image'
-import { Eye, EyeOff, FolderHeart, Plus, ShoppingCart, Undo2, X } from 'lucide-react-native'
+import {
+  Eye,
+  EyeOff,
+  FolderHeart,
+  LucideIcon,
+  Plus,
+  ShoppingCart,
+  Star,
+  Undo2,
+  X,
+} from 'lucide-react-native'
 import { SafeAreaView } from 'moti'
-import { useMemo, useState } from 'react'
+import { ComponentProps, JSX, useMemo, useState } from 'react'
 import { Dimensions, FlatList, Pressable, ScrollView, View } from 'react-native'
 import Animated, { useAnimatedStyle } from 'react-native-reanimated'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { SvgProps } from 'react-native-svg'
 import { Button, Colors, Dialog, PanningProvider } from 'react-native-ui-lib'
 import Carousel from 'react-native-ui-lib/carousel'
 
@@ -58,23 +70,101 @@ const Attribute = ({ label, value }: { label: string; value: string }) => {
   )
 }
 
+const Footer = ({ card }: { card?: TCard }) => {
+  const insets = useSafeAreaInsets()
+  const { data: wishlistSet } = useIsWishlisted('card', [card?.id].filter(Boolean) as string[])
+  const toggleWishlist = useToggleWishlist()
+  const grades = useMemo(
+    () => (card ? ([getDefaultPrice(card).filter(Boolean)[0]] as string[]) : []),
+    [card]
+  )
+  return (
+    <Animated.View
+      className="border-2 border-b-0 border-black/20"
+      style={{
+        position: 'absolute',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        borderTopLeftRadius: 24,
+        borderTopRightRadius: 24,
+      }}
+    >
+      <BlurBackground
+        opacity={[0.1, 0.5]}
+        style={{
+          paddingTop: 12,
+          paddingBottom: insets.bottom,
+          borderTopLeftRadius: 24,
+          borderTopRightRadius: 24,
+          backgroundColor: Colors.rgba(Colors.$backgroundNeutral, 0.8),
+        }}
+        className="h-full w-full flex flex-row gap-2 px-4"
+      >
+        <FooterButton icon={FolderHeart} label="Collection" onPress={() => {}} stroke />
+        <FooterButton
+          disabled={!card}
+          highLighted={card && wishlistSet?.has?.(card.id)}
+          icon={Star}
+          label="Wishlist"
+          onPress={() =>
+            card && toggleWishlist.mutate({ kind: 'card', id: card.id, p_metadata: { grades } })
+          }
+        />
+        <FooterButton icon={ShoppingCart} label="Add to Cart" onPress={() => {}} fill={false} />
+      </BlurBackground>
+    </Animated.View>
+  )
+}
+
 const FooterButton = ({
-  icon,
+  icon: Icon,
   label,
   onPress,
+  highLighted = false,
+  iconSource,
+  iconProps = {},
+  fill = false,
+  stroke = true,
+  disabled = false,
 }: {
-  icon?: React.ReactNode
+  icon?: LucideIcon | ((props: SvgProps) => JSX.Element)
   label: string
   onPress: () => void
+  highLighted?: boolean
+  fill?: boolean
+  stroke?: boolean
+  iconProps?: SvgProps
+  iconSource?: ComponentProps<typeof Button>['iconSource']
+  disabled?: boolean
 }) => {
+  const outlineColor = highLighted
+    ? Colors.$outlinePrimary
+    : Colors.rgba(Colors.$outlinePrimary, 0.6)
+  const color = highLighted ? Colors.$outlineDefault : Colors.$outlinePrimary
   return (
     <Button
-      className="flex-1 flex flex-row gap-2 text-white"
-      style={{ color: 'white' }}
+      disabled={disabled}
+      className="flex-1 flex flex-row gap-2 justify-between"
       onPress={onPress}
+      outline={!highLighted}
+      outlineColor={outlineColor}
+      outlineWidth={2}
+      label={label}
+      iconSource={iconSource}
+      iconStyle={{ width: 22, height: 22 }}
     >
-      {icon}
-      <Text className="text-white">{label}</Text>
+      {Icon && (
+        <Icon
+          height={22}
+          width={22}
+          strokeWidth={2.5}
+          fill={fill ? color : 'transparent'}
+          stroke={stroke ? color : 'transparent'}
+          style={{ flex: 0 }}
+          {...iconProps}
+        />
+      )}
     </Button>
   )
 }
@@ -157,56 +247,6 @@ export default function FocusCardView() {
       ).filter((r) => r.length > 0),
     [prices, visibleGrades]
   )
-
-  const Footer = () => {
-    return (
-      <Animated.View
-        className="border-2 border-b-0 border-black/20"
-        style={{
-          position: 'absolute',
-          bottom: 0,
-          left: 0,
-          right: 0,
-          borderTopLeftRadius: 24,
-          borderTopRightRadius: 24,
-        }}
-      >
-        <BlurBackground
-          opacity={[0.1, 0.5]}
-          style={{
-            paddingTop: 12,
-            paddingBottom: insets.bottom,
-            borderTopLeftRadius: 24,
-            borderTopRightRadius: 24,
-          }}
-          className="h-full w-full flex flex-row gap-2 px-4"
-        >
-          <FooterButton
-            icon={<FolderHeart size={16} strokeWidth={2.5} color="white" />}
-            label="Collection"
-            onPress={() => {}}
-          />
-          <FooterButton
-            icon={
-              <WishlistedIcon
-                size={20}
-                strokeWidth={2.5}
-                stroke="currentColor"
-                style={{ stroke: 'currentColor' }}
-              />
-            }
-            label="Wishlist"
-            onPress={() => {}}
-          />
-          <FooterButton
-            icon={<ShoppingCart size={16} strokeWidth={2.5} color="white" />}
-            label="Add to Cart"
-            onPress={() => {}}
-          />
-        </BlurBackground>
-      </Animated.View>
-    )
-  }
 
   const Prices = (
     <ScrollView
@@ -418,7 +458,7 @@ export default function FocusCardView() {
           data={chunk([...prices, null, null], 2) as ([string, number | null] | null)[][]}
         />
       </Dialog>
-      <Footer />
+      <Footer card={data} />
     </>
   )
 }

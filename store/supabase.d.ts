@@ -84,6 +84,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "card_images_card_id_fkey"
+            columns: ["card_id"]
+            isOneToOne: false
+            referencedRelation: "wishlist_cards_enriched"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "card_images_image_cache_id_fkey"
             columns: ["image_cache_id"]
             isOneToOne: false
@@ -275,6 +282,13 @@ export type Database = {
             columns: ["card_id"]
             isOneToOne: false
             referencedRelation: "cards"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "external_refs_card_id_fkey"
+            columns: ["card_id"]
+            isOneToOne: false
+            referencedRelation: "wishlist_cards_enriched"
             referencedColumns: ["id"]
           },
         ]
@@ -605,6 +619,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "search_results_card_id_fkey"
+            columns: ["card_id"]
+            isOneToOne: false
+            referencedRelation: "wishlist_cards_enriched"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "search_results_search_query_id_fkey"
             columns: ["search_query_id"]
             isOneToOne: false
@@ -637,11 +658,128 @@ export type Database = {
         }
         Relationships: []
       }
+      wishlist: {
+        Row: {
+          created_at: string
+          kind: string
+          metadata: Json
+          ref_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          kind: string
+          metadata?: Json
+          ref_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          kind?: string
+          metadata?: Json
+          ref_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wishlist_kind_fkey"
+            columns: ["kind"]
+            isOneToOne: false
+            referencedRelation: "wishlist_kind"
+            referencedColumns: ["name"]
+          },
+        ]
+      }
+      wishlist_kind: {
+        Row: {
+          name: string
+        }
+        Insert: {
+          name: string
+        }
+        Update: {
+          name?: string
+        }
+        Relationships: []
+      }
+      wishlist_totals: {
+        Row: {
+          computed_at: string
+          total_cents: number
+          user_id: string
+        }
+        Insert: {
+          computed_at?: string
+          total_cents?: number
+          user_id: string
+        }
+        Update: {
+          computed_at?: string
+          total_cents?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
-      [_ in never]: never
+      wishlist_cards_enriched: {
+        Row: {
+          back_id: string | null
+          back_image_id: string | null
+          created_at: string | null
+          extra_image_ids: string[] | null
+          extras: string[] | null
+          front_id: string | null
+          front_image_id: string | null
+          genre: string | null
+          grades_prices: Json | null
+          id: string | null
+          last_updated: string | null
+          latest_price: number | null
+          name: string | null
+          release_date: string | null
+          set_name: string | null
+          user_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cards_back_image_id_fkey"
+            columns: ["back_image_id"]
+            isOneToOne: false
+            referencedRelation: "card_images"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cards_front_image_id_fkey"
+            columns: ["front_image_id"]
+            isOneToOne: false
+            referencedRelation: "card_images"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      wishlist_counts: {
+        Row: {
+          kind: string | null
+          ref_id: string | null
+          wishlist_count: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wishlist_kind_fkey"
+            columns: ["kind"]
+            isOneToOne: false
+            referencedRelation: "wishlist_kind"
+            referencedColumns: ["name"]
+          },
+        ]
+      }
     }
     Functions: {
+      _wishlist_row_cost_cents: {
+        Args: { p_kind: string; p_metadata: Json; p_ref_id: string }
+        Returns: number
+      }
       add_to_collection: {
         Args: {
           p_collection_id: string
@@ -774,6 +912,44 @@ export type Database = {
       upsert_image_by_url: {
         Args: { p_h: number; p_mime: string; p_url: string; p_w: number }
         Returns: string
+      }
+      wishlist_recompute_total: {
+        Args: Record<PropertyKey, never>
+        Returns: number
+      }
+      wishlist_set_grades: {
+        Args: {
+          p_delete_when_empty?: boolean
+          p_grades: string[]
+          p_kind: string
+          p_ref_id: string
+        }
+        Returns: {
+          grades: string[]
+        }[]
+      }
+      wishlist_toggle: {
+        Args:
+          | { p_kind: string; p_metadata?: Json; p_ref_id: string }
+          | { p_kind: string; p_ref_id: string }
+        Returns: {
+          is_wishlisted: boolean
+        }[]
+      }
+      wishlist_toggle_grade: {
+        Args: {
+          p_delete_when_empty?: boolean
+          p_grade: string
+          p_kind: string
+          p_ref_id: string
+        }
+        Returns: {
+          grades: string[]
+        }[]
+      }
+      wishlist_total: {
+        Args: Record<PropertyKey, never>
+        Returns: number
       }
     }
     Enums: {

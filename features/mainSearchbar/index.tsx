@@ -1,3 +1,4 @@
+import { useIsWishlisted } from '@/client/card/wishlist'
 import { useCardSearch, useSuggestionsFixed } from '@/client/price-charting'
 import { Button } from '@/components/ui/button'
 import { AppStandaloneHeader } from '@/components/ui/headers'
@@ -7,7 +8,7 @@ import { cn } from '@/lib/utils'
 import { Portal } from '@rn-primitives/portal'
 import { BlurView } from 'expo-blur'
 import { Search, SlidersHorizontal } from 'lucide-react-native'
-import React, { ComponentProps, useEffect, useMemo, useRef, useState } from 'react'
+import React, { ComponentProps, forwardRef, useEffect, useMemo, useRef, useState } from 'react'
 import { Keyboard, ScrollView, StyleSheet, View } from 'react-native'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import {
@@ -45,15 +46,18 @@ const SearchContainer = ({ children, className, ...props }: ComponentProps<typeo
   )
 }
 
-const SearchInput = (props: ComponentProps<typeof InnerInputField>) => {
-  return <InnerInputField {...props} />
-}
+const SearchInput = forwardRef<
+  React.ComponentRef<typeof InnerInputField>,
+  ComponentProps<typeof InnerInputField>
+>((props, ref) => {
+  return <InnerInputField {...props} ref={ref} />
+})
 
 export function SearchBar({ placeholder = 'Search...' }: { placeholder?: string }) {
   // Theme and store hooks
   const { progress: keyboardProgress } = useReanimatedKeyboardAnimation()
   const filters = useFiltersStore()
-  const { hiddenId } = useOverlay();
+  const { hiddenId } = useOverlay()
   const filterQuery = useMemo(() => {
     const { min, max } = filters.priceRange
     return {
@@ -97,7 +101,7 @@ export function SearchBar({ placeholder = 'Search...' }: { placeholder?: string 
 
   // Refs
   const overlayRef = useRef<View>(null)
-  const inputRef = useRef<View>(null)
+  const inputRef = useRef<typeof SearchInput>(null)
 
   // Animation hooks
   const insets = useSafeAreaInsets()
@@ -115,7 +119,7 @@ export function SearchBar({ placeholder = 'Search...' }: { placeholder?: string 
 
   const show = () => {
     setFocused(true)
-    inputRef.current?.focus()
+    ;(inputRef as unknown as React.RefObject<View>).current?.focus()
   }
 
   const debouncedSetSearchText = useMemo(() => {
@@ -138,39 +142,48 @@ export function SearchBar({ placeholder = 'Search...' }: { placeholder?: string 
   }, [focused])
 
   const overlayStyle = useAnimatedStyle(() => {
-
     return {
       opacity: withTiming(hiddenId ? 0 : 1, { duration: 200 }),
     }
   }, [hiddenId])
 
+  const searchItems = useMemo(
+    () => cardSearch?.pages.flatMap((page) => page.results) || autoSuggestions?.results,
+    [cardSearch, autoSuggestions]
+  )
+
+  const { data: wishlistedIds, error } = useIsWishlisted(
+    'card',
+    searchItems?.map((item) => item.card.id) || []
+  )
+
   return (
     <Animated.View className="w-full flex flex-col" ref={overlayRef}>
-        <View className="flex flex-col items-center justify-center px-4 pb-2">
-          <SearchContainer className="w-full">
-            <SearchInput
-              id="searchInput"
-              type="text"
-              className="flex-1"
-              placeholder={placeholder}
-              onFocus={() => {
-                if (!focused) {
-                  show()
-                }
-              }}
-            />
-            <Button
-              variant="ghost"
-              className="pr-2 pl-4"
-              onPress={() => {
-                setFiltersExpanded(!filtersExpanded)
+      <View className="flex flex-col items-center justify-center px-4 pb-2">
+        <SearchContainer className="w-full">
+          <SearchInput
+            id="searchInput"
+            type="text"
+            className="flex-1"
+            placeholder={placeholder}
+            onFocus={() => {
+              if (!focused) {
                 show()
-              }}
-            >
-              <SlidersHorizontal size={16} />
-            </Button>
-          </SearchContainer>
-        </View>
+              }
+            }}
+          />
+          <Button
+            variant="ghost"
+            className="pr-2 pl-4"
+            onPress={() => {
+              setFiltersExpanded(!filtersExpanded)
+              show()
+            }}
+          >
+            <SlidersHorizontal size={16} />
+          </Button>
+        </SearchContainer>
+      </View>
       {focused && (
         <Portal name="searchbar" hostName="searchbar">
           <FiltersProvider filters={filters}>
@@ -184,11 +197,7 @@ export function SearchBar({ placeholder = 'Search...' }: { placeholder?: string 
               className="z-searchBar bg-secondary-200/80"
               behavior={'padding'}
             >
-              <BlurView
-                intensity={20}
-                tint="systemMaterial"
-                className="flex-1 overflow-visible"
-              >
+              <BlurView intensity={20} tint="systemMaterial" className="flex-1 overflow-visible">
                 <Animated.View style={overlayStyle} className="h-full overflow-visible">
                   <AppStandaloneHeader
                     title="Search"
@@ -199,14 +208,13 @@ export function SearchBar({ placeholder = 'Search...' }: { placeholder?: string 
                   <ScrollView style={{ paddingBottom: insets.bottom }} className="flex-1">
                     <View className="w-full h-full flex flex-col p-4 py-2 gap-2">
                       {!isCardSearchLoading ? (
-                        (
-                          cardSearch?.pages.flatMap((page) => page.results) ||
-                          autoSuggestions?.results
-                        )
-                          ?.slice(0, 10)
-                          .map((card) => (
-                            <PreviewCard key={card.id} searchItem={card} />
-                          )) ?? <Spinner />
+                        searchItems?.map((item, i) => (
+                          <PreviewCard
+                            key={item.id}
+                            searchItem={item}
+                            isWishlisted={wishlistedIds?.has(`${item.card.id}`) ?? false}
+                          />
+                        )) ?? <Spinner />
                       ) : (
                         <Spinner />
                       )}
