@@ -14,12 +14,11 @@ export async function touchRecentView(params: {
   source?: string | null;
   ctx?: Record<string, unknown>;
 }) {
-  await requireUser(); // ensures auth; RPC uses auth.uid()
+  const user = await requireUser(); // ensures auth; RPC uses auth.uid()
   const { error } = await supabase.rpc("touch_recent_view", {
-    p_target_type: params.targetType,
-    p_target_id: params.targetId,
-    p_source: params.source ?? null,
-    p_ctx: (params.ctx ?? {}) as any,
+    p_user_id: user.id,
+    p_item_type: params.targetType,
+    p_item_id: params.targetId,
   });
   if (error) throw error;
   return true;

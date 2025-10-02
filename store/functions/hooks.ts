@@ -5,6 +5,7 @@ import {
   touchRecentView,
 } from "@/store/functions/recently-viewed";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Database } from "../supabase";
 import {
   addToCollection,
   createCollection,
@@ -91,6 +92,22 @@ export function useTouchRecentView() {
         targetId: args.id,
         source: args.source,
       }),
+    onMutate: async (args) => {
+      const prev = qc.getQueryData(qk.recent) as Partial<
+        Database["public"]["Tables"]["recent_views"]["Row"]
+      >[] | undefined;
+      let item;
+      const itemIdx = prev?.findIndex((v) => v.item_id === args.id);
+      if (itemIdx !== undefined && itemIdx !== -1) {
+        item = prev?.splice(itemIdx, 1)[0];
+      }
+      item = item ?? {
+        item_id: args.id,
+        item_type: args.type,
+      };
+      prev?.unshift(item);
+      qc.setQueryData(qk.recent, prev);
+    },
     onSuccess: () => qc.invalidateQueries({ queryKey: qk.recent }),
   });
 }

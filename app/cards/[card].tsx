@@ -4,13 +4,14 @@ import { usePriceChartingDataBatch } from '@/client/chart-data'
 import { BlurBackground } from '@/components/Background'
 import PriceGraph from '@/components/graphs/PriceGraph'
 import { LiquidGlassCard } from '@/components/tcg-card/GlassCard'
-import { getDefaultPrice } from '@/components/tcg-card/helpers'
+import { getDefaultPrice, useInvalidateOnFocus } from '@/components/tcg-card/helpers'
 import { Heading } from '@/components/ui/heading'
 import { Text } from '@/components/ui/text'
 import { formatLabel, formatPrice } from '@/components/utils'
 import { TCard } from '@/constants/types'
 import { useOverlayStore } from '@/features/overlay/provider'
 import { useAnimateFromPosition } from '@/features/overlay/utils'
+import { qk } from '@/store/functions/helpers'
 import { useNavigation, useRoute } from '@react-navigation/native'
 import { Image } from 'expo-image'
 import {
@@ -193,13 +194,6 @@ export default function FocusCardView() {
   const { data } = useCardQuery(cardId)
   const finalImage = image || data?.image?.url || ''
   const grades = data?.grades_prices ?? {}
-  const availableGrades = useMemo(
-    () =>
-      Object.keys(grades || {})
-        .sort()
-        .reverse(),
-    [grades]
-  )
   const prices = useMemo(
     () => Object.entries(grades || {}).sort((a, b) => b[0].localeCompare(a[0])),
     [grades]
@@ -216,6 +210,8 @@ export default function FocusCardView() {
   const setHiddenId = useOverlayStore((s) => s.setHiddenId)
 
   const [images, setImages] = useState([finalImage])
+
+  useInvalidateOnFocus(qk.recent)
 
   const insets = useSafeAreaInsets()
   const { width: W, height: H } = Dimensions.get('window')
@@ -398,7 +394,6 @@ export default function FocusCardView() {
       <Dialog
         visible={showMoreGrades}
         overlayBackgroundColor={Colors.rgba(Colors.grey10, 0.8)}
-        onDismiss={() => console.log('dismissed')}
         panDirection={PanningProvider.Directions.DOWN}
         useSafeArea
         bottom

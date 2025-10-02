@@ -38,26 +38,6 @@ Deno.serve(async (req) => {
 
   let fetchedCard;
   if (card_id) {
-    EdgeRuntime.waitUntil(
-      supabaseUser.auth.getUser().then(({ data }) => {
-        const { user } = data;
-        const userId = user?.id;
-        if (!userId) {
-          throw new Error("User not found");
-        }
-        return supabase.rpc("touch_recent_view", {
-          p_user_id: userId,
-          p_item_type: "card",
-          p_item_id: card_id,
-          p_meta: { source: "detail_api" },
-        });
-      }).then(() => {
-        console.log("Recent view touched");
-      }).catch((error) => {
-        console.error("Error touching recent view", error);
-      }),
-    );
-
     const fetchCardReq = await supabase.from("cards").select("*").eq(
       "id",
       card_id,

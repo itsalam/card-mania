@@ -1,20 +1,15 @@
 import { useToggleWishlist, ViewParams } from '@/client/card/wishlist'
 import { useImageProxy } from '@/client/image-proxy'
 import { CollectionsIcon, WishlistedIcon } from '@/components/icons'
-import { Card } from '@/components/ui/card'
 import { Text } from '@/components/ui/text'
 import { formatPrice } from '@/components/utils'
 import { TCard } from '@/constants/types'
 import { useOverlay } from '@/features/overlay/provider'
-import { measureInWindowAsync } from '@/features/overlay/utils'
 import { cn } from '@/lib/utils/cn'
-import { useStores } from '@/store/provider'
-import { router } from 'expo-router'
-import { useRef } from 'react'
 import { Pressable, View } from 'react-native'
 import { Button, Colors } from 'react-native-ui-lib'
 import { LiquidGlassCard } from '../GlassCard'
-import { getDefaultPrice } from '../helpers'
+import { getDefaultPrice, useNavigateToDetailCard } from '../helpers'
 import { LoadingImagePlaceholder } from '../placeholders'
 
 export function ListCard({
@@ -44,23 +39,12 @@ export function ListCard({
     queryHash: card?.image?.query_hash ?? undefined,
   })
 
-  const { setPrefetchData } = useStores().cardStore.getInitialState()
-  const cardElement = useRef<typeof Card>(null)
-  const { hiddenId, setHiddenId } = useOverlay()
-
   const toggleWishList = useToggleWishlist()
+  const { setHiddenId } = useOverlay()
 
-  const handlePress = () => {
-    const positionPromise = measureInWindowAsync(cardElement as unknown as React.RefObject<View>)
-    setPrefetchData(card.id, card)
-    positionPromise.then((position) => {
-      setHiddenId(card.id)
-      router.navigate({
-        pathname: `/cards/[card]`,
-        params: { from: JSON.stringify(position), card: card.id },
-      })
-    })
-  }
+  const { cardElement, handlePress } = useNavigateToDetailCard(card, () => {
+    setHiddenId(card.id)
+  })
 
   const [grade, displayPrice] = getDefaultPrice(card)
   return (

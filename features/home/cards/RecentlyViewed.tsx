@@ -38,6 +38,11 @@ export function RecentlyViewed() {
     recentViews?.map((item) => item.item_id) || []
   )
 
+  console.log(
+    'recentViews',
+    recentViews?.map((v) => v.item_id)
+  )
+
   return (
     <ExpandableCard
       title="Recently Viewed"

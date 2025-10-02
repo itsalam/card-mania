@@ -185,7 +185,6 @@ export default function CollectionBreakdown({
   const [visible, toggle] = useReducer((s) => !s, true)
   const { data: wishlistTotal, ...wishlistReq } = useWishlistTotal()
   const totals = useMemo(() => {
-    console.log('wishlistTotal', { wishlistTotal, wishlistReq })
     const seeking = activities[0]
     const selling = activities[1]
     const holding = activities[2]
