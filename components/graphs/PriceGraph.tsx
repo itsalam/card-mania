@@ -32,7 +32,7 @@ import {
 } from 'victory-native'
 import { PointValueCard } from './ui/PointValueCard'
 import { SeriesDot } from './ui/SeriesDot'
-import { NumericalFields, PriceGraphProps, SeriesPoint, SeriesSV } from './ui/types'
+import { GraphInputKey, NumericalFields, PriceGraphProps, SeriesPoint, SeriesSV } from './ui/types'
 import { getFontHeight, wrapContent } from './utils'
 
 export const TIME_PERIODS = ['1W', '1M', '3M', '1Y', 'all']
@@ -51,24 +51,19 @@ const getTimeRange = (timePeriod: string): [Date, Date] => {
   return [start, now]
 }
 
-type PressState<Y extends string> = {
-  x: number // your x is epoch ms, so a number
-  y: Record<Y, number>
-}
-
-function buildAreaUnderLinePath(pts: P[], bottomY: number) {
+function buildAreaUnderLinePath(pts: PointsArray, bottomY: number) {
   const p = Skia.Path.Make()
   if (!pts.length) return p
 
   // Start at the bottom-left corner
   p.moveTo(pts[0].x, bottomY)
   // Up to the first point on the line
-  p.lineTo(pts[0].x, pts[0].y)
+  p.lineTo(pts[0].x, pts[0]?.y ?? bottomY)
 
   // Follow the polyline (if you use a curved path elsewhere, that's fine:
   // this clip only needs to *contain* the area below; polyline is OK.)
   for (let i = 1; i < pts.length; i++) {
-    p.lineTo(pts[i].x, pts[i].y)
+    p.lineTo(pts[i].x, pts[i]?.y ?? bottomY)
   }
 
   // Down to bottom at the last x, then back to bottom-left
@@ -114,16 +109,20 @@ const LineEffect = (props: {
 }
 
 export default function PriceGraph<
-  T extends Record<string, number>,
-  Y extends keyof NumericalFields<T> & string
->(props: PriceGraphProps<T, Y>) {
+  T extends Record<string, YValues>,
+  InputKeys extends GraphInputKey<T> = GraphInputKey<T>,
+  YValues extends keyof NumericalFields<T> = keyof NumericalFields<T>
+>(props: PriceGraphProps<T, InputKeys, YValues>) {
   const { width = Dimensions.get('window').width, height = 350, data, xKey, yKeys } = props
   const initialY = useMemo(
-    () => Object.fromEntries(yKeys.map((k) => [k, 0])) as Record<Y, number>,
+    () => Object.fromEntries(yKeys.map((k) => [k, 0])) as Record<YValues, number>,
     [yKeys]
   )
 
-  const { state, isActive } = useChartPressState<PressState<Y>>({ x: 0, y: initialY })
+  const { state, isActive } = useChartPressState<{
+    x: number
+    y: Record<YValues, number>
+  }>({ x: 0 as never, y: initialY })
 
   const [timePeriod, setTimePeriod] = useState(TIME_PERIODS[0])
 
@@ -136,8 +135,14 @@ export default function PriceGraph<
 
   return (
     <View className="w-full" style={{ height: height }}>
-      <CartesianChart<T, typeof xKey, Y>
+      <CartesianChart<
+        T,
+        InputKeys,
+        // @ts-ignore
+        YValues
+      >
         data={data ?? []}
+        // @ts-ignore
         chartPressState={state}
         xKey={xKey}
         yKeys={yKeys}
@@ -292,7 +297,7 @@ export function ToolTip({
   const formatDateValue = useCallback(
     (v: number) => {
       setXValueText(
-        new Date(isActive ? v : restP?.xValue).toLocaleDateString('en-US', {
+        new Date(isActive ? v : String(restP?.xValue)).toLocaleDateString('en-US', {
           month: 'short',
           day: 'numeric',
         })

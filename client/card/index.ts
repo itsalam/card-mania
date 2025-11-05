@@ -1,5 +1,5 @@
 import { TCard } from "@/constants/types";
-import { useCardStore } from "@/store/provider"; // your useStores()
+import { useCardStore } from "@/lib/store/provider"; // your useStores()
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo } from "react";
 import { invokeFx } from "../helper";

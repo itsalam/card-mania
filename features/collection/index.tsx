@@ -1,8 +1,13 @@
 import { SearchBar } from '@/components/search-bar'
-import { FolderTabList, FolderTabsContainer, FolderTabTrigger } from '@/components/tabs/FolderTabs'
-import { Tabs, TabsContent } from '@/components/ui/tabs'
+import {
+  FolderTabComponent,
+  FolderTabList,
+  FolderTabsContainer,
+  FolderTabTrigger,
+} from '@/components/tabs/FolderTabs'
+import { Tabs, TabsContent } from '@/components/ui/tabs/tabs'
 import { Text } from '@/components/ui/text'
-import { Coins, Heart, LucideIcon, Vault } from 'lucide-react-native'
+import { Coins, Heart, LucideIcon, Plus, Vault } from 'lucide-react-native'
 import React from 'react'
 import { SafeAreaView, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -45,6 +50,9 @@ export default function CollectionScreen() {
                   <Text className="text-xl">{tab.charAt(0).toUpperCase() + tab.slice(1)}</Text>
                 </FolderTabTrigger>
               ))}
+              <FolderTabComponent>
+                <Plus size={16} />
+              </FolderTabComponent>
             </View>
           </FolderTabList>
           <FolderTabsContainer>

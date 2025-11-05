@@ -1,4 +1,4 @@
-import { Json } from "@/store/supabase";
+import { Json } from "@/lib/store/supabase";
 import { z } from "zod";
 
 export const JsonSchema: z.ZodType<Json> = z.lazy(() =>
@@ -49,4 +49,37 @@ export const Card = z.object({
   last_updated: z.string().optional(),
 });
 
+export const TCollection = z.object({
+  id: z.string(),
+  user_id: z.string(),
+  name: z.string(),
+  description: z.string().nullable(),
+  visibility: z.enum(["public", "private", "unlisted"]),
+  created_at: z.string(), // ISO timestamp
+  updated_at: z.string(), // ISO timestamp
+  cover_image_url: z.string().nullable(),
+});
+
+export const TCollectionTags = z.object({
+  collection_id: z.string(),
+  tag_id: z.string(),
+  user_id: z.string(),
+  created_at: z.string(), // ISO timestamp
+});
+
+export const Tag = z.object({
+  id: z.uuid(),
+  name: z.string(),
+  slug: z.string(),
+  created_at: z.string(), // ISO timestamp
+  source: z.string().default("user"),
+  curated_weight: z.number().default(1.0),
+  is_active: z.boolean().default(true),
+  approved_at: z.string().nullable(),
+  popularity: z.number().int().default(0),
+});
+
 export type TCard = z.infer<typeof Card>;
+export type TCollection = z.infer<typeof TCollection>;
+export type TCollectionTags = z.infer<typeof TCollectionTags>;
+export type TTag = z.infer<typeof Tag>;

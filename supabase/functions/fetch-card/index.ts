@@ -8,7 +8,6 @@ import { SupabaseClient } from "@supabase/supabase-js";
 import { CardImageFields } from "@types";
 import {
   buildSerpQuery,
-  createSupabaseClient,
   createSupabaseServiceClient,
   getImageCacheFromQueryHash,
   ImageCacheRow,
@@ -32,7 +31,6 @@ Deno.serve(async (req) => {
   const card_hints = searchParams.get("card_hints");
 
   const supabase = createSupabaseServiceClient();
-  const supabaseUser = createSupabaseClient(req);
 
   // Step 2: Get the card data from the database
 

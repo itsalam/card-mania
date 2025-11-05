@@ -2,8 +2,8 @@ import { Separator } from '@/components/ui/separator'
 import { Text } from '@/components/ui/text'
 import React from 'react'
 import { ScrollView, View } from 'react-native'
+import { FilterBadge } from './FilterBadge'
 import { useFilters } from './providers'
-import { FilterBadge } from './ToggleBadge'
 
 export function CategoryFilter() {
   const { itemTypes, toggleItemTypes } = useFilters()

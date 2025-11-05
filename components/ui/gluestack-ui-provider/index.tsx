@@ -1,4 +1,4 @@
-import { useColorScheme } from '@/hooks/useColorScheme'
+import { useColorScheme } from '@/lib/hooks/useColorScheme'
 import { OverlayProvider } from '@gluestack-ui/overlay'
 import { ToastProvider } from '@gluestack-ui/toast'
 import { colorScheme as colorSchemeNW } from 'nativewind'

@@ -1,13 +1,12 @@
 import { useToggleWishlist, ViewParams } from '@/client/card/wishlist'
 import { useImageProxy } from '@/client/image-proxy'
-import { CollectionsIcon, WishlistedIcon } from '@/components/icons'
 import { Text } from '@/components/ui/text'
 import { formatPrice } from '@/components/utils'
 import { TCard } from '@/constants/types'
 import { useOverlay } from '@/features/overlay/provider'
 import { cn } from '@/lib/utils/cn'
-import { Pressable, View } from 'react-native'
-import { Button, Colors } from 'react-native-ui-lib'
+import { Pressable, StyleSheet, View } from 'react-native'
+import { Assets, Button } from 'react-native-ui-lib'
 import { LiquidGlassCard } from '../GlassCard'
 import { getDefaultPrice, useNavigateToDetailCard } from '../helpers'
 import { LoadingImagePlaceholder } from '../placeholders'
@@ -93,31 +92,20 @@ export function ListCard({
                       p_metadata: { grades: [grade].filter(Boolean) },
                     })
                   }}
+                  iconStyle={styles.buttonIcon}
+                  style={styles.button}
                   size="small"
                   round
                   outlineWidth={1.5}
-                  iconSource={() => (
-                    <WishlistedIcon
-                      height={20}
-                      width={20}
-                      strokeWidth={2.5}
-                      fill={isWishlisted ? Colors.$outlineDefault : Colors.$outlinePrimary}
-                      // stroke={Colors.$outlinePrimary}
-                    />
-                  )}
+                  iconSource={Assets.icons.BookmarkHeart}
                 />
                 <Button
-                  outline={true}
-                  // onPress={() => toggleWishList.mutate({ kind: 'card', id: card.id })}
                   size="small"
                   round
-                  iconSource={() => (
-                    <CollectionsIcon
-                      size={20}
-                      strokeWidth={2.5}
-                      fill={isWishlisted ? Colors.$outlineDefault : Colors.$outlinePrimary}
-                    />
-                  )}
+                  outlineWidth={1.5}
+                  iconStyle={styles.buttonIcon}
+                  style={styles.button}
+                  iconSource={Assets.icons.Folder}
                 />
               </View>
             </View>
@@ -127,3 +115,8 @@ export function ListCard({
     </Pressable>
   )
 }
+
+const styles = StyleSheet.create({
+  buttonIcon: { width: 28, height: 28 },
+  button: { width: 36, height: 36 },
+})

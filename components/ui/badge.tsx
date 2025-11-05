@@ -1,71 +1,110 @@
-import { TextClassContext } from '@/components/ui/text';
-import { cn } from '@/lib/utils/index';
-import { VariantProps } from "@gluestack-ui/nativewind-utils";
-import { tva } from '@gluestack-ui/nativewind-utils/tva';
-import * as Slot from '@rn-primitives/slot';
-import { Platform, View, ViewProps } from 'react-native';
+import * as Haptics from 'expo-haptics'
+import { ComponentProps, ComponentPropsWithoutRef, forwardRef } from 'react'
+import { View } from 'react-native'
+import { Gesture, GestureDetector } from 'react-native-gesture-handler'
+import Animated, {
+  runOnJS,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated'
+import { Chip, ChipsInput, Colors } from 'react-native-ui-lib'
+require('@/assets/rn-ui')
+const AnimatedView = Animated.createAnimatedComponent(View)
 
-const badgeVariants = tva(
+export const BADGE_HEIGHT = 36
+export const ICON_SIZE = 28
 
-  {
-    base: cn(
-      'border-border group shrink-0 flex-row items-center justify-center gap-1 overflow-hidden rounded-full border px-3 py-1',
-      Platform.select({
-        web: 'focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive w-fit whitespace-nowrap transition-[color,box-shadow] focus-visible:ring-[3px] [&>svg]:pointer-events-none [&>svg]:size-3',
-      })
-    ),
-    variants: {
-      variant: {
-        default: cn(
-          'bg-primary border-transparent',
-          Platform.select({ web: '[a&]:hover:bg-primary/90' })
-        ),
-        secondary: cn(
-          'bg-secondary border-transparent',
-          Platform.select({ web: '[a&]:hover:bg-secondary/90' })
-        ),
-        destructive: cn(
-          'bg-destructive border-transparent',
-          Platform.select({ web: '[a&]:hover:bg-destructive/90' })
-        ),
-        outline: Platform.select({ web: '[a&]:hover:bg-accent [a&]:hover:text-accent-foreground' }),
-      },
-    },
-    defaultVariants: {
-      variant: 'default',
-    },
-  }
-);
-
-const badgeTextVariants = tva({
-  base: 'text-md font-medium', 
-  variants: {
-    variant: {
-      default: 'text-primary-foreground',
-      secondary: 'text-secondary-foreground',
-      destructive: 'text-white',
-      outline: 'text-foreground',
-    },
+const BaseBadgeProps: Partial<ComponentProps<typeof Chip>> = {
+  iconStyle: {
+    width: ICON_SIZE,
+    height: ICON_SIZE,
+    marginLeft: 10,
   },
-  defaultVariants: {
-    variant: 'default',
+  size: BADGE_HEIGHT,
+  backgroundColor: Colors.$backgroundPrimaryHeavy,
+  containerStyle: {
+    borderWidth: 0,
+    padding: 2,
   },
-});
-
-type BadgeProps = ViewProps &
-  React.RefAttributes<View> & {
-    asChild?: boolean;
-  } & VariantProps<typeof badgeVariants>;
-
-function Badge({ className, variant, asChild, ...props }: BadgeProps) {
-  const Component = asChild ? Slot.View : View;
-  return (
-    <TextClassContext.Provider value={badgeTextVariants({ variant })}>
-      <Component className={cn(badgeVariants({ variant }), className)} {...props} />
-    </TextClassContext.Provider>
-  );
+  labelStyle: {
+    color: Colors.$textDefaultLight,
+    fontSize: 16,
+    lineHeight: 18,
+  },
 }
 
-export { Badge, badgeTextVariants, badgeVariants };
-export type { BadgeProps };
+export function ToggleBadge({
+  checked,
+  onPress,
+  onCheckedChange,
+  ...props
+}: ComponentProps<typeof Badge> & {
+  className?: string
+  children?: React.ReactNode
+  checked: boolean
+  onPress?: () => void
+  onCheckedChange?: (checked: boolean) => void
+}) {
+  const scale = useSharedValue(1)
 
+  const onTogglePress = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
+    onCheckedChange?.(!checked)
+    onPress?.()
+  }
+
+  const tap = Gesture.Tap()
+    .maxDuration(250)
+    .onBegin(() => {
+      'worklet'
+      scale.value = withTiming(0.98, { duration: 80 })
+    })
+    .onEnd(() => {
+      'worklet'
+      scale.value = withTiming(1, { duration: 80 })
+      runOnJS(onTogglePress)()
+    })
+    .onFinalize(() => {
+      'worklet'
+      scale.value = withTiming(1, { duration: 80 })
+    })
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+    opacity: withTiming(checked ? 1 : 0.5, { duration: 120 }),
+  }))
+
+  return (
+    <GestureDetector gesture={tap}>
+      <AnimatedView style={animatedStyle}>
+        {/* Important: avoid inner Pressables here so RNGH owns the touch */}
+        <Badge {...BaseBadgeProps} {...props} />
+      </AnimatedView>
+    </GestureDetector>
+  )
+}
+
+export function Badge({ ...props }: ComponentProps<typeof Chip>) {
+  return <Chip {...BaseBadgeProps} {...props} />
+}
+
+export const BadgeInput = forwardRef(
+  ({ defaultChipProps, ...props }: ComponentPropsWithoutRef<typeof ChipsInput>, ref) => {
+    // Deep merge BaseBadgeProps and defaultChipProps
+    const mergedChipProps = {
+      ...BaseBadgeProps,
+      ...defaultChipProps,
+      iconStyle: [BaseBadgeProps.iconStyle, defaultChipProps?.iconStyle || {}],
+      containerStyle: [
+        BaseBadgeProps.containerStyle,
+        defaultChipProps?.containerStyle || {},
+        {
+          marginTop: 0,
+        },
+      ],
+      labelStyle: [BaseBadgeProps.labelStyle, defaultChipProps?.labelStyle || {}],
+    }
+    return <ChipsInput ref={ref} {...props} defaultChipProps={mergedChipProps} />
+  }
+)

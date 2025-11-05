@@ -1,16 +1,12 @@
 import { useIsWishlisted } from '@/client/card/wishlist'
 import { useCardSearch, useSuggestionsFixed } from '@/client/price-charting'
-import { Button } from '@/components/ui/button'
 import { AppStandaloneHeader } from '@/components/ui/headers'
-import { InnerInputField, Input } from '@/components/ui/input'
+import { SearchBar } from '@/components/ui/search'
 import { Spinner } from '@/components/ui/spinner'
-import { cn } from '@/lib/utils'
 import { Portal } from '@rn-primitives/portal'
 import { BlurView } from 'expo-blur'
-import { Search, SlidersHorizontal } from 'lucide-react-native'
-import React, { ComponentProps, forwardRef, useEffect, useMemo, useRef, useState } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { Keyboard, ScrollView, StyleSheet, View } from 'react-native'
-import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import {
   KeyboardAvoidingView,
   useReanimatedKeyboardAnimation,
@@ -22,38 +18,13 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { SearchInput } from 'react-native-ui-lib'
 import { useOverlay } from '../overlay/provider'
 import { FiltersKeys, FiltersProvider, useFiltersStore } from './filters/providers'
 import { SearchFilters, SearchFiltersOptions } from './filters/SearchFilters'
 import { PreviewCard } from './PreviewItem'
 
-const ABlurView = Animated.createAnimatedComponent(BlurView)
-const AGestureHandlerRootView = Animated.createAnimatedComponent(GestureHandlerRootView)
-
-const SearchContainer = ({ children, className, ...props }: ComponentProps<typeof Input>) => {
-  return (
-    <Input
-      className={cn(
-        'flex gap-1 rounded-full h-14 items-center px-4 z-searchBar border-none bg-transparent',
-        className
-      )}
-      size="xl"
-      {...props}
-    >
-      <Search size={22} />
-      {children}
-    </Input>
-  )
-}
-
-const SearchInput = forwardRef<
-  React.ComponentRef<typeof InnerInputField>,
-  ComponentProps<typeof InnerInputField>
->((props, ref) => {
-  return <InnerInputField {...props} ref={ref} />
-})
-
-export function SearchBar({ placeholder = 'Search...' }: { placeholder?: string }) {
+export function MainSearchBar({ placeholder = 'Search...' }: { placeholder?: string }) {
   // Theme and store hooks
   const { progress: keyboardProgress } = useReanimatedKeyboardAnimation()
   const filters = useFiltersStore()
@@ -160,29 +131,19 @@ export function SearchBar({ placeholder = 'Search...' }: { placeholder?: string 
   return (
     <Animated.View className="w-full flex flex-col" ref={overlayRef}>
       <View className="flex flex-col items-center justify-center px-4 pb-2">
-        <SearchContainer className="w-full">
-          <SearchInput
-            id="searchInput"
-            type="text"
-            className="flex-1"
-            placeholder={placeholder}
-            onFocus={() => {
-              if (!focused) {
-                show()
-              }
-            }}
-          />
-          <Button
-            variant="ghost"
-            className="pr-2 pl-4"
-            onPress={() => {
-              setFiltersExpanded(!filtersExpanded)
+        <SearchBar
+          id="searchInput"
+          placeholder={placeholder}
+          onFocus={() => {
+            console.log('focus')
+            if (!focused) {
               show()
-            }}
-          >
-            <SlidersHorizontal size={16} />
-          </Button>
-        </SearchContainer>
+            }
+          }}
+          onOptionsPress={() => {
+            setFiltersExpanded(!filtersExpanded)
+            show()
+          }}/>
       </View>
       {focused && (
         <Portal name="searchbar" hostName="searchbar">
@@ -223,7 +184,7 @@ export function SearchBar({ placeholder = 'Search...' }: { placeholder?: string 
                 </Animated.View>
               </BlurView>
 
-              <AGestureHandlerRootView
+              <Animated.View
                 style={[
                   inputContainerStyle,
                   {
@@ -232,37 +193,29 @@ export function SearchBar({ placeholder = 'Search...' }: { placeholder?: string 
                 ]}
                 className="flex flex-col px-4 py-2 bg-white border-2 border-b-0 border-black/20"
               >
-                <SearchContainer className={'px-4 border-0 bg-transparent border-b'}>
-                  <SearchInput
-                    id="searchInput"
-                    type="text"
-                    className="flex-1"
-                    placeholder={placeholder}
-                    onChangeText={(text) => {
-                      debouncedSetSearchText(text)
-                    }}
-                    defaultValue={searchText}
-                    onFocus={() => {
-                      if (!focused) {
-                        show()
-                      }
-                    }}
-                    ref={inputRef}
-                  />
-                  <Button
-                    variant="ghost"
-                    className="pr-2 pl-4"
-                    onPress={() => {
-                      setFiltersExpanded(!filtersExpanded)
+                <SearchBar
+                  style={{
+                    borderWidth: 0,
+                  }}
+                  id="searchInput"
+                  placeholder={placeholder}
+                  onChangeText={(text) => {
+                    debouncedSetSearchText(text)
+                  }}
+                  defaultValue={searchText}
+                  onFocus={() => {
+                    if (!focused) {
                       show()
-                    }}
-                  >
-                    <SlidersHorizontal size={16} />
-                  </Button>
-                </SearchContainer>
+                    }
+                  }}
+                  ref={inputRef}
+                  onOptionsPress={() => {
+                        setFiltersExpanded(!filtersExpanded)
+                        show()
+                      }}/>
                 <SearchFilters focused={focused} />
                 <SearchFiltersOptions expanded={filtersExpanded} focused={focused} />
-              </AGestureHandlerRootView>
+              </Animated.View>
             </KeyboardAvoidingView>
           </FiltersProvider>
         </Portal>

@@ -1,6 +1,6 @@
 import { ExpandableCard, ExpandedContent } from "@/components/content-card";
 import { CollectionsListItem } from "@/features/collection/components/ListItem";
-import { useMyCollections } from "@/store/functions/hooks";
+import { useMyCollections } from "@/lib/store/functions/hooks";
 
 
 export function CollectionsPreview() {

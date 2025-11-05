@@ -6,8 +6,8 @@ import { Input, InputField } from '@/components/ui/input'
 import { Separator } from '@/components/ui/separator'
 import { Spinner } from '@/components/ui/spinner'
 import { Text } from '@/components/ui/text'
+import { useUserStore } from '@/lib/store/useUserStore'
 import { cn } from '@/lib/utils'
-import { useUserStore } from '@/store/useUserStore'
 import { AtSign, User } from 'lucide-react-native'
 import { MotiView } from 'moti'
 import { ComponentProps } from 'react'
@@ -19,7 +19,12 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
   const status = useUserStore((s) => s.status)
   const user = useUserStore((s) => s.user)
   const initializing = !hydrated || status === 'loading'
-  if (initializing) return <SafeAreaView className="flex-1 items-center justify-center"><Spinner /></SafeAreaView>
+  if (initializing)
+    return (
+      <SafeAreaView className="flex-1 items-center justify-center">
+        <Spinner />
+      </SafeAreaView>
+    )
   if (!user) return <SplashPage />
   return <>{children}</>
 }
@@ -72,10 +77,7 @@ const FacebookSignInButton = () => {
     <BaseButton>
       <View className="flex flex-row items-center justify-center gap-2">
         <View className="w-6 h-6">
-          <Svg
-            viewBox="0 0 48.00 48.00"
-            fill="#000000"
-          >
+          <Svg viewBox="0 0 48.00 48.00" fill="#000000">
             <G id="SVGRepo_bgCarrier" stroke-width="0"></G>
             <G
               id="SVGRepo_tracerCarrier"
@@ -90,8 +92,7 @@ const FacebookSignInButton = () => {
                   <Path
                     d="M225.638355,208 L202.649232,208 C201.185673,208 200,206.813592 200,205.350603 L200,162.649211 C200,161.18585 201.185859,160 202.649232,160 L245.350955,160 C246.813955,160 248,161.18585 248,162.649211 L248,205.350603 C248,206.813778 246.813769,208 245.350955,208 L233.119305,208 L233.119305,189.411755 L239.358521,189.411755 L240.292755,182.167586 L233.119305,182.167586 L233.119305,177.542641 C233.119305,175.445287 233.701712,174.01601 236.70929,174.01601 L240.545311,174.014333 L240.545311,167.535091 C239.881886,167.446808 237.604784,167.24957 234.955552,167.24957 C229.424834,167.24957 225.638355,170.625526 225.638355,176.825209 L225.638355,182.167586 L219.383122,182.167586 L219.383122,189.411755 L225.638355,189.411755 L225.638355,208 L225.638355,208 Z"
                     id="Facebook"
-                  >
-                  </Path>
+                  ></Path>
                 </G>
               </G>
             </G>
@@ -105,21 +106,19 @@ const FacebookSignInButton = () => {
 }
 
 export function SplashPage() {
-
-  const { signInAnonymously } = useUserStore();
-  const isDev = process.env.NODE_ENV !== 'production';
+  const { signInAnonymously } = useUserStore()
+  const isDev = process.env.NODE_ENV !== 'production'
 
   const handleAnonSignIn = async () => {
     try {
-      isDev && await signInAnonymously();
+      isDev && (await signInAnonymously())
     } catch (error) {
-      console.error('Anonymous sign in failed:', error);
+      console.error('Anonymous sign in failed:', error)
     }
-  };
+  }
 
   return (
-    <Background
-    >
+    <Background>
       <MotiView
         from={{
           opacity: 0,
@@ -131,13 +130,13 @@ export function SplashPage() {
         }}
         transition={{
           type: 'spring',
-          damping: 20,        // higher = less bounce
-          stiffness: 180,     // lower = softer
+          damping: 20, // higher = less bounce
+          stiffness: 180, // lower = softer
           mass: 0.9,
           overshootClamping: true, // prevent overshoot wobble
         }}
       >
-        <Logo width={256} height={256} fill="#fff" />
+        <Logo width={256} height={256} />
       </MotiView>
       <MotiView
         from={{
@@ -146,20 +145,19 @@ export function SplashPage() {
         }}
         animate={{
           opacity: 1,
-          translateY: 0 ,
+          translateY: 0,
         }}
         transition={{
-          delay: 100, 
-                    type: 'spring',
-          damping: 20,        // higher = less bounce
-          stiffness: 180,     // lower = softer
+          delay: 100,
+          type: 'spring',
+          damping: 20, // higher = less bounce
+          stiffness: 180, // lower = softer
           mass: 0.9,
           overshootClamping: true, // prevent overshoot wobble
         }}
         className="flex flex-col items-center justify-center px-8 gap-4 w-full"
       >
         <View className="w-full px-4 flex flex-row justify-between">
-          
           <Text className="text-white text-2xl">Log in to CardMania</Text>
           <Button size="md">
             <AtSign size={16} className="text-white" />
@@ -167,7 +165,7 @@ export function SplashPage() {
           </Button>
         </View>
         <Input className="flex items-center bg-background-100 px-4" size="xl">
-          <User size={20} onPress={handleAnonSignIn}/>
+          <User size={20} onPress={handleAnonSignIn} />
           <Separator orientation="vertical" className="mx-2 background-black w-[2px]" />
           <InputField className="flex-1" />
         </Input>

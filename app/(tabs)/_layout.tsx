@@ -6,14 +6,14 @@ import { Platform } from 'react-native'
 // Keep your haptics + background
 import { HapticTab } from '@/components/tabs/HapticTab'
 import { Colors } from '@/constants/Colors'
-import { useColorScheme } from '@/hooks/useColorScheme'
+import { useColorScheme } from '@/lib/hooks/useColorScheme'
 
 // ➜ Lucide icons
 // Install if needed:
 //   yarn add lucide-react-native
 //   npx expo install react-native-svg
 import { AppNavHeader } from '@/components/ui/headers'
-import TabBarBackground from '@/components/ui/TabBarBackground'
+import TabBarBackground from '@/components/ui/tabs/TabBarBackground'
 import { AuthGate } from '@/features/splash'
 import { PortalHost } from '@rn-primitives/portal'
 import { Compass, Home, Layers, Scan, Store, User } from 'lucide-react-native'

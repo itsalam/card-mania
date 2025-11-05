@@ -1,7 +1,7 @@
 import { cn } from '@/lib/utils'
 import React, { useEffect } from 'react'
 import { StyleSheet, View } from 'react-native'
-import { Gesture, GestureDetector, TextInput as RNText } from 'react-native-gesture-handler'
+import { Gesture, GestureDetector } from 'react-native-gesture-handler'
 import Animated, {
   SharedValue,
   useAnimatedProps,
@@ -13,7 +13,7 @@ import { Badge } from './badge'
 
 const SLIDER_WIDTH = 200
 
-const AnimatedText = Animated.createAnimatedComponent(RNText)
+const AnimatedBadge = Animated.createAnimatedComponent(Badge)
 
 const Thumb = ({
   minVal,
@@ -60,12 +60,17 @@ const Thumb = ({
     const currentValue = value.value || defaultValue || 0
     const showMax = currentValue === absMax && addPlus
     return {
-      defaultValue: showMax ? `${absMax}+` : `${currentValue}`,
-      text: showMax ? `${absMax}+` : `${currentValue}`,
-      minWidth: withTiming(
-        ((Math.log(currentValue) * Math.LOG10E + 1) | (0 + (showMax ? 1 : 0))) * 8,
-        { duration: 100 }
-      ),
+      label: showMax ? `${absMax}+` : `${currentValue}`,
+      // text: showMax ? `${absMax}+` : `${currentValue}`,
+      labelStyle: {
+        fontSize: 12,
+        color: '#fff',
+        textAlign: 'center',
+        minWidth: withTiming(
+          ((Math.log(currentValue) * Math.LOG10E + 1) | (0 + (showMax ? 1 : 0))) * 8,
+          { duration: 100 }
+        ),
+      },
     }
   })
 
@@ -74,14 +79,7 @@ const Thumb = ({
       <Animated.View style={[styles.sliderHandleContainer, handleStyle]}>
         <Animated.View style={[styles.sliderHandle]} />
         <Animated.View style={styles.sliderHandleTextContainer}>
-          <Badge className="flex items-center">
-            <AnimatedText
-              editable={false}
-              animatedProps={textProps}
-              numberOfLines={1}
-              style={{ fontSize: 12, color: '#fff', textAlign: 'center' }}
-            />
-          </Badge>
+          <AnimatedBadge className="flex items-center" animatedProps={textProps} />
         </Animated.View>
       </Animated.View>
     </GestureDetector>
@@ -103,8 +101,8 @@ export const Slider = ({
   max: SharedValue<number | undefined>
   sliderWidth?: number
 }) => {
-  const sharedAbsMin = useSharedValue<number|undefined>(absMin)
-  const sharedAbsMax = useSharedValue<number|undefined>(absMax)
+  const sharedAbsMin = useSharedValue<number | undefined>(absMin)
+  const sharedAbsMax = useSharedValue<number | undefined>(absMax)
 
   useEffect(() => {
     sharedAbsMin.value = absMin
@@ -128,7 +126,7 @@ export const Slider = ({
     }
   })
   return (
-    <View className={cn("flex flex-row items-end justify-center  h-20",className)}>
+    <View className={cn('flex flex-row items-end justify-center  h-20', className)}>
       <View style={[styles.sliderTrack, { width: sliderWidth }]}>
         <Animated.View style={[styles.sliderFill, sliderFillStyle]} />
         <Thumb

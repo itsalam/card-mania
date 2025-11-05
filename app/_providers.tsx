@@ -2,21 +2,22 @@ import { useFonts } from 'expo-font'
 import * as SplashScreen from 'expo-splash-screen'
 
 import { GluestackUIProvider } from '@/components/ui/gluestack-ui-provider'
-import { useColorScheme } from '@/hooks/useColorScheme'
+import { useColorScheme } from '@/lib/hooks/useColorScheme'
 
 import '@/components/nativewind-svg'
 import '../global.css'
 
 import { OverlayProvider } from '@/features/overlay/provider'
 import { NAV_THEME } from '@/lib/constants'
-import { supabase } from '@/store/client'
-import { StoreProvider } from '@/store/provider'
-import { AuthStatus, useUserStore } from '@/store/useUserStore'
+import { supabase } from '@/lib/store/client'
+import { StoreProvider } from '@/lib/store/provider'
+import { AuthStatus, useUserStore } from '@/lib/store/useUserStore'
 import { DarkTheme, DefaultTheme, Theme, ThemeProvider } from '@react-navigation/native'
 import { Session } from '@supabase/supabase-js'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import React, { useRef } from 'react'
 import { Platform } from 'react-native'
+import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { KeyboardProvider } from 'react-native-keyboard-controller'
 const qc = new QueryClient()
 
@@ -105,11 +106,10 @@ export default function Providers({ children }: { children: React.ReactNode }) {
           <ThemeProvider value={isDarkColorScheme ? DARK_THEME : LIGHT_THEME}>
             <OverlayProvider>
               <StoreProvider>
-                {children}
+                <GestureHandlerRootView>{children}</GestureHandlerRootView>
               </StoreProvider>
             </OverlayProvider>
             {/* <StatusBar style={isDarkColorScheme ? 'light' : 'dark'} /> */}
-
           </ThemeProvider>
         </GluestackUIProvider>
       </KeyboardProvider>

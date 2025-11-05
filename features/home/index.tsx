@@ -1,17 +1,17 @@
 import { FolderTabList, FolderTabsContainer, FolderTabTrigger } from '@/components/tabs/FolderTabs'
 import { Button } from '@/components/ui/button'
 import {
-  DropdownMenu,
-  DropdownMenuCheckboxItem,
-  DropdownMenuContent,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
+    DropdownMenu,
+    DropdownMenuCheckboxItem,
+    DropdownMenuContent,
+    DropdownMenuLabel,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { Tabs, TabsContent } from '@/components/ui/tabs'
+import { Tabs, TabsContent } from '@/components/ui/tabs/tabs'
 import { Text } from '@/components/ui/text'
-import { SearchBar } from '@/features/mainSearchbar'
-import { useColorScheme } from '@/hooks/useColorScheme'
+import { MainSearchBar } from '@/features/mainSearchbar'
+import { useColorScheme } from '@/lib/hooks/useColorScheme'
 import { Compass, LucideIcon, Menu, Newspaper, Sheet } from 'lucide-react-native'
 import React from 'react'
 import { SafeAreaView, View } from 'react-native'
@@ -40,7 +40,7 @@ export default function HomeScreen() {
       className="flex-1 w-full h-full overflow-visible"
       style={{ paddingTop: insets.top }}
     >
-      <SearchBar />
+      <MainSearchBar />
       <Tabs className="flex-1 gap-0" value={currentPage} onValueChange={setCurrentPage}>
         <FolderTabList>
           <View className="flex flex-row items-end justify-start gap-2">

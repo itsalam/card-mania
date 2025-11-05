@@ -1,0 +1,18 @@
+{
+  "group": "lucide",
+  "baseSize": 24,
+  "package": "lucide-static", 
+  "prefix": "", 
+  "icons": [
+    "camera",
+    "search",
+    "plus",
+    "heart",
+    "eye",
+    "eye-off",
+    "search-x"
+  ],
+  "assetDir": "assets/icons/lucide",
+  "outDir": "assets/",
+  "genFile": "assets/rn-ui.generated.ts"
+}

@@ -1,32 +1,20 @@
-import { Stack } from 'expo-router/stack';
-import * as SplashScreen from 'expo-splash-screen';
+import { Stack } from 'expo-router/stack'
+import * as SplashScreen from 'expo-splash-screen'
 
-import "@/components/nativewind-svg";
-import '../global.css';
+import "@/components/icons"
+import '@/components/nativewind-svg'
+import '../global.css'
 
-import { NAV_THEME } from '@/lib/constants';
-import { DarkTheme, DefaultTheme, Theme } from '@react-navigation/native';
-import { PortalHost } from '@rn-primitives/portal';
-import { QueryClient } from '@tanstack/react-query';
-import React from 'react';
-import { Platform } from 'react-native';
-import { configureReanimatedLogger, ReanimatedLogLevel } from 'react-native-reanimated';
-import Providers from './_providers';
-const qc = new QueryClient()
-
-const LIGHT_THEME: Theme = {
-  ...DefaultTheme,
-  colors: NAV_THEME.light,
-}
-const DARK_THEME: Theme = {
-  ...DarkTheme,
-  colors: NAV_THEME.dark,
-}
+import { PortalHost } from '@rn-primitives/portal'
+import React from 'react'
+import { Platform } from 'react-native'
+import { configureReanimatedLogger, ReanimatedLogLevel } from 'react-native-reanimated'
+import Providers from './_providers'
 
 export {
   // Catch any errors thrown by the Layout component.
   ErrorBoundary
-} from 'expo-router';
+} from 'expo-router'
 
 // This is the default configuration
 configureReanimatedLogger({
@@ -38,12 +26,11 @@ configureReanimatedLogger({
 SplashScreen.setOptions({
   duration: 1000,
   fade: true,
-});
+})
 
-SplashScreen.preventAutoHideAsync();
+SplashScreen.preventAutoHideAsync()
 
 export default function RootLayout() {
-
   return (
     <Providers>
       <Stack
@@ -51,20 +38,20 @@ export default function RootLayout() {
           headerShown: false,
           animation: 'fade',
           animationDuration: 150,
-          presentation: 'containedTransparentModal',
+          presentation: 'modal',
         }}
       >
         <Stack.Screen name="(tabs)" options={{ headerShown: false, animation: 'fade' }} />
-        <Stack.Screen name="cards/[card]" options={{
-          presentation: Platform.OS === "android"
-            ? "containedTransparentModal"
-            : "containedTransparentModal",
-          headerShown: false,
-          animation: "fade",
-          contentStyle: { backgroundColor: "transparent" },
-        }} />
+        <Stack.Screen
+          name="cards/[card]"
+          options={{
+            presentation: Platform.OS === 'android' ? 'transparentModal' : 'transparentModal',
+            headerShown: false,
+            animation: 'fade',
+            contentStyle: { backgroundColor: 'transparent' },
+          }}
+        />
         <Stack.Screen name="+not-found" />
-
       </Stack>
 
       <PortalHost />

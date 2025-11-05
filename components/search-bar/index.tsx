@@ -1,7 +1,7 @@
 import { useSuggestionsFixed } from '@/client/price-charting'
 import { Input, InputField } from '@/components/ui/input'
 import { Text } from '@/components/ui/text'
-import { useUserStore } from '@/store/useUserStore'
+import { useUserStore } from '@/lib/store/useUserStore'
 import { BlurView } from 'expo-blur'
 import { Search, SlidersHorizontal } from 'lucide-react-native'
 import React, { useRef, useState } from 'react'

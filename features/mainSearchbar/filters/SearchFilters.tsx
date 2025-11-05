@@ -5,10 +5,10 @@ import React from 'react'
 import { ScrollView, View } from 'react-native'
 import Animated, { useAnimatedStyle, withTiming } from 'react-native-reanimated'
 import { CategoryFilter } from './CategoryFilter'
+import { FilterBadge } from './FilterBadge'
 import PriceFilter from './PriceFilter'
 import { FiltersKeys, useFilters } from './providers'
 import { AttributeFilter } from './SealedFilter'
-import { FilterBadge } from './ToggleBadge'
 const AnimatedView = Animated.createAnimatedComponent(View)
 
 export function SearchFiltersOptions({
@@ -29,11 +29,11 @@ export function SearchFiltersOptions({
     <View className="w-full pb-2">
       <ScrollView keyboardShouldPersistTaps="always">
         <AnimatedView style={scrollViewStyle} className="flex-col gap-2">
-          <Separator orientation='horizontal' />
+          <Separator orientation="horizontal" />
           <CategoryFilter />
-          <Separator orientation='horizontal' />
+          <Separator orientation="horizontal" />
           <PriceFilter min={priceRange.min} max={priceRange.max} absMin={0} absMax={1000} />
-          <Separator orientation='horizontal' />
+          <Separator orientation="horizontal" />
           <AttributeFilter />
         </AnimatedView>
       </ScrollView>
@@ -57,7 +57,7 @@ export function SearchFilters({ focused }: { focused: boolean }) {
                 filterKey={key as FiltersKeys}
                 title={value}
               >
-                <X width={14} height={14} color="white"/>
+                <X width={14} height={14} color="white" />
               </FilterBadge>
             ))}
           </AnimatePresence>

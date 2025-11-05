@@ -1,20 +1,26 @@
-import BookmarkHeart from '@/assets/icons/bookmark_heart.svg'
-import Fluorescent from '@/assets/icons/fluorescent.svg'
-import Folder from '@/assets/icons/folder.svg'
-import PlayingCards from '@/assets/icons/playing_cards.svg'
-import Verified from '@/assets/icons/verified.svg'
-import VerifiedOff from '@/assets/icons/verified_off.svg'
-import WebStore from '@/assets/icons/web_stories.svg'
-import { DollarSign, LucideProps } from 'lucide-react-native'
-import { SvgProps } from 'react-native-svg'
+import { assetsMap as LucideAssets } from "@/assets/icons/rn-ui.generated";
+import { Award, BadgeCheck, Brush, Signature, Star, Tag, Volleyball } from "lucide-react-native";
+import { Assets } from "react-native-ui-lib";
 
-require('@/assets/rn-ui')
+export const TagCategoryToIcon = {
+    "auto-mem": Signature,
+    "design": Brush,
+    "parallels": Star,
+    grading: BadgeCheck,
+    general: Tag,
+    sport: Volleyball,
+    rarity: Award,
+}
 
-export const CardsIcon = (props: SvgProps) => <WebStore {...props} />
-export const SetsIcon = (props: SvgProps) => <PlayingCards {...props} />
-export const CollectionsIcon = (props: SvgProps) => <Folder {...props} />
-export const PriceIcon = (props: LucideProps) => <DollarSign {...props} />
-export const SealedIcon = (props: SvgProps) => <Fluorescent {...props} />
-export const OwnedIcon = (props: SvgProps) => <Verified {...props} />
-export const WishlistedIcon = (props: SvgProps) => <BookmarkHeart {...props} />
-export const UnownedIcon = (props: SvgProps) => <VerifiedOff {...props} />
+Assets.loadAssetsGroup("icons", {
+    BookmarkHeart: require("@/assets/icons/bookmark_heart.png"),
+    Fluorescent: require("@/assets/icons/fluorescent.png"),
+    Folder: require("@/assets/icons/folder.png"),
+    PlayingCards: require("@/assets/icons/playing_cards.png"),
+    Verified: require("@/assets/icons/verified.png"),
+    VerifiedOff: require("@/assets/icons/verified_off.png"),
+    WebStore: require("@/assets/icons/web_stories.png"),
+});
+
+Assets.loadAssetsGroup("lucide", LucideAssets);
+

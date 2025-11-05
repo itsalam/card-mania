@@ -3,8 +3,8 @@ import { useIsWishlisted } from '@/client/card/wishlist'
 import { ExpandableCard } from '@/components/content-card'
 import { LiquidGlassCard } from '@/components/tcg-card/GlassCard'
 import { ListCard } from '@/components/tcg-card/views/ListCard'
-import { useRecentViews } from '@/store/functions/hooks'
-import { Database } from '@/store/supabase'
+import { useRecentViews } from '@/lib/store/functions/hooks'
+import { Database } from '@/lib/store/supabase'
 import React, { ComponentProps } from 'react'
 
 const ITEM_WIDTH = 96
@@ -36,11 +36,6 @@ export function RecentlyViewed() {
   const { data: wishlistedIds, error } = useIsWishlisted(
     'card',
     recentViews?.map((item) => item.item_id) || []
-  )
-
-  console.log(
-    'recentViews',
-    recentViews?.map((v) => v.item_id)
   )
 
   return (

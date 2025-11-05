@@ -4,6 +4,19 @@ import { Candidate, CardImageFields } from "@types";
 import { crypto } from "https://deno.land/std@0.224.0/crypto/mod.ts";
 import { Database } from "./supabase.d.ts";
 
+export async function requireUser(userClient: SupabaseClient<Database>) {
+  const { data: { user }, error } = await userClient.auth.getUser();
+  if (error || !user) {
+    throw new Response(
+      JSON.stringify({ error: "Unauthorized: User not recognized" }),
+      {
+        status: 401,
+      },
+    );
+  }
+  return user;
+}
+
 export const fetchGlobalVars = () => {
   const ttlSec = Number(Deno.env.get("CACHE_TTL_SECONDS") ?? "21600"); // 6h
   const supa = Deno.env.get("SUPABASE_URL")!;

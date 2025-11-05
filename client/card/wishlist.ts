@@ -1,6 +1,6 @@
 import { TCard } from "@/constants/types";
-import { supabase } from "@/store/client";
-import { Database } from "@/store/supabase";
+import { supabase } from "@/lib/store/client";
+import { Database } from "@/lib/store/supabase";
 import {
     InfiniteData,
     QueryClient,

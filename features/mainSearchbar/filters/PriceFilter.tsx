@@ -1,18 +1,19 @@
 import { Button } from '@/components/ui/button'
-import { InputField } from '@/components/ui/input'
+
 import Slider from '@/components/ui/slider'
 import { Text } from '@/components/ui/text'
 import React, { useEffect, useMemo, useState } from 'react'
 import { View } from 'react-native'
+import { TextInput as BaseTextInput } from 'react-native-gesture-handler'
 import Animated, {
-    runOnJS,
-    useAnimatedProps,
-    useAnimatedReaction,
-    useSharedValue,
+  runOnJS,
+  useAnimatedProps,
+  useAnimatedReaction,
+  useSharedValue,
 } from 'react-native-reanimated'
 import { useFilters } from './providers'
 
-const TextInput = Animated.createAnimatedComponent(InputField)
+const TextInput = Animated.createAnimatedComponent(BaseTextInput)
 
 function PriceFilter({ absMin, absMax }: { absMin: number; absMax: number }) {
   const { priceRange, setPriceRange, toggleDisplayFilter } = useFilters()
@@ -21,10 +22,9 @@ function PriceFilter({ absMin, absMax }: { absMin: number; absMax: number }) {
   const minValShared = useSharedValue(min)
   const maxValShared = useSharedValue(max)
 
-
   const debouncedSetPriceRange = useMemo(() => {
     let t: ReturnType<typeof setTimeout> | null = null
-    return (min: number, max: number, delay = 50) => {
+    return (min = absMin, max = absMax, delay = 50) => {
       if (t) clearTimeout(t)
       t = setTimeout(() => {
         setPriceRange(min, max)
