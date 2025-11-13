@@ -17,7 +17,7 @@ import Animated, {
   FadeOutRight,
   useAnimatedStyle,
   useSharedValue,
-  withTiming
+  withTiming,
 } from 'react-native-reanimated'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Colors, Typography } from 'react-native-ui-lib'
@@ -46,7 +46,7 @@ export const Footer = ({ card }: { card?: TCard }) => {
   const prevPage = useRef<number>(page)
 
   useEffect(() => {
-      prevPage.current = page
+    prevPage.current = page
   }, [page])
 
   return (
@@ -89,9 +89,7 @@ export const Footer = ({ card }: { card?: TCard }) => {
             </Animated.View>
           )}
           {footerFullView && page !== undefined && (
-            <View
-              className="w-full flex flex-row gap-2 p-4"
-            >
+            <View className="w-full flex flex-row gap-2 p-4">
               <AButton
                 variant="ghost"
                 size="icon"
@@ -107,20 +105,25 @@ export const Footer = ({ card }: { card?: TCard }) => {
                 key={`footer-back-button-${page}`}
                 entering={FadeIn}
                 exiting={FadeOut}
-                
               >
-                {page>0 ? <ChevronLeft />: <X />}
+                {page > 0 ? <ChevronLeft /> : <X />}
               </AButton>
               <Animated.View
-                            key={`footer-header-${page}`}
-              entering={
-                page === undefined ? FadeIn : 
-                (page > (prevPage.current ?? -Infinity)) ? FadeInRight.delay(75) : FadeInLeft.delay(75)
-              }
-              exiting={
-                page === undefined ? FadeOut : 
-                (page > (prevPage.current ?? -Infinity)) ? FadeOutLeft : FadeOutRight
-              }
+                key={`footer-header-${page}`}
+                entering={
+                  page === undefined
+                    ? FadeIn
+                    : page > (prevPage.current ?? -Infinity)
+                    ? FadeInRight.delay(75)
+                    : FadeInLeft.delay(75)
+                }
+                exiting={
+                  page === undefined
+                    ? FadeOut
+                    : page > (prevPage.current ?? -Infinity)
+                    ? FadeOutLeft
+                    : FadeOutRight
+                }
                 style={{
                   flex: 1,
                   flexDirection: 'row',
@@ -180,7 +183,6 @@ const FooterDetails = ({ card }: { card?: TCard }) => {
         },
         animatedStyle,
       ]}
-      className="px-4 pt-2"
     >
       <Swapper
         style={{

@@ -1369,6 +1369,15 @@ export type Database = {
       }
     }
     Views: {
+      collection_item_variant_usage: {
+        Row: {
+          card_id: string | null
+          total_quantity: number | null
+          usage_count: number | null
+          variant_lc: string | null
+        }
+        Relationships: []
+      }
       collections_with_tags: {
         Row: {
           cover_image_url: string | null
@@ -1552,6 +1561,15 @@ export type Database = {
         }[]
       }
       is_demo_user: { Args: never; Returns: boolean }
+      most_used_variants: {
+        Args: { p_card_id: string; p_limit?: number; p_query?: string }
+        Returns: {
+          total_quantity: number
+          usage_count: number
+          variant_id: string
+          variant_name: string
+        }[]
+      }
       publish_snapshot: {
         Args: {
           p_collection_id: string

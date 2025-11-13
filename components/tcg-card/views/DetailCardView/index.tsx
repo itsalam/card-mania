@@ -123,7 +123,7 @@ export default function FocusCardView({
               size="sm"
               onPress={() => setShowMoreGrades(!showMoreGrades)}
             >
-              <Plus size={32} />
+              <Plus size={28} />
             </LiquidGlassCard>
           )}
         </View>
@@ -132,7 +132,13 @@ export default function FocusCardView({
   )
 
   return (
-    <CardDetailsProvider card={cardData} footerPages={[{title: "Add to Collection", page: AddToCollectionsView}, {title: "Create Collection", page: CreateCollectionView}]} >
+    <CardDetailsProvider
+      card={cardData}
+      footerPages={[
+        { title: 'Add to Collection', page: AddToCollectionsView },
+        { title: 'Create Collection', page: CreateCollectionView },
+      ]}
+    >
       <Animated.View style={cardStyle}>
         <Image
           style={{ width: '100%', aspectRatio: 5 / 7 }}

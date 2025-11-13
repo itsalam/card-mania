@@ -87,15 +87,16 @@ type Opts = {
   distinct?: boolean
   /** throttle logs (ms). 0 = no throttle */
   throttleMs?: number
+  enable?: boolean
 }
 
 export function useSharedValueLogger<T>(label: string, shared: { value: T }, opts: Opts = {}) {
-  const { distinct = true, throttleMs = 0 } = opts
+  const { distinct = true, throttleMs = 0, enable = true } = opts
 
   // helper defined outside worklet
   const log = (msg: string, curr: T, prev: T | null) => {
     // Metro console
-    console.log(msg, curr, '(prev:', prev, ')')
+    enable && console.log(msg, curr, '(prev:', prev, ')')
   }
 
   useAnimatedReaction(

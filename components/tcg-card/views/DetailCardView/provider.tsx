@@ -7,11 +7,11 @@ import { createStore, StoreApi, useStore } from 'zustand'
 
 export type CardDetailsStore = {
   card: TCard | null
-  footerPages: Array<{title: string, page: () => React.ReactNode}>
+  footerPages: Array<{ title: string; page: () => React.ReactNode }>
   currentPage?: number
   setPage: (pageIdx: number) => void
   setCard: (card: TCard | null) => void
-  setFooterPages: (pages: Array<{title: string, page: () => React.ReactNode}>) => void
+  setFooterPages: (pages: Array<{ title: string; page: () => React.ReactNode }>) => void
   footerFullView: boolean
   setFooterFullView: (value: boolean) => void
 }
@@ -22,7 +22,7 @@ export const createCardDetailsStore = ({
   currentPage = 0,
 }: {
   card?: TCard | null
-  footerPages?: Array<{title: string, page: () => React.ReactNode}>
+  footerPages?: Array<{ title: string; page: () => React.ReactNode }>
   currentPage?: number
 }) =>
   createStore<CardDetailsStore>((set, get) => ({
@@ -49,7 +49,7 @@ export const CardDetailsProvider = ({
 }: {
   card?: TCard | null
   children: React.ReactNode
-  footerPages: Array<{title: string, page: () => React.ReactNode}>
+  footerPages: Array<{ title: string; page: () => React.ReactNode }>
 }) => {
   // create one store instance for this provider
   const storeRef = useRef<StoreApi<CardDetailsStore> | null>(null)
@@ -165,7 +165,7 @@ export function createNewCollectionsStore() {
         return true
       } else {
         set({ isValid })
-        return false;
+        return false
       }
     },
     applyRequestedTagCategories: (map) => {
@@ -200,7 +200,7 @@ export function CreateNewCollectionsProvider({ children }: { children: React.Rea
   // derive category info for requested tags, then apply into the store
   const requested = useStore(storeRef.current, (s) => s.requestedTags)
   const namesNeedingLookup = useMemo(
-    () => requested.filter((t) => !t.id).map((t) => String(t.name ?? '')),
+    () => requested.filter((t) => !t.id && !t.name).map((t) => String(t.name!)),
     [requested]
   )
 

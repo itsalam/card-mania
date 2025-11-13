@@ -28,7 +28,7 @@ function SelectValue({
     <SelectPrimitive.Value
       ref={ref}
       className={cn(
-        'text-foreground line-clamp-1 flex flex-row items-center gap-2 text-lg',
+        'text-foreground line-clamp-1 flex flex-row items-center gap-2 text-sm',
         !value && 'text-muted-foreground',
         className
       )}
@@ -37,66 +37,35 @@ function SelectValue({
   );
 }
 
-type SelectTriggerProps = SelectPrimitive.TriggerProps & {
-  children?: React.ReactNode
-  size?: 'default' | 'sm'
-  onTouchStart?: React.TouchEventHandler<any>
+function SelectTrigger({
+  ref,
+  className,
+  children,
+  size = 'default',
+  ...props
+}: SelectPrimitive.TriggerProps &
+  React.RefAttributes<SelectPrimitive.TriggerRef> & {
+    children?: React.ReactNode;
+    size?: 'default' | 'sm';
+  }) {
+  return (
+    <SelectPrimitive.Trigger
+      ref={ref}
+      className={cn(
+        'border-input dark:bg-input/30 dark:active:bg-input/50 bg-background flex h-10 flex-row items-center justify-between gap-2 rounded-md border px-3 py-2 shadow-sm shadow-black/5 sm:h-9',
+        Platform.select({
+          web: 'focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive dark:hover:bg-input/50 w-fit whitespace-nowrap text-sm outline-none transition-[color,box-shadow] focus-visible:ring-[3px] disabled:cursor-not-allowed [&_svg]:pointer-events-none [&_svg]:shrink-0',
+        }),
+        props.disabled && 'opacity-50',
+        size === 'sm' && 'h-8 py-2 sm:py-1.5',
+        className
+      )}
+      {...props}>
+      <>{children}</>
+      <Icon as={ChevronDown} aria-hidden={true} className="text-muted-foreground size-4" />
+    </SelectPrimitive.Trigger>
+  );
 }
-
-function mergeRefs<T>(
-  ...refs: Array<React.Ref<T> | undefined>
-) {
-  return (node: T) => {
-    for (const ref of refs) {
-      if (!ref) continue
-      if (typeof ref === 'function') {
-        ref(node)
-      } else {
-        ref.current = node
-      }
-    }
-  }
-}
-
-const SelectTrigger = React.forwardRef<SelectPrimitive.TriggerRef, SelectTriggerProps>(
-  ({ className, children, size = 'default', onTouchStart, ...props }, forwardedRef) => {
-
-    const innerRef = React.useRef<SelectPrimitive.TriggerRef>(null)
-
-    const handleTouchStart = React.useCallback(
-      (e: any) => {
-        console.log('o')
-        onTouchStart?.(e)
-        // call imperative method if the Trigger exposes it
-        innerRef.current?.open?.()
-      },
-      [onTouchStart]
-    )
-
-
-    return (
-      <SelectPrimitive.Trigger
-        ref={mergeRefs(innerRef, forwardedRef)}
-        onTouchStart={handleTouchStart}
-        className={cn(
-          'border-input dark:bg-input/30 dark:active:bg-input/50 bg-background flex h-14 flex-row items-center justify-between gap-2 rounded-lg border px-3 py-2 shadow-sm shadow-black/5 sm:h-12 text-lg',
-          Platform.select({
-            web: 'focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive dark:hover:bg-input/50 w-fit whitespace-nowrap outline-none transition-[color,box-shadow] focus-visible:ring-[3px] disabled:cursor-not-allowed [&_svg]:pointer-events-none [&_svg]:shrink-0',
-          }),
-          props.disabled && 'opacity-50',
-          size === 'sm' && 'h-8 py-2 sm:py-1.5',
-          className
-        )}
-        {...props}
-      >
-        {children}
-        <Icon as={ChevronDown} aria-hidden className="text-muted-foreground size-4" />
-      </SelectPrimitive.Trigger>
-    )
-  }
-)
-
-SelectTrigger.displayName = 'SelectTrigger'
 
 const FullWindowOverlay = Platform.OS === 'ios' ? RNFullWindowOverlay : React.Fragment;
 
@@ -119,7 +88,7 @@ function SelectContent({
             <NativeOnlyAnimatedView className="z-50" entering={FadeIn} exiting={FadeOut}>
               <SelectPrimitive.Content
                 className={cn(
-                  'bg-popover border-border relative z-50 min-w-[8rem] rounded-lg border shadow-md shadow-black/5 overflow-hidden',
+                  'bg-popover border-border relative z-50 min-w-[8rem] rounded-md border shadow-md shadow-black/5',
                   Platform.select({
                     web: cn(
                       'animate-in fade-in-0 zoom-in-95 origin-(--radix-select-content-transform-origin) max-h-52 overflow-y-auto overflow-x-hidden',
@@ -151,10 +120,7 @@ function SelectContent({
                         })
                       )
                   )}>
-                    <ScrollView>
-                      
                   {children}
-                    </ScrollView>
                 </SelectPrimitive.Viewport>
                 <SelectScrollDownButton />
               </SelectPrimitive.Content>
@@ -186,7 +152,7 @@ function SelectItem({
   return (
     <SelectPrimitive.Item
       className={cn(
-        'active:bg-accent group relative flex w-full flex-row items-center gap-2 rounded-md py-3 pl-2 pr-8 sm:py-1.5',
+        'active:bg-accent group relative flex w-full flex-row items-center gap-2 rounded-sm py-2 pl-2 pr-8 sm:py-1.5',
         Platform.select({
           web: 'focus:bg-accent focus:text-accent-foreground *:[span]:last:flex *:[span]:last:items-center *:[span]:last:gap-2 cursor-default outline-none data-[disabled]:pointer-events-none [&_svg]:pointer-events-none',
         }),
@@ -199,7 +165,7 @@ function SelectItem({
           <Icon as={Check} className="text-muted-foreground size-4 shrink-0" />
         </SelectPrimitive.ItemIndicator>
       </View>
-      <SelectPrimitive.ItemText className="text-foreground group-active:text-accent-foreground select-none text-lg" />
+      <SelectPrimitive.ItemText className="text-foreground group-active:text-accent-foreground select-none text-sm" />
     </SelectPrimitive.Item>
   );
 }
@@ -283,6 +249,5 @@ export {
   SelectSeparator,
   SelectTrigger,
   SelectValue,
-  type Option
+  type Option,
 };
-

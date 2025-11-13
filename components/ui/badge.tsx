@@ -1,5 +1,5 @@
 import * as Haptics from 'expo-haptics'
-import { ComponentProps, ComponentPropsWithoutRef, forwardRef } from 'react'
+import { ComponentProps, ComponentPropsWithoutRef } from 'react'
 import { View } from 'react-native'
 import { Gesture, GestureDetector } from 'react-native-gesture-handler'
 import Animated, {
@@ -15,7 +15,7 @@ const AnimatedView = Animated.createAnimatedComponent(View)
 export const BADGE_HEIGHT = 36
 export const ICON_SIZE = 28
 
-const BaseBadgeProps: Partial<ComponentProps<typeof Chip>> = {
+export const BaseBadgeProps: Partial<ComponentProps<typeof Chip>> = {
   iconStyle: {
     width: ICON_SIZE,
     height: ICON_SIZE,
@@ -89,22 +89,23 @@ export function Badge({ ...props }: ComponentProps<typeof Chip>) {
   return <Chip {...BaseBadgeProps} {...props} />
 }
 
-export const BadgeInput = forwardRef(
-  ({ defaultChipProps, ...props }: ComponentPropsWithoutRef<typeof ChipsInput>, ref) => {
-    // Deep merge BaseBadgeProps and defaultChipProps
-    const mergedChipProps = {
-      ...BaseBadgeProps,
-      ...defaultChipProps,
-      iconStyle: [BaseBadgeProps.iconStyle, defaultChipProps?.iconStyle || {}],
-      containerStyle: [
-        BaseBadgeProps.containerStyle,
-        defaultChipProps?.containerStyle || {},
-        {
-          marginTop: 0,
-        },
-      ],
-      labelStyle: [BaseBadgeProps.labelStyle, defaultChipProps?.labelStyle || {}],
-    }
-    return <ChipsInput ref={ref} {...props} defaultChipProps={mergedChipProps} />
+export const BadgeInput = ({
+  defaultChipProps,
+  ...props
+}: ComponentPropsWithoutRef<typeof ChipsInput>) => {
+  // Deep merge BaseBadgeProps and defaultChipProps
+  const mergedChipProps = {
+    ...BaseBadgeProps,
+    ...defaultChipProps,
+    iconStyle: [BaseBadgeProps.iconStyle, defaultChipProps?.iconStyle || {}],
+    containerStyle: [
+      BaseBadgeProps.containerStyle,
+      defaultChipProps?.containerStyle || {},
+      {
+        marginTop: 0,
+      },
+    ],
+    labelStyle: [BaseBadgeProps.labelStyle, defaultChipProps?.labelStyle || {}],
   }
-)
+  return <ChipsInput {...props} defaultChipProps={mergedChipProps} />
+}

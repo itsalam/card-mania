@@ -210,7 +210,7 @@ export default function DraggableThumbContent({
 
   return (
     <Animated.View
-      style={[style, thumbStyles.sheet, cardStyle, { width: W + 4 }]}
+      style={[style, thumbStyles.sheet, cardStyle, { width: W + 4, position: 'absolute' }]}
       className="flex flex-col items-center"
       ref={fullContentRef}
     >
@@ -236,7 +236,7 @@ export default function DraggableThumbContent({
 const THUMB_SIZE = 5
 const THUMB_PADDING = 8
 
-const thumbStyles = StyleSheet.create({
+export const thumbStyles = StyleSheet.create({
   thumbContainer: {
     width: '100%',
     justifyContent: 'center',
@@ -258,7 +258,6 @@ const thumbStyles = StyleSheet.create({
     height: '100%',
   },
   sheet: {
-    position: 'absolute',
     left: -2,
     right: 0,
     borderTopLeftRadius: 24,
@@ -267,6 +266,7 @@ const thumbStyles = StyleSheet.create({
     backgroundColor: Colors.rgba(Colors.$backgroundNeutral, 0.9),
     borderWidth: 2,
   },
+
   sheetInner: {
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,

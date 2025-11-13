@@ -1,11 +1,14 @@
 import { CompanyWithGrades, useGradingConditions } from '@/client/card/grading'
-import { useViewCollectionItemsForCard, useViewCollectionsForCard } from '@/client/collections/main'
+import { suggestedVariantsOptions, Variant } from '@/client/collections/items'
+import { useEditCollecitonItem } from '@/client/collections/mutate'
+import { useViewCollectionItemsForCard } from '@/client/collections/query'
 import { usePopulateTagCategory } from '@/client/collections/tags'
 import { CollectionLike } from '@/client/collections/types'
 import { Button } from '@/components/ui/button'
+import { MultiChipInput } from '@/components/ui/multi-select-input/multi-select-input'
 import { NumberTicker } from '@/components/ui/number-ticker'
-import { SearchBar } from '@/components/ui/search'
 import {
+  NativeSelectScrollView,
   Select,
   SelectContent,
   SelectGroup,
@@ -16,10 +19,11 @@ import {
 import { Text } from '@/components/ui/text'
 import { CollectionItemRow } from '@/lib/store/functions/types'
 import { Label } from '@rn-primitives/select'
+import { useQueryClient } from '@tanstack/react-query'
 import { Image } from 'expo-image'
-import { FolderHeart, Heart, LucideIcon, PanelBottomClose, Plus } from 'lucide-react-native'
-import React, { useEffect, useState } from 'react'
-import { Platform, ScrollView, View } from 'react-native'
+import { FolderHeart, Heart, LucideIcon, Plus, Tag } from 'lucide-react-native'
+import React, { useCallback, useEffect, useState } from 'react'
+import { Platform, View } from 'react-native'
 import Animated from 'react-native-reanimated'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import {
@@ -29,11 +33,43 @@ import {
   Timeline,
   TouchableOpacity,
 } from 'react-native-ui-lib'
-import { useCardDetails } from '../provider'
-import { FooterButton } from './components/button'
+import { useCardDetails } from '../../provider'
 // import { Label } from '@react-navigation/elements'
 
-const CollectionCardEntries = ({ collection }: { collection: CollectionLike }) => {
+export const VariantsSelect = () => {
+  const qc = useQueryClient()
+  const { card, setPage, setFooterFullView } = useCardDetails()
+  const [query, setQuery] = useState<string>()
+
+  const fetchSuggestions = useCallback(
+    (q?: string) => {
+      const search = (q ?? '').trim()
+      if (!card?.id) return Promise.resolve([])
+      return qc
+        .fetchQuery(suggestedVariantsOptions({ cardId: card?.id, search }))
+        .then((allTags) => {
+          return allTags
+        })
+    },
+    [qc]
+  )
+
+  return (
+    <View style={{ flex: 1 }}>
+      <MultiChipInput<Partial<Variant> & Pick<Variant, 'id' | 'name'>>
+        leadingAccessory={
+          <Tag size={24} color={Colors.$textNeutralLight} style={{ marginTop: 18 }} />
+        }
+        placeholder={'Variants'}
+        floatingPlaceholder
+        fetchSuggestions={fetchSuggestions}
+        extractCat={() => 'general'}
+      />
+    </View>
+  )
+}
+
+export const CollectionCardEntries = ({ collection }: { collection: CollectionLike }) => {
   //TODO: fetch collection entries for this collection and card
   const { card } = useCardDetails()
 
@@ -148,7 +184,7 @@ const CollectionCardEntries = ({ collection }: { collection: CollectionLike }) =
   )
 }
 
-const CollectionEntry = ({
+export const CollectionEntry = ({
   collection,
   collectionItem,
   onUpdate,
@@ -178,6 +214,11 @@ const CollectionEntry = ({
     gradeData?.[0]
   )
   const [enabledEntry, setEnabledEntry] = useState<boolean>(!!collectionItem?.ref_id)
+  const mutate = useEditCollecitonItem(
+    collectionItem?.collection_id || collection.id!,
+    card?.id!,
+    collectionItem?.id
+  )
 
   useEffect(() => {
     if (index === 0) {
@@ -202,12 +243,23 @@ const CollectionEntry = ({
   }, [enabledEntry, index])
 
   useEffect(() => {
-    onUpdate?.({
-      grade_condition_id: selectedGradeCompany?.slug || null,
-      grading_company: selectedGrade?.id || null,
-      condition: selectedCondition,
-      quantity: selectedQuantity,
-    })
+    if (selectedGradeCompany && selectedGrade) {
+      onUpdate?.({
+        collection_id: collection.id,
+        grade_condition_id: selectedGradeCompany?.slug || null,
+        grading_company: selectedGrade?.id || null,
+        condition: selectedCondition,
+        quantity: selectedQuantity,
+      })
+      mutate.mutate({
+        collection_id: collection.id!,
+        grade_condition_id: selectedGradeCompany?.slug || null,
+        grading_company: selectedGrade?.id || null,
+        ref_id: card?.id!,
+        condition: selectedCondition,
+        quantity: selectedQuantity,
+      })
+    }
   }, [selectedGradeCompany, selectedGrade, selectedCondition, selectedQuantity])
 
   return (
@@ -255,50 +307,25 @@ const CollectionEntry = ({
             <SelectTrigger>
               <SelectValue placeholder="Grade Condition" />
             </SelectTrigger>
-            <SelectContent insets={contentInsets} className="max-h-60">
-              <SelectGroup>
-                {selectedGradeCompany?.grades.map((grade, index) => (
-                  <SelectItem
-                    key={grade.grade_value}
-                    label={`${grade.grade_value} ${grade.label}`}
-                    value={String(index)}
-                  >
-                    {`${grade.grade_value} ${grade.label}`}
-                  </SelectItem>
-                ))}
-              </SelectGroup>
+            <SelectContent insets={contentInsets}>
+              <NativeSelectScrollView>
+                <SelectGroup>
+                  {selectedGradeCompany?.grades.map((grade, index) => (
+                    <SelectItem
+                      key={grade.grade_value}
+                      label={`${grade.grade_value} ${grade.label}`}
+                      value={String(index)}
+                    >
+                      {`${grade.grade_value} ${grade.label}`}
+                    </SelectItem>
+                  ))}
+                </SelectGroup>
+              </NativeSelectScrollView>
             </SelectContent>
           </Select>
         </View>
         <View className="flex flex-row gap-4">
-          <Select
-            onValueChange={(option) => {
-              setSelectedGradeCompany(gradeData?.find((company) => company.id === option?.value))
-              setSelectedGrade(undefined)
-            }}
-            style={{
-              flex: 0.8,
-              width: '100%',
-            }}
-          >
-            <Label>Variant</Label>
-            <SelectTrigger>
-              <SelectValue placeholder="Grading Type" />
-            </SelectTrigger>
-            <SelectContent insets={contentInsets}>
-              <SelectGroup>
-                {gradeData?.map((gradingCompany) => (
-                  <SelectItem
-                    key={gradingCompany.id}
-                    label={gradingCompany.slug.toLocaleUpperCase()}
-                    value={gradingCompany.id}
-                  >
-                    {gradingCompany.slug}
-                  </SelectItem>
-                ))}
-              </SelectGroup>
-            </SelectContent>
-          </Select>
+          <VariantsSelect />
         </View>
       </View>
       <NumberTicker
@@ -331,7 +358,7 @@ const CollectionsAvatar = ({
   )
 }
 
-const CollectionListItem = ({ collection }: { collection: CollectionLike }) => {
+export const CollectionListItem = ({ collection }: { collection: CollectionLike }) => {
   const { get: getTagCategory } = usePopulateTagCategory(collection.tags_cache)
   const { card } = useCardDetails()
   const [expanded, setExpanded] = useState(false)
@@ -360,67 +387,5 @@ const CollectionListItem = ({ collection }: { collection: CollectionLike }) => {
     >
       <CollectionCardEntries collection={collection} />
     </ExpandableSection>
-  )
-}
-
-export const AddToCollectionsView = () => {
-  const { card, setPage, setFooterFullView } = useCardDetails()
-  const [query, setQuery] = useState<string>()
-  const { data: collection } = useViewCollectionsForCard(card?.id, query)
-
-  return (
-    <>
-      <SearchBar onChangeText={setQuery} />
-      <View className="w-full grow pt-8">
-        <ScrollView>
-          {!!collection?.included.length && (
-            <>
-              <Text>Saved In</Text>
-              <View className="py-2 flex flex-col gap-4">
-                {collection?.included.map((c) => (
-                  <CollectionListItem key={c.id} collection={c} />
-                ))}
-              </View>
-            </>
-          )}
-          {!!collection?.excluded && (
-            <>
-              <Text className="pt-4">Other Collections</Text>
-              <View className="py-2 flex flex-col gap-4">
-                {collection?.excluded.length ? (
-                  collection?.excluded.map((c) => <CollectionListItem key={c.id} collection={c} />)
-                ) : (
-                  <View className="pt-4 flex items-center justify-center">
-                    <Text className="text-sm text-muted-foreground italic">
-                      No other collections
-                    </Text>
-                  </View>
-                )}
-              </View>
-            </>
-          )}
-        </ScrollView>
-      </View>
-      <View className="w-full flex flex-row pt-4 gap-4">
-        <FooterButton
-          highLighted
-          style={{ flexGrow: 1, flex: 1, width: '100%' }}
-          onPress={() => setPage(1)}
-          label="Create new Collection"
-          iconSource={(style) => <Plus style={style} color={Colors.$iconDefaultLight} />}
-        />
-        <FooterButton
-          style={{
-            flexShrink: 1,
-            backgroundColor: Colors.$backgroundPrimaryMedium,
-          }}
-          onPress={() => setFooterFullView(false)}
-          label="Done"
-          iconSource={(style) => (
-            <PanelBottomClose color={Colors.$iconDefaultLight} style={style} />
-          )}
-        />
-      </View>
-    </>
   )
 }

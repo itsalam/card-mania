@@ -1,15 +1,24 @@
 import { CollectionsPreviewIcon } from '@/features/collection/components/PreviewIcon'
 
 import { useEditCollection } from '@/client/collections/mutate'
-import { ArrowLeft, NotebookText, PanelBottomClose, Tag } from 'lucide-react-native'
+import { ArrowLeft, NotebookText, PanelBottomClose } from 'lucide-react-native'
 import { Dimensions, ScrollView, View } from 'react-native'
 import { Colors } from 'react-native-ui-lib'
-import { CreateNewCollectionsProvider, useCardDetails, useCreateNewCollections } from '../provider'
-import { FooterButton } from './components/button'
-import { CreateCollectionInput, FPStyle } from './components/input'
-import { FooterStyles as styles } from './components/styles'
-import { CreateCollectionChipInput } from './components/tags-input'
-import { VisibilitySelector } from './components/visibility-selector'
+
+import {
+  CreateNewCollectionsProvider,
+  useCardDetails,
+  useCreateNewCollections,
+} from '@/components/tcg-card/views/DetailCardView/provider'
+import { Input } from '@/components/ui/input/base-input'
+import { useInputColors } from '@/components/ui/input/provider'
+import Animated from 'react-native-reanimated'
+import { thumbStyles } from '../../ui'
+import { FooterButton } from '../components/button'
+import { FooterStyles as styles } from '../components/styles'
+import { CreateCollectionInput } from './input'
+import { CreateCollectionChipInput } from './tags-input'
+import { VisibilitySelector } from './visibility-selector'
 
 const { width } = Dimensions.get('window')
 
@@ -19,18 +28,28 @@ const CollectionsNameInput = () => {
 
   return (
     <CreateCollectionInput
-      placeholder={'Add a Name...'}
+      placeholder={'Name'}
       style={[styles.titleInputBody]}
+      containerStyle={{
+        backgroundColor: Colors.rgba(Colors.$backgroundElevated, 0.4),
+      }}
       value={collectionName}
       onChangeText={setCollectionName}
-      validateOnChange
       validateOnBlur
       validate={['required', (value) => (value ? value.length > 3 : true)]}
       validationMessage={['Name is required', 'Name must be at least 4 characters']}
-      containerStyle={{ flex: 1 }}
       showClearButton
+      floatingPlaceholder
     />
   )
+}
+
+const AnimNotebookText = Animated.createAnimatedComponent(NotebookText)
+
+const ANotebookText = () => {
+  const { color } = useInputColors()
+  //@ts-ignore
+  return <AnimNotebookText size={28} color={color} />
 }
 
 const CollectionsDescriptionInput = () => {
@@ -38,23 +57,32 @@ const CollectionsDescriptionInput = () => {
   const setDescription = useCreateNewCollections((s) => s.setDescription)
   return (
     <CreateCollectionInput
-      multiline
+      containerStyle={{
+        backgroundColor: Colors.rgba(Colors.$backgroundElevated, 0.4),
+      }}
       placeholder={'Description'}
       value={description}
       onChangeText={setDescription}
-      style={[styles.attributeInputBody]}
-      floatingPlaceholderStyle={(hasInput) =>
-        ({
-          ...styles.attributeInputBody,
-          ...(hasInput ? styles.attributeFloatingPlaceholderStyle : {}),
-        } as FPStyle)
-      }
       floatingPlaceholder
       showCharCounter
       showClearButton
-      containerStyle={{ flex: 1 }}
+      multiline
+      leadingAccessory={<ANotebookText />}
       maxLength={120}
-    />
+    >
+      {(props, ref) => (
+        <View
+          style={{
+            flexDirection: 'row',
+            gap: 8,
+            alignItems: 'center',
+            marginRight: 12,
+          }}
+        >
+          <Input {...props} ref={ref} />
+        </View>
+      )}
+    </CreateCollectionInput>
   )
 }
 
@@ -95,33 +123,57 @@ const SubmitCollectionButton = () => {
 export const CreateCollectionView = () => {
   const { card, setPage, setFooterFullView } = useCardDetails()
 
+  const W = Dimensions.get('window').width
+
   return (
     <CreateNewCollectionsProvider>
       <ScrollView
         style={{
           flex: 1,
         }}
-        contentContainerClassName="w-full flex flex-col gap-2 grow overflow-hidden"
+        contentContainerClassName="flex flex-col gap-2 px-2"
       >
-        <View className="flex grow items-center justify-center mt-12 pb-4">
+        <View className="flex items-center justify-center mt-12 pb-4 flex-1">
           <CollectionsPreviewIcon width={width * 0.33} />
         </View>
-        <View style={[styles.formContainer, { paddingTop: 16 }]}>
+        <View style={[styles.formContainer, { paddingVertical: 8 }]}>
           <CollectionsNameInput />
         </View>
-        <View style={[styles.formContainer, { paddingVertical: 12, paddingBottom: 20 }]}>
-          <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
-            <NotebookText size={24} color={Colors.$textNeutralLight} />
+        <View style={[styles.formContainer, { paddingRight: 0, gap: 8, paddingBottom: 12 }]}>
+          <View
+            style={{
+              flexDirection: 'row',
+              gap: 8,
+              alignItems: 'center',
+              marginRight: 12,
+            }}
+          >
             <CollectionsDescriptionInput />
           </View>
-          <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 8 }}>
-            <Tag size={24} color={Colors.$textNeutralLight} style={{ marginTop: 18 }} />
+          <View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 8,
+            }}
+          >
             <CreateCollectionChipInput />
           </View>
           <VisibilitySelector />
         </View>
       </ScrollView>
-      <View className="w-full flex flex-row pt-4 gap-4">
+      <View
+        className="pt-4 px-4 gap-4 border-t-2 border-l-2 border-r-2"
+        style={[
+          thumbStyles.sheet,
+          {
+            width: W + 4,
+            left: -2,
+            flexDirection: 'row',
+            borderBottomWidth: 0,
+          },
+        ]}
+      >
         <FooterButton
           highLighted
           style={{ flexGrow: 1, flex: 1, width: '100%' }}
