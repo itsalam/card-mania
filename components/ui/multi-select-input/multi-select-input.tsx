@@ -143,7 +143,7 @@ MultiChipInput.Provider = <T extends BaseTagObject>(props: MultiChipInputProps<T
     onItemsChange?.(items)
   }, [items])
 
-  return (inputProps: InputProps, ref: Ref<TextFieldHandle>) => (
+  return (_: InputProps, ref: Ref<TextFieldHandle>) => (
     <ChipsContext.Provider
       value={{ items, setItems, suggestions, setSuggestions, hasResults, renderIconElement }}
     >
@@ -274,7 +274,6 @@ MultiChipInput.Suggestions = <T extends BaseTagObject>(
         suggestionContainerStyle,
         {
           overflow: 'hidden',
-          paddingVertical: 8,
         },
       ]}
     >

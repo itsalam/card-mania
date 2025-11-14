@@ -29,6 +29,7 @@ export const styles = StyleSheet.create({
     },
     inputBody: {
         flex: 1,
+        marginTop: 18,
     },
     floatingPlaceholderTextStyle: {
         fontSize: BASE_PLACEHOLDER_FONT_SIZE,
@@ -37,10 +38,20 @@ export const styles = StyleSheet.create({
     floatingPlaceholderDisplayStyle: { lineHeight: 14 },
     input: {
         // borderColor: Colors.rgba(Colors.$backgroundNeutralMedium, 1.0),
-        borderWidth: 2,
         paddingHorizontal: 8,
         paddingVertical: 12,
         borderRadius: 12,
+    },
+    field: {
+        flexDirection: "row",
+        alignItems: "center",
+        position: "relative",
+        justifyContent: "flex-start",
+        flexWrap: "wrap",
+        rowGap: 6,
+        columnGap: 8,
+        zIndex: 1,
+        flex: 1,
     },
     centeredContainer: {
         alignSelf: "center",

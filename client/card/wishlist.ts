@@ -1,6 +1,6 @@
 import { TCard } from "@/constants/types";
 import { supabase } from "@/lib/store/client";
-import { Database } from "@/lib/store/supabase";
+import { Database, Json } from "@/lib/store/supabase";
 import {
     InfiniteData,
     QueryClient,
@@ -112,7 +112,7 @@ export type ViewParams = {
 type ToggleWishlistParams = {
     kind: string;
     id: string;
-    p_metadata: any;
+    p_metadata?: Json;
     viewParams?: ViewParams;
 };
 

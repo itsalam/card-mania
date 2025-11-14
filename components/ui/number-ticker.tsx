@@ -44,6 +44,7 @@ export const NumberTicker = ({
   fractionDigits = fractionDigits ?? 0
   useEffect(() => {
     onChangeNumber && onChangeNumber(number)
+    console.log('number changed to ', number)
   }, [number])
 
   const onChangeText = (str: string) => {
@@ -58,13 +59,13 @@ export const NumberTicker = ({
     if (max !== undefined) {
       num = Math.min(num, max)
     }
+    console.log({ min, max, num })
     setNumber(num)
   }
 
   return (
     <View
       style={{
-        position: 'relative',
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
@@ -72,11 +73,15 @@ export const NumberTicker = ({
       className={className}
     >
       <TouchableOpacity
-        onPress={() => setNumber(Math.min(number + 1, max || Infinity))}
-        style={{ marginBottom: 4 }}
+        onPress={() => setNumber(Math.min(number + 1, max ?? Infinity))}
+        style={{ marginBottom: 0 }}
         hitSlop={{ top: 10, bottom: 0, left: 10, right: 10 }}
+        disabled={number >= (max ?? Infinity)}
       >
-        <ChevronUp size={24} />
+        <ChevronUp
+          size={24}
+          color={number >= (max ?? Infinity) ? Colors.$iconDisabled : Colors.$iconDefault}
+        />
       </TouchableOpacity>
       <TextField
         {...props}
@@ -105,11 +110,15 @@ export const NumberTicker = ({
         centered
       />
       <TouchableOpacity
-        onPress={() => setNumber(Math.max(number - 1, min || -Infinity))}
+        onPress={() => setNumber(Math.max(number - 1, min ?? -Infinity))}
         style={{ marginTop: 4 }}
         hitSlop={{ top: 0, bottom: 10, left: 10, right: 10 }}
+        disabled={number <= (min ?? -Infinity)}
       >
-        <ChevronDown size={24} />
+        <ChevronDown
+          size={24}
+          color={number <= (min ?? -Infinity) ? Colors.$iconDisabled : Colors.$iconDefault}
+        />
       </TouchableOpacity>
     </View>
   )

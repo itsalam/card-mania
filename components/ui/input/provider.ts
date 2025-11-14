@@ -224,20 +224,28 @@ export default function useFieldState({
 
 export const useInputColors = () => {
     const context = useContext<FieldStore>(FieldContext);
-    const isFocusedSV = useDerivedValue(
-        () => withTiming(context.isFocused ? 1 : 0, { duration: DURATION / 2 }),
-        [context.isFocused],
+    const ctxColor = useMemo(() => getColorByState(context)!, [context]);
+    const ctxOpacity = useMemo(() => context.isFocused ? 1 : 0, [context]);
+
+    return useAnimatedColors(ctxColor, ctxOpacity);
+};
+
+export const useAnimatedColors = (
+    ctxColor: string,
+    ctxOpacity: number,
+) => {
+    const ctxOpacityValue = useDerivedValue(
+        () => withTiming(ctxOpacity, { duration: DURATION / 2 }),
+        [ctxOpacity],
     );
+
     const colorT = useSharedValue(1);
-    const ctxColor = useMemo(() => getColorByState(context), [
-        // be explicit: list the fields from context that affect color
-        context,
-    ]);
     const fromColor = useSharedValue(ctxColor);
     const toColor = useSharedValue(fromColor.value);
     const opacity = useDerivedValue(() =>
-        interpolate(isFocusedSV.value, [0, 1], [0.1, 1])
+        interpolate(ctxOpacityValue.value, [0, 1], [0.4, 1])
     );
+
     const color = useDerivedValue(() => {
         const c = interpolateColor(colorT.value, [0, 1], [
             fromColor.value!,

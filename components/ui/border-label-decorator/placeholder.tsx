@@ -1,5 +1,5 @@
-import React, { useCallback, useContext, useEffect, useMemo, useState } from 'react'
-import { Platform, StyleProp, StyleSheet, TextInputProps, TextProps, TextStyle } from 'react-native'
+import React, { useContext, useEffect, useMemo } from 'react'
+import { Platform, StyleProp, StyleSheet, TextInputProps, TextStyle } from 'react-native'
 import Animated, {
   interpolate,
   useAnimatedStyle,
@@ -8,20 +8,14 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated'
 import { Colors } from 'react-native-ui-lib'
-import { shouldPlaceholderFloat } from './helpers'
-import { FieldContext, FieldStore, useInputColors } from './provider'
-import { GAP_PADDING } from './styles'
-import { ColorType } from './types'
+import { GAP_PADDING } from '../input/styles'
+import { FieldDecoratorContext, FieldDecoratorStore } from './provider'
 
 type FloatingPlaceholderProps = {
   /**
    * The placeholder for the field
    */
   placeholder?: string
-  /**
-   * The floating placeholder color
-   */
-  floatingPlaceholderColor?: ColorType
   /**
    * Custom style to pass to the floating placeholder
    */
@@ -57,26 +51,22 @@ const getOffsetHeight = (style: StyleProp<TextStyle>) => {
 
 const FloatingPlaceholder = (props: FloatingPlaceholderProps) => {
   const {
-    placeholder,
+    placeholder: _placeholder,
     floatingPlaceholderStyle,
     placeHolderStyle,
     fieldOffset = { x: 0, y: 0 },
     inputOffset = { x: 0, y: 0 },
     showMandatoryIndication,
-    forceFloat,
   } = props
-  const context = useContext<FieldStore>(FieldContext)
-  const { color } = useInputColors()
-  const [placeholderOffset, setPlaceholderOffset] = useState({
-    top: 0,
-    left: 0,
-  })
+  const context = useContext<FieldDecoratorStore>(FieldDecoratorContext)
+  const color = context.accentColor
+  const placeholder = _placeholder || context.label
 
-  const shouldFloat = forceFloat || shouldPlaceholderFloat(context)
+  const shouldFloat = context.forceFloat
   const animation = useDerivedValue(() => {
     return withTiming(Number(shouldFloat), { duration: 200 })
   }, [shouldFloat])
-  const shouldRenderIndication = context.isMandatory && showMandatoryIndication
+  const shouldRenderIndication = showMandatoryIndication
 
   const textHeightOffset = useMemo(() => {
     return (
@@ -155,18 +145,9 @@ const FloatingPlaceholder = (props: FloatingPlaceholderProps) => {
     [placeHolderStyle, animatedStyle]
   )
 
-  const onPlaceholderLayout = useCallback<NonNullable<TextProps['onLayout']>>((event) => {
-    const { width, height } = event.nativeEvent.layout
-    let translate = width / 2 - (width * scale) / 2
-    setPlaceholderOffset({
-      left: translate,
-      top: height,
-    })
-  }, [])
-
   return (
     <Animated.View style={containerStyle} pointerEvents={'none'}>
-      <Animated.Text style={style} onLayout={onPlaceholderLayout} numberOfLines={1}>
+      <Animated.Text style={style} numberOfLines={1}>
         {shouldRenderIndication ? placeholder?.concat('*') : placeholder}
       </Animated.Text>
     </Animated.View>

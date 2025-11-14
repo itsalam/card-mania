@@ -159,7 +159,6 @@ export function createNewCollectionsStore() {
         visibility: ['public', 'private', 'unlisted'].includes(visibility),
         tags: tags.length >= 0, // optional
       }
-      console.log(isValid)
       if (Object.values(isValid).every(Boolean)) {
         set({ isValid: true })
         return true

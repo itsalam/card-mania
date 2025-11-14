@@ -84,7 +84,8 @@ export function useGradingConditions(opts?: { companySlug?: string }) {
             ? gradingConditionsKeys.byCompany(slug)
             : gradingConditionsKeys.all,
         queryFn: () => fetchCompaniesWithGrades(slug),
-        staleTime: 30 * 60 * 1000, // 30m
+        staleTime: 60 * 60 * 1000 * 24, // 24h
+        gcTime: 60 * 60 * 1000 * 48, // 48h
     });
 }
 

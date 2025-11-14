@@ -10,7 +10,7 @@ import { FooterButton } from '../components/button'
 import { CollectionListItem } from './components'
 // import { Label } from '@react-navigation/elements'
 
-export const AddToCollectionsView = () => {
+export const AddToCollectionsView = (props: { enabled?: boolean }) => {
   const { card, setPage, setFooterFullView } = useCardDetails()
   const [query, setQuery] = useState<string>()
   const { data: collection } = useViewCollectionsForCard(card?.id, query)
@@ -53,7 +53,7 @@ export const AddToCollectionsView = () => {
           highLighted
           style={{ flexGrow: 1, flex: 1, width: '100%' }}
           onPress={() => setPage(1)}
-          label="Create new Collection"
+          label="New Collection"
           iconSource={(style) => <Plus style={style} color={Colors.$iconDefaultLight} />}
         />
         <FooterButton

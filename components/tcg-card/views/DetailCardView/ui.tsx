@@ -214,10 +214,7 @@ export default function DraggableThumbContent({
       className="flex flex-col items-center"
       ref={fullContentRef}
     >
-      <BlurBackground
-        style={[thumbStyles.sheetInner, { flex: 1, width: '100%' }]}
-        opacity={[0.1, 0.5]}
-      >
+      <BlurBackground style={[thumbStyles.sheetInner, { flex: 1, width: '100%' }]} opacity={0.95}>
         <GestureDetector gesture={composed}>
           <Animated.View style={thumbStyles.mainContent} ref={mainContentRef}>
             <Animated.View style={thumbStyles.thumbContainer}>
@@ -263,7 +260,6 @@ export const thumbStyles = StyleSheet.create({
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     borderColor: Colors.$outlineNeutral,
-    backgroundColor: Colors.rgba(Colors.$backgroundNeutral, 0.9),
     borderWidth: 2,
   },
 

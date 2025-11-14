@@ -5,14 +5,15 @@
  * 3. Passing typography preset that includes lineHeight usually cause alignment issues with
  * other elements (leading/trailing accessories). It usually best to set lineHeight with undefined
  */
+import { useCombinedRefs } from '@/components/hooks/useCombinedRefs'
 import { useMeasure } from '@/components/hooks/useMeasure'
 import React, { cloneElement, forwardRef, useContext, useImperativeHandle, useMemo } from 'react'
 import { TextInput, View } from 'react-native'
-import { useCombinedRefs } from './badge-input'
-import { DynamicBorderBox } from './border'
+import { DynamicBorderBox } from '../border-label-decorator/border'
+import FloatingPlaceholder from '../border-label-decorator/placeholder'
 import ClearButton from './clear-button'
-import FloatingPlaceholder from './placeholder'
-import useFieldState, { FieldContext, FieldStore } from './provider'
+import { shouldPlaceholderFloat } from './helpers'
+import useFieldState, { FieldContext, FieldStore, useInputColors } from './provider'
 import { styles } from './styles'
 import { InputProps } from './types'
 
@@ -66,6 +67,8 @@ export const TextField = forwardRef<TextFieldHandle, InputProps>((props, ref) =>
     <FieldContext.Provider value={context}>
       {typeof children === 'function' ? (
         children(inputProps, ref)
+      ) : children ? (
+        children
       ) : (
         <Input ref={ref} {...inputProps} />
       )}
@@ -149,17 +152,13 @@ export const Input = forwardRef<TextInput, InputProps>((props, ref) => {
 
   const inputStyle = useMemo(() => style, [style])
 
-  const placeholderOffset = useMemo(() => {
-    console.log({ inputLayout })
-    const lx = fieldLayout?.x ?? 0
-    const ly = fieldLayout?.y ?? 0
-    return { x: lx, y: ly }
-  }, [fieldLayout, inputLayout])
-
   const onLayoutCombined: InputProps['onLayout'] = (e) => {
     onLayout?.(e)
     onInputLayout(e)
   }
+
+  const { color, opacity } = useInputColors()
+  const forceFloatFinal = forceFloat || shouldPlaceholderFloat(context)
 
   return (
     <DynamicBorderBox
@@ -167,33 +166,20 @@ export const Input = forwardRef<TextInput, InputProps>((props, ref) => {
       label={placeholder}
       labelStyle={[floatingPlaceholderStyle]}
       style={[containerStyle, styles.container]}
-      forceFloat={forceFloat}
+      color={color}
+      opacity={opacity}
+      forceFloat={forceFloatFinal}
     >
-      <View
-        style={{
-          flexDirection: 'row',
-          alignItems: 'center',
-          position: 'relative',
-          justifyContent: 'flex-start',
-          flexWrap: 'wrap',
-          rowGap: 6,
-          columnGap: 8,
-          zIndex: 1,
-          flex: 1,
-        }}
-        ref={fieldLayoutRef}
-        onLayout={onFieldLayout}
-      >
+      <View style={styles.field} ref={fieldLayoutRef} onLayout={onFieldLayout}>
         {leadingAccessory}
         {floatingPlaceholder && (
           <FloatingPlaceholder
             placeholder={placeholder}
             floatingPlaceholderStyle={floatingPlaceholderStyle}
             placeHolderStyle={[styles.inputTextStyle, inputStyle]}
-            fieldOffset={placeholderOffset}
+            fieldOffset={fieldLayout ?? undefined}
             inputOffset={inputLayout ?? undefined}
             showMandatoryIndication={showMandatoryIndication}
-            forceFloat={forceFloat}
           />
         )}
         <TextInput

@@ -1,5 +1,6 @@
+import { useCombinedRefs } from '@/components/hooks/useCombinedRefs'
 import _isUndefined from 'lodash/isUndefined'
-import { forwardRef, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
+import { forwardRef, useCallback, useContext, useMemo, useState } from 'react'
 import { Assets, ChipProps, ChipsInputChipProps, Constants } from 'react-native-ui-lib'
 import { ChipsInputChangeReason } from 'react-native-ui-lib/src/components/chipsInput'
 import { useDidUpdate } from 'react-native-ui-lib/src/hooks'
@@ -37,25 +38,6 @@ export type ChipsInputProps = InputProps & {
   maxChips?: number | undefined
 }
 
-export const useCombinedRefs = <T,>(
-  ...refs: Array<React.ForwardedRef<T> | React.RefObject<T> | undefined>
-) => {
-  const targetRef = useRef<T | null>(null)
-  useEffect(() => {
-    refs.forEach((ref) => {
-      if (!ref) {
-        return
-      }
-      if (typeof ref === 'function') {
-        ref(targetRef.current)
-      } else {
-        ref.current = targetRef.current
-      }
-    })
-  }, [refs])
-  return targetRef
-}
-
 export const BadgeInput = forwardRef<TextFieldHandle, ChipsInputProps>((props, refToForward) => {
   // Deep merge BaseBadgeProps and defaultChipProps
   const {
@@ -66,9 +48,8 @@ export const BadgeInput = forwardRef<TextFieldHandle, ChipsInputProps>((props, r
     maxChips,
     ...inputProps
   } = props
-  const fieldRef = useCombinedRefs(refToForward)
   return (
-    <TextField {...inputProps} ref={fieldRef}>
+    <TextField {...inputProps} ref={refToForward}>
       {(_, ref) => <BadgeInputInner ref={ref} {...props} />}
     </TextField>
   )

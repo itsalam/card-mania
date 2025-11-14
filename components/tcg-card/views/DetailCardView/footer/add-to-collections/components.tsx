@@ -1,10 +1,11 @@
 import { CompanyWithGrades, useGradingConditions } from '@/client/card/grading'
+import { useToggleWishlist } from '@/client/card/wishlist'
 import { suggestedVariantsOptions, Variant } from '@/client/collections/items'
 import { useEditCollecitonItem } from '@/client/collections/mutate'
 import { useViewCollectionItemsForCard } from '@/client/collections/query'
 import { usePopulateTagCategory } from '@/client/collections/tags'
 import { CollectionLike } from '@/client/collections/types'
-import { Button } from '@/components/ui/button'
+import { useInputColors } from '@/components/ui/input/provider'
 import { MultiChipInput } from '@/components/ui/multi-select-input/multi-select-input'
 import { NumberTicker } from '@/components/ui/number-ticker'
 import {
@@ -18,28 +19,29 @@ import {
 } from '@/components/ui/select'
 import { Text } from '@/components/ui/text'
 import { CollectionItemRow } from '@/lib/store/functions/types'
-import { Label } from '@rn-primitives/select'
 import { useQueryClient } from '@tanstack/react-query'
 import { Image } from 'expo-image'
-import { FolderHeart, Heart, LucideIcon, Plus, Tag } from 'lucide-react-native'
+import { FolderHeart, Heart, LucideIcon, Plus, Tag, XCircle } from 'lucide-react-native'
 import React, { useCallback, useEffect, useState } from 'react'
 import { Platform, View } from 'react-native'
 import Animated from 'react-native-reanimated'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import {
-  Colors,
-  ExpandableSection,
-  RadioButton,
-  Timeline,
-  TouchableOpacity,
-} from 'react-native-ui-lib'
+import { Colors, ExpandableSection, RadioButton, TouchableOpacity } from 'react-native-ui-lib'
 import { useCardDetails } from '../../provider'
+import { FooterButton } from '../components/button'
 // import { Label } from '@react-navigation/elements'
+
+const ATag = Animated.createAnimatedComponent(Tag)
+
+const AccessoryTag = () => {
+  const { color } = useInputColors()
+  //@ts-ignore
+  return <ATag size={24} color={color} />
+}
 
 export const VariantsSelect = () => {
   const qc = useQueryClient()
-  const { card, setPage, setFooterFullView } = useCardDetails()
-  const [query, setQuery] = useState<string>()
+  const { card } = useCardDetails()
 
   const fetchSuggestions = useCallback(
     (q?: string) => {
@@ -57,13 +59,12 @@ export const VariantsSelect = () => {
   return (
     <View style={{ flex: 1 }}>
       <MultiChipInput<Partial<Variant> & Pick<Variant, 'id' | 'name'>>
-        leadingAccessory={
-          <Tag size={24} color={Colors.$textNeutralLight} style={{ marginTop: 18 }} />
-        }
+        leadingAccessory={<AccessoryTag />}
         placeholder={'Variants'}
         floatingPlaceholder
         fetchSuggestions={fetchSuggestions}
         extractCat={() => 'general'}
+        containerStyle={{ flex: 1 }}
       />
     </View>
   )
@@ -73,112 +74,68 @@ export const CollectionCardEntries = ({ collection }: { collection: CollectionLi
   //TODO: fetch collection entries for this collection and card
   const { card } = useCardDetails()
 
-  // const [entries, setEntries] = useState<Array<Partial<CollectionItemRow>>>([{}])
   const { data: loadedEntries, error } = useViewCollectionItemsForCard(collection.id!, card?.id!)
   const [newEntries, setNewEntries] = useState<Array<Partial<CollectionItemRow>>>([{}])
+
   return (
-    <View style={{ flexDirection: 'column', alignItems: 'center', paddingVertical: 20, gap: 8 }}>
-      {(loadedEntries ?? []).map((entry, index, entries) => {
-        return (
-          <Animated.View style={{ width: '100%' }} key={entry.ref_id}>
-            <Timeline
-              topLine={{
-                state: Timeline.states.NEXT,
-                entry: index === 0,
-              }}
-              point={{
-                type: entry.ref_id ? 'bullet' : 'outline',
-                state: Timeline.states.NEXT,
-              }}
-              bottomLine={{
-                state: Timeline.states.NEXT,
-                type: 'dashed',
-                entry: index === (entries?.length ?? 1) - 1,
-              }}
-            >
-              <CollectionEntry
-                index={index}
-                key={entry.ref_id}
-                collectionItem={entry}
-                collection={collection}
-              />
-            </Timeline>
-          </Animated.View>
-        )
-      })}
-      {newEntries.map((entry, index, entries) => {
-        return (
-          <Animated.View style={{ width: '100%' }} key={entry.ref_id}>
-            <Timeline
-              topLine={{
-                state: Timeline.states.NEXT,
-                entry: index === 0,
-              }}
-              point={{
-                type: entry.ref_id ? 'bullet' : 'outline',
-                state: Timeline.states.NEXT,
-              }}
-              bottomLine={{
-                state: Timeline.states.NEXT,
-                type: 'dashed',
-                entry: index === (entries?.length ?? 1) - 1,
-              }}
-            >
-              <CollectionEntry
-                index={index}
-                key={entry.ref_id}
-                collectionItem={entry}
-                collection={collection}
-              />
-            </Timeline>
-          </Animated.View>
-        )
-      })}
+    <View
+      style={{
+        flexDirection: 'column',
+        alignItems: 'center',
+        paddingVertical: 12,
+        paddingHorizontal: 20,
+        borderColor: Colors.$outlineDefault,
+        borderWidth: 2,
+        backgroundColor: Colors.rgba(Colors.$backgroundDefault, 0.5),
+        gap: 8,
+      }}
+    >
+      <View
+        style={{
+          paddingBottom: 0,
+        }}
+      >
+        {(loadedEntries ?? []).map((entry, index, entries) => {
+          return (
+            <CollectionEntry
+              index={index}
+              key={entry.ref_id}
+              collectionItem={entry}
+              collection={collection}
+            />
+          )
+        })}
+        {newEntries.map((entry, index, entries) => {
+          return (
+            <CollectionEntry
+              index={index}
+              key={entry.ref_id}
+              collectionItem={entry}
+              collection={collection}
+            />
+          )
+        })}
+      </View>
       <Animated.View style={{ width: '100%' }}>
-        <Timeline
-          topLine={{
-            state: Timeline.states.NEXT,
-            // entry: index === 0,
-          }}
-          point={{
-            // type: entry.ref_id ? 'bullet' : 'outline',
-            state: Timeline.states.NEXT,
-          }}
-          bottomLine={{
-            state: Timeline.states.NEXT,
-            type: 'dashed',
-            // entry: index === (entries?.length ?? 1) - 1,
+        <View
+          style={{
+            paddingVertical: 4,
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 28,
           }}
         >
-          <View
-            style={{
-              paddingVertical: 4,
-              flexDirection: 'row',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: 28,
+          <FooterButton
+            highLighted
+            style={{ flexGrow: 1, flex: 1, width: '100%' }}
+            onPress={() => {
+              setNewEntries((prev) => [...prev, {}])
             }}
-          >
-            <TouchableOpacity
-              style={{
-                width: '100%',
-              }}
-              onPress={() => {
-                setNewEntries((prev) => [...prev, {}])
-              }}
-            >
-              <Button
-                style={{
-                  width: '100%',
-                  backgroundColor: Colors.$backgroundPrimaryHeavy,
-                }}
-              >
-                <Text style={{ color: Colors.$textDefaultLight }}>Add Variants</Text>
-                <Plus color={Colors.$textDefaultLight} />
-              </Button>
-            </TouchableOpacity>
-          </View>
-        </Timeline>
+            label="Add"
+            iconSource={(style) => <Plus style={style} color={Colors.$iconDefaultLight} />}
+          />
+        </View>
       </Animated.View>
     </View>
   )
@@ -251,20 +208,48 @@ export const CollectionEntry = ({
         condition: selectedCondition,
         quantity: selectedQuantity,
       })
-      mutate.mutate({
-        collection_id: collection.id!,
-        grade_condition_id: selectedGradeCompany?.slug || null,
-        grading_company: selectedGrade?.id || null,
-        ref_id: card?.id!,
-        condition: selectedCondition,
-        quantity: selectedQuantity,
-      })
+      mutate.mutate(
+        {
+          collection_id: collection.id!,
+          grade_condition_id: selectedGradeCompany?.slug || null,
+          grading_company: selectedGrade?.id || null,
+          ref_id: card?.id!,
+          condition: selectedCondition,
+          quantity: selectedQuantity,
+        },
+        {
+          onSuccess: (...e) => {
+            console.log('mutate success', ...e)
+          },
+          onError: (...e) => {
+            console.log('mutate error', ...e)
+          },
+        }
+      )
     }
   }, [selectedGradeCompany, selectedGrade, selectedCondition, selectedQuantity])
 
   return (
-    <View className="flex flex-row w-full">
-      <View className="flex flex-col gap-1 flex-1">
+    <View
+      style={{
+        position: 'relative',
+        width: '100%',
+        borderBottomColor: Colors.$outlineDefault,
+        borderBottomWidth: 2,
+        paddingVertical: 12,
+        alignItems: 'center',
+        display: 'flex',
+        flexDirection: 'row',
+        gap: 12,
+      }}
+    >
+      <NumberTicker
+        min={0}
+        max={999}
+        initialNumber={selectedQuantity}
+        onChangeNumber={(inputData) => setSelectedQuantity(inputData)}
+      />
+      <View className="flex flex-col gap-2 flex-1 pb-2">
         <View className="flex flex-row gap-4 w-full">
           <Select
             onValueChange={(option) => {
@@ -272,12 +257,11 @@ export const CollectionEntry = ({
               setSelectedGrade(undefined)
             }}
             style={{
-              flex: 0.3,
+              flex: 1.0,
             }}
           >
-            <Label>Format</Label>
-            <SelectTrigger>
-              <SelectValue placeholder="Grading Type" />
+            <SelectTrigger label="Format">
+              <SelectValue />
             </SelectTrigger>
             <SelectContent insets={contentInsets}>
               <SelectGroup>
@@ -296,16 +280,15 @@ export const CollectionEntry = ({
 
           <Select
             style={{
-              flex: 0.6,
+              flex: 1,
             }}
             disabled={!selectedGradeCompany}
             onValueChange={(option) =>
               setSelectedGrade(selectedGradeCompany?.grades[Number(option?.value as string)])
             }
           >
-            <Label>Grade</Label>
-            <SelectTrigger>
-              <SelectValue placeholder="Grade Condition" />
+            <SelectTrigger label="Condition" disabled={!selectedGradeCompany}>
+              <SelectValue />
             </SelectTrigger>
             <SelectContent insets={contentInsets}>
               <NativeSelectScrollView>
@@ -313,10 +296,10 @@ export const CollectionEntry = ({
                   {selectedGradeCompany?.grades.map((grade, index) => (
                     <SelectItem
                       key={grade.grade_value}
-                      label={`${grade.grade_value} ${grade.label}`}
+                      label={`${grade.grade_value}`}
                       value={String(index)}
                     >
-                      {`${grade.grade_value} ${grade.label}`}
+                      {`${grade.grade_value}`}
                     </SelectItem>
                   ))}
                 </SelectGroup>
@@ -328,12 +311,9 @@ export const CollectionEntry = ({
           <VariantsSelect />
         </View>
       </View>
-      <NumberTicker
-        min={0}
-        max={999}
-        initialNumber={selectedQuantity}
-        onChangeNumber={(inputData) => setSelectedQuantity(inputData)}
-      />
+      <TouchableOpacity>
+        <XCircle />
+      </TouchableOpacity>
     </View>
   )
 }
@@ -362,27 +342,41 @@ export const CollectionListItem = ({ collection }: { collection: CollectionLike 
   const { get: getTagCategory } = usePopulateTagCategory(collection.tags_cache)
   const { card } = useCardDetails()
   const [expanded, setExpanded] = useState(false)
+  const isWishlist = collection?.id === 'wishlist'
+  const toggleWishlist = useToggleWishlist()
+
+  const ItemView = () => (
+    <TouchableOpacity
+      className="flex flex-row items-center gap-4 px-4"
+      key={collection.id}
+      {...(isWishlist
+        ? { onPress: () => card && toggleWishlist.mutate({ kind: 'card', id: card.id }) }
+        : {})}
+    >
+      <CollectionsAvatar icon={Heart} iconImageSrc={collection.cover_image_url} />
+      <View key={collection.id} className="shrink-0 grow">
+        <Text className="text-lg font-medium">{collection.name}</Text>
+        <Text
+          className="text-sm"
+          style={{
+            color: Colors.$textSecondary,
+          }}
+        >
+          {collection.description}
+        </Text>
+      </View>
+      <RadioButton selected={collection.has_item} />
+    </TouchableOpacity>
+  )
+
+  if (isWishlist) {
+    return <ItemView />
+  }
 
   return (
     <ExpandableSection
       expanded={expanded}
-      sectionHeader={
-        <View className="flex flex-row items-center gap-4 px-4" key={collection.id}>
-          <CollectionsAvatar icon={Heart} iconImageSrc={collection.cover_image_url} />
-          <View key={collection.id} className="shrink-0 grow">
-            <Text className="text-lg font-medium">{collection.name}</Text>
-            <Text
-              className="text-sm"
-              style={{
-                color: Colors.$textSecondary,
-              }}
-            >
-              {collection.description}
-            </Text>
-          </View>
-          <RadioButton selected={collection.has_item} />
-        </View>
-      }
+      sectionHeader={<ItemView />}
       onPress={() => setExpanded(!expanded)}
     >
       <CollectionCardEntries collection={collection} />

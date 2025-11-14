@@ -41,7 +41,7 @@ export const useBackgroundColors = (): ColorValueArray => {
   // const defaultColors: ColorValueArray = getBackgroundColors(colorScheme);
   const defaultColors: ColorValueArray = [
     Colors.$backgroundNeutralMedium,
-    Colors.$backgroundNeutral,
+    Colors.$backgroundNeutralLight,
   ]
   return defaultColors
 }

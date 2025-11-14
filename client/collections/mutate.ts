@@ -260,20 +260,20 @@ export const useEditCollecitonItem = (
                 (CollectionItem & EditCollectionArgsItem)[]
             >(
                 queryKey,
-            );
+            ) ?? [];
             const itemIdx = prevCollectionItems?.findIndex((it) =>
                 it.id === itemId
             ) ?? -1;
             if (itemIdx === -1) {
                 //@ts-ignore
                 prevCollectionItems?.push(patch);
+            } else {
+                //@ts-ignore
+                prevCollectionItems![itemIdx] = {
+                    ...item,
+                    ...patch,
+                };
             }
-
-            //@ts-ignore
-            prevCollectionItems![itemIdx] = {
-                ...item,
-                ...patch,
-            };
 
             // Optimistically apply patch to detail
             if (prevCollectionItems) {
