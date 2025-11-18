@@ -4,26 +4,33 @@ import { Text } from '@/components/ui/text'
 import { PanelBottomClose, Plus } from 'lucide-react-native'
 import React, { useState } from 'react'
 import { ScrollView, View } from 'react-native'
-import { Colors } from 'react-native-ui-lib'
+import { Colors, Spacings } from 'react-native-ui-lib'
 import { useCardDetails } from '../../provider'
 import { FooterButton } from '../components/button'
 import { CollectionListItem } from './components'
 // import { Label } from '@react-navigation/elements'
 
-export const AddToCollectionsView = (props: { enabled?: boolean }) => {
+export const AddToCollectionsView = () => {
   const { card, setPage, setFooterFullView } = useCardDetails()
   const [query, setQuery] = useState<string>()
   const { data: collection } = useViewCollectionsForCard(card?.id, query)
 
   return (
     <>
-      <SearchBar onChangeText={setQuery} />
-      <View className="w-full grow pt-8">
+      <View
+        style={{
+          paddingTop: Spacings.s4,
+          paddingHorizontal: Spacings.s4,
+        }}
+      >
+        <SearchBar onChangeText={setQuery} />
+      </View>
+      <View className="w-full grow pt-8 z-0">
         <ScrollView>
           {!!collection?.included.length && (
             <>
-              <Text>Saved In</Text>
-              <View className="py-2 flex flex-col gap-4">
+              <Text style={{ paddingHorizontal: Spacings.s4 }}>Saved In</Text>
+              <View className="py-2 flex flex-col">
                 {collection?.included.map((c) => (
                   <CollectionListItem key={c.id} collection={c} />
                 ))}
@@ -32,8 +39,8 @@ export const AddToCollectionsView = (props: { enabled?: boolean }) => {
           )}
           {!!collection?.excluded && (
             <>
-              <Text className="pt-4">Other Collections</Text>
-              <View className="py-2 flex flex-col gap-4">
+              <Text style={{ paddingHorizontal: Spacings.s4 }}>Other Collections</Text>
+              <View className="py-2 flex flex-col">
                 {collection?.excluded.length ? (
                   collection?.excluded.map((c) => <CollectionListItem key={c.id} collection={c} />)
                 ) : (
@@ -48,7 +55,7 @@ export const AddToCollectionsView = (props: { enabled?: boolean }) => {
           )}
         </ScrollView>
       </View>
-      <View className="w-full flex flex-row pt-4 gap-4 px-4">
+      <View className="w-full flex flex-row pt-4 gap-4 px-4 z-1">
         <FooterButton
           highLighted
           style={{ flexGrow: 1, flex: 1, width: '100%' }}

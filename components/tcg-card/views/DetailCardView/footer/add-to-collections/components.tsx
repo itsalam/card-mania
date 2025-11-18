@@ -1,10 +1,10 @@
-import { CompanyWithGrades, useGradingConditions } from '@/client/card/grading'
+import { useGradingConditions } from '@/client/card/grading'
 import { useToggleWishlist } from '@/client/card/wishlist'
 import { suggestedVariantsOptions, Variant } from '@/client/collections/items'
-import { useEditCollecitonItem } from '@/client/collections/mutate'
+
+import { useEditCollectionItem } from '@/client/collections/mutate'
 import { useViewCollectionItemsForCard } from '@/client/collections/query'
-import { usePopulateTagCategory } from '@/client/collections/tags'
-import { CollectionLike } from '@/client/collections/types'
+import { CollectionLike, EditCollectionArgsItem } from '@/client/collections/types'
 import { useInputColors } from '@/components/ui/input/provider'
 import { MultiChipInput } from '@/components/ui/multi-select-input/multi-select-input'
 import { NumberTicker } from '@/components/ui/number-ticker'
@@ -17,16 +17,24 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { Spinner } from '@/components/ui/spinner'
 import { Text } from '@/components/ui/text'
 import { CollectionItemRow } from '@/lib/store/functions/types'
 import { useQueryClient } from '@tanstack/react-query'
 import { Image } from 'expo-image'
-import { FolderHeart, Heart, LucideIcon, Plus, Tag, XCircle } from 'lucide-react-native'
-import React, { useCallback, useEffect, useState } from 'react'
+import { debounce } from 'lodash'
+import { Blocks, FolderHeart, Heart, LucideIcon, Plus, Tag, XCircle } from 'lucide-react-native'
+import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { Platform, View } from 'react-native'
 import Animated from 'react-native-reanimated'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { Colors, ExpandableSection, RadioButton, TouchableOpacity } from 'react-native-ui-lib'
+import {
+  Colors,
+  ExpandableSection,
+  RadioButton,
+  Spacings,
+  TouchableOpacity,
+} from 'react-native-ui-lib'
 import { useCardDetails } from '../../provider'
 import { FooterButton } from '../components/button'
 // import { Label } from '@react-navigation/elements'
@@ -70,12 +78,25 @@ export const VariantsSelect = () => {
   )
 }
 
-export const CollectionCardEntries = ({ collection }: { collection: CollectionLike }) => {
+export const CollectionCardEntries = ({
+  collection,
+  isShown,
+}: {
+  collection: CollectionLike
+  isShown: boolean
+}) => {
   //TODO: fetch collection entries for this collection and card
   const { card } = useCardDetails()
 
-  const { data: loadedEntries, error } = useViewCollectionItemsForCard(collection.id!, card?.id!)
-  const [newEntries, setNewEntries] = useState<Array<Partial<CollectionItemRow>>>([{}])
+  const {
+    data: loadedEntries,
+    error,
+    isLoading,
+  } = useViewCollectionItemsForCard(collection.id!, card?.id!, isShown)
+
+  const [newEntries, setNewEntries] = useState<Array<Partial<CollectionItemRow>>>(
+    loadedEntries.length ? loadedEntries : [{}]
+  )
 
   return (
     <View
@@ -90,53 +111,40 @@ export const CollectionCardEntries = ({ collection }: { collection: CollectionLi
         gap: 8,
       }}
     >
+      {isLoading ? (
+        <Spinner />
+      ) : (
+        newEntries.map((entry, index) => {
+          return (
+            <CollectionEntry
+              key={`${index}-new`}
+              collectionItem={entry}
+              collection={collection}
+              onDelete={() => setNewEntries((prev) => [...prev.filter((_, i) => i !== index)])}
+            />
+          )
+        })
+      )}
+
       <View
         style={{
-          paddingBottom: 0,
+          paddingVertical: 4,
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 28,
         }}
       >
-        {(loadedEntries ?? []).map((entry, index, entries) => {
-          return (
-            <CollectionEntry
-              index={index}
-              key={entry.ref_id}
-              collectionItem={entry}
-              collection={collection}
-            />
-          )
-        })}
-        {newEntries.map((entry, index, entries) => {
-          return (
-            <CollectionEntry
-              index={index}
-              key={entry.ref_id}
-              collectionItem={entry}
-              collection={collection}
-            />
-          )
-        })}
-      </View>
-      <Animated.View style={{ width: '100%' }}>
-        <View
-          style={{
-            paddingVertical: 4,
-            flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: 28,
+        <FooterButton
+          highLighted
+          style={{ flexGrow: 1, flex: 1, width: '100%' }}
+          onPress={() => {
+            setNewEntries((prev) => [...prev, {}])
           }}
-        >
-          <FooterButton
-            highLighted
-            style={{ flexGrow: 1, flex: 1, width: '100%' }}
-            onPress={() => {
-              setNewEntries((prev) => [...prev, {}])
-            }}
-            label="Add"
-            iconSource={(style) => <Plus style={style} color={Colors.$iconDefaultLight} />}
-          />
-        </View>
-      </Animated.View>
+          label="Add"
+          iconSource={(style) => <Plus style={style} color={Colors.$iconDefaultLight} />}
+        />
+      </View>
     </View>
   )
 }
@@ -144,13 +152,11 @@ export const CollectionCardEntries = ({ collection }: { collection: CollectionLi
 export const CollectionEntry = ({
   collection,
   collectionItem,
-  onUpdate,
-  index,
+  onDelete,
 }: {
   collection: CollectionLike
   collectionItem: Partial<CollectionItemRow>
-  onUpdate?: (c: Partial<CollectionItemRow>) => void
-  index?: number
+  onDelete?: () => void
 }) => {
   const { card } = useCardDetails()
   const insets = useSafeAreaInsets()
@@ -162,72 +168,86 @@ export const CollectionEntry = ({
   }
 
   const { data: gradeData, error } = useGradingConditions()
-  const [selectedQuantity, setSelectedQuantity] = useState<number>(collectionItem?.quantity || 1)
-  const [selectedGrade, setSelectedGrade] = useState<
-    CompanyWithGrades['grades'][number] | undefined
-  >(undefined)
-  const [selectedCondition, setSelectedCondition] = useState<string | null>(null)
-  const [selectedGradeCompany, setSelectedGradeCompany] = useState<CompanyWithGrades | undefined>(
-    gradeData?.[0]
-  )
-  const [enabledEntry, setEnabledEntry] = useState<boolean>(!!collectionItem?.ref_id)
-  const mutate = useEditCollecitonItem(
+
+  const mutate = useEditCollectionItem(
     collectionItem?.collection_id || collection.id!,
     card?.id!,
     collectionItem?.id
   )
 
-  useEffect(() => {
-    if (index === 0) {
-      onUpdate?.({
-        ref_id: card?.id,
-        collection_id: collection.id,
-      })
-      return
+  const initialDraft = useMemo(() => {
+    const gradeFormat = gradeData?.find((c) => c.slug === collectionItem.grading_company)
+    const grade = gradeFormat?.grades.find((g) => g.id === collectionItem.grade_condition_id)
+
+    return {
+      collection_id: collection.id!,
+      ref_id: card?.id!,
+      quantity: collectionItem.quantity ?? 1,
+      grading_company: gradeFormat?.slug ?? null,
+      grade_condition_id: collectionItem.grade_condition?.id ?? grade?.id ?? null,
     }
-    if (!enabledEntry) {
-      setSelectedGrade(undefined)
-      setSelectedCondition(null)
-      setSelectedGradeCompany(undefined)
-    } else {
-      if (!collectionItem?.ref_id) {
-        onUpdate?.({
-          ref_id: card?.id,
-          collection_id: collection.id,
-        })
-      }
-    }
-  }, [enabledEntry, index])
+  }, [collection.id, card?.id, collectionItem, gradeData])
+
+  const [draft, setDraft] = useState<EditCollectionArgsItem>(initialDraft)
+  const [dirty, setDirty] = useState(false)
+
+  const company = useMemo(
+    () => gradeData?.find((c) => c.slug === draft.grading_company),
+    [draft, gradeData]
+  )
+  const gradeIdx = useMemo(
+    () => company?.grades.findIndex((g) => g.id === draft.grade_condition_id),
+    [company, draft]
+  )
 
   useEffect(() => {
-    if (selectedGradeCompany && selectedGrade) {
-      onUpdate?.({
-        collection_id: collection.id,
-        grade_condition_id: selectedGradeCompany?.slug || null,
-        grading_company: selectedGrade?.id || null,
-        condition: selectedCondition,
-        quantity: selectedQuantity,
-      })
+    setDraft(initialDraft)
+    setDirty(false)
+  }, [initialDraft])
+
+  const isComplete = (draft: EditCollectionArgsItem) =>
+    Boolean(draft.grading_company && draft.grade_condition_id && (draft.quantity ?? 0) > 0)
+
+  const isEqualToInitial = (draft: EditCollectionArgsItem) =>
+    draft.quantity === initialDraft.quantity &&
+    draft.grading_company === initialDraft.grading_company &&
+    draft.grade_condition_id === initialDraft.grade_condition_id
+
+  const mutateEntry = useCallback(
+    (draft: EditCollectionArgsItem) => {
+      if (!isComplete(draft)) return // only when all fields valid
+      if (isEqualToInitial(draft)) return // don’t re-save same data
+
       mutate.mutate(
+        { item: draft },
         {
-          collection_id: collection.id!,
-          grade_condition_id: selectedGradeCompany?.slug || null,
-          grading_company: selectedGrade?.id || null,
-          ref_id: card?.id!,
-          condition: selectedCondition,
-          quantity: selectedQuantity,
-        },
-        {
-          onSuccess: (...e) => {
-            console.log('mutate success', ...e)
+          onSuccess: (res) => {
+            // you can optionally mark clean here; depends on how parent refetches
+            setDraft(res)
+            setDirty(false)
           },
-          onError: (...e) => {
-            console.log('mutate error', ...e)
-          },
+          onError: (...e) => console.log({ e }),
         }
       )
-    }
-  }, [selectedGradeCompany, selectedGrade, selectedCondition, selectedQuantity])
+    },
+    [mutate]
+  )
+
+  const deleteEntry = useCallback(
+    (draft: EditCollectionArgsItem) => {
+      mutate.mutate({ item: draft, delete: true })
+      onDelete?.()
+    },
+    [mutate]
+  )
+
+  const mutateDebounce = useCallback(debounce(mutateEntry, 1000), [mutateEntry])
+
+  const updateDraft = (patch: Partial<typeof initialDraft>) => {
+    setDraft((prev) => ({ ...prev, ...patch }))
+    setDirty(true)
+    mutateDebounce({ ...draft, ...patch })
+  }
 
   return (
     <View
@@ -246,15 +266,27 @@ export const CollectionEntry = ({
       <NumberTicker
         min={0}
         max={999}
-        initialNumber={selectedQuantity}
-        onChangeNumber={(inputData) => setSelectedQuantity(inputData)}
+        initialNumber={draft.quantity ?? 1}
+        onChangeNumber={(n) => updateDraft({ quantity: n })}
       />
       <View className="flex flex-col gap-2 flex-1 pb-2">
         <View className="flex flex-row gap-4 w-full">
           <Select
+            value={
+              company
+                ? {
+                    value: company.id,
+                    label: company.slug.toLocaleUpperCase(),
+                  }
+                : undefined
+            }
             onValueChange={(option) => {
-              setSelectedGradeCompany(gradeData?.find((company) => company.id === option?.value))
-              setSelectedGrade(undefined)
+              const company = gradeData?.find((c) => c.id === option?.value)
+              updateDraft({
+                grading_company: company?.slug ?? null,
+                // reset condition when company changes
+                grade_condition_id: null,
+              })
             }}
             style={{
               flex: 1.0,
@@ -282,22 +314,30 @@ export const CollectionEntry = ({
             style={{
               flex: 1,
             }}
-            disabled={!selectedGradeCompany}
-            onValueChange={(option) =>
-              setSelectedGrade(selectedGradeCompany?.grades[Number(option?.value as string)])
+            disabled={!draft.grading_company}
+            value={
+              gradeIdx !== undefined && gradeIdx >= 0 && company?.grades[gradeIdx]
+                ? {
+                    value: company?.grades[gradeIdx].id,
+                    label: String(company.grades[gradeIdx].grade_value),
+                  }
+                : undefined
             }
+            onValueChange={(option) => {
+              updateDraft({ grade_condition_id: option?.value })
+            }}
           >
-            <SelectTrigger label="Condition" disabled={!selectedGradeCompany}>
+            <SelectTrigger label="Condition" disabled={!draft.grading_company}>
               <SelectValue />
             </SelectTrigger>
             <SelectContent insets={contentInsets}>
               <NativeSelectScrollView>
                 <SelectGroup>
-                  {selectedGradeCompany?.grades.map((grade, index) => (
+                  {company?.grades.map((grade, index) => (
                     <SelectItem
-                      key={grade.grade_value}
+                      key={`${grade.id}-${grade.grade_value}`}
                       label={`${grade.grade_value}`}
-                      value={String(index)}
+                      value={grade.id}
                     >
                       {`${grade.grade_value}`}
                     </SelectItem>
@@ -311,7 +351,7 @@ export const CollectionEntry = ({
           <VariantsSelect />
         </View>
       </View>
-      <TouchableOpacity>
+      <TouchableOpacity onPress={() => deleteEntry(draft)}>
         <XCircle />
       </TouchableOpacity>
     </View>
@@ -326,7 +366,14 @@ const CollectionsAvatar = ({
   iconImageSrc?: string
 }) => {
   return (
-    <View className="h-14 w-14 rounded-xl bg-muted flex items-center justify-center">
+    <View
+      className="h-14 w-14 rounded-xl bg-muted flex items-center justify-center"
+      style={{
+        borderColor: Colors.$outlinePrimary,
+        borderWidth: 2,
+        backgroundColor: Colors.$backgroundPrimaryMedium,
+      }}
+    >
       {Icon ? (
         <Icon height={24} width={24} strokeWidth={2} stroke={Colors.$textPrimary} />
       ) : iconImageSrc ? (
@@ -339,33 +386,47 @@ const CollectionsAvatar = ({
 }
 
 export const CollectionListItem = ({ collection }: { collection: CollectionLike }) => {
-  const { get: getTagCategory } = usePopulateTagCategory(collection.tags_cache)
   const { card } = useCardDetails()
   const [expanded, setExpanded] = useState(false)
   const isWishlist = collection?.id === 'wishlist'
-  const toggleWishlist = useToggleWishlist()
+  const toggleWishlist = useToggleWishlist('card')
 
   const ItemView = () => (
     <TouchableOpacity
-      className="flex flex-row items-center gap-4 px-4"
-      key={collection.id}
-      {...(isWishlist
-        ? { onPress: () => card && toggleWishlist.mutate({ kind: 'card', id: card.id }) }
-        : {})}
+      onPress={
+        isWishlist
+          ? () => card && toggleWishlist.mutate({ kind: 'card', id: card.id })
+          : () => setExpanded(!expanded)
+      }
     >
-      <CollectionsAvatar icon={Heart} iconImageSrc={collection.cover_image_url} />
-      <View key={collection.id} className="shrink-0 grow">
-        <Text className="text-lg font-medium">{collection.name}</Text>
-        <Text
-          className="text-sm"
-          style={{
-            color: Colors.$textSecondary,
-          }}
-        >
-          {collection.description}
-        </Text>
+      <View
+        style={{
+          display: 'flex',
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: Spacings.s4,
+          paddingRight: Spacings.s6,
+          padding: Spacings.s4,
+        }}
+        key={collection.id}
+      >
+        <CollectionsAvatar
+          icon={isWishlist ? Heart : Blocks}
+          iconImageSrc={collection.cover_image_url}
+        />
+        <View key={collection.id} className="shrink-0 grow">
+          <Text className="text-lg font-medium">{collection.name}</Text>
+          <Text
+            className="text-sm"
+            style={{
+              color: Colors.$textSecondary,
+            }}
+          >
+            {collection.description}
+          </Text>
+        </View>
+        <RadioButton selected={collection.has_item} />
       </View>
-      <RadioButton selected={collection.has_item} />
     </TouchableOpacity>
   )
 
@@ -374,12 +435,8 @@ export const CollectionListItem = ({ collection }: { collection: CollectionLike 
   }
 
   return (
-    <ExpandableSection
-      expanded={expanded}
-      sectionHeader={<ItemView />}
-      onPress={() => setExpanded(!expanded)}
-    >
-      <CollectionCardEntries collection={collection} />
+    <ExpandableSection expanded={expanded} sectionHeader={<ItemView />}>
+      <CollectionCardEntries collection={collection} isShown={expanded} />
     </ExpandableSection>
   )
 }

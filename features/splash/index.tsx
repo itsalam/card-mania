@@ -2,7 +2,7 @@
 import Logo from '@/assets/images/splash-logo.svg'
 import { Background } from '@/components/Background'
 import { Button } from '@/components/ui/button'
-import { Input, InputField } from '@/components/ui/input'
+import { Input } from '@/components/ui/input'
 import { Separator } from '@/components/ui/separator'
 import { Spinner } from '@/components/ui/spinner'
 import { Text } from '@/components/ui/text'
@@ -164,11 +164,11 @@ export function SplashPage() {
             <Text className="text-sm text-white">Sign up</Text>
           </Button>
         </View>
-        <Input className="flex items-center bg-background-100 px-4" size="xl">
-          <User size={20} onPress={handleAnonSignIn} />
-          <Separator orientation="vertical" className="mx-2 background-black w-[2px]" />
-          <InputField className="flex-1" />
-        </Input>
+        <Input
+          leadingAccessory={<User size={20} onPress={handleAnonSignIn} />}
+          className="flex items-center bg-background-100 px-4"
+          size="xl"
+        />
         <BaseButton>
           <View className="w-full flex flex-row justify-center">
             <Text className="text-white">Sign in</Text>

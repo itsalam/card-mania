@@ -40,10 +40,23 @@ export async function viewCollectionItemsForCard(
   const { data, error } = await supabase.rpc(
     "collection_items_by_ref",
     { p_ref_id: cardId, p_collection_id: collectionId },
-  ).select(`
-    *
-  `);
-  return unwrap(data, error);
+  ).select(
+    "*, grade_condition:grade_condition_id(id, company_id, grade_value, label)",
+  );
+
+  const formattedData = unwrap(data, error);
+  let records = Array.isArray(formattedData) ? formattedData : [formattedData];
+
+  const result = records.map((r) => ({
+    ...r,
+    grade_condition: r.grade_condition
+      ? r
+        .grade_condition as unknown as Database["public"]["Tables"][
+          "grade_conditions"
+        ]["Row"]
+      : null,
+  }));
+  return result;
 }
 
 // /** Create a new collection (RPC: create_collection) */

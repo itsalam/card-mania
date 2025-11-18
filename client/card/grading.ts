@@ -56,7 +56,7 @@ async function fetchCompaniesWithGrades(
         .order("slug", { ascending: true })
         .order("grade_value", {
             ascending: false,
-            foreignTable: "grade_conditions",
+            referencedTable: "grade_conditions",
         });
 
     if (companySlug) q = q.eq("slug", companySlug);

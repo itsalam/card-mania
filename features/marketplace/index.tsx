@@ -1,6 +1,8 @@
+import { CARD_ASPECT_RATIO } from '@/components/consts'
 import { ExpandableCard } from '@/components/content-card'
 import { ExpandedContent } from '@/components/content-card/ExpandableCard'
 import { SearchBar } from '@/components/search-bar'
+import { THUMBNAIL_HEIGHT, THUMBNAIL_WIDTH } from '@/components/tcg-card/consts'
 import { LiquidGlassCard } from '@/components/tcg-card/GlassCard'
 import { Card } from '@/components/ui/card/index'
 import { HStack } from '@/components/ui/hstack'
@@ -8,10 +10,7 @@ import { cn } from '@/lib/utils'
 import React, { ComponentProps } from 'react'
 import { SafeAreaView, ScrollView } from 'react-native'
 
-const ITEM_WIDTH = 96
-const ITEM_ASPECT_RATIO = 5 / 7
-const CONDENSED_ITEM_HEIGHT = ITEM_WIDTH / ITEM_ASPECT_RATIO
-const EXPANDED_CARD_HEIGHT = CONDENSED_ITEM_HEIGHT + 24
+const EXPANDED_CARD_HEIGHT = THUMBNAIL_HEIGHT + 24
 
 export function PlaceholderBox({
   isOpen = false,
@@ -33,15 +32,15 @@ export default function MarketplaceScreen() {
       <ScrollView>
         <ExpandableCard
           title="Featured"
-          itemWidth={ITEM_WIDTH}
+          itemWidth={THUMBNAIL_WIDTH}
           containerClassNames="gap-6 px-6"
           items={[]}
           renderItem={({ isOpen }) => (
             <PlaceholderBox
               isOpen={isOpen}
               style={{
-                height: isOpen ? EXPANDED_CARD_HEIGHT : CONDENSED_ITEM_HEIGHT,
-                aspectRatio: ITEM_ASPECT_RATIO,
+                height: isOpen ? EXPANDED_CARD_HEIGHT : THUMBNAIL_HEIGHT,
+                aspectRatio: CARD_ASPECT_RATIO,
 
                 zIndex: 0,
               }}
@@ -49,43 +48,42 @@ export default function MarketplaceScreen() {
           )}
         />
         <Card>
-                    <ExpandableCard
-          title="Auctions - Graded"
-          itemWidth={ITEM_WIDTH}
-          containerClassNames="gap-6 px-6"
-          items={[]}
-          renderItem={({ isOpen }) => (
-            <PlaceholderBox
-              isOpen={isOpen}
-              style={{
-                height: isOpen ? EXPANDED_CARD_HEIGHT : CONDENSED_ITEM_HEIGHT,
-                aspectRatio: ITEM_ASPECT_RATIO,
-
-                zIndex: 0,
-              }}
-            />
-          )}
-        />
-
-                    <ExpandableCard
-          title="Auctions - Sealed"
-          itemWidth={ITEM_WIDTH}
+          <ExpandableCard
+            title="Auctions - Graded"
+            itemWidth={THUMBNAIL_WIDTH}
             containerClassNames="gap-6 px-6"
             items={[]}
-          renderItem={({ isOpen }) => (
-            <PlaceholderBox
-              isOpen={isOpen}
-              style={{
-                height: isOpen ? EXPANDED_CARD_HEIGHT : CONDENSED_ITEM_HEIGHT,
-                aspectRatio: ITEM_ASPECT_RATIO,
+            renderItem={({ isOpen }) => (
+              <PlaceholderBox
+                isOpen={isOpen}
+                style={{
+                  height: isOpen ? EXPANDED_CARD_HEIGHT : THUMBNAIL_HEIGHT,
+                  aspectRatio: CARD_ASPECT_RATIO,
 
-                zIndex: 0,
-              }}
-            />
-          )}
-        />
+                  zIndex: 0,
+                }}
+              />
+            )}
+          />
+
+          <ExpandableCard
+            title="Auctions - Sealed"
+            itemWidth={THUMBNAIL_WIDTH}
+            containerClassNames="gap-6 px-6"
+            items={[]}
+            renderItem={({ isOpen }) => (
+              <PlaceholderBox
+                isOpen={isOpen}
+                style={{
+                  height: isOpen ? EXPANDED_CARD_HEIGHT : THUMBNAIL_HEIGHT,
+                  aspectRatio: CARD_ASPECT_RATIO,
+
+                  zIndex: 0,
+                }}
+              />
+            )}
+          />
         </Card>
-
       </ScrollView>
     </SafeAreaView>
   )

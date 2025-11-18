@@ -1,4 +1,5 @@
 import { useCardQuery } from '@/client/card'
+import { useImageProxy } from '@/client/image-proxy'
 import { BlurBackground } from '@/components/Background'
 import PriceGraph from '@/components/graphs/PriceGraph'
 import { GraphInputKey } from '@/components/graphs/ui/types'
@@ -6,37 +7,64 @@ import { LiquidGlassCard } from '@/components/tcg-card/GlassCard'
 import { useInvalidateOnFocus } from '@/components/tcg-card/helpers'
 import { Heading } from '@/components/ui/heading'
 import { Text } from '@/components/ui/text'
-import { chunk, formatLabel, formatPrice, splitToNChunks } from '@/components/utils'
+import { chunk, formatLabel, formatPrice } from '@/components/utils'
 import { qk } from '@/lib/store/functions/helpers'
 import { Image } from 'expo-image'
-import { Eye, EyeOff, Plus, Undo2, X } from 'lucide-react-native'
+import { Eye, EyeOff, Undo2, X } from 'lucide-react-native'
 import { SafeAreaView } from 'moti'
-import React, { useMemo, useState } from 'react'
-import { Dimensions, FlatList, Pressable, ScrollView, View } from 'react-native'
-import Animated, { useAnimatedStyle } from 'react-native-reanimated'
+import React, { ReactNode, useCallback, useEffect, useMemo, useState } from 'react'
+import {
+  Dimensions,
+  FlatList,
+  NativeScrollEvent,
+  NativeSyntheticEvent,
+  ScrollView,
+  View,
+  ViewStyle,
+} from 'react-native'
+import Animated, {
+  useAnimatedStyle,
+  useDerivedValue,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { Button, Colors, Dialog, PanningProvider } from 'react-native-ui-lib'
+import { Button, Colors, Dialog, PanningProvider, Spacings } from 'react-native-ui-lib'
 import Carousel from 'react-native-ui-lib/carousel'
+import { THUMBNAIL_HEIGHT, THUMBNAIL_WIDTH } from '../../consts'
 import { AddToCollectionsView } from './footer/add-to-collections'
 import { CreateCollectionView } from './footer/create-collections'
 import { Footer } from './footer/footer'
 import { useSelectedGrades, useTransitionAnimation } from './helpers'
-import { CardDetailsProvider } from './provider'
-import { Attribute, CardScreenHeader } from './ui'
+import { CardDetailsProvider, useCardDetails } from './provider'
+import { Attribute, CardScreenHeader, Prices } from './ui'
+
+const { width: W, height: H } = Dimensions.get('window')
 
 export default function FocusCardView({
   cardId,
-  baseImage,
   animateFrom,
 }: {
   cardId: string
-  baseImage?: string
   animateFrom: { x: number; y: number; width: number; height: number }
 }) {
+  console.log('LOADED!!')
   const { data: cardData } = useCardQuery(cardId)
+
   const { cardStyle, scrimStyle, close } = useTransitionAnimation(animateFrom)
 
-  const finalImage = baseImage || cardData?.image?.url || ''
+  const {
+    data: image,
+    isLoading: isImageLoading,
+    status,
+  } = useImageProxy({
+    variant: 'detail',
+    shape: 'card',
+    cardId: cardId,
+    kind: 'front',
+    queryHash: cardData?.image?.query_hash ?? undefined,
+  })
+
   const grades = cardData?.grades_prices ?? {}
   const prices = useMemo(
     () => Object.entries(grades || {}).sort((a, b) => b[0].localeCompare(a[0])),
@@ -53,83 +81,9 @@ export default function FocusCardView({
     visibleGrades
   )
 
-  const [images, setImages] = useState([finalImage])
+  const [images, setImages] = useState([])
 
   useInvalidateOnFocus(qk.recent)
-
-  const insets = useSafeAreaInsets()
-  const { width: W, height: H } = Dimensions.get('window')
-  const container = useAnimatedStyle(() => ({
-    width: W,
-    height: H,
-    position: 'absolute',
-  }))
-
-  const handleClose = () => {
-    close()
-  }
-
-  const NUM_PRICE_ROWS = 2
-  const rows = useMemo(
-    () =>
-      splitToNChunks(
-        prices.filter(([key]) => visibleGrades.includes(key)),
-        NUM_PRICE_ROWS
-      ).filter((r) => r.length > 0),
-    [prices, visibleGrades]
-  )
-
-  const Prices = (
-    <ScrollView
-      horizontal
-      bounces={false}
-      showsHorizontalScrollIndicator={true}
-      alwaysBounceVertical={true}
-      className="overflow-visible p-4"
-      style={{ alignSelf: 'stretch', maxHeight: 200, flexGrow: 0, flexShrink: 0 }}
-      contentContainerClassName="flex gap-2 flex-col"
-    >
-      {rows.map((row, i) => (
-        <View key={`row-${i}`} className={'flex flex-row gap-2 overflow-visible pr-4'}>
-          {row.map(([key, value]) => {
-            return (
-              <LiquidGlassCard
-                className="flex items-center justify-center"
-                style={{ opacity: value ? 1 : 0.5, minWidth: 100 }}
-                size="sm"
-                key={`${key}-${value}-${i}`}
-                onPress={() => {
-                  setSelectedGrades((prev) =>
-                    prev.includes(key) ? prev.filter((grade) => grade !== key) : [...prev, key]
-                  )
-                }}
-              >
-                <View className="flex flex-row gap-2 items-center justify-end">
-                  {selectedGrades.includes(key) ? <Eye size={16} /> : <EyeOff size={16} />}
-                  <Text className="text-lg font-bold text-muted-foreground text-nowrap text-right font-spaceMono">
-                    {formatLabel(key)}
-                  </Text>
-                </View>
-                <Text className="text-3xl capitalize text-nowrap text-right">
-                  {value ? formatPrice(value) : '--'}
-                </Text>
-              </LiquidGlassCard>
-            )
-          })}
-          {rows.length === i + 1 && (
-            <LiquidGlassCard
-              className="flex items-center justify-center"
-              style={{ aspectRatio: 1 }}
-              size="sm"
-              onPress={() => setShowMoreGrades(!showMoreGrades)}
-            >
-              <Plus size={28} />
-            </LiquidGlassCard>
-          )}
-        </View>
-      ))}
-    </ScrollView>
-  )
 
   return (
     <CardDetailsProvider
@@ -139,98 +93,86 @@ export default function FocusCardView({
         { title: 'Create Collection', page: CreateCollectionView },
       ]}
     >
-      <Animated.View style={cardStyle}>
-        <Image
-          style={{ width: '100%', aspectRatio: 5 / 7 }}
-          source={{ uri: finalImage, cacheKey: cardId }}
-          cachePolicy="memory-disk"
-          transition={0}
-          contentFit="cover"
-        />
-      </Animated.View>
-      <Animated.View style={[scrimStyle, container]}>
-        <BlurBackground opacity={[1.0, 0.7]} start={{ x: 0.5, y: 0.5 }} end={{ x: 0.5, y: 0 }}>
-          <Pressable
-            onPress={handleClose}
-            style={{ position: 'absolute', right: 16, top: insets.top + 16, zIndex: 20 }}
-          >
-            <X size={20} />
-          </Pressable>
-          <SafeAreaView className="overflow-visible" style={{ width: W }}>
-            <ScrollView
-              contentContainerStyle={{ paddingBottom: insets.bottom + 20 }}
-              className="h-full overflow-visible"
-              contentContainerClassName="flex flex-col items-start justify-stretch gap-4 pt-4"
+      <CardDetailContainer
+        cardStyle={cardStyle}
+        scrimStyle={scrimStyle}
+        cardId={cardId}
+        image={image}
+        handleClose={close}
+      >
+        <CardScreenHeader title={'Overview'} />
+        <View className="px-8 flex flex-col items-start justify-stretch gap-4 w-full">
+          <View>
+            <Heading size="4xl">{cardData?.name}</Heading>
+            <Heading className="font-spaceMono font-bold" size="xl">
+              {cardData?.set_name}
+            </Heading>
+          </View>
+
+          <View className="w-full py-4 ">
+            <View
+              style={{
+                minHeight: (W * 0.4 * 7) / 5,
+                display: 'none',
+              }}
+              className="flex-row justify-between w-full"
             >
-              <CardScreenHeader title={'Overview'} />
-              <View className="px-8 flex flex-col items-start justify-stretch gap-4 w-full">
-                <View>
-                  <Heading size="4xl">{cardData?.name}</Heading>
-                  <Heading className="font-spaceMono font-bold" size="xl">
-                    {cardData?.set_name}
-                  </Heading>
-                </View>
-
-                <View className="w-full py-4">
-                  <View
-                    style={{
-                      minHeight: (W * 0.4 * 7) / 5,
-                    }}
-                    className="flex-row justify-between w-full"
-                  >
-                    <Carousel
-                      style={{ flex: 1, minHeight: (W * 0.4 * 7) / 5, width: W * 0.4 }}
-                      pageHeight={(W * 0.4 * 7) / 5}
-                      itemSpacings={10}
-                      pageControlPosition={Carousel.pageControlPositions.UNDER}
-                      showCounter={images.length >= 2}
-                    >
-                      <Image
-                        style={{ height: (W * 0.4 * 7) / 5, aspectRatio: 5 / 7, borderRadius: 4 }}
-                        source={{ uri: finalImage, cacheKey: cardId }}
-                        cachePolicy="memory-disk"
-                        transition={0}
-                        contentFit="cover"
-                      />
-                    </Carousel>
-                    <View className="flex-1 pl-4">
-                      {cardData?.release_date && (
-                        <Attribute
-                          label="Released"
-                          value={new Date(cardData?.release_date).toLocaleDateString()}
-                        />
-                      )}
-                      <Attribute label="Genre" value={cardData?.genre || '--'} />
-                      {cardData?.last_updated && (
-                        <Attribute
-                          label="Last Updated"
-                          value={new Date(cardData?.last_updated).toLocaleDateString()}
-                        />
-                      )}
-                      {/* <Text>{data?.description}</Text> */}
-                    </View>
-                  </View>
-                </View>
-              </View>
-
-              <View className="flex flex-col items-start justify-stretch gap-2 w-full">
-                <CardScreenHeader title={'Prices'} />
-                {Prices}
-
-                <PriceGraph<Record<string, string | number>>
-                  xKey={'date' as GraphInputKey<typeof priceChartingData>}
-                  yKeys={selectedGrades}
-                  data={priceChartingData?.priceData}
+              <Carousel
+                style={{ flex: 1, minHeight: (W * 0.4 * 7) / 5, width: W * 0.4 }}
+                pageHeight={(W * 0.4 * 7) / 5}
+                itemSpacings={10}
+                pageControlPosition={Carousel.pageControlPositions.UNDER}
+                showCounter={images.length >= 2}
+              >
+                <Image
+                  style={{ height: (W * 0.4 * 7) / 5, aspectRatio: 5 / 7, borderRadius: 4 }}
+                  source={{ uri: image, cacheKey: cardId }}
+                  cachePolicy="memory-disk"
+                  transition={0}
+                  contentFit="cover"
                 />
+              </Carousel>
+              <View className="flex-1 pl-4">
+                {cardData?.release_date && (
+                  <Attribute
+                    label="Released"
+                    value={new Date(cardData?.release_date).toLocaleDateString()}
+                  />
+                )}
+                <Attribute label="Genre" value={cardData?.genre || '--'} />
+                {cardData?.last_updated && (
+                  <Attribute
+                    label="Last Updated"
+                    value={new Date(cardData?.last_updated).toLocaleDateString()}
+                  />
+                )}
+                {/* <Text>{data?.description}</Text> */}
               </View>
+            </View>
+          </View>
+        </View>
 
-              <View className="pt-4 flex flex-col items-start justify-stretch gap-2 w-full">
-                <CardScreenHeader title={'Offers'} />
-              </View>
-            </ScrollView>
-          </SafeAreaView>
-        </BlurBackground>
-      </Animated.View>
+        <View className="flex flex-col items-start justify-stretch gap-2 w-full">
+          <CardScreenHeader title={'Prices'} />
+          <Prices
+            prices={prices}
+            visibleGrades={visibleGrades}
+            setSelectedGrades={setSelectedGrades}
+            setShowMoreGrades={setShowMoreGrades}
+            selectedGrades={selectedGrades}
+          />
+
+          <PriceGraph<Record<string, string | number>>
+            xKey={'date' as GraphInputKey<typeof priceChartingData>}
+            yKeys={selectedGrades}
+            data={priceChartingData?.priceData}
+          />
+        </View>
+
+        <View className="pt-4 flex flex-col items-start justify-stretch gap-2 w-full">
+          <CardScreenHeader title={'Offers'} />
+        </View>
+      </CardDetailContainer>
 
       <Dialog
         visible={showMoreGrades}
@@ -296,5 +238,137 @@ export default function FocusCardView({
       </Dialog>
       <Footer card={cardData} />
     </CardDetailsProvider>
+  )
+}
+
+const CardDetailContainer = ({
+  children,
+  cardStyle,
+  image,
+  cardId,
+  handleClose,
+}: {
+  cardId: string
+  image?: string
+  cardStyle: ViewStyle
+  scrimStyle: ViewStyle
+  handleClose: () => void
+  children: ReactNode
+}) => {
+  const { footerFullView, setFooterFullView } = useCardDetails()
+  const container = useAnimatedStyle(() => ({
+    opacity: withTiming(footerFullView ? 0.3 : 1.0),
+  }))
+  const footerFullViewSV = useSharedValue(footerFullView)
+
+  // 2. Keep it in sync when React state changes
+  useEffect(() => {
+    footerFullViewSV.value = footerFullView
+  }, [footerFullView, footerFullViewSV])
+
+  const y = useSharedValue(0)
+
+  const onScroll = useCallback((e: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const offsetY = e.nativeEvent.contentOffset.y
+    y.set(offsetY)
+  }, [])
+  const travelDistance = 0.6 * ((W * 7) / 5)
+  const scrollProgress = useDerivedValue(() =>
+    Math.min(Math.max(0, y.value / (travelDistance / 3)), 1)
+  )
+  const opacity = useDerivedValue(
+    () => Math.min(Math.max(0, scrollProgress.value), 1),
+    [scrollProgress]
+  )
+
+  const containerPadding = useAnimatedStyle(() => ({
+    paddingTop: travelDistance * (1 - scrollProgress.value),
+  }))
+
+  const backgroundOpacity = useDerivedValue(() => [1, Math.min(opacity.value, 0.8)], [opacity])
+
+  const insets = useSafeAreaInsets()
+
+  return (
+    <Animated.View
+      style={[
+        {
+          width: W,
+          height: H,
+        },
+      ]}
+    >
+      <Animated.View style={[cardStyle, { transform: [{ translateY: insets.top }] }]}>
+        <Image
+          style={{ width: '100%', aspectRatio: 5 / 7 }}
+          source={[{ uri: image, cacheKey: cardId, width: W, height: W / (5 / 7) }]}
+          placeholder={{
+            cacheKey: `${cardId}-thumb`,
+            width: THUMBNAIL_WIDTH,
+            height: THUMBNAIL_HEIGHT,
+          }}
+          cachePolicy="memory-disk"
+          transition={0}
+          contentFit="cover"
+        />
+      </Animated.View>
+      <BlurBackground
+        backgroundOpacity={backgroundOpacity}
+        start={{ x: 0.5, y: 0.8 }}
+        end={{ x: 0.5, y: 0 }}
+        opacity={opacity}
+      >
+        <Animated.View
+          onStartShouldSetResponderCapture={() => {
+            // When footer is full view, capture touches so children don't see them
+            return footerFullViewSV.value
+          }}
+          // Handle the "pointer up" equivalent
+          onResponderRelease={(e) => {
+            if (footerFullViewSV.value) {
+              setFooterFullView(false)
+            }
+          }}
+          style={[
+            container,
+            {
+              width: W,
+              height: H,
+            },
+          ]}
+        >
+          <SafeAreaView className="overflow-visible" style={{ width: '100%' }}>
+            <Button
+              onPress={handleClose}
+              style={{ position: 'absolute', left: 16, top: insets.top + 16, zIndex: 20 }}
+            >
+              <X size={20} />
+            </Button>
+            <ScrollView
+              onScroll={onScroll}
+              scrollEventThrottle={16} // ~60fps updates
+              contentContainerStyle={{ paddingBottom: insets.bottom + 20 }}
+              className="h-full overflow-visible"
+              contentContainerClassName="flex flex-col items-start justify-stretch gap-4 pt-4"
+            >
+              <Animated.View
+                style={[
+                  {
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'flex-start',
+                    gap: Spacings.s4,
+                    paddingTop: Spacings.s4,
+                  },
+                  containerPadding,
+                ]}
+              >
+                {children}
+              </Animated.View>
+            </ScrollView>
+          </SafeAreaView>
+        </Animated.View>
+      </BlurBackground>
+    </Animated.View>
   )
 }

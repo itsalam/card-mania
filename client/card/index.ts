@@ -1,4 +1,5 @@
 import { TCard } from "@/constants/types";
+import { qk } from "@/lib/store/functions/helpers";
 import { useCardStore } from "@/lib/store/provider"; // your useStores()
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo } from "react";
@@ -47,7 +48,7 @@ export function useCardQuery(
         Error,
         TCard | undefined
     >({
-        queryKey: ["card", cardId],
+        queryKey: qk.card(entry?.data?.id ?? cardId ?? "undefined"),
         enabled: Boolean(enabled && !!cardId && isStale), // only fetch when missing/stale
         queryFn: async () => {
             if (!cardId) throw new Error("cardId is required");

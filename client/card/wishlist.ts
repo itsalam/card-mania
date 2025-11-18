@@ -1,22 +1,16 @@
 import { TCard } from "@/constants/types";
 import { supabase } from "@/lib/store/client";
+import { qk, WishlistKey } from "@/lib/store/functions/helpers";
 import { Database, Json } from "@/lib/store/supabase";
 import {
     InfiniteData,
     QueryClient,
-    QueryKey,
     useInfiniteQuery,
     useMutation,
     useQuery,
     useQueryClient,
 } from "@tanstack/react-query";
-
-enum WishlistKey {
-    Single = "wishlist/one",
-    Set = "wishlist/set",
-    View = "wishlist/view",
-    Totals = "wishlist/totals",
-}
+import { ViewParams } from "./types";
 
 const buildPrefixKey = (wishlistKey: WishlistKey, separator = "/") => {
     return [...wishlistKey.split(separator)];
@@ -70,44 +64,30 @@ export const wishlistBatcher = new WishlistBatcher();
 export function useIsWishlisted(kind: string, ids: string[]) {
     const sorted = [...new Set(ids)].sort(); // stable key
     const qc = useQueryClient();
-    const isSingle = sorted.length === 1;
+    const queryKey = qk.wishlist("card");
 
-    const cachedFromSingle = isSingle
-        ? qc.getQueryCache().findAll({
-            queryKey: [...buildPrefixKey(WishlistKey.Single), kind, ...sorted],
-        }).map((q) => q.state.data as Set<string> | undefined)[0]
-        : undefined;
+    let cached = (qc.getQueryCache().find<Set<string>>({
+        queryKey,
+    })?.state.data) as Set<string>;
+    cached = !cached || Object.entries(cached).length === 0
+        ? new Set<string>()
+        : cached;
 
-    const cachedFromSet = isSingle && !Boolean(cachedFromSingle)
-        ? qc.getQueryCache().findAll({
-            queryKey: [...buildPrefixKey(WishlistKey.Set), kind],
-        })
-            .map((q) => q.state.data as Set<string> | undefined)
-            .find((set) => set?.has(ids[0]))
-        : undefined;
+    const unvisited = sorted.filter((id) => !cached.has(id));
+    const visited = new Set(sorted.filter((id) => cached.has(id)));
 
-    const cached = cachedFromSingle ?? cachedFromSet;
-
-    const queryKey = [
-        ...(isSingle ? WishlistKey.Single : WishlistKey.Set).split("/"),
-        kind,
-        ...sorted,
-    ];
     return useQuery({
-        enabled: !Boolean(cached) && ids.length > 0,
-        initialData: cached ?? undefined,
+        enabled: cached.size === 0 && unvisited.length > 0,
+        initialData: visited,
         queryKey,
         queryFn: async () => {
-            return await wishlistBatcher.request(kind, sorted);
+            const result = await wishlistBatcher.request(kind, unvisited);
+            const newSet = new Set<string>([...cached, ...result]);
+            return newSet;
         },
         staleTime: 60_000,
     });
 }
-
-export type ViewParams = {
-    key: QueryKey;
-    pageSize?: number;
-};
 
 type ToggleWishlistParams = {
     kind: string;
@@ -122,102 +102,68 @@ type ToggleWishlistContext = Partial<{
     touched?: boolean;
 }>;
 
-export function useToggleWishlist() {
+function setWishlist(
+    qc: QueryClient,
+    kind: string,
+    fn: (s: Set<string>) => Set<string>,
+) {
+    qc.setQueryData<Set<string>>(
+        qk.wishlist(kind),
+        (prev) => fn(prev ? new Set(prev) : new Set()),
+    );
+}
+
+export function useToggleWishlist(kind: string) {
     const qc = useQueryClient();
-    return useMutation<
-        boolean,
-        Error,
-        ToggleWishlistParams,
-        ToggleWishlistContext
-    >({
-        mutationFn: async (
-            { kind, id, p_metadata }: ToggleWishlistParams,
-        ) => {
+
+    return useMutation({
+        mutationFn: async ({ kind, id, p_metadata }: ToggleWishlistParams) => {
             const { data, error } = await supabase.rpc("wishlist_toggle", {
                 p_kind: kind,
                 p_ref_id: id,
                 p_metadata: p_metadata,
             });
             if (error) throw error;
-            return data[0].is_wishlisted;
+            return { id, on: data[0].is_wishlisted };
         },
-        onMutate: async ({ kind, id, viewParams }) => {
-            const idKey = `${id}`;
-            setSingleQueryData({ idKey, kind, qc });
-            setMultipleQueryData({ idKey, kind, qc });
 
-            const ctx: ToggleWishlistContext = {};
-            if (viewParams) {
-                await qc.cancelQueries({ queryKey: viewParams.key });
-                const prev = qc.getQueryData<InfiniteData<Row[]>>(
-                    viewParams.key,
-                );
-                if (prev) {
-                    ctx.prev = prev;
-                    const pages = prev.pages.map((p) =>
-                        p.filter((r) => r.id !== id)
-                    );
-                    qc.setQueryData<InfiniteData<Row[]>>(viewParams.key, {
-                        pageParams: prev.pageParams,
-                        pages,
-                    });
-                    ctx.touched = true;
-                }
-            }
-            return ctx;
-        },
-        onError: (_e, { kind, id, viewParams }, ctx) => {
-            const idKey = `${id}`;
-            setSingleQueryData({ idKey, kind, qc });
-            setMultipleQueryData({ idKey, kind, qc });
+        onMutate: async ({ id }) => {
+            await qc.cancelQueries({ queryKey: qk.wishlist(kind) });
 
-            if (ctx?.prev && ctx.touched && viewParams) {
-                qc.setQueryData<InfiniteData<Row[]>>(viewParams.key, ctx.prev);
-            }
-        },
-        onSuccess: async (isOn, { id, kind, viewParams }) => {
-            setSingleQueryData({ idKey: id, kind, qc, isOn });
-            setMultipleQueryData({ idKey: id, kind, qc, isOn });
-            if (isOn && viewParams) {
-                const { data: row } = await supabase
-                    .from("wishlist_cards_enriched")
-                    .select("*")
-                    .eq("id", id)
-                    .order("created_at", { ascending: false })
-                    .limit(1)
-                    .maybeSingle();
-                if (row) {
-                    const prev = qc.getQueryData<InfiniteData<Row[]>>(
-                        viewParams.key,
-                    );
-                    if (prev) {
-                        const pages = [...prev.pages];
-                        pages[0] = [row as Row, ...pages[0]];
-                        if (
-                            viewParams.pageSize &&
-                            pages[0].length > viewParams.pageSize
-                        ) pages[0].pop();
-                        qc.setQueryData<InfiniteData<Row[]>>(viewParams.key, {
-                            pageParams: prev.pageParams,
-                            pages,
-                        });
-                    }
-                } else {
-                    // If we can't fetch the single row (filter mismatch), just invalidate
-                    qc.invalidateQueries({ queryKey: viewParams.key });
-                }
-            } else {
-                qc.invalidateQueries({
-                    queryKey: buildPrefixKey(WishlistKey.View),
-                });
-            }
-
-            qc.invalidateQueries({
-                queryKey: buildPrefixKey(WishlistKey.Totals),
+            // Optimistically flip Set
+            setWishlist(qc, kind, (s) => {
+                const next = new Set(s);
+                next.has(id) ? next.delete(id) : next.add(id);
+                return next;
             });
+
+            // Optionally patch entity map’s wishlisted flag for instant UI
+            return {
+                prev: qc.getQueryData<Set<string>>(qk.wishlist(kind)) ??
+                    new Set(),
+                id,
+            };
         },
-        onSettled: (_d, _e, { viewParams }) => {
-            if (viewParams) qc.invalidateQueries({ queryKey: viewParams.key });
+
+        onError: (_e, _vars, ctx) => {
+            // rollback set & entity
+            if (!ctx) return;
+            qc.setQueryData(qk.wishlist(kind), ctx.prev);
+        },
+
+        onSuccess: ({ id, on }) => {
+            // align with server (in case optimistic was wrong)
+            setWishlist(qc, kind, (s) => {
+                const next = new Set(s);
+                on ? next.add(id) : next.delete(id);
+                return next;
+            });
+            //   patchCard(qc, id, { wishlisted: on });
+        },
+
+        onSettled: () => {
+            // If you have aggregates, invalidate them—NOT your card lists
+            qc.invalidateQueries({ queryKey: ["wishlist", "totals", kind] });
         },
     });
 }
@@ -299,62 +245,34 @@ export function useWishlistCardsEnriched(opts?: {
 }
 
 // Helpers
+//     { idKey, kind, qc, isOn }: {
+//         idKey: string;
+//         kind: string;
+//         qc: QueryClient;
+//         isOn?: boolean;
+//     },
+// ) => {
+//     qc.getQueryCache().findAll({
+//         queryKey: [...buildPrefixKey(WishlistKey.Set), kind],
+//     })
+//         .forEach((q) => {
+//             const key = q.queryKey as [string, string, ...string[]];
 
-const setSingleQueryData = (
-    { idKey, kind, qc, isOn }: {
-        idKey: string;
-        kind: string;
-        qc: QueryClient;
-        isOn?: boolean;
-    },
-) => {
-    qc.setQueryData<Set<string>>(
-        [...buildPrefixKey(WishlistKey.Single), kind, idKey],
-        (prev) => {
-            const next = new Set(prev ?? []);
-            if (typeof isOn === "boolean") {
-                if (isOn) {
-                    next.add(idKey);
-                } else {
-                    next.delete(idKey);
-                }
-            } else {
-                next.has(idKey) ? next.delete(idKey) : next.add(idKey);
-            }
-            return next;
-        },
-    );
-};
-
-const setMultipleQueryData = (
-    { idKey, kind, qc, isOn }: {
-        idKey: string;
-        kind: string;
-        qc: QueryClient;
-        isOn?: boolean;
-    },
-) => {
-    qc.getQueryCache().findAll({
-        queryKey: [...buildPrefixKey(WishlistKey.Set), kind],
-    })
-        .forEach((q) => {
-            const key = q.queryKey as [string, string, ...string[]];
-
-            const [, , ...ids] = key;
-            if (ids?.includes(idKey)) {
-                qc.setQueryData<Set<string>>(key, (prev) => {
-                    const next = new Set(prev ?? []);
-                    if (typeof isOn === "boolean") {
-                        if (isOn) {
-                            next.add(idKey);
-                        } else {
-                            next.delete(idKey);
-                        }
-                    } else {
-                        next.has(idKey) ? next.delete(idKey) : next.add(idKey);
-                    }
-                    return next;
-                });
-            }
-        });
-};
+//             const [, , ...ids] = key;
+//             if (ids?.includes(idKey)) {
+//                 qc.setQueryData<Set<string>>(key, (prev) => {
+//                     const next = new Set(prev ?? []);
+//                     if (typeof isOn === "boolean") {
+//                         if (isOn) {
+//                             next.add(idKey);
+//                         } else {
+//                             next.delete(idKey);
+//                         }
+//                     } else {
+//                         next.has(idKey) ? next.delete(idKey) : next.add(idKey);
+//                     }
+//                     return next;
+//                 });
+//             }
+//         });
+// };

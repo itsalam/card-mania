@@ -16,12 +16,25 @@ export function unwrap<T>(data: T | null, error: PostgrestError | null): T {
   return data;
 }
 
+export enum WishlistKey {
+  Default = "wishlist",
+  View = "wishlist/view",
+  Totals = "wishlist/totals",
+}
+
 export const qk = {
   me: ["me"] as const,
+
+  card: (cardId: string) => ["card", cardId] as const,
   profile: ["profile"] as const,
   collections: ["collections", "me"] as const,
-  collectionForCard: (cardId: string) =>
-    ["collections", "card", cardId] as const,
+  collectionForCard: (cardId: string, userId?: string) =>
+    ["collections", "card", userId ?? "me", cardId] as const,
   collectionItems: (id: string) => ["collections", id, "items"] as const,
   recent: ["recent", "me"] as const,
+  wishlist: (kind: string) => [
+    WishlistKey.Default,
+    kind,
+  ],
+  userCards: (userId?: string) => ["user", userId ?? "me", "cards"] as const,
 };

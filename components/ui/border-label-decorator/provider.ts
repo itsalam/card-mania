@@ -8,6 +8,8 @@ export type FieldDecoratorStore = {
     opacity?: DerivedValue<number>;
     floatOnFocus?: boolean;
     forceFloat?: boolean;
+    onFocus?: () => void;
+    onBlur?: () => void;
 };
 
 export const FieldDecoratorContext = createContext<FieldDecoratorStore>({

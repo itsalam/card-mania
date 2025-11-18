@@ -1,13 +1,11 @@
 import { useIsWishlisted, useToggleWishlist } from '@/client/card/wishlist'
 import { getDefaultPrice } from '@/components/tcg-card/helpers'
-import { Button } from '@/components/ui/button'
 import { Swapper } from '@/components/ui/swapper'
 import { Text } from '@/components/ui/text'
 import { TCard } from '@/constants/types'
 import { ChevronLeft, FolderHeart, ShoppingCart, Star, X } from 'lucide-react-native'
 import { useEffect, useMemo, useRef } from 'react'
 import { Dimensions, View } from 'react-native'
-import { useReanimatedKeyboardAnimation } from 'react-native-keyboard-controller'
 import Animated, {
   FadeIn,
   FadeInLeft,
@@ -15,19 +13,13 @@ import Animated, {
   FadeOut,
   FadeOutLeft,
   FadeOutRight,
-  useAnimatedStyle,
-  useSharedValue,
-  withTiming,
 } from 'react-native-reanimated'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { Colors, Typography } from 'react-native-ui-lib'
+import { TouchableOpacity, Typography } from 'react-native-ui-lib'
 import { useCardDetails } from '../provider'
 import DraggableThumbContent from '../ui'
 import { FooterButton } from './components/button'
 
-const { height: H, width: W } = Dimensions.get('window')
-
-const AButton = Animated.createAnimatedComponent(Button)
+const { height: H } = Dimensions.get('window')
 
 export const Footer = ({ card }: { card?: TCard }) => {
   const {
@@ -38,7 +30,7 @@ export const Footer = ({ card }: { card?: TCard }) => {
     setPage,
   } = useCardDetails()
   const { data: wishlistSet } = useIsWishlisted('card', [card?.id].filter(Boolean) as string[])
-  const toggleWishlist = useToggleWishlist()
+  const toggleWishlist = useToggleWishlist('card')
   const grades = useMemo(
     () => (card ? ([getDefaultPrice(card).filter(Boolean)[0]] as string[]) : []),
     [card]
@@ -89,10 +81,25 @@ export const Footer = ({ card }: { card?: TCard }) => {
             </Animated.View>
           )}
           {footerFullView && page !== undefined && (
-            <View className="w-full flex flex-row gap-2 p-4">
-              <AButton
-                variant="ghost"
-                size="icon"
+            <Animated.View
+              key={`footer-header-${page}`}
+              className="w-full flex flex-row gap-2 p-4"
+              entering={
+                page === undefined
+                  ? FadeIn
+                  : page > (prevPage.current ?? -Infinity)
+                  ? FadeInRight.delay(75)
+                  : FadeInLeft.delay(75)
+              }
+              exiting={
+                page === undefined
+                  ? FadeOut
+                  : page > (prevPage.current ?? -Infinity)
+                  ? FadeOutLeft
+                  : FadeOutRight
+              }
+            >
+              <TouchableOpacity
                 style={{ padding: 6, position: 'absolute', left: 12, top: 4 }}
                 onPress={() => {
                   // go back to previous page if any, else close
@@ -103,27 +110,10 @@ export const Footer = ({ card }: { card?: TCard }) => {
                   }
                 }}
                 key={`footer-back-button-${page}`}
-                entering={FadeIn}
-                exiting={FadeOut}
               >
                 {page > 0 ? <ChevronLeft /> : <X />}
-              </AButton>
-              <Animated.View
-                key={`footer-header-${page}`}
-                entering={
-                  page === undefined
-                    ? FadeIn
-                    : page > (prevPage.current ?? -Infinity)
-                    ? FadeInRight.delay(75)
-                    : FadeInLeft.delay(75)
-                }
-                exiting={
-                  page === undefined
-                    ? FadeOut
-                    : page > (prevPage.current ?? -Infinity)
-                    ? FadeOutLeft
-                    : FadeOutRight
-                }
+              </TouchableOpacity>
+              <View
                 style={{
                   flex: 1,
                   flexDirection: 'row',
@@ -132,7 +122,7 @@ export const Footer = ({ card }: { card?: TCard }) => {
                 }}
               >
                 <Text style={Typography.text60M}>{pages?.[page].title}</Text>
-              </Animated.View>
+              </View>
               {/* <FooterButton
               disabled={!card}
               highLighted={card && wishlistSet?.has?.(card.id)}
@@ -143,7 +133,7 @@ export const Footer = ({ card }: { card?: TCard }) => {
               }
             />
             <FooterButton icon={ShoppingCart} label="Add to Cart" onPress={() => {}} fill={false} /> */}
-            </View>
+            </Animated.View>
           )}
         </View>
       }
@@ -154,48 +144,20 @@ export const Footer = ({ card }: { card?: TCard }) => {
 }
 
 const FooterDetails = ({ card }: { card?: TCard }) => {
-  const { footerFullView, setFooterFullView } = useCardDetails()
-  const { height } = useReanimatedKeyboardAnimation() // <- shared values
-  const insets = useSafeAreaInsets()
-
-  const opacity = useSharedValue(footerFullView ? 1 : 0)
-  useEffect(() => {
-    opacity.value = withTiming(footerFullView ? 1 : 0, { duration: 250 })
-  }, [footerFullView])
-
-  const animatedStyle = useAnimatedStyle(() => ({
-    opacity: opacity.value,
-    paddingBottom: Math.max(insets.bottom, -height.value + 12),
-  }))
-
   const { currentPage: page, footerPages: pages } = useCardDetails()
 
   return (
-    <Animated.View
-      style={[
-        {
-          height: H * 0.8,
-          width: '100%',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          backgroundColor: Colors.$backgroundPrimary,
-        },
-        animatedStyle,
-      ]}
-    >
-      <Swapper
-        style={{
-          width: '100%',
-          grow: 1,
-        }}
-        currentKey={page ?? 0}
-        render={(key) => {
-          if (!pages[key].page) return null
-          const Page = pages[key].page
-          return <Page />
-        }}
-      />
-    </Animated.View>
+    <Swapper
+      style={{
+        height: H * 0.8,
+        width: '100%',
+      }}
+      currentKey={page ?? 0}
+      render={(key) => {
+        if (!pages[key].page) return null
+        const Page = pages[key].page
+        return <Page />
+      }}
+    />
   )
 }

@@ -1,86 +1,181 @@
+import {
+  AnimatedProp,
+  Canvas,
+  LinearGradient,
+  Rect,
+  Size,
+  SkPoint,
+  vec,
+} from '@shopify/react-native-skia'
 import { BlurView } from 'expo-blur'
-import { LinearGradient } from 'expo-linear-gradient'
-import { cssInterop } from 'nativewind'
-import { ComponentProps, useMemo } from 'react'
-import { Colors } from 'react-native-ui-lib'
-import { ColorValueArray, OptionalColorValueArray, useBackgroundColors } from './utils'
+import React, { useState } from 'react'
+import { ColorValue, LayoutChangeEvent, StyleSheet, View } from 'react-native'
+import Animated, { DerivedValue, useAnimatedStyle, useDerivedValue } from 'react-native-reanimated'
+import { useBackgroundColors, useSharedValueLogger } from './utils'
 
-cssInterop(BlurView, {
-  className: {
-    target: 'style',
-    nativeStyleToProp: {
-      intensity: true,
-    },
-  },
-})
+type ColorValueArray = readonly [ColorValue, ColorValue, ...ColorValue[]]
+type OptionalColorValueArray = Array<string | undefined>
 
-cssInterop(LinearGradient, {
-  className: {
-    target: 'style',
-    nativeStyleToProp: {
-      colors: true,
-    },
-  },
-})
+const ABlur = Animated.createAnimatedComponent(BlurView)
 
-export function Background({
+const GRADIENT_START = Object.freeze({ x: 0, y: 1 })
+const GRADIENT_END = Object.freeze({ x: 1, y: 0 })
+
+// const S = StyleSheet.create({
+//   root: {
+//     flex: 1,
+//     justifyContent: 'center',
+//     alignItems: 'center',
+//     width: '100%',
+//     height: '100%',
+//     opacity: 1,
+//   },
+// })
+
+// ---- shallow/value equality helpers ----
+const arrEq = (a?: readonly any[], b?: readonly any[]) =>
+  a === b || (!!a && !!b && a.length === b.length && a.every((v, i) => v === b[i]))
+
+const colorsEq = (a?: OptionalColorValueArray, b?: OptionalColorValueArray) => {
+  // compare by value, treating undefined as a value
+  return arrEq(a, b)
+}
+
+const opacityEq = (a?: number | number[], b?: number | number[]) => {
+  if (Array.isArray(a) || Array.isArray(b)) return arrEq(a as any, b as any)
+  return a === b
+}
+
+// ---- component ----
+function BackgroundBase({
   style,
   colors,
   opacity = 1,
+  children,
+  start,
+  end,
   ...props
-}: Omit<ComponentProps<typeof LinearGradient>, 'colors'> & {
+}: React.ComponentProps<typeof View> & {
+  start?: SkPoint
+  end?: SkPoint
   colors?: OptionalColorValueArray
-  opacity?: number | number[]
+  opacity?: AnimatedProp<number | number[]>
 }) {
-  const defaultColors: ColorValueArray = useBackgroundColors()
+  const [size, setSize] = useState<Size>({ width: 0, height: 0 })
 
-  const getOpacity = (index: number) => {
-    if (Array.isArray(opacity)) {
-      return opacity[index]
+  const onLayout = (e: LayoutChangeEvent) => {
+    const { width, height } = e.nativeEvent.layout
+    if (width !== size.width || height !== size.height) {
+      setSize({ width, height })
     }
-    return opacity
   }
 
-  const finalColors = useMemo(
-    () =>
-      (colors ?? defaultColors)
-        .map((color, index) => color || defaultColors[Math.min(defaultColors.length - 1, index)])
-        .map((color, index) => Colors.rgba(color.toString(), getOpacity(index))) as ColorValueArray,
+  const ready = size.width > 0 && size.height > 0
+  const defaultColors: ColorValueArray = useBackgroundColors() // make this hook return a stable array if possible
+  // derive a stable key for defaultColors in case the hook returns a new array with same values
+  const defaultKey = React.useMemo(() => defaultColors.join('|'), [defaultColors])
 
-    [colors, opacity]
-  )
+  const resolveOpacity = (o: AnimatedProp<number | number[]>) => {
+    'worklet'
 
-  console.log(finalColors)
+    // SharedValue / DerivedValue style
+    if (o && typeof o === 'object' && 'value' in o) {
+      return o.value as number | number[]
+    }
+
+    // Plain number / number[] or undefined
+    return (o ?? 1) as number | number[]
+  }
+
+  const rgba = (hex: string, alpha: number): string => {
+    'worklet'
+    const r = parseInt(hex.slice(1, 3), 16)
+    const g = parseInt(hex.slice(3, 5), 16)
+    const b = parseInt(hex.slice(5, 7), 16)
+    return `rgba(${r},${g},${b},${alpha})`
+  }
+
+  const finalColors = useDerivedValue(() => {
+    'worklet'
+    const src = colors ?? defaultColors
+    const filled = src.map((c, i) => c || defaultColors[Math.min(defaultColors.length - 1, i)])
+    const resOpacity = resolveOpacity(opacity)
+    return filled.map((c, i) =>
+      rgba(String(c), (Array.isArray(resOpacity) ? resOpacity[i] : resOpacity)!)
+    )
+  }, [colors, defaultKey, opacity])
+
+  const gradientStart = start
+    ? vec(size.width * start.x, size.height * start.y)
+    : vec(0, size.height)
+
+  const gradientEnd = end ? vec(size.width * end.x, size.height * end.y) : vec(size.width, 0)
 
   return (
-    <LinearGradient
-      colors={finalColors}
-      start={{ x: 0, y: 1 }}
-      end={{ x: 1, y: 0 }}
-      style={[
-        {
-          flex: 1,
-          justifyContent: 'center',
-          alignItems: 'center',
-          width: '100%',
-          height: '100%',
-          opacity: 1,
-        },
-        style,
-      ]}
-      {...props}
-    />
+    <View style={styles.container} onLayout={onLayout}>
+      {ready && (
+        <Canvas style={[StyleSheet.absoluteFill, style]} pointerEvents="none">
+          <Rect x={0} y={0} width={size.width} height={size.height}>
+            <LinearGradient colors={finalColors} start={gradientStart} end={gradientEnd} />
+          </Rect>
+        </Canvas>
+      )}
+      {children}
+    </View>
   )
+  // return (
+  //   <LinearGradient
+  //     colors={finalColors}
+  //     start={GRADIENT_START}
+  //     end={GRADIENT_END}
+  //     style={[S.root, style]} // base style is stable; array identity is fine
+  //     {...props}
+  //   />
+  // )
 }
 
-export function BlurBackground({ children, ...props }: ComponentProps<typeof Background>) {
+// Pure component with custom equality (prevents rerenders if prop *values* are the same)
+export const Background = React.memo(BackgroundBase, (prev, next) => {
+  if (!colorsEq(prev.colors as any, next.colors as any)) return false
+  if (!opacityEq(prev.opacity as any, next.opacity as any)) return false
+  // if you often pass inline styles, consider memoizing them at the callsite,
+  // otherwise shallow-compare here (RN flattens internally anyway).
+  if (prev.style !== next.style) return false
+  // compare other props you pass to LinearGradient if any (start/end are constants here)
+  return true
+})
+
+// Blur variant — no callback component; just memoize the wrapper
+export const BlurBackground = React.memo(function BlurBackground({
+  children,
+  intensity = 30,
+  opacity,
+  backgroundOpacity,
+  ...props
+}: Omit<React.ComponentProps<typeof Background>, 'opacity'> & {
+  intensity?: number
+  opacity: DerivedValue<number>
+  backgroundOpacity?: DerivedValue<number[]>
+}) {
+  const blurOpacity = useAnimatedStyle(
+    () => ({
+      opacity: opacity.value,
+    }),
+    [opacity]
+  )
+  useSharedValueLogger('o', opacity)
   return (
-    <Background {...props}>
-      <BlurView
-        intensity={20}
-        style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
-      />
+    <Background {...props} opacity={backgroundOpacity}>
+      <ABlur intensity={intensity} style={[styles.animatedBlur, blurOpacity]} />
       {children}
     </Background>
   )
-}
+})
+
+const styles = StyleSheet.create({
+  container: {
+    position: 'relative', // required so absoluteFill is relative to this view
+    flex: 1,
+  },
+  animatedBlur: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 },
+})

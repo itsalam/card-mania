@@ -1,5 +1,7 @@
-import { useToggleWishlist, ViewParams } from '@/client/card/wishlist'
+import { ViewParams } from '@/client/card/types'
+import { useToggleWishlist } from '@/client/card/wishlist'
 import { useImageProxy } from '@/client/image-proxy'
+import { CARD_ASPECT_RATIO } from '@/components/consts'
 import { Text } from '@/components/ui/text'
 import { formatPrice } from '@/components/utils'
 import { TCard } from '@/constants/types'
@@ -7,6 +9,7 @@ import { useOverlay } from '@/features/overlay/provider'
 import { cn } from '@/lib/utils/cn'
 import { Pressable, StyleSheet, View } from 'react-native'
 import { Assets, Button } from 'react-native-ui-lib'
+import { THUMBNAIL_HEIGHT, THUMBNAIL_WIDTH } from '../consts'
 import { LiquidGlassCard } from '../GlassCard'
 import { getDefaultPrice, useNavigateToDetailCard } from '../helpers'
 import { LoadingImagePlaceholder } from '../placeholders'
@@ -27,18 +30,18 @@ export function ListCard({
   viewParams?: ViewParams
 }) {
   const {
-    data: image,
+    data: thumbnailImg,
     isLoading: isImageLoading,
     status,
   } = useImageProxy({
-    variant: 'thumb',
+    variant: 'tiny',
     shape: 'card',
     cardId: card?.id ?? undefined,
     kind: 'front',
     queryHash: card?.image?.query_hash ?? undefined,
   })
 
-  const toggleWishList = useToggleWishlist()
+  const toggleWishList = useToggleWishlist('card')
   const { setHiddenId } = useOverlay()
 
   const { cardElement, handlePress } = useNavigateToDetailCard(card, () => {
@@ -50,14 +53,18 @@ export function ListCard({
     <Pressable onPress={() => handlePress()}>
       <View className={cn(expanded && 'flex flex-row items-center gap-2 p-2 w-full', className)}>
         <LiquidGlassCard
-          onPress={() => handlePress()}
           variant="primary"
           className="p-0 aspect-[5/7] flex items-center justify-center overflow-hidden"
-          style={{ width: 96, aspectRatio: 5 / 7 }}
+          style={{ width: THUMBNAIL_WIDTH, aspectRatio: CARD_ASPECT_RATIO }}
           ref={cardElement}
         >
           <LoadingImagePlaceholder
-            source={{ uri: image, cacheKey: card?.id }}
+            source={{
+              uri: thumbnailImg,
+              cacheKey: `${card?.id}-thumb`,
+              width: THUMBNAIL_WIDTH,
+              height: THUMBNAIL_HEIGHT,
+            }}
             isLoading={isLoading || isImageLoading}
           />
         </LiquidGlassCard>

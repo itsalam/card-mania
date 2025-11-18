@@ -44,7 +44,6 @@ export const NumberTicker = ({
   fractionDigits = fractionDigits ?? 0
   useEffect(() => {
     onChangeNumber && onChangeNumber(number)
-    console.log('number changed to ', number)
   }, [number])
 
   const onChangeText = (str: string) => {
@@ -59,7 +58,6 @@ export const NumberTicker = ({
     if (max !== undefined) {
       num = Math.min(num, max)
     }
-    console.log({ min, max, num })
     setNumber(num)
   }
 

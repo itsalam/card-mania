@@ -1,6 +1,7 @@
 import { TCollection, TTag } from "@/constants/types";
 import { supabase } from "@/lib/store/client";
 import { qk, requireUser } from "@/lib/store/functions/helpers";
+import { useUserStore } from "@/lib/store/useUserStore";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
     CollectionItem,
@@ -201,16 +202,31 @@ export const useEditCollection = (
     });
 };
 
-const mutateCollectionItemFn = (itemData?: CollectionItem) =>
+const mutateCollectionItemFn = (itemData: Partial<CollectionItem>) =>
 async (
-    args: EditCollectionArgsItem,
+    args: {
+        delete?: boolean;
+        item: EditCollectionArgsItem;
+    },
 ) => {
+    const { delete: deleteRecord, item } = args;
     const user = await requireUser();
     const fullArgs = {
-        ...args,
-        user_id: args.user_id ?? user.id,
+        ...itemData,
+        ...item,
+        user_id: item.user_id ?? user.id,
     };
-    if (!itemData) {
+    if (deleteRecord && fullArgs.id) {
+        const { data, error } = await supabase
+            .from("collection_items")
+            .delete()
+            .eq("id", fullArgs.id)
+            .select()
+            .single();
+        if (error) throw error;
+        return data as CollectionItem;
+    }
+    if (!fullArgs.id) {
         const { data, error } = await supabase
             .from("collection_items")
             .upsert(fullArgs)
@@ -218,12 +234,12 @@ async (
             .single();
         if (error) throw error;
         return data as CollectionItem;
-    } else if (itemData.id) {
+    } else {
         {
             const { data, error } = await supabase
                 .from("collection_items")
                 .update(fullArgs)
-                .eq("id", itemData.id)
+                .eq("id", fullArgs.id)
                 .select()
                 .single();
             if (error) throw error;
@@ -232,82 +248,60 @@ async (
     }
 };
 
-export const useEditCollecitonItem = (
+export const useEditCollectionItem = (
     collectionId: string,
     cardId?: string,
     itemId?: string,
 ) => {
+    const user = useUserStore((s) => s.user);
     const qc = useQueryClient();
+
     const queryKey = [
         ...qk.collectionItems(collectionId),
         ...(cardId ? ["cardId", cardId] : []),
-    ];
-    const items = qc.getQueryData(queryKey) as
-        | (CollectionItem & EditCollectionArgsItem)[]
-        | undefined;
-    const item = items?.find((it) => it.id === itemId);
+    ] as const;
 
-    return useMutation({
-        mutationFn: mutateCollectionItemFn(item),
-        onMutate: async (patch: EditCollectionArgsItem) => {
-            if (items) {
-                await qc.cancelQueries({
-                    queryKey,
-                });
+    const items = qc.getQueryData<(CollectionItem & EditCollectionArgsItem)[]>(
+        queryKey,
+    );
+
+    const baseItem: CollectionItem | undefined = items?.find(
+        (it) => it.id === itemId,
+    );
+
+    return useMutation<
+        CollectionItem, // mutationFn result
+        unknown, // error
+        { item: EditCollectionArgsItem; delete?: boolean }, // variables passed into mutate()
+        { prevItems: (CollectionItem & EditCollectionArgsItem)[] | undefined } // context
+    >({
+        mutationFn: mutateCollectionItemFn({
+            user_id: user?.id,
+            ...baseItem,
+        }),
+        onMutate: async (vars) => {
+            const { delete: deleteItem, item } = vars;
+            await qc.cancelQueries({ queryKey });
+            if (deleteItem && items) {
+                qc.setQueryData(queryKey, [
+                    ...items.filter((pi) => pi.id !== item.id),
+                ]);
             }
 
-            const prevCollectionItems = qc.getQueryData<
-                (CollectionItem & EditCollectionArgsItem)[]
-            >(
-                queryKey,
-            ) ?? [];
-            const itemIdx = prevCollectionItems?.findIndex((it) =>
-                it.id === itemId
-            ) ?? -1;
-            if (itemIdx === -1) {
-                //@ts-ignore
-                prevCollectionItems?.push(patch);
-            } else {
-                //@ts-ignore
-                prevCollectionItems![itemIdx] = {
-                    ...item,
-                    ...patch,
-                };
-            }
-
-            // Optimistically apply patch to detail
-            if (prevCollectionItems) {
-                qc.setQueryData<(CollectionItem & EditCollectionArgsItem)[]>(
-                    queryKey,
-                    [
-                        ...(prevCollectionItems ?? []).filter((it) =>
-                            it.id !== itemId
-                        ),
-                    ],
-                );
-            }
-
-            return { prev: prevCollectionItems };
+            return { prevItems: items };
         },
-
         onError: (_err, _vars, ctx) => {
-            if (!ctx) return;
-            if (ctx.prev) {
-                qc.setQueryData(
-                    queryKey,
-                    ctx.prev,
-                );
-            }
+            if (!ctx?.prevItems) return;
+            qc.setQueryData(queryKey, items);
         },
-        onSettled: (collectionItems, _err, vars) => {
-            // Revalidate to ensure canonical server state
-            qc.setQueryData(queryKey, collectionItems);
-
-            //Invalidate card in current view if provided
-            cardId &&
-                qc.invalidateQueries({
-                    queryKey,
-                });
+        onSuccess: (data, vars, ctx) => {
+            const deleteItem = vars.delete;
+            const prevItems = ctx.prevItems;
+            if (deleteItem && prevItems) {
+                qc.setQueryData(queryKey, [
+                    ...prevItems.filter((pi) => pi.id !== data.id),
+                ]);
+            }
         },
     });
 };

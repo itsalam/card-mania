@@ -7,7 +7,14 @@
  */
 import { useCombinedRefs } from '@/components/hooks/useCombinedRefs'
 import { useMeasure } from '@/components/hooks/useMeasure'
-import React, { cloneElement, forwardRef, useContext, useImperativeHandle, useMemo } from 'react'
+import React, {
+  cloneElement,
+  forwardRef,
+  useCallback,
+  useContext,
+  useImperativeHandle,
+  useMemo,
+} from 'react'
 import { TextInput, View } from 'react-native'
 import { DynamicBorderBox } from '../border-label-decorator/border'
 import FloatingPlaceholder from '../border-label-decorator/placeholder'
@@ -152,10 +159,14 @@ export const Input = forwardRef<TextInput, InputProps>((props, ref) => {
 
   const inputStyle = useMemo(() => style, [style])
 
-  const onLayoutCombined: InputProps['onLayout'] = (e) => {
-    onLayout?.(e)
-    onInputLayout(e)
-  }
+  const onLayoutCombined: InputProps['onLayout'] = useCallback(
+    // @ts-ignore
+    (e) => {
+      onLayout?.(e)
+      onInputLayout(e)
+    },
+    [onLayout, onInputLayout]
+  )
 
   const { color, opacity } = useInputColors()
   const forceFloatFinal = forceFloat || shouldPlaceholderFloat(context)

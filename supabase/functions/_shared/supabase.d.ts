@@ -204,8 +204,6 @@ export type Database = {
       collection_items: {
         Row: {
           collection_id: string
-          condition: string | null
-          condition_key: string
           created_at: string
           grade_condition_id: string | null
           grading_company: string | null
@@ -220,8 +218,6 @@ export type Database = {
         }
         Insert: {
           collection_id: string
-          condition?: string | null
-          condition_key?: string
           created_at?: string
           grade_condition_id?: string | null
           grading_company?: string | null
@@ -236,8 +232,6 @@ export type Database = {
         }
         Update: {
           collection_id?: string
-          condition?: string | null
-          condition_key?: string
           created_at?: string
           grade_condition_id?: string | null
           grading_company?: string | null
@@ -1484,8 +1478,6 @@ export type Database = {
         }
         Returns: {
           collection_id: string
-          condition: string | null
-          condition_key: string
           created_at: string
           grade_condition_id: string | null
           grading_company: string | null

@@ -1,16 +1,14 @@
 import { useCardQuery } from '@/client/card'
 import { useIsWishlisted } from '@/client/card/wishlist'
 import { ExpandableCard } from '@/components/content-card'
+import { THUMBNAIL_HEIGHT, THUMBNAIL_WIDTH } from '@/components/tcg-card/consts'
 import { LiquidGlassCard } from '@/components/tcg-card/GlassCard'
 import { ListCard } from '@/components/tcg-card/views/ListCard'
 import { useRecentViews } from '@/lib/store/functions/hooks'
 import { Database } from '@/lib/store/supabase'
 import React, { ComponentProps } from 'react'
 
-const ITEM_WIDTH = 96
-const ITEM_ASPECT_RATIO = 5 / 7
-const CONDENSED_ITEM_HEIGHT = ITEM_WIDTH / ITEM_ASPECT_RATIO
-const EXPANDED_CARD_HEIGHT = CONDENSED_ITEM_HEIGHT + 24
+const EXPANDED_CARD_HEIGHT = THUMBNAIL_HEIGHT + 24
 
 export function RecentlyViewedCard({
   isOpen = false,
@@ -41,14 +39,14 @@ export function RecentlyViewed() {
   return (
     <ExpandableCard
       title="Recently Viewed"
-      itemWidth={ITEM_WIDTH}
+      itemWidth={THUMBNAIL_WIDTH}
       containerClassNames="gap-6 px-6"
       items={recentViews ?? []}
       renderItem={({ isOpen, item }, index) => (
         <RecentlyViewedCard
           isOpen={isOpen}
           item={item}
-          isWishlisted={wishlistedIds?.has(`${item.item_id}`) ?? false}
+          isWishlisted={wishlistedIds?.has(item.item_id) ?? false}
         />
       )}
     />

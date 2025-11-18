@@ -54,6 +54,7 @@ export function useViewCollectionsForCard(cardId = "", query?: string) {
 export function useViewCollectionItemsForCard(
     collectionId: string,
     cardId: string,
+    enabled: boolean,
 ) {
     return useQuery<
         CollectionItem[],
@@ -66,6 +67,7 @@ export function useViewCollectionItemsForCard(
         ],
         queryFn: () => viewCollectionItemsForCard(collectionId, cardId),
         placeholderData: keepPreviousData,
-        enabled: !!cardId.length && !!collectionId.length,
+        enabled: enabled && !!cardId.length && !!collectionId.length,
+        initialData: [],
     });
 }

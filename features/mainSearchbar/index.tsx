@@ -1,5 +1,6 @@
 import { useIsWishlisted } from '@/client/card/wishlist'
 import { useCardSearch, useSuggestionsFixed } from '@/client/price-charting'
+import DraggableThumbContent from '@/components/tcg-card/views/DetailCardView/ui'
 import { AppStandaloneHeader } from '@/components/ui/headers'
 import { SearchBar } from '@/components/ui/search'
 import { Spinner } from '@/components/ui/spinner'
@@ -11,12 +12,7 @@ import {
   KeyboardAvoidingView,
   useReanimatedKeyboardAnimation,
 } from 'react-native-keyboard-controller'
-import Animated, {
-  interpolate,
-  useAnimatedStyle,
-  useSharedValue,
-  withTiming,
-} from 'react-native-reanimated'
+import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { SearchInput } from 'react-native-ui-lib'
 import { useOverlay } from '../overlay/provider'
@@ -108,7 +104,6 @@ export function MainSearchBar({ placeholder = 'Search...' }: { placeholder?: str
     return {
       borderTopLeftRadius: focused ? 24 : 0,
       borderTopRightRadius: focused ? 24 : 0,
-      paddingBottom: interpolate(keyboardProgress.value, [0, 1], [insets.bottom, 0]),
     }
   }, [focused])
 
@@ -143,7 +138,8 @@ export function MainSearchBar({ placeholder = 'Search...' }: { placeholder?: str
           onOptionsPress={() => {
             setFiltersExpanded(!filtersExpanded)
             show()
-          }}/>
+          }}
+        />
       </View>
       {focused && (
         <Portal name="searchbar" hostName="searchbar">
@@ -184,38 +180,45 @@ export function MainSearchBar({ placeholder = 'Search...' }: { placeholder?: str
                 </Animated.View>
               </BlurView>
 
-              <Animated.View
+              <DraggableThumbContent
                 style={[
                   inputContainerStyle,
                   {
                     flexGrow: 0,
                   },
                 ]}
-                className="flex flex-col px-4 py-2 bg-white border-2 border-b-0 border-black/20"
-              >
-                <SearchBar
-                  style={{
-                    borderWidth: 0,
-                  }}
-                  id="searchInput"
-                  placeholder={placeholder}
-                  onChangeText={(text) => {
-                    debouncedSetSearchText(text)
-                  }}
-                  defaultValue={searchText}
-                  onFocus={() => {
-                    if (!focused) {
-                      show()
-                    }
-                  }}
-                  ref={inputRef}
-                  onOptionsPress={() => {
+                toggleLocked={filtersExpanded}
+                onLockedChange={setFiltersExpanded}
+                mainContent={
+                  <>
+                    <SearchBar
+                      style={{
+                        borderWidth: 0,
+                      }}
+                      id="searchInput"
+                      placeholder={placeholder}
+                      onChangeText={(text) => {
+                        debouncedSetSearchText(text)
+                      }}
+                      defaultValue={searchText}
+                      onFocus={() => {
+                        if (!focused) {
+                          show()
+                        }
+                      }}
+                      ref={inputRef}
+                      onOptionsPress={() => {
                         setFiltersExpanded(!filtersExpanded)
                         show()
-                      }}/>
-                <SearchFilters focused={focused} />
-                <SearchFiltersOptions expanded={filtersExpanded} focused={focused} />
-              </Animated.View>
+                      }}
+                    />
+                    <SearchFilters focused={focused} />
+                  </>
+                }
+                // className="flex flex-col px-4 py-2 bg-white border-2 border-b-0 border-black/20"
+              >
+                <SearchFiltersOptions />
+              </DraggableThumbContent>
             </KeyboardAvoidingView>
           </FiltersProvider>
         </Portal>

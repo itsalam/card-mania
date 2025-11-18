@@ -20,7 +20,11 @@ export type CollectionUpdate = Partial<
   >
 >;
 
+export type GradeCondition =
+  Database["public"]["Tables"]["grade_conditions"]["Row"];
+
 export type CollectionItemRow =
-  Database["public"]["Tables"]["collection_items"]["Row"];
+  & Database["public"]["Tables"]["collection_items"]["Row"]
+  & { grade_condition: GradeCondition | null };
 
 export type RecentViewRow = Database["public"]["Tables"]["recent_views"]["Row"];

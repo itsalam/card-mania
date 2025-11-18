@@ -3,7 +3,7 @@ import { X } from 'lucide-react-native'
 import { AnimatePresence } from 'moti'
 import React from 'react'
 import { ScrollView, View } from 'react-native'
-import Animated, { useAnimatedStyle, withTiming } from 'react-native-reanimated'
+import Animated from 'react-native-reanimated'
 import { CategoryFilter } from './CategoryFilter'
 import { FilterBadge } from './FilterBadge'
 import PriceFilter from './PriceFilter'
@@ -11,24 +11,12 @@ import { FiltersKeys, useFilters } from './providers'
 import { AttributeFilter } from './SealedFilter'
 const AnimatedView = Animated.createAnimatedComponent(View)
 
-export function SearchFiltersOptions({
-  expanded,
-  focused,
-}: {
-  expanded: boolean
-  focused: boolean
-}) {
+export function SearchFiltersOptions() {
   const { priceRange } = useFilters()
-  const scrollViewStyle = useAnimatedStyle(() => {
-    return {
-      maxHeight: withTiming(expanded ? 1000 : 0, { duration: 200 }),
-      paddingTop: expanded ? 8 : 0,
-    }
-  })
   return (
-    <View className="w-full pb-2">
+    <View className="w-full pb-2 pl-4">
       <ScrollView keyboardShouldPersistTaps="always">
-        <AnimatedView style={scrollViewStyle} className="flex-col gap-2">
+        <AnimatedView className="flex-col gap-2">
           <Separator orientation="horizontal" />
           <CategoryFilter />
           <Separator orientation="horizontal" />

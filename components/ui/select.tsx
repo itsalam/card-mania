@@ -49,7 +49,7 @@ function SelectValue({
     className?: string
     placeholder?: string
   }) {
-  const { value } = SelectPrimitive.useRootContext()
+  const { value, open } = SelectPrimitive.useRootContext()
   const {
     ref: inputLayoutRef,
     layout: inputLayout,
@@ -57,6 +57,7 @@ function SelectValue({
   } = useMeasure<SelectPrimitive.ValueRef>()
   const { ref: fieldLayoutRef, layout: fieldLayout, onLayout: onFieldLayout } = useMeasure<View>()
   const combinedRef = useCombinedRefs(ref, inputLayoutRef)
+
   return (
     <View style={[styles.field]} onLayout={onFieldLayout} ref={fieldLayoutRef}>
       <SelectPrimitive.Value

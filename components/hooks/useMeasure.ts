@@ -20,17 +20,21 @@ type Options = {
     round?: boolean;
     /** Optional external onLayout you still want to run */
     onLayout?: ViewProps["onLayout"];
+    layoutOnce?: boolean;
 };
 
 type HasMeasure = Pick<NativeMethods, "measure">;
 
 export function useMeasure<T extends HasMeasure>(opts: Options = {}) {
-    const { round = false, onLayout: externalOnLayout } = opts;
+    const { round = false, onLayout: externalOnLayout, layoutOnce = true } =
+        opts;
 
+    const hasMeasured = useRef(false);
     const ref = useRef<T | null>(null);
     const [layout, setLayout] = useState<MeasuredLayout | null>(null);
 
     const setFromEvent = useCallback((e: LayoutChangeEvent) => {
+        if (layoutOnce && hasMeasured.current) return;
         const { x, y, width, height } = e.nativeEvent.layout;
         setLayout((prev) => ({
             pageX: prev?.pageX ?? 0,
@@ -40,11 +44,12 @@ export function useMeasure<T extends HasMeasure>(opts: Options = {}) {
             width: round ? Math.round(width) : width,
             height: round ? Math.round(height) : height,
         }));
+        hasMeasured.current = true;
     }, [round]);
 
     const measureInWindow = useCallback(() => {
+        if (layoutOnce && hasMeasured.current) return;
         if (!ref.current) return;
-
         //@ts-ignore
         const node = findNodeHandle(ref.current);
         if (!node) return;
@@ -68,6 +73,7 @@ export function useMeasure<T extends HasMeasure>(opts: Options = {}) {
                         : base.height;
                     return { ...base, pageX, pageY, width, height };
                 });
+                hasMeasured.current = true;
             },
         );
     }, [round]);

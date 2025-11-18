@@ -1,10 +1,11 @@
 import { BlurBackground } from '@/components/Background'
+import { useMeasure } from '@/components/hooks/useMeasure'
 import { Heading } from '@/components/ui/heading'
 import { Text } from '@/components/ui/text'
-import { measureAsync } from '@/components/utils'
-import { ComponentProps, useEffect, useLayoutEffect, useRef } from 'react'
+import { ComponentProps, useEffect } from 'react'
 import { Dimensions, StyleSheet, View } from 'react-native'
 import { Gesture, GestureDetector } from 'react-native-gesture-handler'
+import { useReanimatedKeyboardAnimation } from 'react-native-keyboard-controller'
 import Animated, {
   runOnJS,
   useAnimatedReaction,
@@ -12,11 +13,18 @@ import Animated, {
   useDerivedValue,
   useSharedValue,
   withSpring,
+  withTiming,
 } from 'react-native-reanimated'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Colors } from 'react-native-ui-lib'
 
-const { height: H, width: W } = Dimensions.get('window')
+import { LiquidGlassCard } from '@/components/tcg-card/GlassCard'
+import { formatLabel, formatPrice, splitToNChunks } from '@/components/utils'
+import { Eye, EyeOff, Plus } from 'lucide-react-native'
+import React, { useMemo } from 'react'
+import { ScrollView } from 'react-native'
+
+const { width: W, height: H } = Dimensions.get('window')
 
 export const Attribute = ({ label, value }: { label: string; value: string }) => {
   return (
@@ -81,20 +89,25 @@ export default function DraggableThumbContent({
   toggleLocked,
 }: ThumbProps) {
   const insets = useSafeAreaInsets()
-  const mainContentRef = useRef<View | null>(null)
-  const mainContentBreakpoint = useSharedValue(0)
-  const fullContentRef = useRef<View | null>(null)
-  const fullContentBreakpoint = useSharedValue(0)
+  const {
+    ref: mainContentRef,
+    layout: mainContentLayout,
+    onLayout: onMainContentLayout,
+  } = useMeasure<Animated.View>()
+  const {
+    ref: fullContentRef,
+    layout: fullContentLayout,
+    onLayout: onFullContentLayout,
+  } = useMeasure<Animated.View>()
   const extraSnapSV = useSharedValue<number[]>([]) // mirror prop into a shared value
 
   const restMain = useDerivedValue(
-    () => Math.min(mainContentBreakpoint?.value ?? 80, 80) + insets.bottom,
-    [mainContentBreakpoint, insets]
+    () => Math.min(mainContentLayout?.height ?? 80, 80) + insets.bottom,
+    [mainContentLayout?.height, insets]
   )
-
   const restFull = useDerivedValue(
-    () => fullContentBreakpoint?.value,
-    [fullContentBreakpoint, insets]
+    () => fullContentLayout?.height,
+    [fullContentLayout?.height, insets]
   )
 
   const SNAP = useDerivedValue(() => {
@@ -110,33 +123,13 @@ export default function DraggableThumbContent({
     return uniq
   })
 
-  const toggleLockedSV = useSharedValue<boolean | undefined>(undefined)
+  const toggleRevealedSV = useSharedValue<boolean | undefined>(undefined)
   const translateY = useSharedValue(restMain.value)
   const startY = useSharedValue(restMain.value)
-  const isLocked = useSharedValue(false)
-  const setLocked = (next: boolean) => {
-    console.log(next)
-    onLockedChange?.(next)
-  }
-
-  useLayoutEffect(() => {
-    if (mainContentRef.current) {
-      measureAsync(mainContentRef as React.RefObject<View>).then(({ height }) => {
-        mainContentBreakpoint.set(height)
-      })
-    }
-  }, [mainContentRef.current])
-
-  useLayoutEffect(() => {
-    if (fullContentRef.current) {
-      measureAsync(fullContentRef as React.RefObject<View>).then(({ height }) => {
-        fullContentBreakpoint.value = height
-      })
-    }
-  }, [fullContentRef.current])
+  const isRevealed = useSharedValue(toggleLocked)
 
   useEffect(() => {
-    toggleLockedSV.value = toggleLocked
+    toggleRevealedSV.value = toggleLocked
   }, [toggleLocked])
 
   // assume SNAP is a derived shared value: const SNAP = useDerivedValue<number[]>(...)
@@ -145,19 +138,19 @@ export default function DraggableThumbContent({
   const targetY = useDerivedValue<number>(() => {
     const arr = SNAP.value
     if (!arr.length) return 0 // fallback
-    return toggleLockedSV.value ? arr[arr.length - 1] : arr[0]
+    return toggleRevealedSV.value ? arr[arr.length - 1] : arr[0]
   })
 
   useAnimatedReaction(
     () => targetY.value,
     (to) => {
       // isLocked bookkeeping
-      const next = toggleLockedSV.value ?? false
-      if (isLocked.value !== next) {
-        isLocked.value = next
-        runOnJS(setLocked)?.(next)
+      const next = toggleRevealedSV.value ?? false
+      if (isRevealed.value !== next) {
+        isRevealed.value = next
+        onLockedChange && runOnJS(onLockedChange)?.(next)
       }
-      translateY.value = withSpring(to, { damping: 18, stiffness: 100 })
+      translateY.value = withSpring(to, { damping: 20, stiffness: 150 })
     }
   )
 
@@ -190,17 +183,21 @@ export default function DraggableThumbContent({
       const EPS = 0.5 // pixels; adjust to taste
       const nextLocked = Math.abs(to - last) <= EPS
 
-      if (isLocked.value !== nextLocked) {
-        isLocked.value = nextLocked
-        runOnJS(setLocked)?.(nextLocked)
+      if (isRevealed.value !== nextLocked) {
+        isRevealed.value = nextLocked
+        onLockedChange && runOnJS(onLockedChange)?.(nextLocked)
       }
-      translateY.value = withSpring(to, { damping: 18, stiffness: 100 })
+      translateY.value = withSpring(to, { damping: 20, stiffness: 150 })
     })
 
   const composed = Gesture.Simultaneous(pan)
 
   const cardStyle = useAnimatedStyle(() => ({
-    top: H - translateY.value,
+    transform: [
+      {
+        translateY: -translateY.value,
+      },
+    ],
   }))
 
   const thumbStyle = useAnimatedStyle(() => ({
@@ -208,25 +205,125 @@ export default function DraggableThumbContent({
     opacity: translateY.value < SNAP.value[1] / 2 ? 0.9 : 0.2,
   }))
 
+  const { height } = useReanimatedKeyboardAnimation() // <- shared values
+
+  const detailContentStyle = useAnimatedStyle(() => ({
+    opacity: withTiming(isRevealed.value ? 1 : 0, { duration: 250 }),
+    paddingBottom: Math.max(insets.bottom, -height.value + 12),
+  }))
+
   return (
     <Animated.View
-      style={[style, thumbStyles.sheet, cardStyle, { width: W + 4, position: 'absolute' }]}
+      style={[style, thumbStyles.sheet, cardStyle]}
       className="flex flex-col items-center"
       ref={fullContentRef}
+      onLayout={onFullContentLayout}
     >
       <BlurBackground style={[thumbStyles.sheetInner, { flex: 1, width: '100%' }]} opacity={0.95}>
         <GestureDetector gesture={composed}>
-          <Animated.View style={thumbStyles.mainContent} ref={mainContentRef}>
+          <Animated.View
+            style={thumbStyles.mainContent}
+            ref={mainContentRef}
+            onLayout={onMainContentLayout}
+          >
             <Animated.View style={thumbStyles.thumbContainer}>
               <Animated.View style={[thumbStyles.thumb, thumbStyle]} />
             </Animated.View>
             {mainContent}
           </Animated.View>
         </GestureDetector>
-
-        {children}
+        <Animated.View
+          style={[
+            {
+              width: '100%',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              backgroundColor: Colors.$backgroundPrimary,
+            },
+            detailContentStyle,
+          ]}
+        >
+          {children}
+        </Animated.View>
       </BlurBackground>
     </Animated.View>
+  )
+}
+
+export const Prices = ({
+  prices,
+  visibleGrades,
+  setSelectedGrades,
+  selectedGrades,
+  setShowMoreGrades,
+}: {
+  prices: [string, any][]
+  visibleGrades: string[]
+  setSelectedGrades: React.Dispatch<React.SetStateAction<string[]>>
+  selectedGrades: string[]
+  setShowMoreGrades: React.Dispatch<React.SetStateAction<boolean>>
+}) => {
+  const NUM_PRICE_ROWS = 2
+  const rows = useMemo(
+    () =>
+      splitToNChunks(
+        prices.filter(([key]) => visibleGrades.includes(key)),
+        NUM_PRICE_ROWS
+      ).filter((r) => r.length > 0),
+    [prices, visibleGrades]
+  )
+
+  return (
+    <ScrollView
+      horizontal
+      bounces={false}
+      showsHorizontalScrollIndicator={true}
+      alwaysBounceVertical={true}
+      className="overflow-visible p-4"
+      style={{ alignSelf: 'stretch', maxHeight: 200, flexGrow: 0, flexShrink: 0 }}
+      contentContainerClassName="flex gap-2 flex-col"
+    >
+      {rows.map((row, i) => (
+        <View key={`row-${i}`} className={'flex flex-row gap-2 overflow-visible pr-4'}>
+          {row.map(([key, value]) => {
+            return (
+              <LiquidGlassCard
+                className="flex items-center justify-center"
+                style={{ opacity: value ? 1 : 0.5, minWidth: 100 }}
+                size="sm"
+                key={`${key}-${value}-${i}`}
+                onPress={() => {
+                  setSelectedGrades((prev) =>
+                    prev.includes(key) ? prev.filter((grade) => grade !== key) : [...prev, key]
+                  )
+                }}
+              >
+                <View className="flex flex-row gap-2 items-center justify-end">
+                  {selectedGrades.includes(key) ? <Eye size={16} /> : <EyeOff size={16} />}
+                  <Text className="text-lg font-bold text-muted-foreground text-nowrap text-right font-spaceMono">
+                    {formatLabel(key)}
+                  </Text>
+                </View>
+                <Text className="text-3xl capitalize text-nowrap text-right">
+                  {value ? formatPrice(value) : '--'}
+                </Text>
+              </LiquidGlassCard>
+            )
+          })}
+          {rows.length === i + 1 && (
+            <LiquidGlassCard
+              className="flex items-center justify-center"
+              style={{ aspectRatio: 1 }}
+              size="sm"
+              onPress={() => setShowMoreGrades((prev) => !prev)}
+            >
+              <Plus size={28} />
+            </LiquidGlassCard>
+          )}
+        </View>
+      ))}
+    </ScrollView>
   )
 }
 
@@ -255,6 +352,9 @@ export const thumbStyles = StyleSheet.create({
     height: '100%',
   },
   sheet: {
+    width: W + 4,
+    position: 'absolute',
+    top: '100%',
     left: -2,
     right: 0,
     borderTopLeftRadius: 24,

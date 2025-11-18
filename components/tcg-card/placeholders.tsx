@@ -3,6 +3,7 @@ import { TransformOptions } from '@supabase/storage-js'
 import { ImageBackground } from 'expo-image'
 import { ComponentProps } from 'react'
 import { Spinner } from '../ui/spinner'
+import { THUMBNAIL_HEIGHT, THUMBNAIL_WIDTH } from './consts'
 
 export function CardPlaceholderImage({
   style,
@@ -18,8 +19,12 @@ export function CardPlaceholderImage({
   height?: number
   placeholderOnly?: boolean
 } & React.ComponentProps<typeof ImageBackground>) {
-  const finalWidth = Math.round(width ? width : height ? Math.round(height * (5 / 7)) : 96)
-  const finalHeight = Math.round(height ? height : width ? Math.round(width * (7 / 5)) : 133)
+  const finalWidth = Math.round(
+    width ? width : height ? Math.round(height * (5 / 7)) : THUMBNAIL_WIDTH
+  )
+  const finalHeight = Math.round(
+    height ? height : width ? Math.round(width * (7 / 5)) : THUMBNAIL_HEIGHT
+  )
   const transformParams: TransformOptions = {
     resize: 'cover',
     quality: 100,

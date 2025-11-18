@@ -95,7 +95,6 @@ function cdnUrl(
     bucket,
   });
 
-  // 'raw' → no transform params at all
   if (variant === "raw" || (shape === "original" && !width && !height)) {
     const url =
       supabase.storage.from(bucket).getPublicUrl(storagePath).data.publicUrl;
@@ -136,40 +135,6 @@ function json(data: unknown, init: ResponseInit = {}) {
   return new Response(JSON.stringify(data), {
     ...init,
     headers: { "content-type": "application/json", ...(init.headers ?? {}) },
-  });
-}
-
-function redirectTo(
-  urlStr: string,
-  queueCommit = true,
-) {
-  console.log("Redirecting to:", urlStr);
-
-  // If you want the proxy to "self-heal", enqueue a background commit:
-  if (queueCommit) {
-    EdgeRuntime.waitUntil(
-      fetch(`${SUPABASE_URL}/functions/v1/image-commit`, {
-        method: "POST",
-        headers: {
-          "content-type": "application/json",
-          authorization: `Bearer ${SERVICE_ROLE}`,
-        },
-        body: JSON.stringify({ url: urlStr }), // no card_id here; pure cache warm
-      }).catch((e) => {
-        console.error("Image commit failed:", urlStr, e);
-      }),
-    );
-  }
-  // We can't transform external images; redirect as-is.
-  // Use CSS aspect-ratio on the client to keep card shape until cached.
-
-  return new Response(null, {
-    status: 302,
-    headers: {
-      Location: urlStr,
-      "cache-control":
-        "public, max-age=60, s-maxage=600, stale-while-revalidate=86400",
-    },
   });
 }
 

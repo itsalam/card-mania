@@ -5,57 +5,78 @@ import { invokeFx } from "../helper";
 import { SearchRequest, SearchResponse, TSearchRes } from "./types";
 
 function useDebounced<T>(value: T, delay = 250) {
-  const [v, setV] = useState(value)
+  const [v, setV] = useState(value);
   useEffect(() => {
-    const id = setTimeout(() => setV(value), delay)
-    return () => clearTimeout(id)
-  }, [value, delay])
-  return v
+    const id = setTimeout(() => setV(value), delay);
+    return () => clearTimeout(id);
+  }, [value, delay]);
+  return v;
 }
 
-type FilterQuery = Partial<Record<FiltersKeys, string>> & { itemTypes: string[], priceRange: { min: number | undefined, max: number | undefined } }
+type FilterQuery = Partial<Record<FiltersKeys, string>> & {
+  itemTypes: string[];
+  priceRange: { min: number | undefined; max: number | undefined };
+};
 
 export function useCardSearch(params: {
-  q: string
-  filters?: FilterQuery
-  limit?: number
+  q: string;
+  filters?: FilterQuery;
+  limit?: number;
 }) {
-  const debouncedQ = useDebounced(params.q, 250)
+  const debouncedQ = useDebounced(params.q, 250);
 
-  const enabled = debouncedQ.trim().length >= 2
+  const enabled = debouncedQ.trim().length >= 2;
   const payloadBase = useMemo(
-    () => ({ q: debouncedQ, filters: params.filters ?? {}, limit: params.limit ?? 20 }),
-    [debouncedQ, params.filters, params.limit]
-  )
+    () => ({
+      q: debouncedQ,
+      filters: params.filters ?? {},
+      limit: params.limit ?? 20,
+    }),
+    [debouncedQ, params.filters, params.limit],
+  );
 
   return useInfiniteQuery<TSearchRes>({
-    queryKey: ['card-search', payloadBase],
+    queryKey: ["card-search", payloadBase],
     enabled,
     queryFn: async ({ pageParam }) => {
-      const payload = SearchRequest.parse({ ...payloadBase, cursor: pageParam ?? null })
-      const {data} = await invokeFx<typeof payload, TSearchRes>('price-charting', payload, {parseOut: SearchResponse, useQueryParams: true})
-      return data
+      const payload = SearchRequest.parse({
+        ...payloadBase,
+        cursor: pageParam ?? null,
+      });
+      const { data } = await invokeFx<typeof payload, TSearchRes>(
+        "price-charting",
+        payload,
+        { parseOut: SearchResponse, useQueryParams: true },
+      );
+      return data;
     },
     initialPageParam: null as string | null,
     getNextPageParam: (last) => {
-      return last.results.length < 20
+      return last.results.length < 20;
     },
     staleTime: 30_000,
-  })
+  });
 }
 
-export function useSuggestionsFixed(){
+export function useSuggestionsFixed() {
   // Variant A: call your Supabase Edge Function by name
-  const payload = SearchRequest.parse({q: 'baseball-cards-2025-topps', limit: 8, commit_images: "true"})
+  const payload = SearchRequest.parse({
+    q: "baseball-cards-2025-topps",
+    limit: 8,
+    commit_images: "true",
+  });
   return useQuery({
-    queryKey: ['price-charting-suggestions'],
+    queryKey: ["price-charting-suggestions"],
     enabled: true,
     queryFn: async () => {
-      const {data} = await invokeFx<typeof payload,  TSearchRes>('price-charting', payload, {parseOut: SearchResponse, useQueryParams: true})
-      return data
+      const { data } = await invokeFx<typeof payload, TSearchRes>(
+        "price-charting",
+        payload,
+        { parseOut: SearchResponse, useQueryParams: true },
+      );
+      return data;
     },
     staleTime: 60_000,
-    gcTime: 60_000*5,
-  })
-
+    gcTime: 60_000 * 5,
+  });
 }

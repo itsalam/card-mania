@@ -76,7 +76,6 @@ export function measureAsync(
       return reject(new Error('measure missing'))
     }
     node.measure((x: number, y: number, width: number, height: number) => {
-      console.debug('measured:', { x, y, width, height })
       resolve({ x, y, width, height })
     })
   })

@@ -5,7 +5,6 @@ import { ColorValue, StyleProp, StyleSheet, Text, TextStyle, View, ViewProps } f
 import Animated, {
   DerivedValue,
   Easing,
-  measure,
   useAnimatedRef,
   useDerivedValue,
   useSharedValue,
@@ -46,12 +45,15 @@ export const DynamicBorderBox = forwardRef<View, DynamicBorderBoxProps>(
       borderWidth: strokeWidth,
       backgroundColor,
       ...containerStyle
-    } = {
-      borderWidth: 1.5,
-      fontSize: 16,
-      ...StyleSheet.flatten(style),
-    }
-    const fontSize = StyleSheet.flatten(labelStyle)?.fontSize || 16
+    } = useMemo(
+      () => ({
+        borderWidth: 1.5,
+        fontSize: 16,
+        ...StyleSheet.flatten(style),
+      }),
+      [style]
+    )
+    const fontSize = useMemo(() => StyleSheet.flatten(labelStyle)?.fontSize || 16, [labelStyle])
     const radius = BorderRadiuses.br40
 
     const inset = strokeWidth / 2
@@ -75,13 +77,13 @@ export const DynamicBorderBox = forwardRef<View, DynamicBorderBoxProps>(
     const bgWidth = useDerivedValue(() => rw.value - 2 * inset, [rw])
     const bgHeight = useDerivedValue(() => rh.value - 2 * inset, [rh])
 
-    useDerivedValue(() => {
-      const m = measure(animRef)
-      if (m) {
-        // update shared value on the UI thread
-        size.value = { width: m.width, height: m.height }
-      }
-    })
+    // useDerivedValue(() => {
+    //   const m = measure(animRef)
+    //   if (m) {
+    //     // update shared value on the UI thread
+    //     size.value = { width: m.width, height: m.height }
+    //   }
+    // })
 
     const strokeDasharray = useDerivedValue(() => {
       let P = 2 * (rw.value + rh.value)
