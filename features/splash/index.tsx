@@ -1,6 +1,6 @@
 // Example: protecting a screen
 import Logo from '@/assets/images/splash-logo.svg'
-import { Background } from '@/components/Background'
+import { GradientBackground } from '@/components/Background'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Separator } from '@/components/ui/separator'
@@ -11,7 +11,8 @@ import { cn } from '@/lib/utils'
 import { AtSign, User } from 'lucide-react-native'
 import { MotiView } from 'moti'
 import { ComponentProps } from 'react'
-import { SafeAreaView, View } from 'react-native'
+import { View } from 'react-native'
+import { SafeAreaView } from 'react-native-safe-area-context'
 import Svg, { G, Path } from 'react-native-svg'
 
 export function AuthGate({ children }: { children: React.ReactNode }) {
@@ -118,7 +119,7 @@ export function SplashPage() {
   }
 
   return (
-    <Background>
+    <GradientBackground>
       <MotiView
         from={{
           opacity: 0,
@@ -182,6 +183,6 @@ export function SplashPage() {
         <GoogleSignInButton />
         <FacebookSignInButton />
       </MotiView>
-    </Background>
+    </GradientBackground>
   )
 }

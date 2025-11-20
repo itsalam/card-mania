@@ -11,8 +11,8 @@ import { FullWindowOverlay as RNFullWindowOverlay } from 'react-native-screens'
 import { Colors } from 'react-native-ui-lib'
 import { useCombinedRefs } from '../hooks/useCombinedRefs'
 import { MeasuredLayout, useMeasure } from '../hooks/useMeasure'
-import { DynamicBorderBox } from './border-label-decorator/border'
-import FloatingPlaceholder from './border-label-decorator/placeholder'
+import { DynamicBorderBox } from './border-label/border'
+import FloatingPlaceholder from './border-label/placeholder'
 import { useAnimatedColors } from './input/provider'
 import { styles } from './input/styles'
 
@@ -61,6 +61,7 @@ function SelectValue({
   return (
     <View style={[styles.field]} onLayout={onFieldLayout} ref={fieldLayoutRef}>
       <SelectPrimitive.Value
+        placeholder=""
         ref={combinedRef}
         onLayout={onInputLayout}
         className={cn('line-clamp-1 flex flex-row items-center gap-2', className)}

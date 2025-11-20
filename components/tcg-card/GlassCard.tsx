@@ -48,7 +48,7 @@ const cardVariants = tva({
 })
 
 export interface LiquidGlassCardProps
-  extends React.ComponentProps<typeof Card>,
+  extends React.ComponentPropsWithoutRef<typeof Card>,
     VariantProps<typeof cardVariants> {
   asChild?: boolean
   glassEffect?: boolean
@@ -102,20 +102,23 @@ function CardContent({ className, ...props }: React.ComponentProps<typeof View>)
   return <View className={cn('pt-6 text-foreground', className)} {...props} />
 }
 
-const LiquidGlassCard = React.forwardRef<typeof Card, LiquidGlassCardProps>(
+type CardRef = React.ComponentRef<typeof Card>
+
+const LiquidGlassCard = React.forwardRef<CardRef, LiquidGlassCardProps>(
   (
     { className, variant, size, hover, asChild = false, glassEffect = true, children, ...props },
     ref
   ) => {
+    console.log({ props })
     return (
       <Card
-        ref={ref}
         className={cn(
           'relative overflow-hidden',
-          cardVariants({ variant, size, hover, className }),
+          // cardVariants({ variant, size, hover, className }),
           className
         )}
         {...props}
+        ref={ref}
       >
         {/* Glass effect overlay */}
         {/* <View

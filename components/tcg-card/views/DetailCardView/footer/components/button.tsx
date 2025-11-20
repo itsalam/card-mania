@@ -1,7 +1,7 @@
 import { LucideIcon, LucideProps } from 'lucide-react-native'
-import { ComponentProps, JSX } from 'react'
+import { JSX } from 'react'
 import { SvgProps } from 'react-native-svg'
-import { Button, Colors } from 'react-native-ui-lib'
+import { Button, ButtonProps, Colors } from 'react-native-ui-lib'
 
 export const FooterButton = ({
   icon: Icon,
@@ -16,14 +16,14 @@ export const FooterButton = ({
   children,
   style,
   ...buttonProps
-}: ComponentProps<typeof Button> & {
+}: ButtonProps & {
   icon?: LucideIcon | ((props: SvgProps) => JSX.Element)
   label: string
   onPress: () => void
   highLighted?: boolean
   fill?: boolean
   stroke?: boolean
-  iconProps?: LucideProps | SvgProps
+  iconProps?: LucideProps & SvgProps
   disabled?: boolean
 }) => {
   const outlineColor = highLighted

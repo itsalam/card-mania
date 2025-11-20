@@ -10,7 +10,6 @@ import Animated, {
 import { ThemedView } from '@/components/ThemedView'
 import { useBottomTabOverflow } from '@/components/ui/tabs/TabBarBackground'
 import { useColorScheme } from '@/lib/hooks/useColorScheme'
-import { SearchBar } from './search-bar'
 
 const HEADER_HEIGHT = 250
 
@@ -47,7 +46,6 @@ export default function ParallaxScrollView({
 
   return (
     <ThemedView style={styles.container}>
-      <SearchBar />
       <Animated.ScrollView
         ref={scrollRef}
         scrollEventThrottle={16}

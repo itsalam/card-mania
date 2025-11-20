@@ -37,15 +37,20 @@
         }
       ],
       "expo-asset",
-      ["expo-build-properties", {
-        "ios": {
-          "newArchEnabled": true
-        },
-        "android": {
-          "newArchEnabled": true,
-          "kotlinVersion": "1.6.21"
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "newArchEnabled": true
+          },
+          "android": {
+            "newArchEnabled": true,
+            "kotlinVersion": "1.6.21"
+          }
         }
-      }]
+      ],
+      "expo-font",
+      "expo-web-browser"
     ],
     "experiments": {
       "typedRoutes": true

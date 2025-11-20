@@ -3,14 +3,13 @@ import { Button } from '@/components/ui/button'
 import Slider from '@/components/ui/slider'
 import { Text } from '@/components/ui/text'
 import React, { useEffect, useMemo, useState } from 'react'
-import { View } from 'react-native'
-import { TextInput as BaseTextInput } from 'react-native-gesture-handler'
+import { TextInput as BaseTextInput, View } from 'react-native'
 import Animated, {
-  runOnJS,
   useAnimatedProps,
   useAnimatedReaction,
   useSharedValue,
 } from 'react-native-reanimated'
+import { scheduleOnRN } from 'react-native-worklets'
 import { useFilters } from './providers'
 
 const TextInput = Animated.createAnimatedComponent(BaseTextInput)
@@ -18,7 +17,7 @@ const TextInput = Animated.createAnimatedComponent(BaseTextInput)
 function PriceFilter({ absMin, absMax }: { absMin: number; absMax: number }) {
   const { priceRange, setPriceRange, toggleDisplayFilter } = useFilters()
   const [startingAbsMax, setStartingAbsMax] = useState(absMax)
-  const { min, max } = priceRange;
+  const { min, max } = priceRange
   const minValShared = useSharedValue(min)
   const maxValShared = useSharedValue(max)
 
@@ -48,12 +47,16 @@ function PriceFilter({ absMin, absMax }: { absMin: number; absMax: number }) {
       const [prevMin, prevMax] = prev
       if (min === prevMin && max === prevMax) return
       // hop to JS and call the debounced setter
-      runOnJS(debouncedSetPriceRange)(min, max)
+      scheduleOnRN(debouncedSetPriceRange, min, max)
     },
     []
   )
 
-  const minValueProps = useAnimatedProps<{defaultValue?: string, text?: string, placeholder?: string}>(() => {
+  const minValueProps = useAnimatedProps<{
+    defaultValue?: string
+    text?: string
+    placeholder?: string
+  }>(() => {
     return minValShared.value !== undefined && minValShared.value >= absMin
       ? {
           defaultValue: `${minValShared.value}`,
@@ -64,14 +67,18 @@ function PriceFilter({ absMin, absMax }: { absMin: number; absMax: number }) {
         }
   })
 
-  const maxValueProps = useAnimatedProps<{defaultValue?: string, text?: string, placeholder?: string}>(() => {
-      return maxValShared.value !== undefined && maxValShared.value <= startingAbsMax
+  const maxValueProps = useAnimatedProps<{
+    defaultValue?: string
+    text?: string
+    placeholder?: string
+  }>(() => {
+    return maxValShared.value !== undefined && maxValShared.value <= startingAbsMax
       ? {
           defaultValue: `${maxValShared.value}`,
           text: `${maxValShared.value}`,
         }
       : {
-            placeholder: `${absMax}+`,
+          placeholder: `${absMax}+`,
         }
   })
 
@@ -95,7 +102,9 @@ function PriceFilter({ absMin, absMax }: { absMin: number; absMax: number }) {
                 minValShared.set(undefined)
                 return
               }
-                minValShared.set(Math.min(Math.max(num, absMin), maxValShared.value || startingAbsMax))
+              minValShared.set(
+                Math.min(Math.max(num, absMin), maxValShared.value || startingAbsMax)
+              )
             }}
           />
           {<Text> - </Text>}
@@ -107,24 +116,27 @@ function PriceFilter({ absMin, absMax }: { absMin: number; absMax: number }) {
             keyboardType="number-pad"
             placeholder="Max"
             animatedProps={maxValueProps}
-            onBlur={({ nativeEvent: { text } }: { nativeEvent: { text: string } }) => {
-              const num = Number(text)
+            onBlur={(e) => {
+              e.nativeEvent.target
+              const num = e.nativeEvent.target
               if (isNaN(num)) {
                 maxValShared.set(undefined)
                 return
               }
-                maxValShared.set(Math.min(Math.max(num, minValShared.value || 0), startingAbsMax))
+              maxValShared.set(Math.min(Math.max(num, minValShared.value || 0), startingAbsMax))
             }}
           />
           {(priceRange.min || priceRange.max) && (
             <Button
-            style={{
+              style={{
                 position: 'absolute',
                 right: -8,
                 top: 0,
-                transform: [{ translateX: "100%" }],
-            }}
-            variant="ghost" onPress={() => toggleDisplayFilter('priceRange')}>
+                transform: [{ translateX: '100%' }],
+              }}
+              variant="ghost"
+              onPress={() => toggleDisplayFilter('priceRange')}
+            >
               <Text className="text-base font-medium text-blue-600">Clear</Text>
             </Button>
           )}

@@ -1,4 +1,5 @@
 import { TCard } from "@/constants/types";
+import { Json } from "@/lib/store/supabase";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { invokeFx } from "../helper";
 import {
@@ -6,6 +7,20 @@ import {
   PriceChartingResponse,
   TPriceChartingRes,
 } from "./types";
+
+function getField(value: Json, key: string): Json | undefined {
+  if (
+    value !== null &&
+    typeof value === "object" &&
+    !Array.isArray(value)
+  ) {
+    // Now TypeScript knows it's the object branch
+    const obj = value as { [key: string]: Json | undefined };
+    return obj[key];
+  }
+
+  return undefined;
+}
 
 export function usePriceChartingData(params: {
   card: TCard;
@@ -15,7 +30,7 @@ export function usePriceChartingData(params: {
   const payload = PriceChartingResponse.parse({
     cardId: card.id,
     grade,
-    mock_data: { endCost: card.grades_prices[grade] },
+    mock_data: { endCost: getField(card.grades_prices, grade) },
   });
   return useQuery({
     queryKey: ["price-query", card.id, grade],
@@ -47,7 +62,7 @@ export function usePriceChartingDataBatch(params: {
         const payload = PriceChartingRequest.parse({
           card_id: card!.id,
           grade,
-          mock_data: { end_cost: card!.grades_prices?.[grade] },
+          mock_data: { end_cost: getField(card?.grades_prices || null, grade) },
         });
         return invokeFx<typeof payload, TPriceChartingRes>(
           "price-fetch",

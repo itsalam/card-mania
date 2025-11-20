@@ -1,12 +1,12 @@
 import { FolderTabList, FolderTabsContainer, FolderTabTrigger } from '@/components/tabs/FolderTabs'
 import { Button } from '@/components/ui/button'
 import {
-    DropdownMenu,
-    DropdownMenuCheckboxItem,
-    DropdownMenuContent,
-    DropdownMenuLabel,
-    DropdownMenuSeparator,
-    DropdownMenuTrigger,
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Tabs, TabsContent } from '@/components/ui/tabs/tabs'
 import { Text } from '@/components/ui/text'
@@ -14,8 +14,8 @@ import { MainSearchBar } from '@/features/mainSearchbar'
 import { useColorScheme } from '@/lib/hooks/useColorScheme'
 import { Compass, LucideIcon, Menu, Newspaper, Sheet } from 'lucide-react-native'
 import React from 'react'
-import { SafeAreaView, View } from 'react-native'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { View } from 'react-native'
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { ExplorePage, ExplorePageMenu } from './ExplorePage'
 import { FeedPage } from './FeedPage'
 import { TabValue, tabValues, useHomePageStore } from './provider'

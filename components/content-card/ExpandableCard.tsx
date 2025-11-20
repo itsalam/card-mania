@@ -69,7 +69,7 @@ export function ExpandableCard<T extends object>({
       >
         <Box className="w-full items-center justify-between flex flex-row p-1">
           <Heading size="2xl">{title}</Heading>
-          <Icon style={{ rotate: !isOpen ? '-90deg' : '0deg' }} as={ChevronDown} />
+          <Icon style={{ transform: [{ rotate: !isOpen ? '-90deg' : '0deg' }] }} as={ChevronDown} />
         </Box>
       </Button>
       <VStack className="max-w-full overflow-hidden pr-4 mask-r-from-30% pb-4">

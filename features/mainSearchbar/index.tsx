@@ -15,7 +15,6 @@ import {
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { SearchInput } from 'react-native-ui-lib'
-import { useOverlay } from '../overlay/provider'
 import { FiltersKeys, FiltersProvider, useFiltersStore } from './filters/providers'
 import { SearchFilters, SearchFiltersOptions } from './filters/SearchFilters'
 import { PreviewCard } from './PreviewItem'
@@ -24,7 +23,6 @@ export function MainSearchBar({ placeholder = 'Search...' }: { placeholder?: str
   // Theme and store hooks
   const { progress: keyboardProgress } = useReanimatedKeyboardAnimation()
   const filters = useFiltersStore()
-  const { hiddenId } = useOverlay()
   const filterQuery = useMemo(() => {
     const { min, max } = filters.priceRange
     return {
@@ -109,9 +107,9 @@ export function MainSearchBar({ placeholder = 'Search...' }: { placeholder?: str
 
   const overlayStyle = useAnimatedStyle(() => {
     return {
-      opacity: withTiming(hiddenId ? 0 : 1, { duration: 200 }),
+      opacity: withTiming(1, { duration: 200 }),
     }
-  }, [hiddenId])
+  }, [])
 
   const searchItems = useMemo(
     () => cardSearch?.pages.flatMap((page) => page.results) || autoSuggestions?.results,

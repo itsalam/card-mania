@@ -7,7 +7,6 @@ import { useColorScheme } from '@/lib/hooks/useColorScheme'
 import '@/components/nativewind-svg'
 import '../global.css'
 
-import { OverlayProvider } from '@/features/overlay/provider'
 import { NAV_THEME } from '@/lib/constants'
 import { supabase } from '@/lib/store/client'
 import { StoreProvider } from '@/lib/store/provider'
@@ -104,11 +103,9 @@ export default function Providers({ children }: { children: React.ReactNode }) {
       <KeyboardProvider>
         <GluestackUIProvider>
           <ThemeProvider value={isDarkColorScheme ? DARK_THEME : LIGHT_THEME}>
-            <OverlayProvider>
-              <StoreProvider>
-                <GestureHandlerRootView>{children}</GestureHandlerRootView>
-              </StoreProvider>
-            </OverlayProvider>
+            <StoreProvider>
+              <GestureHandlerRootView>{children}</GestureHandlerRootView>
+            </StoreProvider>
             {/* <StatusBar style={isDarkColorScheme ? 'light' : 'dark'} /> */}
           </ThemeProvider>
         </GluestackUIProvider>

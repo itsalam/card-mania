@@ -1,11 +1,11 @@
-import { AnimatePresence, MotiView } from 'moti';
-import { useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { AnimatePresence, MotiView } from 'moti'
+import { ReactNode, useState } from 'react'
+import { Pressable, StyleSheet, Text, View } from 'react-native'
 
 export default function FabMenu() {
-  const [expanded, setExpanded] = useState(false);
+  const [expanded, setExpanded] = useState(false)
   return (
-<>
+    <>
       <Pressable
         onPress={() => setExpanded(!expanded)}
         style={[
@@ -17,7 +17,7 @@ export default function FabMenu() {
         ]}
       >
         <MotiView
-          className='absolute'
+          className="absolute"
           animate={{ scale: expanded ? 1.5 : 1 }}
           transition={{
             duration: 150,
@@ -36,11 +36,18 @@ export default function FabMenu() {
           </View>
         )}
       </AnimatePresence>
-      </>
-  );
+    </>
+  )
 }
 
-function ActionButton({ action, index }) {
+type Action = {
+  type: string
+  color: string
+  border: string
+  emoji: ReactNode
+}
+
+function ActionButton({ action, index }: { action: Action; index: number }) {
   return (
     <MotiView
       transition={{ delay: index * 100, damping: 15, mass: 1 }}
@@ -71,7 +78,7 @@ function ActionButton({ action, index }) {
         <Text style={{ fontSize: 18 }}>{action.emoji}</Text>
       </Pressable>
     </MotiView>
-  );
+  )
 }
 
 const styles = StyleSheet.create({
@@ -96,7 +103,7 @@ const styles = StyleSheet.create({
     zIndex: 50,
     borderWidth: 2,
   },
-});
+})
 
 const actions = [
   {
@@ -118,4 +125,4 @@ const actions = [
     emoji: '🌊',
     border: '#7F2315',
   },
-];
+]

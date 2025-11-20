@@ -8,6 +8,7 @@ import { Gesture, GestureDetector } from 'react-native-gesture-handler'
 import { useReanimatedKeyboardAnimation } from 'react-native-keyboard-controller'
 import Animated, {
   runOnJS,
+  SharedValue,
   useAnimatedReaction,
   useAnimatedStyle,
   useDerivedValue,
@@ -77,7 +78,7 @@ type ThumbProps = {
   toggleLocked?: boolean
   children: React.ReactNode
   style?: ComponentProps<typeof View>['style']
-  mainContentBreakpoint?: Animated.SharedValue<number>
+  mainContentBreakpoint?: SharedValue<number>
   mainContent?: React.ReactNode
 }
 

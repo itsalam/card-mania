@@ -16,8 +16,8 @@ import React, {
   useMemo,
 } from 'react'
 import { TextInput, View } from 'react-native'
-import { DynamicBorderBox } from '../border-label-decorator/border'
-import FloatingPlaceholder from '../border-label-decorator/placeholder'
+import { DynamicBorderBox } from '../border-label/border'
+import FloatingPlaceholder from '../border-label/placeholder'
 import ClearButton from './clear-button'
 import { shouldPlaceholderFloat } from './helpers'
 import useFieldState, { FieldContext, FieldStore, useInputColors } from './provider'

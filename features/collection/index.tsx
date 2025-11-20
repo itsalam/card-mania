@@ -1,4 +1,3 @@
-import { SearchBar } from '@/components/search-bar'
 import {
   FolderTabComponent,
   FolderTabList,
@@ -9,8 +8,8 @@ import { Tabs, TabsContent } from '@/components/ui/tabs/tabs'
 import { Text } from '@/components/ui/text'
 import { Coins, Heart, LucideIcon, Plus, Vault } from 'lucide-react-native'
 import React from 'react'
-import { SafeAreaView, View } from 'react-native'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { View } from 'react-native'
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import CollectionBreakdown from './CollectionBreakdown'
 import { WishlistPage } from './pages/wishlist'
 import { TabValue, tabValues, useCollectionPageStore } from './provider'
@@ -39,8 +38,6 @@ export default function CollectionScreen() {
         style={{ paddingTop: insets.top }}
       >
         <CollectionBreakdown />
-
-        <SearchBar placeholder="Search collections.." />
         <Tabs className="flex-1 gap-0" value={currentPage} onValueChange={setCurrentPage}>
           <FolderTabList>
             <View className="flex flex-row items-end justify-start gap-2">

@@ -1,5 +1,4 @@
 import { TCard } from '@/constants/types'
-import { measureInWindowAsync } from '@/features/overlay/utils'
 import { useTouchRecentView } from '@/lib/store/functions/hooks'
 import { View } from 'react-native'
 import performance from 'react-native-performance'
@@ -17,7 +16,6 @@ import { useFocusEffect } from '@react-navigation/native' // or from 'expo-route
 import { useQueryClient } from '@tanstack/react-query'
 import { router } from 'expo-router'
 import { useCallback, useRef } from 'react'
-import { Card } from '../ui/card'
 
 export function useInvalidateOnFocus(queryKey: readonly unknown[]) {
   const qc = useQueryClient()
@@ -35,12 +33,29 @@ export function useInvalidateOnFocus(queryKey: readonly unknown[]) {
   )
 }
 
+export function measureInWindowAsync(
+  ref: React.RefObject<View>
+): Promise<{ x: number; y: number; width: number; height: number }> {
+  return new Promise((resolve, reject) => {
+    const node = ref.current as any
+    console.log(node, ref)
+    if (!node?.measureInWindow) {
+      return reject(new Error('measureInWindow missing'))
+    }
+    node.measureInWindow((x: number, y: number, width: number, height: number) => {
+      console.debug('measured:', { x, y, width, height })
+      resolve({ x, y, width, height })
+    })
+  })
+}
+
 export function useNavigateToDetailCard(card: TCard, cb: () => void) {
-  const cardElement = useRef<typeof Card>(null)
+  const cardElement = useRef<View>(null)
   const { setPrefetchData } = useStores().cardStore.getInitialState()
   const mutation = useTouchRecentView()
 
   const handlePress = () => {
+    console.log(cardElement)
     const t0 = performance.now()
     performance.mark('navigate:start')
     const positionPromise = measureInWindowAsync(cardElement as unknown as React.RefObject<View>)

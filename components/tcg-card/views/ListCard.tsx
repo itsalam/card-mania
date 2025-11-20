@@ -5,8 +5,8 @@ import { CARD_ASPECT_RATIO } from '@/components/consts'
 import { Text } from '@/components/ui/text'
 import { formatPrice } from '@/components/utils'
 import { TCard } from '@/constants/types'
-import { useOverlay } from '@/features/overlay/provider'
 import { cn } from '@/lib/utils/cn'
+import { useCallback } from 'react'
 import { Pressable, StyleSheet, View } from 'react-native'
 import { Assets, Button } from 'react-native-ui-lib'
 import { THUMBNAIL_HEIGHT, THUMBNAIL_WIDTH } from '../consts'
@@ -42,32 +42,35 @@ export function ListCard({
   })
 
   const toggleWishList = useToggleWishlist('card')
-  const { setHiddenId } = useOverlay()
 
-  const { cardElement, handlePress } = useNavigateToDetailCard(card, () => {
-    setHiddenId(card.id)
-  })
-
+  const { cardElement, handlePress } = useNavigateToDetailCard(card, () => {})
+  console.log(cardElement)
   const [grade, displayPrice] = getDefaultPrice(card)
+  const cardElementRef = useCallback((node: View | null) => {
+    console.log('ref callback called with:', node)
+    cardElement.current = node
+  }, [])
   return (
     <Pressable onPress={() => handlePress()}>
       <View className={cn(expanded && 'flex flex-row items-center gap-2 p-2 w-full', className)}>
-        <LiquidGlassCard
-          variant="primary"
-          className="p-0 aspect-[5/7] flex items-center justify-center overflow-hidden"
-          style={{ width: THUMBNAIL_WIDTH, aspectRatio: CARD_ASPECT_RATIO }}
-          ref={cardElement}
-        >
-          <LoadingImagePlaceholder
-            source={{
-              uri: thumbnailImg,
-              cacheKey: `${card?.id}-thumb`,
-              width: THUMBNAIL_WIDTH,
-              height: THUMBNAIL_HEIGHT,
-            }}
-            isLoading={isLoading || isImageLoading}
-          />
-        </LiquidGlassCard>
+        <View ref={cardElementRef}>
+          <LiquidGlassCard
+            onPress={() => handlePress()}
+            variant="primary"
+            // className="p-0 aspect-[5/7] flex items-center justify-center overflow-hidden"
+            style={{ width: THUMBNAIL_WIDTH, aspectRatio: CARD_ASPECT_RATIO }}
+          >
+            <LoadingImagePlaceholder
+              source={{
+                uri: thumbnailImg,
+                cacheKey: `${card?.id}-thumb`,
+                width: THUMBNAIL_WIDTH,
+                height: THUMBNAIL_HEIGHT,
+              }}
+              isLoading={isLoading || isImageLoading}
+            />
+          </LiquidGlassCard>
+        </View>
         {expanded && (
           <View className="flex flex-col gap-1 h-full items-start py-2 flex-1 px-2">
             <View>

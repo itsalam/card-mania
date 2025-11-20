@@ -1,14 +1,14 @@
 import { CARD_ASPECT_RATIO } from '@/components/consts'
 import { ExpandableCard } from '@/components/content-card'
 import { ExpandedContent } from '@/components/content-card/ExpandableCard'
-import { SearchBar } from '@/components/search-bar'
 import { THUMBNAIL_HEIGHT, THUMBNAIL_WIDTH } from '@/components/tcg-card/consts'
 import { LiquidGlassCard } from '@/components/tcg-card/GlassCard'
 import { Card } from '@/components/ui/card/index'
 import { HStack } from '@/components/ui/hstack'
 import { cn } from '@/lib/utils'
 import React, { ComponentProps } from 'react'
-import { SafeAreaView, ScrollView } from 'react-native'
+import { ScrollView } from 'react-native'
+import { SafeAreaView } from 'react-native-safe-area-context'
 
 const EXPANDED_CARD_HEIGHT = THUMBNAIL_HEIGHT + 24
 
@@ -28,7 +28,6 @@ export function PlaceholderBox({
 export default function MarketplaceScreen() {
   return (
     <SafeAreaView className="flex-1">
-      <SearchBar />
       <ScrollView>
         <ExpandableCard
           title="Featured"
