@@ -83,20 +83,26 @@ export function useTouchRecentView() {
         source: args.source,
       }),
     onMutate: async (args) => {
-      const prev = qc.getQueryData(qk.recent) as Partial<
-        Database["public"]["Tables"]["recent_views"]["Row"]
-      >[] | undefined;
-      let item;
-      const itemIdx = prev?.findIndex((v) => v.item_id === args.id);
-      if (itemIdx !== undefined && itemIdx !== -1) {
-        item = prev?.splice(itemIdx, 1)[0];
-      }
-      item = item ?? {
-        item_id: args.id,
-        item_type: args.type,
-      };
-      prev?.unshift(item);
-      qc.setQueryData(qk.recent, prev);
+      qc.setQueryData(qk.recent, (old) => {
+        type Row = Database["public"]["Tables"]["recent_views"]["Row"];
+
+        const prev = (old ?? []) as Partial<Row>[];
+
+        // Find existing entry, if any
+        const existing = prev.find((v) => v.item_id === args.id);
+
+        // Remove any existing occurrence of this item from the list
+        const withoutCurrent = prev.filter((v) => v.item_id !== args.id);
+
+        // Keep existing fields if present, otherwise create a minimal row
+        const item: Partial<Row> = existing ?? {
+          item_id: args.id,
+          item_type: args.type,
+        };
+
+        // Put it at the front, followed by the rest
+        return [item, ...withoutCurrent];
+      });
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: qk.recent }),
   });

@@ -371,7 +371,7 @@ const CollectionsAvatar = ({
       style={{
         borderColor: Colors.$outlinePrimary,
         borderWidth: 2,
-        backgroundColor: Colors.$backgroundPrimaryMedium,
+        backgroundColor: Colors.$backgroundNeutral,
       }}
     >
       {Icon ? (

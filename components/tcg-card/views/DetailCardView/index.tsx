@@ -11,25 +11,25 @@ import { chunk, formatLabel, formatPrice } from '@/components/utils'
 import { qk } from '@/lib/store/functions/helpers'
 import { Image } from 'expo-image'
 import { Eye, EyeOff, Undo2, X } from 'lucide-react-native'
-import { SafeAreaView } from 'moti'
 import React, { ReactNode, useCallback, useEffect, useMemo, useState } from 'react'
 import {
   Dimensions,
   FlatList,
   NativeScrollEvent,
   NativeSyntheticEvent,
-  ScrollView,
   View,
   ViewStyle,
 } from 'react-native'
 import Animated, {
+  Extrapolation,
+  interpolate,
   useAnimatedStyle,
   useDerivedValue,
   useSharedValue,
   withTiming,
 } from 'react-native-reanimated'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { Button, Colors, Dialog, PanningProvider, Spacings } from 'react-native-ui-lib'
+import { Button, Colors, Dialog, PanningProvider } from 'react-native-ui-lib'
 import Carousel from 'react-native-ui-lib/carousel'
 import { THUMBNAIL_HEIGHT, THUMBNAIL_WIDTH } from '../../consts'
 import { AddToCollectionsView } from './footer/add-to-collections'
@@ -48,7 +48,6 @@ export default function FocusCardView({
   cardId: string
   animateFrom: { x: number; y: number; width: number; height: number }
 }) {
-  console.log('LOADED!!')
   const { data: cardData } = useCardQuery(cardId)
 
   const { cardStyle, scrimStyle, close } = useTransitionAnimation(animateFrom)
@@ -62,6 +61,7 @@ export default function FocusCardView({
     shape: 'card',
     cardId: cardId,
     kind: 'front',
+    quality: 100,
     queryHash: cardData?.image?.query_hash ?? undefined,
   })
 
@@ -99,59 +99,59 @@ export default function FocusCardView({
         cardId={cardId}
         image={image}
         handleClose={close}
-      >
-        <CardScreenHeader title={'Overview'} />
-        <View className="px-8 flex flex-col items-start justify-stretch gap-4 w-full">
-          <View>
-            <Heading size="4xl">{cardData?.name}</Heading>
-            <Heading className="font-spaceMono font-bold" size="xl">
-              {cardData?.set_name}
-            </Heading>
-          </View>
+        title={
+          <View className="px-8 flex flex-col items-start justify-stretch gap-4 w-full ">
+            <View>
+              <Heading size="4xl">{cardData?.name}</Heading>
+              <Heading className="font-spaceMono font-bold" size="xl">
+                {cardData?.set_name}
+              </Heading>
+            </View>
 
-          <View className="w-full py-4 ">
-            <View
-              style={{
-                minHeight: (W * 0.4 * 7) / 5,
-                display: 'none',
-              }}
-              className="flex-row justify-between w-full"
-            >
-              <Carousel
-                style={{ flex: 1, minHeight: (W * 0.4 * 7) / 5, width: W * 0.4 }}
-                pageHeight={(W * 0.4 * 7) / 5}
-                itemSpacings={10}
-                pageControlPosition={Carousel.pageControlPositions.UNDER}
-                showCounter={images.length >= 2}
+            <View className="w-full">
+              <View
+                style={{
+                  minHeight: (W * 0.4 * 7) / 5,
+                  display: 'none',
+                }}
+                className="flex-row justify-between w-full"
               >
-                <Image
-                  style={{ height: (W * 0.4 * 7) / 5, aspectRatio: 5 / 7, borderRadius: 4 }}
-                  source={{ uri: image, cacheKey: cardId }}
-                  cachePolicy="memory-disk"
-                  transition={0}
-                  contentFit="cover"
-                />
-              </Carousel>
-              <View className="flex-1 pl-4">
-                {cardData?.release_date && (
-                  <Attribute
-                    label="Released"
-                    value={new Date(cardData?.release_date).toLocaleDateString()}
+                <Carousel
+                  style={{ flex: 1, minHeight: (W * 0.4 * 7) / 5, width: W * 0.4 }}
+                  pageHeight={(W * 0.4 * 7) / 5}
+                  itemSpacings={10}
+                  pageControlPosition={Carousel.pageControlPositions.UNDER}
+                  showCounter={images.length >= 2}
+                >
+                  <Image
+                    style={{ height: (W * 0.4 * 7) / 5, aspectRatio: 5 / 7, borderRadius: 4 }}
+                    source={{ uri: image, cacheKey: cardId }}
+                    cachePolicy="memory-disk"
+                    transition={0}
+                    contentFit="cover"
                   />
-                )}
-                <Attribute label="Genre" value={cardData?.genre || '--'} />
-                {cardData?.last_updated && (
-                  <Attribute
-                    label="Last Updated"
-                    value={new Date(cardData?.last_updated).toLocaleDateString()}
-                  />
-                )}
-                {/* <Text>{data?.description}</Text> */}
+                </Carousel>
+                <View className="flex-1 pl-4">
+                  {cardData?.release_date && (
+                    <Attribute
+                      label="Released"
+                      value={new Date(cardData?.release_date).toLocaleDateString()}
+                    />
+                  )}
+                  <Attribute label="Genre" value={cardData?.genre || '--'} />
+                  {cardData?.last_updated && (
+                    <Attribute
+                      label="Last Updated"
+                      value={new Date(cardData?.last_updated).toLocaleDateString()}
+                    />
+                  )}
+                  {/* <Text>{data?.description}</Text> */}
+                </View>
               </View>
             </View>
           </View>
-        </View>
-
+        }
+      >
         <View className="flex flex-col items-start justify-stretch gap-2 w-full">
           <CardScreenHeader title={'Prices'} />
           <Prices
@@ -247,6 +247,7 @@ const CardDetailContainer = ({
   image,
   cardId,
   handleClose,
+  title,
 }: {
   cardId: string
   image?: string
@@ -254,7 +255,11 @@ const CardDetailContainer = ({
   scrimStyle: ViewStyle
   handleClose: () => void
   children: ReactNode
+  title: ReactNode
 }) => {
+  const insets = useSafeAreaInsets()
+  const TITLE_SPACING = 80 + insets.top
+  const CARD_TITLE_POSITION = 0.8
   const { footerFullView, setFooterFullView } = useCardDetails()
   const container = useAnimatedStyle(() => ({
     opacity: withTiming(footerFullView ? 0.3 : 1.0),
@@ -272,22 +277,27 @@ const CardDetailContainer = ({
     const offsetY = e.nativeEvent.contentOffset.y
     y.set(offsetY)
   }, [])
-  const travelDistance = 0.6 * ((W * 7) / 5)
-  const scrollProgress = useDerivedValue(() =>
-    Math.min(Math.max(0, y.value / (travelDistance / 3)), 1)
-  )
-  const opacity = useDerivedValue(
-    () => Math.min(Math.max(0, scrollProgress.value), 1),
+  const travelDistance = CARD_TITLE_POSITION * ((W * 7) / 5) - TITLE_SPACING
+  const scrollProgress = useDerivedValue(() => Math.max(0, y.value / travelDistance))
+  const mainBlur = useDerivedValue(
+    () => interpolate(scrollProgress.value, [0, 1], [0, 0.5], Extrapolation.CLAMP),
     [scrollProgress]
   )
 
-  const containerPadding = useAnimatedStyle(() => ({
-    paddingTop: travelDistance * (1 - scrollProgress.value),
-  }))
+  const titleBlur = useDerivedValue(
+    () => interpolate(scrollProgress.value, [1.0, 1.2], [0, 0.8], Extrapolation.CLAMP),
+    [scrollProgress]
+  )
 
-  const backgroundOpacity = useDerivedValue(() => [1, Math.min(opacity.value, 0.8)], [opacity])
+  const backgroundOpacity = useDerivedValue(
+    () => [1, interpolate(scrollProgress.value, [0, 1], [0, 0.8], Extrapolation.CLAMP)],
+    [scrollProgress]
+  )
 
-  const insets = useSafeAreaInsets()
+  const titleOpacity = useDerivedValue(
+    () => [interpolate(scrollProgress.value, [1.0, 1.2], [0, 0.8], Extrapolation.CLAMP), 1, 0.9, 0],
+    [scrollProgress]
+  )
 
   return (
     <Animated.View
@@ -295,10 +305,13 @@ const CardDetailContainer = ({
         {
           width: W,
           height: H,
+          backgroundColor: Colors.rgba(Colors.$backgroundNeutralLight, 1.0),
         },
       ]}
     >
-      <Animated.View style={[cardStyle, { transform: [{ translateY: insets.top }] }]}>
+      <Animated.View
+        style={[cardStyle, { position: 'relative', transform: [{ translateY: insets.top }] }]}
+      >
         <Image
           style={{ width: '100%', aspectRatio: 5 / 7 }}
           source={[{ uri: image, cacheKey: cardId, width: W, height: W / (5 / 7) }]}
@@ -314,9 +327,11 @@ const CardDetailContainer = ({
       </Animated.View>
       <BlurBackground
         backgroundOpacity={backgroundOpacity}
-        start={{ x: 0.5, y: 0.8 }}
-        end={{ x: 0.5, y: 0 }}
-        opacity={opacity}
+        start={{ x: 0.5, y: 1.0 }}
+        end={{ x: 0.5, y: 0.0 }}
+        colors={[Colors.$backgroundNeutralLight, Colors.$backgroundNeutralMedium]}
+        positions={[0.3, 0.5]}
+        opacity={mainBlur}
       >
         <Animated.View
           onStartShouldSetResponderCapture={() => {
@@ -337,36 +352,48 @@ const CardDetailContainer = ({
             },
           ]}
         >
-          <SafeAreaView className="overflow-visible" style={{ width: '100%' }}>
-            <Button
-              onPress={handleClose}
-              style={{ position: 'absolute', left: 16, top: insets.top + 16, zIndex: 20 }}
+          <Button
+            onPress={handleClose}
+            style={{ position: 'absolute', left: 16, top: insets.top + 16, zIndex: 20 }}
+          >
+            <X size={20} />
+          </Button>
+          <Animated.ScrollView
+            onScroll={onScroll}
+            scrollEventThrottle={16} // ~60fps updates
+            style={[{ paddingBottom: insets.bottom + 20 }]}
+            contentContainerStyle={[{ paddingTop: travelDistance, paddingBottom: travelDistance }]}
+            stickyHeaderIndices={[0]}
+          >
+            <BlurBackground
+              start={{ x: 0.5, y: 0 }}
+              end={{ x: 0.5, y: 1 }}
+              colors={[
+                Colors.$backgroundNeutralLight,
+                Colors.$backgroundNeutralLight,
+                Colors.$backgroundNeutralLight,
+                Colors.$backgroundNeutralLight,
+              ]}
+              backgroundOpacity={titleOpacity}
+              positions={[0.2, 0.5, 0.9, 1]}
+              blurStyle={{
+                marginBottom: 20,
+              }}
+              opacity={titleBlur}
+              // intensity={0}
             >
-              <X size={20} />
-            </Button>
-            <ScrollView
-              onScroll={onScroll}
-              scrollEventThrottle={16} // ~60fps updates
-              contentContainerStyle={{ paddingBottom: insets.bottom + 20 }}
-              className="h-full overflow-visible"
-              contentContainerClassName="flex flex-col items-start justify-stretch gap-4 pt-4"
-            >
-              <Animated.View
-                style={[
-                  {
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'flex-start',
-                    gap: Spacings.s4,
-                    paddingTop: Spacings.s4,
-                  },
-                  containerPadding,
-                ]}
+              <View
+                style={{
+                  paddingTop: TITLE_SPACING,
+                  paddingBottom: 24,
+                }}
               >
-                {children}
-              </Animated.View>
-            </ScrollView>
-          </SafeAreaView>
+                {title}
+              </View>
+            </BlurBackground>
+
+            <Animated.View style={[{ position: 'relative' }]}>{children}</Animated.View>
+          </Animated.ScrollView>
         </Animated.View>
       </BlurBackground>
     </Animated.View>

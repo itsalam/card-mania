@@ -117,7 +117,8 @@ export default function DraggableThumbContent({
     const uniq: number[] = []
     for (let i = 0; i < arr.length; i++) {
       const v = arr[i]
-      if (!uniq.includes(v)) uniq.push(v)
+
+      if (v && !uniq.includes(v)) uniq.push(v)
     }
     uniq.sort((a, b) => a - b)
     return uniq
@@ -219,7 +220,10 @@ export default function DraggableThumbContent({
       ref={fullContentRef}
       onLayout={onFullContentLayout}
     >
-      <BlurBackground style={[thumbStyles.sheetInner, { flex: 1, width: '100%' }]} opacity={0.95}>
+      <BlurBackground
+        style={[thumbStyles.sheetInner, { flex: 1, width: '100%' }]}
+        backgroundOpacity={0.95}
+      >
         <GestureDetector gesture={composed}>
           <Animated.View
             style={thumbStyles.mainContent}
@@ -239,7 +243,7 @@ export default function DraggableThumbContent({
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
-              backgroundColor: Colors.$backgroundPrimary,
+              // backgroundColor: Colors.$backgroundNeutralLight,
             },
             detailContentStyle,
           ]}

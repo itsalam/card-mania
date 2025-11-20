@@ -3,23 +3,24 @@ import {
   Canvas,
   LinearGradient,
   Rect,
-  Size,
   SkPoint,
   vec,
 } from '@shopify/react-native-skia'
 import { BlurView } from 'expo-blur'
-import React, { useState } from 'react'
-import { ColorValue, LayoutChangeEvent, StyleSheet, View } from 'react-native'
-import Animated, { DerivedValue, useAnimatedStyle, useDerivedValue } from 'react-native-reanimated'
-import { useBackgroundColors, useSharedValueLogger } from './utils'
+import React from 'react'
+import { ColorValue, StyleProp, StyleSheet, View, ViewStyle } from 'react-native'
+import Animated, {
+  DerivedValue,
+  useAnimatedProps,
+  useDerivedValue,
+  useSharedValue,
+} from 'react-native-reanimated'
+import { useBackgroundColors } from './utils'
 
 type ColorValueArray = readonly [ColorValue, ColorValue, ...ColorValue[]]
 type OptionalColorValueArray = Array<string | undefined>
 
 const ABlur = Animated.createAnimatedComponent(BlurView)
-
-const GRADIENT_START = Object.freeze({ x: 0, y: 1 })
-const GRADIENT_END = Object.freeze({ x: 1, y: 0 })
 
 // const S = StyleSheet.create({
 //   root: {
@@ -54,26 +55,17 @@ function BackgroundBase({
   children,
   start,
   end,
+  positions,
   ...props
 }: React.ComponentProps<typeof View> & {
   start?: SkPoint
   end?: SkPoint
   colors?: OptionalColorValueArray
   opacity?: AnimatedProp<number | number[]>
+  positions?: number[]
 }) {
-  const [size, setSize] = useState<Size>({ width: 0, height: 0 })
-
-  const onLayout = (e: LayoutChangeEvent) => {
-    const { width, height } = e.nativeEvent.layout
-    if (width !== size.width || height !== size.height) {
-      setSize({ width, height })
-    }
-  }
-
-  const ready = size.width > 0 && size.height > 0
+  const sizeSv = useSharedValue({ width: 0, height: 0 })
   const defaultColors: ColorValueArray = useBackgroundColors() // make this hook return a stable array if possible
-  // derive a stable key for defaultColors in case the hook returns a new array with same values
-  const defaultKey = React.useMemo(() => defaultColors.join('|'), [defaultColors])
 
   const resolveOpacity = (o: AnimatedProp<number | number[]>) => {
     'worklet'
@@ -103,39 +95,47 @@ function BackgroundBase({
     return filled.map((c, i) =>
       rgba(String(c), (Array.isArray(resOpacity) ? resOpacity[i] : resOpacity)!)
     )
-  }, [colors, defaultKey, opacity])
+  }, [colors, opacity])
 
-  const gradientStart = start
-    ? vec(size.width * start.x, size.height * start.y)
-    : vec(0, size.height)
+  const gradientStart = useDerivedValue(
+    () =>
+      start
+        ? vec(sizeSv.value.width * start.x, sizeSv.value.height * start.y)
+        : vec(0, sizeSv.value.height),
+    [start, sizeSv]
+  )
 
-  const gradientEnd = end ? vec(size.width * end.x, size.height * end.y) : vec(size.width, 0)
+  const gradientEnd = useDerivedValue(
+    () =>
+      end
+        ? vec(sizeSv.value.width * end.x, sizeSv.value.height * end.y)
+        : vec(sizeSv.value.width, 0),
+    [end, sizeSv]
+  )
+
+  const width = useDerivedValue(() => sizeSv.value.width, [sizeSv])
+  const height = useDerivedValue(() => sizeSv.value.height, [sizeSv])
 
   return (
-    <View style={styles.container} onLayout={onLayout}>
-      {ready && (
-        <Canvas style={[StyleSheet.absoluteFill, style]} pointerEvents="none">
-          <Rect x={0} y={0} width={size.width} height={size.height}>
-            <LinearGradient colors={finalColors} start={gradientStart} end={gradientEnd} />
-          </Rect>
-        </Canvas>
-      )}
+    <View style={[styles.container, style]} {...props}>
+      <Canvas style={[StyleSheet.absoluteFill]} pointerEvents="none" onSize={sizeSv}>
+        <Rect x={0} y={0} width={width} height={height}>
+          <LinearGradient
+            colors={finalColors}
+            start={gradientStart}
+            end={gradientEnd}
+            positions={positions}
+          />
+        </Rect>
+      </Canvas>
+
       {children}
     </View>
   )
-  // return (
-  //   <LinearGradient
-  //     colors={finalColors}
-  //     start={GRADIENT_START}
-  //     end={GRADIENT_END}
-  //     style={[S.root, style]} // base style is stable; array identity is fine
-  //     {...props}
-  //   />
-  // )
 }
 
 // Pure component with custom equality (prevents rerenders if prop *values* are the same)
-export const Background = React.memo(BackgroundBase, (prev, next) => {
+export const GradientBackground = React.memo(BackgroundBase, (prev, next) => {
   if (!colorsEq(prev.colors as any, next.colors as any)) return false
   if (!opacityEq(prev.opacity as any, next.opacity as any)) return false
   // if you often pass inline styles, consider memoizing them at the callsite,
@@ -151,24 +151,31 @@ export const BlurBackground = React.memo(function BlurBackground({
   intensity = 30,
   opacity,
   backgroundOpacity,
+  blurStyle,
   ...props
-}: Omit<React.ComponentProps<typeof Background>, 'opacity'> & {
+}: Omit<React.ComponentProps<typeof GradientBackground>, 'opacity'> & {
   intensity?: number
-  opacity: DerivedValue<number>
-  backgroundOpacity?: DerivedValue<number[]>
+  opacity?: DerivedValue<number>
+  backgroundOpacity?: AnimatedProp<number | number[]>
+  blurStyle?: StyleProp<ViewStyle>
 }) {
-  const blurOpacity = useAnimatedStyle(
+  const animProps = useAnimatedProps(
     () => ({
-      opacity: opacity.value,
+      intensity: (opacity?.value ?? 1) * intensity,
     }),
     [opacity]
   )
-  useSharedValueLogger('o', opacity)
+
   return (
-    <Background {...props} opacity={backgroundOpacity}>
-      <ABlur intensity={intensity} style={[styles.animatedBlur, blurOpacity]} />
+    <GradientBackground {...props} opacity={backgroundOpacity}>
+      <ABlur
+        intensity={intensity}
+        style={[StyleSheet.absoluteFill, blurStyle]}
+        pointerEvents="none"
+        animatedProps={animProps}
+      />
       {children}
-    </Background>
+    </GradientBackground>
   )
 })
 
@@ -177,5 +184,5 @@ const styles = StyleSheet.create({
     position: 'relative', // required so absoluteFill is relative to this view
     flex: 1,
   },
-  animatedBlur: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 },
+  animatedBlur: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, width: '100%' },
 })

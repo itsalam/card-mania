@@ -10,7 +10,6 @@ export default function CardsRoute() {
   } = route.params as { card: string; from: string; image: string }
 
   const fromPos = JSON.parse(from) as { x: number; y: number; width: number; height: number }
-  console.log(route.params)
-  console.log('FUCK')
-  return <FocusCardView cardId={cardId} baseImage={image} animateFrom={fromPos} />
+
+  return <FocusCardView cardId={cardId} animateFrom={fromPos} />
 }

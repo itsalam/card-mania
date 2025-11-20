@@ -1,6 +1,8 @@
 import { TCard } from '@/constants/types'
 import { measureInWindowAsync } from '@/features/overlay/utils'
 import { useTouchRecentView } from '@/lib/store/functions/hooks'
+import { View } from 'react-native'
+import performance from 'react-native-performance'
 
 type GetDefaultPriceReturn = [string, number] | [null]
 export const getDefaultPrice = (card: TCard): GetDefaultPriceReturn => {
@@ -11,7 +13,7 @@ export const getDefaultPrice = (card: TCard): GetDefaultPriceReturn => {
 }
 
 import { useStores } from '@/lib/store/provider'
-import { useFocusEffect } from '@react-navigation/native'; // or from 'expo-router'
+import { useFocusEffect } from '@react-navigation/native' // or from 'expo-router'
 import { useQueryClient } from '@tanstack/react-query'
 import { router } from 'expo-router'
 import { useCallback, useRef } from 'react'
@@ -39,9 +41,13 @@ export function useNavigateToDetailCard(card: TCard, cb: () => void) {
   const mutation = useTouchRecentView()
 
   const handlePress = () => {
+    const t0 = performance.now()
+    performance.mark('navigate:start')
     const positionPromise = measureInWindowAsync(cardElement as unknown as React.RefObject<View>)
     setPrefetchData(card.id, card)
     positionPromise.then((position) => {
+      const t1 = performance.now()
+      console.log(`Call to measure took ${t1 - t0} milliseconds.`)
       mutation.mutate({
         type: 'card',
         id: card.id,
