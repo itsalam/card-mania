@@ -1,7 +1,8 @@
 import { useColorScheme } from '@/lib/hooks/useColorScheme'
 import { ColorValue, View } from 'react-native'
-import { runOnJS, useAnimatedReaction } from 'react-native-reanimated'
+import { useAnimatedReaction } from 'react-native-reanimated'
 import { Colors } from 'react-native-ui-lib'
+import { scheduleOnRN } from 'react-native-worklets'
 
 export type OptionalColorValue = ColorValue | null
 export type ColorValueArray = [ColorValue, ColorValue, ...ColorValue[]]
@@ -116,7 +117,7 @@ export function useSharedValueLogger<T>(label: string, shared: { value: T }, opt
         globalThis[key] = now
       }
 
-      runOnJS(log)(`[SV:${label}]`, curr, prev ?? null)
+      scheduleOnRN(log,`[SV:${label}]`, curr, prev ?? null)
     },
     // deps for label/options (safe to pass; they live on JS thread)
     [label, distinct, throttleMs]

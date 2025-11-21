@@ -2,6 +2,8 @@ import { TextClassContext } from '@/components/ui/text';
 import { cn } from '@/lib/utils';
 import * as TabsPrimitive from '@rn-primitives/tabs';
 import * as React from 'react';
+import { Text, TextProps, View } from 'react-native';
+import { Colors } from 'react-native-ui-lib';
 
 const Tabs = TabsPrimitive.Root;
 
@@ -49,6 +51,19 @@ function TabsTrigger({
   );
 }
 
+function TabsLabel({
+  className,
+  label,
+  value,
+  style,
+  children,
+  ...props
+}: TextProps & {label: string, value: string}
+) {
+  const { value: currentValue } = TabsPrimitive.useRootContext();
+  return <View className="flex flex-row items-center justify-center gap-2">{children}<Text className="text-xl" style={[style, currentValue === value ? { color: Colors.$textDefault } : { color: Colors.$textDefault }, { display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }]} {...props}>{label.charAt(0).toUpperCase() + label.slice(1)}</Text></View>
+}
+
 function TabsContent({
   className,
   ...props
@@ -58,7 +73,7 @@ function TabsContent({
   return (
     <TabsPrimitive.Content
       className={cn(
-        'web:ring-offset-background web:focus-visible:outline-none web:focus-visible:ring-2 web:focus-visible:ring-ring web:focus-visible:ring-offset-2',
+        'web:ring-offset-background web:focus-visible:outline-none web:focus-visible:ring-2 web:focus-visible:ring-ring web:focus-visible:ring-offset-2 p-2',
         className
       )}
       {...props}
@@ -66,4 +81,5 @@ function TabsContent({
   );
 }
 
-export { Tabs, TabsContent, TabsList, TabsTrigger };
+export { Tabs, TabsContent, TabsLabel, TabsList, TabsTrigger };
+

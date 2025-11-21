@@ -14,13 +14,13 @@ import {
 import { Fragment, useCallback, useMemo, useState } from 'react'
 import { Dimensions, View } from 'react-native'
 import {
-  runOnJS,
   SharedValue,
   useAnimatedReaction,
   useDerivedValue,
-  withTiming,
+  withTiming
 } from 'react-native-reanimated'
 import { Colors, SegmentedControl } from 'react-native-ui-lib'
+import { scheduleOnRN } from 'react-native-worklets'
 import {
   CartesianChart,
   CurveType,
@@ -310,7 +310,7 @@ export function ToolTip({
     () => xValue.value,
     (v) => {
       'worklet'
-      runOnJS(formatDateValue)(v)
+      scheduleOnRN(formatDateValue, v)
     },
     [xValue, isActive]
   )

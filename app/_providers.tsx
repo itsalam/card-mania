@@ -4,11 +4,7 @@ import * as SplashScreen from 'expo-splash-screen'
 import { GluestackUIProvider } from '@/components/ui/gluestack-ui-provider'
 import { useColorScheme } from '@/lib/hooks/useColorScheme'
 
-import '@/components/nativewind-svg'
-import '../global.css'
-
 import { NAV_THEME } from '@/lib/constants'
-import { supabase } from '@/lib/store/client'
 import { StoreProvider } from '@/lib/store/provider'
 import { AuthStatus, useUserStore } from '@/lib/store/useUserStore'
 import { DarkTheme, DefaultTheme, Theme, ThemeProvider } from '@react-navigation/native'
@@ -18,6 +14,7 @@ import React, { useRef } from 'react'
 import { Platform } from 'react-native'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { KeyboardProvider } from 'react-native-keyboard-controller'
+import { supabase } from '../lib/store/client'
 const qc = new QueryClient()
 
 const LIGHT_THEME: Theme = {

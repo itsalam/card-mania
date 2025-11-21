@@ -1,7 +1,9 @@
+
 import { supabase } from '@/lib/store/client'
 import { TransformOptions } from '@supabase/storage-js'
 import { ImageBackground } from 'expo-image'
 import { ComponentProps } from 'react'
+import { Colors } from 'react-native-ui-lib'
 import { Spinner } from '../ui/spinner'
 import { THUMBNAIL_HEIGHT, THUMBNAIL_WIDTH } from './consts'
 
@@ -49,7 +51,7 @@ export function CardPlaceholderImage({
         opacity: isLoading ? 0.5 : 1,
         borderRadius: 8,
         overflow: 'hidden',
-        backgroundColor: '#0FF',
+        backgroundColor: Colors.$backgroundNeutralLight,
         width: finalWidth,
         height: finalHeight,
       }}

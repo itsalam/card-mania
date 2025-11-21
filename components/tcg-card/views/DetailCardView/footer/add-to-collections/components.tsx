@@ -367,7 +367,7 @@ const CollectionsAvatar = ({
 }) => {
   return (
     <View
-      className="h-14 w-14 rounded-xl bg-muted flex items-center justify-center"
+      className="h-14 w-14 rounded-xl flex items-center justify-center"
       style={{
         borderColor: Colors.$outlinePrimary,
         borderWidth: 2,

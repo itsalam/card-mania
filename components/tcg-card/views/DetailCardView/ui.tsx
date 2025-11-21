@@ -7,14 +7,13 @@ import { Dimensions, StyleSheet, View } from 'react-native'
 import { Gesture, GestureDetector } from 'react-native-gesture-handler'
 import { useReanimatedKeyboardAnimation } from 'react-native-keyboard-controller'
 import Animated, {
-  runOnJS,
   SharedValue,
   useAnimatedReaction,
   useAnimatedStyle,
   useDerivedValue,
   useSharedValue,
   withSpring,
-  withTiming,
+  withTiming
 } from 'react-native-reanimated'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Colors } from 'react-native-ui-lib'
@@ -24,6 +23,7 @@ import { formatLabel, formatPrice, splitToNChunks } from '@/components/utils'
 import { Eye, EyeOff, Plus } from 'lucide-react-native'
 import React, { useMemo } from 'react'
 import { ScrollView } from 'react-native'
+import { scheduleOnRN } from 'react-native-worklets'
 
 const { width: W, height: H } = Dimensions.get('window')
 
@@ -150,9 +150,9 @@ export default function DraggableThumbContent({
       const next = toggleRevealedSV.value ?? false
       if (isRevealed.value !== next) {
         isRevealed.value = next
-        onLockedChange && runOnJS(onLockedChange)?.(next)
+        onLockedChange && scheduleOnRN(onLockedChange,next)
       }
-      translateY.value = withSpring(to, { damping: 20, stiffness: 150 })
+      translateY.value = withSpring(to, { damping: 100, stiffness: 300 })
     }
   )
 
@@ -187,9 +187,9 @@ export default function DraggableThumbContent({
 
       if (isRevealed.value !== nextLocked) {
         isRevealed.value = nextLocked
-        onLockedChange && runOnJS(onLockedChange)?.(nextLocked)
+        onLockedChange && scheduleOnRN(onLockedChange, nextLocked)
       }
-      translateY.value = withSpring(to, { damping: 20, stiffness: 150 })
+      translateY.value = withSpring(to, { damping: 100, stiffness: 300 })
     })
 
   const composed = Gesture.Simultaneous(pan)

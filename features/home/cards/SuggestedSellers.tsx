@@ -6,12 +6,13 @@ import { Heading } from '@/components/ui/heading'
 import { Text } from '@/components/ui/text'
 import React, { ComponentProps } from 'react'
 import { View } from 'react-native'
+import { Colors } from 'react-native-ui-lib'
 
 const USERS = [
-  { name: 'John Doe', handle: '@johndoe', avatar: 'https://via.placeholder.com/150' },
-  { name: 'Jane Smith', handle: '@janesmith', avatar: 'https://via.placeholder.com/150' },
-  { name: 'Alice Johnson', handle: '@alicejohnson', avatar: 'https://via.placeholder.com/150' },
-  { name: 'Bob Brown', handle: '@bobbrown', avatar: 'https://via.placeholder.com/150' },
+  { name: 'ToppsCollector', handle: '@topps.cards', avatar: 'https://via.placeholder.com/150' },
+  { name: 'PSA Finder', handle: '@psa_grader', avatar: 'https://via.placeholder.com/150' },
+  { name: 'RookieChaser', handle: '@rookiechaser', avatar: 'https://via.placeholder.com/150' },
+  { name: 'WaxPackMike', handle: '@waxpackmike', avatar: 'https://via.placeholder.com/150' },
 ]
 
 type ExpandableCardProps = {} & ComponentProps<typeof Card>
@@ -30,14 +31,14 @@ export function SuggestedSellers(props: ExpandableCardProps) {
               <AvatarFallbackText>{user.name[0]}</AvatarFallbackText>
               <AvatarImage
                 source={{
-                  uri: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=687&q=80',
+                  uri: `https://picsum.photos/seed/${Math.random()}/200/200`,
                 }}
               />
               {/* <AvatarBadge /> */}
             </Avatar>
             <View className='flex-1'>
-              <Text className='text-sm text-muted-foreground'>{user.name}</Text>
-              <Text className='text-primary-100'>{user.handle}</Text>
+              <Text style={{ color: Colors.$textDefault }}>{user.name}</Text>
+              <Text style={{ color: Colors.$textNeutral }}>{user.handle}</Text>
             </View>
             <Button className='rounded-full border' variant="outline"><Text>Follow</Text></Button>
           </View>

@@ -4,11 +4,13 @@ import * as SplashScreen from 'expo-splash-screen'
 import "@/components/icons"
 import '@/components/nativewind-svg'
 import '../global.css'
+require('react-native-ui-lib/config').setConfig({appScheme: 'default'});
 
 import { PortalHost } from '@rn-primitives/portal'
 import React from 'react'
-import { Platform } from 'react-native'
+import { Appearance, Platform } from 'react-native'
 import { configureReanimatedLogger, ReanimatedLogLevel } from 'react-native-reanimated'
+import { Colors } from 'react-native-ui-lib'
 import Providers from './_providers'
 
 export {
@@ -29,6 +31,10 @@ SplashScreen.setOptions({
 })
 
 SplashScreen.preventAutoHideAsync()
+
+const colorScheme = Appearance.getColorScheme();
+
+Colors.setScheme(colorScheme === 'dark' ? 'dark' : 'light');
 
 export default function RootLayout() {
   return (

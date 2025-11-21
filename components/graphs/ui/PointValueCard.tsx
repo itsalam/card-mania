@@ -2,13 +2,13 @@ import { formatPrice } from '@/components/utils'
 import { Group, RoundedRect, Text, useFont } from '@shopify/react-native-skia'
 import React from 'react'
 import {
-  runOnJS,
   SharedValue,
   useAnimatedReaction,
   useDerivedValue,
-  withTiming,
+  withTiming
 } from 'react-native-reanimated'
 import { Colors } from 'react-native-ui-lib'
+import { scheduleOnRN } from 'react-native-worklets'
 import { getFontHeight, wrapContent } from '../utils'
 import { SeriesPoint } from './types'
 
@@ -58,7 +58,7 @@ export function PointValueCard({
     () => valueSV.value,
     (v) => {
       'worklet'
-      runOnJS(setFormattedLabel)(v)
+      scheduleOnRN(setFormattedLabel, v)
     },
     [isActive]
   )

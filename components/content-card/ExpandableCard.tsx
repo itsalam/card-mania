@@ -2,6 +2,7 @@ import { cn } from '@/lib/utils'
 import { ChevronDown } from 'lucide-react-native'
 import React, { ComponentProps, useState } from 'react'
 import { ScrollView } from 'react-native'
+import { Colors } from 'react-native-ui-lib'
 import { CARD_ASPECT_RATIO } from '../consts'
 import { Box } from '../ui/box'
 import { Button } from '../ui/button'
@@ -61,7 +62,17 @@ export function ExpandableCard<T extends object>({
   const expandedItemHeight = getExpandedHeight(itemWidth)
 
   return (
-    <Card size="md" className="overflow-hidden p-0 " {...cardProps}>
+    <Card
+      size="md"
+      variant='outline'
+      className="overflow-hidden p-2"
+      {...cardProps}
+      style={{
+        backgroundColor: Colors.$backgroundElevated,
+        borderColor: Colors.$outlineNeutral,
+        borderWidth: 1,
+      }}
+    >
       <Button
         variant="ghost"
         onPress={() => setIsOpen(!isOpen)}
@@ -98,7 +109,9 @@ export function ExpandableCard<T extends object>({
               )}
             >
               {items.map((item, i) => {
-                return renderItem({ item, isOpen }, i)
+                const ItemComponent = ({ item, isOpen }: { item: T; isOpen?: boolean }) =>
+                  renderItem({ item, isOpen }, i)
+                return <ItemComponent key={item.item_id} item={item} isOpen={isOpen} />
               })}
             </HStack>
           </ScrollView>

@@ -3,12 +3,12 @@ import { ComponentProps, ComponentPropsWithoutRef } from 'react'
 import { View } from 'react-native'
 import { Gesture, GestureDetector } from 'react-native-gesture-handler'
 import Animated, {
-  runOnJS,
   useAnimatedStyle,
   useSharedValue,
-  withTiming,
+  withTiming
 } from 'react-native-reanimated'
 import { Chip, ChipsInput, Colors } from 'react-native-ui-lib'
+import { scheduleOnRN } from 'react-native-worklets'
 require('@/assets/rn-ui')
 const AnimatedView = Animated.createAnimatedComponent(View)
 
@@ -63,7 +63,7 @@ export function ToggleBadge({
     .onEnd(() => {
       'worklet'
       scale.value = withTiming(1, { duration: 80 })
-      runOnJS(onTogglePress)()
+      scheduleOnRN(onTogglePress)
     })
     .onFinalize(() => {
       'worklet'

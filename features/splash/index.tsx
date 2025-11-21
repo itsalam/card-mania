@@ -131,8 +131,8 @@ export function SplashPage() {
         }}
         transition={{
           type: 'spring',
-          damping: 20, // higher = less bounce
-          stiffness: 180, // lower = softer
+          damping: 100, // higher = less bounce
+          stiffness: 300, // lower = softer
           mass: 0.9,
           overshootClamping: true, // prevent overshoot wobble
         }}
@@ -151,8 +151,8 @@ export function SplashPage() {
         transition={{
           delay: 100,
           type: 'spring',
-          damping: 20, // higher = less bounce
-          stiffness: 180, // lower = softer
+          damping: 100, // higher = less bounce
+          stiffness: 300, // lower = softer
           mass: 0.9,
           overshootClamping: true, // prevent overshoot wobble
         }}

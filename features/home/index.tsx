@@ -8,7 +8,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { Tabs, TabsContent } from '@/components/ui/tabs/tabs'
+import { Tabs, TabsContent, TabsLabel } from '@/components/ui/tabs'
 import { Text } from '@/components/ui/text'
 import { MainSearchBar } from '@/features/mainSearchbar'
 import { useColorScheme } from '@/lib/hooks/useColorScheme'
@@ -16,6 +16,7 @@ import { Compass, LucideIcon, Menu, Newspaper, Sheet } from 'lucide-react-native
 import React from 'react'
 import { View } from 'react-native'
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
+import { Colors } from 'react-native-ui-lib'
 import { ExplorePage, ExplorePageMenu } from './ExplorePage'
 import { FeedPage } from './FeedPage'
 import { TabValue, tabValues, useHomePageStore } from './provider'
@@ -41,14 +42,15 @@ export default function HomeScreen() {
       style={{ paddingTop: insets.top }}
     >
       <MainSearchBar />
+      
       <Tabs className="flex-1 gap-0" value={currentPage} onValueChange={setCurrentPage}>
         <FolderTabList>
           <View className="flex flex-row items-end justify-start gap-2">
-            {tabValues.map((tab) => (
-              <FolderTabTrigger key={tab} value={tab}>
-                {React.createElement(tabIcons[tab], { size: 16 })}
-                <Text className="text-xl">{tab.charAt(0).toUpperCase() + tab.slice(1)}</Text>
-              </FolderTabTrigger>
+          {tabValues.map((tab) => (
+                <FolderTabTrigger key={tab} value={tab}>
+                  
+                  <TabsLabel label={tab} value={tab}>{React.createElement(tabIcons[tab], { size: 16, color: Colors.$textDefault })}</TabsLabel>>
+                </FolderTabTrigger>
             ))}
           </View>
 
@@ -76,7 +78,8 @@ const TabOptions = ({ currentTab }: { currentTab: string }) => {
       <DropdownMenuTrigger asChild>
         <Button
           variant="ghost"
-          className="p-2 rounded-t-md rounded-b-none border border-b-0 border-neutral-300 translate-y-px px-3"
+          className="p-2 rounded-t-md rounded-b-none border border-b-0  translate-y-px px-3"
+          style={{ borderColor: Colors.$outlineNeutral, backgroundColor: Colors.$backgroundNeutral }}
         >
           <Menu size={16} />
         </Button>

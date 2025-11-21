@@ -4,12 +4,13 @@ import {
   FolderTabsContainer,
   FolderTabTrigger,
 } from '@/components/tabs/FolderTabs'
-import { Tabs, TabsContent } from '@/components/ui/tabs/tabs'
+import { Tabs, TabsContent } from '@/components/ui/tabs'
 import { Text } from '@/components/ui/text'
 import { Coins, Heart, LucideIcon, Plus, Vault } from 'lucide-react-native'
 import React from 'react'
 import { View } from 'react-native'
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
+import { Colors } from 'react-native-ui-lib'
 import CollectionBreakdown from './CollectionBreakdown'
 import { WishlistPage } from './pages/wishlist'
 import { TabValue, tabValues, useCollectionPageStore } from './provider'
@@ -43,8 +44,8 @@ export default function CollectionScreen() {
             <View className="flex flex-row items-end justify-start gap-2">
               {tabValues.map((tab) => (
                 <FolderTabTrigger key={tab} value={tab}>
-                  {React.createElement(tabIcons[tab], { size: 16 })}
-                  <Text className="text-xl">{tab.charAt(0).toUpperCase() + tab.slice(1)}</Text>
+                  {React.createElement(tabIcons[tab], { size: 16, color: Colors.$textDefault })}
+                  <Text className="text-xl" style={{ color: Colors.$textDefault }}>{tab.charAt(0).toUpperCase() + tab.slice(1)}</Text>
                 </FolderTabTrigger>
               ))}
               <FolderTabComponent>

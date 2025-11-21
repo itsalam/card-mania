@@ -8,8 +8,10 @@ import { useInvalidateOnFocus } from '@/components/tcg-card/helpers'
 import { Heading } from '@/components/ui/heading'
 import { Text } from '@/components/ui/text'
 import { chunk, formatLabel, formatPrice } from '@/components/utils'
+import { TCard } from '@/constants/types'
 import { qk } from '@/lib/store/functions/helpers'
 import { Image } from 'expo-image'
+import { Href } from 'expo-router'
 import { Eye, EyeOff, Undo2, X } from 'lucide-react-native'
 import React, { ReactNode, useCallback, useEffect, useMemo, useState } from 'react'
 import {
@@ -17,8 +19,8 @@ import {
   FlatList,
   NativeScrollEvent,
   NativeSyntheticEvent,
+  StyleSheet,
   View,
-  ViewStyle,
 } from 'react-native'
 import Animated, {
   Extrapolation,
@@ -30,40 +32,27 @@ import Animated, {
 } from 'react-native-reanimated'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Button, Colors, Dialog, PanningProvider } from 'react-native-ui-lib'
-import Carousel from 'react-native-ui-lib/carousel'
-import { THUMBNAIL_HEIGHT, THUMBNAIL_WIDTH } from '../../consts'
 import { AddToCollectionsView } from './footer/add-to-collections'
 import { CreateCollectionView } from './footer/create-collections'
 import { Footer } from './footer/footer'
-import { useSelectedGrades, useTransitionAnimation } from './helpers'
+import { Coordinates, useSelectedGrades, useTransitionAnimation } from './helpers'
 import { CardDetailsProvider, useCardDetails } from './provider'
 import { Attribute, CardScreenHeader, Prices } from './ui'
 
 const { width: W, height: H } = Dimensions.get('window')
 
+const AnimatedImage = Animated.createAnimatedComponent(Image)
+
 export default function FocusCardView({
   cardId,
   animateFrom,
+  returnTo,
 }: {
   cardId: string
   animateFrom: { x: number; y: number; width: number; height: number }
+  returnTo?: Href
 }) {
   const { data: cardData } = useCardQuery(cardId)
-
-  const { cardStyle, scrimStyle, close } = useTransitionAnimation(animateFrom)
-
-  const {
-    data: image,
-    isLoading: isImageLoading,
-    status,
-  } = useImageProxy({
-    variant: 'detail',
-    shape: 'card',
-    cardId: cardId,
-    kind: 'front',
-    quality: 100,
-    queryHash: cardData?.image?.query_hash ?? undefined,
-  })
 
   const grades = cardData?.grades_prices ?? {}
   const prices = useMemo(
@@ -94,16 +83,15 @@ export default function FocusCardView({
       ]}
     >
       <CardDetailContainer
-        cardStyle={cardStyle}
-        scrimStyle={scrimStyle}
+        animateFrom={animateFrom}
+        returnTo={returnTo}
         cardId={cardId}
-        image={image}
-        handleClose={close}
+        cardData={cardData}
         title={
           <View className="px-8 flex flex-col items-start justify-stretch gap-4 w-full ">
             <View>
-              <Heading size="4xl">{cardData?.name}</Heading>
-              <Heading className="font-spaceMono font-bold" size="xl">
+              <Heading size="3xl">{cardData?.name}</Heading>
+              <Heading className="font-spaceMono font-bold" size="lg">
                 {cardData?.set_name}
               </Heading>
             </View>
@@ -116,7 +104,7 @@ export default function FocusCardView({
                 }}
                 className="flex-row justify-between w-full"
               >
-                <Carousel
+                {/* <Carousel
                   style={{ flex: 1, minHeight: (W * 0.4 * 7) / 5, width: W * 0.4 }}
                   pageHeight={(W * 0.4 * 7) / 5}
                   itemSpacings={10}
@@ -130,7 +118,7 @@ export default function FocusCardView({
                     transition={0}
                     contentFit="cover"
                   />
-                </Carousel>
+                </Carousel> */}
                 <View className="flex-1 pl-4">
                   {cardData?.release_date && (
                     <Attribute
@@ -243,23 +231,29 @@ export default function FocusCardView({
 
 const CardDetailContainer = ({
   children,
-  cardStyle,
-  image,
+  cardData,
+  animateFrom,
   cardId,
-  handleClose,
   title,
+  returnTo,
 }: {
   cardId: string
-  image?: string
-  cardStyle: ViewStyle
-  scrimStyle: ViewStyle
-  handleClose: () => void
+  cardData?: TCard
+  animateFrom: Coordinates
   children: ReactNode
   title: ReactNode
+  returnTo?: Href
 }) => {
+  const {
+    cardStyle: cardTransition,
+    scrimStyle,
+    close,
+  } = useTransitionAnimation(animateFrom, {
+    fallbackHref: returnTo,
+  })
   const insets = useSafeAreaInsets()
   const TITLE_SPACING = 80 + insets.top
-  const CARD_TITLE_POSITION = 0.8
+  const CARD_TITLE_POSITION = 1.0
   const { footerFullView, setFooterFullView } = useCardDetails()
   const container = useAnimatedStyle(() => ({
     opacity: withTiming(footerFullView ? 0.3 : 1.0),
@@ -280,7 +274,7 @@ const CardDetailContainer = ({
   const travelDistance = CARD_TITLE_POSITION * ((W * 7) / 5) - TITLE_SPACING
   const scrollProgress = useDerivedValue(() => Math.max(0, y.value / travelDistance))
   const mainBlur = useDerivedValue(
-    () => interpolate(scrollProgress.value, [0, 1], [0, 0.5], Extrapolation.CLAMP),
+    () => interpolate(scrollProgress.value, [0, 1], [0, 1], Extrapolation.CLAMP),
     [scrollProgress]
   )
 
@@ -299,6 +293,65 @@ const CardDetailContainer = ({
     [scrollProgress]
   )
 
+  const { data: image } = useImageProxy({
+    variant: 'detail',
+    shape: 'card',
+    cardId: cardId,
+    kind: 'front',
+    quality: 100,
+    queryHash: cardData?.image?.query_hash ?? undefined,
+  })
+
+  const { data: thumbnailImage } = useImageProxy({
+    variant: 'tiny',
+    shape: 'card',
+    cardId: cardId,
+    kind: 'front',
+    queryHash: cardData?.image?.query_hash ?? undefined,
+  })
+
+  const placeHolderBlur = useSharedValue(0)
+
+  useEffect(() => {
+    placeHolderBlur.value = interpolate(
+      Number(Boolean(image)) * 500,
+      [0, 1],
+      [0, 1],
+      Extrapolation.CLAMP
+    )
+  }, [cardId, image])
+
+  const handleImageLoadStart = useCallback(() => {
+    if (image) {
+      placeHolderBlur.value = withTiming(500, { duration: 200 })
+    }
+  }, [image])
+
+  const handleImageLoad = useCallback(() => {
+    placeHolderBlur.value = withTiming(0, { duration: 200 })
+  }, [])
+
+  const cardScrollTransition = useAnimatedStyle(
+    () => ({
+      transformStyle: 'top center',
+      transform: [
+        {
+          translateY: withTiming(
+            interpolate(scrollProgress.value, [0, 0.15], [0, 0], Extrapolation.CLAMP),
+            { duration: 200 }
+          ),
+        },
+        {
+          scale: withTiming(
+            interpolate(scrollProgress.value, [0, 0.15], [1, 5 / 6], Extrapolation.CLAMP),
+            { duration: 200 }
+          ),
+        },
+      ],
+    }),
+    [scrollProgress]
+  )
+
   return (
     <Animated.View
       style={[
@@ -309,28 +362,28 @@ const CardDetailContainer = ({
         },
       ]}
     >
-      <Animated.View
-        style={[cardStyle, { position: 'relative', transform: [{ translateY: insets.top }] }]}
-      >
+      {thumbnailImage && (
         <Image
-          style={{ width: '100%', aspectRatio: 5 / 7 }}
-          source={[{ uri: image, cacheKey: cardId, width: W, height: W / (5 / 7) }]}
-          placeholder={{
-            cacheKey: `${cardId}-thumb`,
-            width: THUMBNAIL_WIDTH,
-            height: THUMBNAIL_HEIGHT,
+          style={[StyleSheet.absoluteFillObject, { opacity: 0.2 }]}
+          source={{
+            uri: thumbnailImage,
+            cacheKey: `${cardId}-thumb-bg`,
+            width: W,
+            height: H,
           }}
-          cachePolicy="memory-disk"
-          transition={0}
+          blurRadius={2}
           contentFit="cover"
+          transition={200}
+          pointerEvents="none"
         />
-      </Animated.View>
+      )}
+
       <BlurBackground
         backgroundOpacity={backgroundOpacity}
         start={{ x: 0.5, y: 1.0 }}
         end={{ x: 0.5, y: 0.0 }}
         colors={[Colors.$backgroundNeutralLight, Colors.$backgroundNeutralMedium]}
-        positions={[0.5, 0.6]}
+        positions={[0.2, 0.6]}
         opacity={mainBlur}
       >
         <Animated.View
@@ -346,6 +399,7 @@ const CardDetailContainer = ({
           }}
           style={[
             container,
+            scrimStyle,
             {
               width: W,
               height: H,
@@ -353,7 +407,7 @@ const CardDetailContainer = ({
           ]}
         >
           <Button
-            onPress={handleClose}
+            onPress={close}
             style={{ position: 'absolute', left: 16, top: insets.top + 16, zIndex: 20 }}
           >
             <X size={20} />
@@ -363,8 +417,37 @@ const CardDetailContainer = ({
             scrollEventThrottle={16} // ~60fps updates
             style={[{ paddingBottom: insets.bottom + 20 }]}
             contentContainerStyle={[{ paddingTop: travelDistance, paddingBottom: travelDistance }]}
-            stickyHeaderIndices={[0]}
+            stickyHeaderIndices={[1]}
           >
+            <Animated.View style={[{ aspectRatio: 5 / 7 }, cardTransition, cardScrollTransition]}>
+              <Image
+                style={[
+                  {
+                    width: W * 0.8,
+                    top: (W * 0.1) / (5 / 7),
+                    aspectRatio: 5 / 7,
+                    alignSelf: 'center',
+                  },
+                ]}
+                source={[{ uri: image, cacheKey: cardId, width: W * 0.8, height: W * 0.8 / (5 / 7) }]}
+                placeholder={
+                  thumbnailImage
+                    ? {
+                        uri: thumbnailImage,
+                        cacheKey: `${cardId}-thumb`,
+                        width: W,
+                        height: W / (5 / 7),
+                      }
+                    : undefined
+                }
+                placeholderContentFit="cover"
+                cachePolicy="memory-disk"
+                transition={200}
+                contentFit="cover"
+                onLoadStart={handleImageLoadStart}
+                onLoad={handleImageLoad}
+              />
+            </Animated.View>
             <BlurBackground
               start={{ x: 0.5, y: 0 }}
               end={{ x: 0.5, y: 1 }}
@@ -376,11 +459,7 @@ const CardDetailContainer = ({
               ]}
               backgroundOpacity={titleOpacity}
               positions={[0.2, 0.5, 0.9, 1]}
-              blurStyle={{
-                marginBottom: 20,
-              }}
               opacity={titleBlur}
-              // intensity={0}
             >
               <View
                 style={{

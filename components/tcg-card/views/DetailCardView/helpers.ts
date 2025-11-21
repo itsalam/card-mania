@@ -1,17 +1,16 @@
 import { usePriceChartingDataBatch } from "@/client/chart-data";
 import { TCard } from "@/constants/types";
 import { useIsFocused } from "@react-navigation/native";
-import { Href, router, useNavigation } from "expo-router";
+import { Href, router } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Dimensions } from "react-native";
 import {
     cancelAnimation,
     Easing,
-    runOnJS,
     useAnimatedStyle,
     useSharedValue,
     withDelay,
-    withTiming,
+    withTiming
 } from "react-native-reanimated";
 import { scheduleOnRN } from "react-native-worklets";
 
@@ -36,28 +35,36 @@ export const useSelectedGrades = (
     };
 };
 
+export type Coordinates = { x: number; y: number; width: number; height: number }
+
+type TransitionOpts = {
+    fallbackHref?: Href;
+    duration?: number;
+    onClose?: () => void;
+    onOpen?: () => void;
+};
+
 export const useTransitionAnimation = (
-    animateFrom: { x: number; y: number; width: number; height: number },
+    animateFrom: Coordinates,
+    opts?: TransitionOpts,
 ) => {
     const { width: W } = Dimensions.get("window");
-    const nav = useNavigation<any>();
     const { cardStyle, scrimStyle, close } = useAnimateFromPosition(
         animateFrom,
-        { x: 0, y: 0, width: W, height: W / (5 / 7) },
-        {
-            onClose: () => {
-                nav.canGoBack()
-                    ? nav.goBack()
-                    : nav.getParent?.() && nav.getParent()?.goBack();
-            },
-        },
+        { x: 0, y: 0, width: W, height: W / (5 / 7) }
+        ,
+        opts
     );
     return { cardStyle, scrimStyle, close };
 };
 
-function safeBack(fallback = "" as Href) {
-    if (router.canGoBack()) router.back();
-    else router.replace(fallback);
+function safeBack(fallback = "/" as Href) {
+    if (router.canGoBack()) {
+        router.back();
+    }
+    else {
+        router.replace(fallback);
+    }
 }
 
 function useSafeOnClose(onClose?: () => void, fallback?: Href) {
@@ -77,11 +84,11 @@ function useSafeOnClose(onClose?: () => void, fallback?: Href) {
 }
 
 export const useAnimateFromPosition = (
-    from: { x: number; y: number; width: number; height: number },
-    to: { x: number; y: number; width: number; height: number },
-    opts: { duration?: number; onClose?: () => void; onOpen?: () => void },
+    from: Coordinates,
+    to: Coordinates,
+    opts?: { duration?: number; onClose?: () => void; onOpen?: () => void; fallbackHref?: Href },
 ) => {
-    const { duration = 350, onClose, onOpen } = opts;
+    const { duration = 350, onClose, onOpen, fallbackHref } = opts || {};
     // shared values
     const animation = useSharedValue({ ...from, progress: 0 });
     const scrim = useSharedValue(0);
@@ -100,7 +107,7 @@ export const useAnimateFromPosition = (
     const SCRIM_IN_DUR = Math.round(D_IN * 1.33);
     const SCRIM_OUT_DUR = Math.round(D_OUT * 0.55);
 
-    const closeSafely = useSafeOnClose(onClose);
+    const closeSafely = useSafeOnClose(onClose, fallbackHref);
 
     // const { width: W, height: H } = Dimensions.get("window");
 
@@ -140,31 +147,7 @@ export const useAnimateFromPosition = (
     };
 
     const playClose = () => {
-        // main card collapses first
-        animation.value = withDelay(
-            ZOOM_BACK_DELAY,
-            withTiming(
-                { ...from, progress: 0 },
-                { duration: D_OUT, easing: easeInEmphasized },
-                (finished) => {
-                    "worklet";
-                    if (!isFocused) {
-                        runOnJS(requestAnimationFrame)(() => closeSafely());
-                        return;
-                    }
-                    runOnJS(closeSafely)();
-                },
-            ),
-        );
-
-        // scrim lingers a bit AFTER, then fades
-        scrim.value = withDelay(
-            SCRIM_OUT_LAG,
-            withTiming(0, {
-                duration: SCRIM_OUT_DUR,
-                easing: easeInEmphasized,
-            }),
-        );
+        closeSafely();
     };
 
     useEffect(() => {

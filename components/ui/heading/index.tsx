@@ -2,6 +2,7 @@ import { H1, H2, H3, H4, H5, H6 } from '@expo/html-elements'
 import type { VariantProps } from '@gluestack-ui/nativewind-utils'
 import { cssInterop } from 'nativewind'
 import React, { forwardRef, memo } from 'react'
+import { Colors } from 'react-native-ui-lib'
 import { headingStyle } from './styles'
 
 type IHeadingProps = VariantProps<typeof headingStyle> &
@@ -171,9 +172,9 @@ const MappedHeading = memo(
   })
 )
 
-const Heading = memo(
-  forwardRef<React.ComponentRef<typeof Heading>, IHeadingProps>(function Heading(
-    { className, size = 'lg', as: AsComp, ...props },
+const Heading: React.NamedExoticComponent = memo(
+  forwardRef<HTMLElement, IHeadingProps>(function Heading(
+    { className, size = 'lg', as: AsComp, style, ...props },
     ref
   ) {
     const { isTruncated, bold, underline, strikeThrough, sub, italic, highlight } = props
@@ -192,15 +193,17 @@ const Heading = memo(
             highlight,
             class: className,
           })}
+          style={[style, { color: Colors.$textDefault }]}
           {...props}
         />
       )
     }
 
-    return <MappedHeading className={className} size={size} ref={ref} {...props} />
+    return <MappedHeading style={[style, { color: Colors.$textDefault }]} className={className} size={size} ref={ref} {...props} />
   })
 )
 
 Heading.displayName = 'Heading'
 
 export { Heading }
+

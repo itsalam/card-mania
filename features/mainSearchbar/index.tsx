@@ -1,18 +1,18 @@
 import { useIsWishlisted } from '@/client/card/wishlist'
 import { useCardSearch, useSuggestionsFixed } from '@/client/price-charting'
+import { BlurBackground } from '@/components/Background'
 import DraggableThumbContent from '@/components/tcg-card/views/DetailCardView/ui'
 import { AppStandaloneHeader } from '@/components/ui/headers'
 import { SearchBar } from '@/components/ui/search'
 import { Spinner } from '@/components/ui/spinner'
 import { Portal } from '@rn-primitives/portal'
-import { BlurView } from 'expo-blur'
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { Keyboard, ScrollView, StyleSheet, View } from 'react-native'
 import {
   KeyboardAvoidingView,
   useReanimatedKeyboardAnimation,
 } from 'react-native-keyboard-controller'
-import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated'
+import Animated, { useAnimatedStyle, useDerivedValue, useSharedValue, withTiming } from 'react-native-reanimated'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { SearchInput } from 'react-native-ui-lib'
 import { FiltersKeys, FiltersProvider, useFiltersStore } from './filters/providers'
@@ -121,6 +121,10 @@ export function MainSearchBar({ placeholder = 'Search...' }: { placeholder?: str
     searchItems?.map((item) => item.card.id) || []
   )
 
+  const blurOpacity = useDerivedValue<number>(() => {
+    return withTiming(focused ? 0.8 : 0, { duration: 200 })
+  }, [focused])
+
   return (
     <Animated.View className="w-full flex flex-col" ref={overlayRef}>
       <View className="flex flex-col items-center justify-center px-4 pb-2">
@@ -149,10 +153,10 @@ export function MainSearchBar({ placeholder = 'Search...' }: { placeholder?: str
                   overflow: 'visible',
                 },
               ]}
-              className="z-searchBar bg-secondary-200/80"
+              className="z-searchBar"
               behavior={'padding'}
             >
-              <BlurView intensity={20} tint="systemMaterial" className="flex-1 overflow-visible">
+              <BlurBackground opacity={blurOpacity} intensity={20} style={{ flex: 1, overflow: 'visible' }}>
                 <Animated.View style={overlayStyle} className="h-full overflow-visible">
                   <AppStandaloneHeader
                     title="Search"
@@ -176,7 +180,7 @@ export function MainSearchBar({ placeholder = 'Search...' }: { placeholder?: str
                     </View>
                   </ScrollView>
                 </Animated.View>
-              </BlurView>
+              </BlurBackground>
 
               <DraggableThumbContent
                 style={[

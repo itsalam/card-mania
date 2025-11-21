@@ -28,5 +28,7 @@
     "source.sortMembers": "explicit"
   },
   "sql-formatter.dialect": "pl/sql",
-  "deno.enable": true
+  "deno.enable": true,
+  "workbench.activityBar.orientation": "vertical",
+  "chatgpt.openOnStartup": true
 }

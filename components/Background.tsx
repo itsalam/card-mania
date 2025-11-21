@@ -8,7 +8,7 @@ import {
 } from '@shopify/react-native-skia'
 import { BlurView } from 'expo-blur'
 import React from 'react'
-import { ColorValue, StyleProp, StyleSheet, View, ViewStyle } from 'react-native'
+import { ColorValue, StyleSheet, View } from 'react-native'
 import Animated, {
   DerivedValue,
   useAnimatedProps,
@@ -151,28 +151,27 @@ export const BlurBackground = React.memo(function BlurBackground({
   intensity = 30,
   opacity,
   backgroundOpacity,
-  blurStyle,
   ...props
 }: Omit<React.ComponentProps<typeof GradientBackground>, 'opacity'> & {
   intensity?: number
   opacity?: DerivedValue<number>
   backgroundOpacity?: AnimatedProp<number | number[]>
-  blurStyle?: StyleProp<ViewStyle>
 }) {
+  const fallbackOpacity = useSharedValue(1)
+  const fOpacity = opacity ?? fallbackOpacity
   const animProps = useAnimatedProps(
     () => ({
-      intensity: (opacity?.value ?? 1) * intensity,
+      intensity: fOpacity.value * intensity,
     }),
     [opacity]
   )
 
   return (
     <GradientBackground {...props} opacity={backgroundOpacity}>
-      <ABlur
-        intensity={intensity}
-        style={[StyleSheet.absoluteFill, blurStyle]}
+      <BlurView
+        style={[StyleSheet.absoluteFill]}
         pointerEvents="none"
-        animatedProps={animProps}
+        intensity={fOpacity.value * intensity}
       />
       {children}
     </GradientBackground>

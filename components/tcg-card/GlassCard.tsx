@@ -24,9 +24,9 @@ const cardVariants = tva({
   variants: {
     variant: {
       default: 'hover:scale-[1.01] text-foreground',
-      primary: 'bg-primary-50/5 hover:bg-primary-100/5 text-foreground',
-      destructive: 'bg-destructive-50/5 hover:bg-destructive-100/5 text-foreground',
-      secondary: 'bg-secondary-50/5 hover:bg-secondary-100/5 text-foreground',
+      primary: 'text-foreground',
+      destructive: 'text-foreground',
+      secondary: 'text-foreground',
     },
     size: {
       default: 'p-6',
@@ -109,7 +109,6 @@ const LiquidGlassCard = React.forwardRef<CardRef, LiquidGlassCardProps>(
     { className, variant, size, hover, asChild = false, glassEffect = true, children, ...props },
     ref
   ) => {
-    console.log({ props })
     return (
       <Card
         className={cn(
@@ -153,3 +152,4 @@ const LiquidGlassCard = React.forwardRef<CardRef, LiquidGlassCardProps>(
 LiquidGlassCard.displayName = 'LiquidGlassCard'
 
 export { CardContent, CardHeader, LiquidGlassCard }
+

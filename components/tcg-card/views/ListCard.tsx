@@ -6,7 +6,6 @@ import { Text } from '@/components/ui/text'
 import { formatPrice } from '@/components/utils'
 import { TCard } from '@/constants/types'
 import { cn } from '@/lib/utils/cn'
-import { useCallback } from 'react'
 import { Pressable, StyleSheet, View } from 'react-native'
 import { Assets, Button } from 'react-native-ui-lib'
 import { THUMBNAIL_HEIGHT, THUMBNAIL_WIDTH } from '../consts'
@@ -45,16 +44,12 @@ export function ListCard({
 
   const { cardElement, handlePress } = useNavigateToDetailCard(card, () => {})
   const [grade, displayPrice] = getDefaultPrice(card)
-  const cardElementRef = useCallback((node: View | null) => {
-    console.log('ref callback called with:', node)
-    cardElement.current = node
-  }, [])
   return (
     <Pressable onPress={() => handlePress()}>
       <View className={cn(expanded && 'flex flex-row items-center gap-2 p-2 w-full', className)}>
         <LiquidGlassCard
           onPress={() => handlePress()}
-          ref={cardElementRef}
+          ref={cardElement}
           variant="primary"
           className="p-0 aspect-[5/7] flex items-center justify-center overflow-hidden"
           style={{ width: THUMBNAIL_WIDTH, aspectRatio: CARD_ASPECT_RATIO }}
