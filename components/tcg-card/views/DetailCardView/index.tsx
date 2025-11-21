@@ -330,7 +330,7 @@ const CardDetailContainer = ({
         start={{ x: 0.5, y: 1.0 }}
         end={{ x: 0.5, y: 0.0 }}
         colors={[Colors.$backgroundNeutralLight, Colors.$backgroundNeutralMedium]}
-        positions={[0.3, 0.5]}
+        positions={[0.5, 0.6]}
         opacity={mainBlur}
       >
         <Animated.View

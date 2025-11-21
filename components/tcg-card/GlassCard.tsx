@@ -114,7 +114,7 @@ const LiquidGlassCard = React.forwardRef<CardRef, LiquidGlassCardProps>(
       <Card
         className={cn(
           'relative overflow-hidden',
-          // cardVariants({ variant, size, hover, className }),
+          cardVariants({ variant, size, hover, className }),
           className
         )}
         {...props}

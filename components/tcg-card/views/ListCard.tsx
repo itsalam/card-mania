@@ -44,7 +44,6 @@ export function ListCard({
   const toggleWishList = useToggleWishlist('card')
 
   const { cardElement, handlePress } = useNavigateToDetailCard(card, () => {})
-  console.log(cardElement)
   const [grade, displayPrice] = getDefaultPrice(card)
   const cardElementRef = useCallback((node: View | null) => {
     console.log('ref callback called with:', node)
@@ -53,24 +52,23 @@ export function ListCard({
   return (
     <Pressable onPress={() => handlePress()}>
       <View className={cn(expanded && 'flex flex-row items-center gap-2 p-2 w-full', className)}>
-        <View ref={cardElementRef}>
-          <LiquidGlassCard
-            onPress={() => handlePress()}
-            variant="primary"
-            // className="p-0 aspect-[5/7] flex items-center justify-center overflow-hidden"
-            style={{ width: THUMBNAIL_WIDTH, aspectRatio: CARD_ASPECT_RATIO }}
-          >
-            <LoadingImagePlaceholder
-              source={{
-                uri: thumbnailImg,
-                cacheKey: `${card?.id}-thumb`,
-                width: THUMBNAIL_WIDTH,
-                height: THUMBNAIL_HEIGHT,
-              }}
-              isLoading={isLoading || isImageLoading}
-            />
-          </LiquidGlassCard>
-        </View>
+        <LiquidGlassCard
+          onPress={() => handlePress()}
+          ref={cardElementRef}
+          variant="primary"
+          className="p-0 aspect-[5/7] flex items-center justify-center overflow-hidden"
+          style={{ width: THUMBNAIL_WIDTH, aspectRatio: CARD_ASPECT_RATIO }}
+        >
+          <LoadingImagePlaceholder
+            source={{
+              uri: thumbnailImg,
+              cacheKey: `${card?.id}-thumb`,
+              width: THUMBNAIL_WIDTH,
+              height: THUMBNAIL_HEIGHT,
+            }}
+            isLoading={isLoading || isImageLoading}
+          />
+        </LiquidGlassCard>
         {expanded && (
           <View className="flex flex-col gap-1 h-full items-start py-2 flex-1 px-2">
             <View>
