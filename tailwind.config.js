@@ -222,7 +222,7 @@ module.exports = {
         heading: undefined,
         body: undefined,
         mono: undefined,
-        sans: ['Roboto', 'sans-serif'],
+        sans: ['Montserrat_400Regular', 'sans-serif'],
         roboto: ['Roboto', 'sans-serif'],
         spaceMono: ['SpaceMono', 'monospace'],
         bitcountGrid: ['BitcountGrid', 'monospace'],

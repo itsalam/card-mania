@@ -1,4 +1,3 @@
-import { FolderTabList, FolderTabsContainer, FolderTabTrigger } from '@/components/tabs/FolderTabs'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -8,13 +7,12 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { Tabs, TabsContent, TabsLabel } from '@/components/ui/tabs'
+import { Tabs, TabsContent, TabsLabel, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Text } from '@/components/ui/text'
 import { MainSearchBar } from '@/features/mainSearchbar'
 import { useColorScheme } from '@/lib/hooks/useColorScheme'
 import { Compass, LucideIcon, Menu, Newspaper, Sheet } from 'lucide-react-native'
 import React from 'react'
-import { View } from 'react-native'
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Colors } from 'react-native-ui-lib'
 import { ExplorePage, ExplorePageMenu } from './ExplorePage'
@@ -39,30 +37,28 @@ export default function HomeScreen() {
   return (
     <SafeAreaView
       className="flex-1 w-full h-full overflow-visible"
-      style={{ paddingTop: insets.top }}
+      style={{ paddingTop: 8 }}
     >
       <MainSearchBar />
       
-      <Tabs className="flex-1 gap-0" value={currentPage} onValueChange={setCurrentPage}>
-        <FolderTabList>
-          <View className="flex flex-row items-end justify-start gap-2">
+      <Tabs className="flex-1 gap-0 py-2" value={currentPage} onValueChange={setCurrentPage}>
+        <TabsList className='ml-4'>
           {tabValues.map((tab) => (
-                <FolderTabTrigger key={tab} value={tab}>
+                <TabsTrigger key={tab} value={tab}>
                   
-                  <TabsLabel label={tab} value={tab}>{React.createElement(tabIcons[tab], { size: 16, color: Colors.$textDefault })}</TabsLabel>>
-                </FolderTabTrigger>
+                  <TabsLabel label={tab} value={tab}>{React.createElement(tabIcons[tab], { size: 16, color: Colors.$textDefault })}</TabsLabel>
+                </TabsTrigger>
             ))}
-          </View>
 
-          <TabOptions currentTab={currentPage} />
-        </FolderTabList>
-        <FolderTabsContainer>
+          {/* <TabOptions currentTab={currentPage} /> */}
+        </TabsList>
+        
           {tabValues.map((tab) => (
             <TabsContent key={tab} value={tab} className="flex-1">
               {tabContent[tab]}
             </TabsContent>
           ))}
-        </FolderTabsContainer>
+        
       </Tabs>
     </SafeAreaView>
   )

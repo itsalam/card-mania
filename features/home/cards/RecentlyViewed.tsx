@@ -40,7 +40,6 @@ export function RecentlyViewed() {
     <ExpandableCard
       title="Recently Viewed"
       itemWidth={THUMBNAIL_WIDTH}
-      containerClassNames="gap-6 px-6"
       items={recentViews ?? []}
       renderItem={({ isOpen, item }, index) => (
         <RecentlyViewedCard

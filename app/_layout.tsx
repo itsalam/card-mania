@@ -34,7 +34,32 @@ SplashScreen.preventAutoHideAsync()
 
 const colorScheme = Appearance.getColorScheme();
 
+
+
 Colors.setScheme(colorScheme === 'dark' ? 'dark' : 'light');
+
+Colors.loadSchemes({
+  light: {
+    $backgroundPrimaryHeavy: Colors.red50,
+    $backgroundPrimaryMedium: Colors.red70,
+    $backgroundPrimaryLight: Colors.red80,
+    $textPrimary: Colors.red30,
+    $iconPrimary: Colors.red30,
+    $iconPrimaryLight: Colors.red50,
+    $outlinePrimary: Colors.red30,
+  },
+  dark: {
+    $backgroundPrimaryHeavy: Colors.red30,
+    $backgroundPrimaryMedium: Colors.red5,
+    $backgroundPrimaryLight: Colors.red1,
+    $textPrimary: Colors.red50,
+    $iconPrimary: Colors.red50,
+    $iconPrimaryLight: Colors.red30,
+    $outlinePrimary: Colors.red50,
+  },
+})
+
+
 
 export default function RootLayout() {
   return (

@@ -154,9 +154,9 @@ export function MainSearchBar({ placeholder = 'Search...' }: { placeholder?: str
                 },
               ]}
               className="z-searchBar"
-              behavior={'padding'}
+              // behavior={'translate-with-padding'}
             >
-              <BlurBackground opacity={blurOpacity} intensity={20} style={{ flex: 1, overflow: 'visible' }}>
+              <BlurBackground opacity={blurOpacity} style={{ flex: 1, overflow: 'visible' }}>
                 <Animated.View style={overlayStyle} className="h-full overflow-visible">
                   <AppStandaloneHeader
                     title="Search"

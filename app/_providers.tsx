@@ -1,20 +1,21 @@
-import { useFonts } from 'expo-font'
-import * as SplashScreen from 'expo-splash-screen'
+import { Montserrat_100Thin, Montserrat_100Thin_Italic, Montserrat_200ExtraLight, Montserrat_300Light, Montserrat_400Regular, Montserrat_500Medium, Montserrat_600SemiBold, Montserrat_700Bold, Montserrat_800ExtraBold, Montserrat_900Black } from '@expo-google-fonts/montserrat';
+import { useFonts } from 'expo-font';
+import * as SplashScreen from 'expo-splash-screen';
 
-import { GluestackUIProvider } from '@/components/ui/gluestack-ui-provider'
-import { useColorScheme } from '@/lib/hooks/useColorScheme'
+import { GluestackUIProvider } from '@/components/ui/gluestack-ui-provider';
+import { useColorScheme } from '@/lib/hooks/useColorScheme';
 
-import { NAV_THEME } from '@/lib/constants'
-import { StoreProvider } from '@/lib/store/provider'
-import { AuthStatus, useUserStore } from '@/lib/store/useUserStore'
-import { DarkTheme, DefaultTheme, Theme, ThemeProvider } from '@react-navigation/native'
-import { Session } from '@supabase/supabase-js'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import React, { useRef } from 'react'
-import { Platform } from 'react-native'
-import { GestureHandlerRootView } from 'react-native-gesture-handler'
-import { KeyboardProvider } from 'react-native-keyboard-controller'
-import { supabase } from '../lib/store/client'
+import { NAV_THEME } from '@/lib/constants';
+import { StoreProvider } from '@/lib/store/provider';
+import { AuthStatus, useUserStore } from '@/lib/store/useUserStore';
+import { DarkTheme, DefaultTheme, Theme, ThemeProvider } from '@react-navigation/native';
+import { Session } from '@supabase/supabase-js';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import React, { useRef } from 'react';
+import { Platform } from 'react-native';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { KeyboardProvider } from 'react-native-keyboard-controller';
+import { supabase } from '../lib/store/client';
 const qc = new QueryClient()
 
 const LIGHT_THEME: Theme = {
@@ -24,15 +25,26 @@ const LIGHT_THEME: Theme = {
 const DARK_THEME: Theme = {
   ...DarkTheme,
   colors: NAV_THEME.dark,
+
 }
 
 export default function Providers({ children }: { children: React.ReactNode }) {
   const hasMounted = React.useRef(false)
-  const { colorScheme, isDarkColorScheme } = useColorScheme()
+  const { isDarkColorScheme } = useColorScheme()
   const [loaded] = useFonts({
     SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
     Roboto: require('../assets/fonts/Roboto-Regular.ttf'),
     BitcountGrid: require('../assets/fonts/BitcountGrid.ttf'),
+    Montserrat_100Thin: Montserrat_100Thin,
+    Montserrat_200ExtraLight: Montserrat_200ExtraLight,
+    Montserrat_300Light: Montserrat_300Light,
+    Montserrat_400Regular: Montserrat_400Regular,
+    Montserrat_500Medium: Montserrat_500Medium,
+    Montserrat_600SemiBold: Montserrat_600SemiBold,
+    Montserrat_700Bold: Montserrat_700Bold,
+    Montserrat_800ExtraBold: Montserrat_800ExtraBold,
+    Montserrat_900Black: Montserrat_900Black,
+    Montserrat_100Thin_Italic: Montserrat_100Thin_Italic,
   })
 
   const { setAuth, setStatus } = useUserStore.getState()

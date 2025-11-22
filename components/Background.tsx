@@ -168,10 +168,10 @@ export const BlurBackground = React.memo(function BlurBackground({
 
   return (
     <GradientBackground {...props} opacity={backgroundOpacity}>
-      <BlurView
+      <ABlur
         style={[StyleSheet.absoluteFill]}
         pointerEvents="none"
-        intensity={fOpacity.value * intensity}
+        animatedProps={animProps}
       />
       {children}
     </GradientBackground>

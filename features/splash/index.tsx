@@ -1,8 +1,7 @@
 // Example: protecting a screen
 import Logo from '@/assets/images/splash-logo.svg'
 import { GradientBackground } from '@/components/Background'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
+import { TextField } from '@/components/ui/input/base-input'
 import { Separator } from '@/components/ui/separator'
 import { Spinner } from '@/components/ui/spinner'
 import { Text } from '@/components/ui/text'
@@ -14,6 +13,7 @@ import { ComponentProps } from 'react'
 import { View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import Svg, { G, Path } from 'react-native-svg'
+import { Button, Colors } from 'react-native-ui-lib'
 
 export function AuthGate({ children }: { children: React.ReactNode }) {
   const hydrated = useUserStore((s) => s.hydrated)
@@ -33,9 +33,8 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
 const BaseButton = ({ className, ...props }: ComponentProps<typeof Button>) => {
   return (
     <Button
-      size="xl"
-      variant="outline"
-      className={cn('w-full flex flex-row justify-center bg-neutral-800', className)}
+      color={Colors.$backgroundPrimaryHeavy}
+      className={cn('w-full flex flex-row justify-center', className)}
       {...props}
     />
   )
@@ -160,20 +159,22 @@ export function SplashPage() {
       >
         <View className="w-full px-4 flex flex-row justify-between">
           <Text className="text-white text-2xl">Log in to CardMania</Text>
-          <Button size="md">
+          <Button >
             <AtSign size={16} className="text-white" />
             <Text className="text-sm text-white">Sign up</Text>
           </Button>
         </View>
-        <Input
-          leadingAccessory={<User size={20} onPress={handleAnonSignIn} />}
-          className="flex items-center bg-background-100 px-4"
-          size="xl"
+        <TextField
+          leadingAccessory={<User size={20} onPress={handleAnonSignIn}  color={Colors.$textPrimary}/>}
+          placeholder="Sign in with email"
+      showClearButton
+      floatingPlaceholder
+      containerStyle={{
+        backgroundColor: Colors.rgba(Colors.$backgroundElevated, 0.4),
+      }}
         />
         <BaseButton>
-          <View className="w-full flex flex-row justify-center">
-            <Text className="text-white">Sign in</Text>
-          </View>
+            <Text className="text-white"></Text>
         </BaseButton>
         <View className="w-min flex flex-row items-center text-white gap-6 justify-center">
           <Separator orientation="horizontal" className="flex-1 background-white" />
