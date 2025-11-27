@@ -1,12 +1,14 @@
 import { cn } from '@/lib/utils'
+import MaskedView from '@react-native-masked-view/masked-view'
+import { LinearGradient } from 'expo-linear-gradient'
 import { ChevronDown } from 'lucide-react-native'
-import React, { ComponentProps, useState } from 'react'
-import { ScrollView } from 'react-native'
+import React, { ComponentProps, ReactNode, useState } from 'react'
+import { ScrollView, View } from 'react-native'
+import { Colors } from 'react-native-ui-lib'
 import { CARD_ASPECT_RATIO } from '../consts'
 import { Box } from '../ui/box'
 import { Button } from '../ui/button'
 import { Card } from '../ui/card'
-import { Heading } from '../ui/heading'
 import { HStack } from '../ui/hstack'
 import { Icon } from '../ui/icon'
 import { Text } from '../ui/text'
@@ -31,14 +33,14 @@ export function PlaceholderBox({
 export const ExpandedContent = () => {
   return (
     <VStack className="flex-1">
-      <Heading size="lg">{'Placeholder box.'}</Heading>
+      <Text variant="large">{'Placeholder box.'}</Text>
       <Text>You can replace this with any content you like, such as a card or an image.</Text>
     </VStack>
   )
 }
 
 type ExpandableCardProps<T extends object> = {
-  title: string
+  title: ReactNode
   items: T[]
   renderItem: ({ item, isOpen }: { item: T; isOpen?: boolean }, index: number) => React.ReactNode
   itemWidth?: number
@@ -53,63 +55,81 @@ export function ExpandableCard<T extends object>({
   itemWidth = DEFAULT_CARD_WIDTH,
   getExpandedHeight = (itemWidth) => (itemWidth / CARD_ASPECT_RATIO) * 3 + 24,
   containerClassNames,
+  className,
   ...cardProps
 }: ExpandableCardProps<T>) {
   const [isOpen, setIsOpen] = useState(false)
 
-  const minItemHeight = itemWidth / CARD_ASPECT_RATIO
+  const minItemHeight = itemWidth / CARD_ASPECT_RATIO + 24
   const expandedItemHeight = getExpandedHeight(itemWidth)
+  console.log(minItemHeight)
 
   return (
-    <Card
-      size="md"
-      className="overflow-hidden"
-      {...cardProps}
-    >
+    <Card size="md" className={cn('overflow-hidden px-0', className)} {...cardProps}>
       <Button
         variant="ghost"
         onPress={() => setIsOpen(!isOpen)}
-        className="h-auto w-full px-8 py-6 z-button"
+        className="h-auto w-full py-6 z-button"
       >
-        <Box className="w-full items-center justify-between flex flex-row p-1">
-          <Heading size="2xl">{title}</Heading>
-          <Icon style={{ transform: [{ rotate: !isOpen ? '-90deg' : '0deg' }] }} as={ChevronDown} />
+        <Box className="w-full items-center flex flex-row p-1 gap-2 px-4">
+          {title}
+          <Icon
+            style={{ transform: [{ rotate: !isOpen ? '-90deg' : '0deg' }] }}
+            as={ChevronDown}
+            color={Colors.$iconDefault}
+            size={24}
+          />
         </Box>
       </Button>
-      <VStack className="max-w-full overflow-hidden pr-4 mask-r-from-30% pb-4">
-        <VStack
-          className={cn('z-0 overflow-visible min-w-max')}
-          style={{
-            height: isOpen ? expandedItemHeight : minItemHeight,
-          }}
+      <MaskedView
+        className={cn('z-0 overflow-visible min-w-max')}
+        style={{
+          height: isOpen ? expandedItemHeight : minItemHeight,
+          maxWidth: '100%',
+          overflow: 'visible',
+        }}
+        maskElement={
+          <LinearGradient
+            // MaskedView uses the alpha channel: solid shows content, transparent hides it.
+            colors={['transparent', 'black', 'black', 'transparent']}
+            start={isOpen ? { x: 0.5, y: 0.0 } : { x: 0.0, y: 0.5 }}
+            end={isOpen ? { x: 0.5, y: 1 } : { x: 1, y: 0.5 }}
+            locations={[0, 0.05, 0.8, 1]}
+            style={{
+              position: 'relative',
+              height: '100%',
+              width: '100%',
+              top: '-5%',
+              left: '-0%',
+            }}
+          />
+        }
+      >
+        <ScrollView
+          horizontal={!isOpen}
+          decelerationRate="fast"
+          snapToInterval={DEFAULT_CARD_WIDTH} // snap like a carousel
+          snapToAlignment="start"
+          className="overflow-visible"
         >
-          <ScrollView
-            horizontal={!isOpen}
-            decelerationRate="fast"
-            snapToInterval={DEFAULT_CARD_WIDTH} // snap like a carousel
-            snapToAlignment="start"
-            disableIntervalMomentum
-            className="overflow-visible"
+          <View
+            className={cn(
+              'gap-x-2.5 gap-y-4 p-4 flex',
+              {
+                'flex-col': isOpen,
+                'flex-row': !isOpen,
+              },
+              containerClassNames
+            )}
           >
-            <HStack
-              className={cn(
-                'gap-x-2.5 gap-y-4 px-4 flex',
-                {
-                  'flex-col': isOpen,
-                  'flex-row': !isOpen,
-                },
-                containerClassNames
-              )}
-            >
-              {items.map((item, i) => {
-                const ItemComponent = ({ item, isOpen }: { item: T; isOpen?: boolean }) =>
-                  renderItem({ item, isOpen }, i)
-                return <ItemComponent key={item.item_id} item={item} isOpen={isOpen} />
-              })}
-            </HStack>
-          </ScrollView>
-        </VStack>
-      </VStack>
+            {items.map((item, i) => {
+              const ItemComponent = ({ item, isOpen }: { item: T; isOpen?: boolean }) =>
+                renderItem({ item, isOpen }, i)
+              return <ItemComponent key={item.item_id} item={item} isOpen={isOpen} />
+            })}
+          </View>
+        </ScrollView>
+      </MaskedView>
     </Card>
   )
 }

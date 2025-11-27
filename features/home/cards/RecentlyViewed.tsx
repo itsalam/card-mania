@@ -4,9 +4,12 @@ import { ExpandableCard } from '@/components/content-card'
 import { THUMBNAIL_HEIGHT, THUMBNAIL_WIDTH } from '@/components/tcg-card/consts'
 import { LiquidGlassCard } from '@/components/tcg-card/GlassCard'
 import { ListCard } from '@/components/tcg-card/views/ListCard'
+import { Text } from '@/components/ui/text'
 import { useRecentViews } from '@/lib/store/functions/hooks'
 import { Database } from '@/lib/store/supabase'
+import { History } from 'lucide-react-native'
 import React, { ComponentProps } from 'react'
+import { Colors } from 'react-native-ui-lib'
 
 const EXPANDED_CARD_HEIGHT = THUMBNAIL_HEIGHT + 24
 
@@ -38,7 +41,14 @@ export function RecentlyViewed() {
 
   return (
     <ExpandableCard
-      title="Recently Viewed"
+      title={
+        <>
+          <History color={Colors.$iconDefault} size={32} />
+          <Text variant="h3" className="flex-1">
+            {'Recently Viewed'}
+          </Text>
+        </>
+      }
       itemWidth={THUMBNAIL_WIDTH}
       items={recentViews ?? []}
       renderItem={({ isOpen, item }, index) => (

@@ -17,7 +17,7 @@ import {
   SharedValue,
   useAnimatedReaction,
   useDerivedValue,
-  withTiming
+  withTiming,
 } from 'react-native-reanimated'
 import { Colors, SegmentedControl } from 'react-native-ui-lib'
 import { scheduleOnRN } from 'react-native-worklets'
@@ -113,7 +113,7 @@ export default function PriceGraph<
   InputKeys extends GraphInputKey<T> = GraphInputKey<T>,
   YValues extends keyof NumericalFields<T> = keyof NumericalFields<T>
 >(props: PriceGraphProps<T, InputKeys, YValues>) {
-  const { width = Dimensions.get('window').width, height = 350, data, xKey, yKeys } = props
+  const { width = Dimensions.get('window').width, height = 450, data, xKey, yKeys } = props
   const initialY = useMemo(
     () => Object.fromEntries(yKeys.map((k) => [k, 0])) as Record<YValues, number>,
     [yKeys]
@@ -236,6 +236,7 @@ export default function PriceGraph<
       </CartesianChart>
       <View className="w-full px-12 py-4">
         <SegmentedControl
+          activeColor={Colors.$iconPrimary}
           segments={TIME_PERIODS.map((period) => ({ label: period }))}
           onChangeIndex={(index) => setTimePeriod(TIME_PERIODS[index])}
         />

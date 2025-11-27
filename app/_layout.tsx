@@ -1,10 +1,10 @@
 import { Stack } from 'expo-router/stack'
 import * as SplashScreen from 'expo-splash-screen'
 
-import "@/components/icons"
+import '@/components/icons'
 import '@/components/nativewind-svg'
 import '../global.css'
-require('react-native-ui-lib/config').setConfig({appScheme: 'default'});
+require('react-native-ui-lib/config').setConfig({ appScheme: 'default' })
 
 import { PortalHost } from '@rn-primitives/portal'
 import React from 'react'
@@ -15,7 +15,7 @@ import Providers from './_providers'
 
 export {
   // Catch any errors thrown by the Layout component.
-  ErrorBoundary
+  ErrorBoundary,
 } from 'expo-router'
 
 // This is the default configuration
@@ -32,34 +32,30 @@ SplashScreen.setOptions({
 
 SplashScreen.preventAutoHideAsync()
 
-const colorScheme = Appearance.getColorScheme();
+const colorScheme = Appearance.getColorScheme()
 
-
-
-Colors.setScheme(colorScheme === 'dark' ? 'dark' : 'light');
+Colors.setScheme(colorScheme === 'dark' ? 'dark' : 'light')
 
 Colors.loadSchemes({
   light: {
-    $backgroundPrimaryHeavy: Colors.red50,
-    $backgroundPrimaryMedium: Colors.red70,
-    $backgroundPrimaryLight: Colors.red80,
-    $textPrimary: Colors.red30,
-    $iconPrimary: Colors.red30,
-    $iconPrimaryLight: Colors.red50,
-    $outlinePrimary: Colors.red30,
+    $backgroundPrimaryHeavy: Colors.blue50,
+    $backgroundPrimaryMedium: Colors.blue70,
+    $backgroundPrimaryLight: Colors.blue80,
+    $textPrimary: Colors.blue30,
+    $iconPrimary: Colors.blue30,
+    $iconPrimaryLight: Colors.blue50,
+    $outlinePrimary: Colors.blue30,
   },
   dark: {
-    $backgroundPrimaryHeavy: Colors.red30,
-    $backgroundPrimaryMedium: Colors.red5,
-    $backgroundPrimaryLight: Colors.red1,
-    $textPrimary: Colors.red50,
-    $iconPrimary: Colors.red50,
-    $iconPrimaryLight: Colors.red30,
-    $outlinePrimary: Colors.red50,
+    $backgroundPrimaryHeavy: Colors.blue30,
+    $backgroundPrimaryMedium: Colors.blue5,
+    $backgroundPrimaryLight: Colors.blue1,
+    $textPrimary: Colors.blue50,
+    $iconPrimary: Colors.blue50,
+    $iconPrimaryLight: Colors.blue30,
+    $outlinePrimary: Colors.blue50,
   },
 })
-
-
 
 export default function RootLayout() {
   return (

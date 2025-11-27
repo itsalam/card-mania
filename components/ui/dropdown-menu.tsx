@@ -1,11 +1,11 @@
-import { TextClassContext } from '@/components/ui/text';
-import { Check } from '@/lib/icons/Check';
-import { ChevronDown } from '@/lib/icons/ChevronDown';
-import { ChevronRight } from '@/lib/icons/ChevronRight';
-import { ChevronUp } from '@/lib/icons/ChevronUp';
-import { cn } from '@/lib/utils';
-import * as DropdownMenuPrimitive from '@rn-primitives/dropdown-menu';
-import * as React from 'react';
+import { TextClassContext } from '@/components/ui/text'
+import { Check } from '@/lib/icons/Check'
+import { ChevronDown } from '@/lib/icons/ChevronDown'
+import { ChevronRight } from '@/lib/icons/ChevronRight'
+import { ChevronUp } from '@/lib/icons/ChevronUp'
+import { cn } from '@/lib/utils'
+import * as DropdownMenuPrimitive from '@rn-primitives/dropdown-menu'
+import * as React from 'react'
 import {
   Platform,
   type StyleProp,
@@ -14,19 +14,19 @@ import {
   type TextProps,
   View,
   type ViewStyle,
-} from 'react-native';
+} from 'react-native'
 
-const DropdownMenu = DropdownMenuPrimitive.Root;
+const DropdownMenu = DropdownMenuPrimitive.Root
 
-const DropdownMenuTrigger = DropdownMenuPrimitive.Trigger;
+const DropdownMenuTrigger = DropdownMenuPrimitive.Trigger
 
-const DropdownMenuGroup = DropdownMenuPrimitive.Group;
+const DropdownMenuGroup = DropdownMenuPrimitive.Group
 
-const DropdownMenuPortal = DropdownMenuPrimitive.Portal;
+const DropdownMenuPortal = DropdownMenuPrimitive.Portal
 
-const DropdownMenuSub = DropdownMenuPrimitive.Sub;
+const DropdownMenuSub = DropdownMenuPrimitive.Sub
 
-const DropdownMenuRadioGroup = DropdownMenuPrimitive.RadioGroup;
+const DropdownMenuRadioGroup = DropdownMenuPrimitive.RadioGroup
 
 function DropdownMenuSubTrigger({
   className,
@@ -34,13 +34,13 @@ function DropdownMenuSubTrigger({
   children,
   ...props
 }: DropdownMenuPrimitive.SubTriggerProps & {
-  ref?: React.RefObject<DropdownMenuPrimitive.SubTriggerRef>;
-  className?: string;
-  inset?: boolean;
-  children?: React.ReactNode;
+  ref?: React.RefObject<DropdownMenuPrimitive.SubTriggerRef>
+  className?: string
+  inset?: boolean
+  children?: React.ReactNode
 }) {
-  const { open } = DropdownMenuPrimitive.useSubContext();
-  const Icon = Platform.OS === 'web' ? ChevronRight : open ? ChevronUp : ChevronDown;
+  const { open } = DropdownMenuPrimitive.useSubContext()
+  const Icon = Platform.OS === 'web' ? ChevronRight : open ? ChevronUp : ChevronDown
   return (
     <TextClassContext.Provider
       value={cn(
@@ -58,19 +58,19 @@ function DropdownMenuSubTrigger({
         {...props}
       >
         {children}
-        <Icon size={18} className='ml-auto text-foreground' />
+        <Icon size={18} className="ml-auto text-foreground" />
       </DropdownMenuPrimitive.SubTrigger>
     </TextClassContext.Provider>
-  );
+  )
 }
 
 function DropdownMenuSubContent({
   className,
   ...props
 }: DropdownMenuPrimitive.SubContentProps & {
-  ref?: React.RefObject<DropdownMenuPrimitive.SubContentRef>;
+  ref?: React.RefObject<DropdownMenuPrimitive.SubContentRef>
 }) {
-  const { open } = DropdownMenuPrimitive.useSubContext();
+  const { open } = DropdownMenuPrimitive.useSubContext()
   return (
     <DropdownMenuPrimitive.SubContent
       className={cn(
@@ -82,7 +82,7 @@ function DropdownMenuSubContent({
       )}
       {...props}
     />
-  );
+  )
 }
 
 function DropdownMenuContent({
@@ -92,12 +92,12 @@ function DropdownMenuContent({
   portalHost,
   ...props
 }: DropdownMenuPrimitive.ContentProps & {
-  ref?: React.RefObject<DropdownMenuPrimitive.ContentRef>;
-  overlayStyle?: StyleProp<ViewStyle>;
-  overlayClassName?: string;
-  portalHost?: string;
+  ref?: React.RefObject<DropdownMenuPrimitive.ContentRef>
+  overlayStyle?: StyleProp<ViewStyle>
+  overlayClassName?: string
+  portalHost?: string
 }) {
-  const { open } = DropdownMenuPrimitive.useRootContext();
+  const { open } = DropdownMenuPrimitive.useRootContext()
   return (
     <DropdownMenuPrimitive.Portal hostName={portalHost}>
       <DropdownMenuPrimitive.Overlay
@@ -125,7 +125,7 @@ function DropdownMenuContent({
         />
       </DropdownMenuPrimitive.Overlay>
     </DropdownMenuPrimitive.Portal>
-  );
+  )
 }
 
 function DropdownMenuItem({
@@ -133,13 +133,13 @@ function DropdownMenuItem({
   inset,
   ...props
 }: React.ComponentProps<typeof DropdownMenuPrimitive.Item> & {
-  ref?: React.RefObject<DropdownMenuPrimitive.ItemRef>;
-  className?: string;
-  inset?: boolean;
-  onClosePress?: boolean;
+  ref?: React.RefObject<DropdownMenuPrimitive.ItemRef>
+  className?: string
+  inset?: boolean
+  onClosePress?: boolean
 }) {
   return (
-    <TextClassContext.Provider value='select-none text-sm native:text-lg text-popover-foreground web:group-focus:text-accent-foreground'>
+    <TextClassContext.Provider value="select-none native:text-lg text-popover-foreground web:group-focus:text-accent-foreground">
       <DropdownMenuPrimitive.Item
         className={cn(
           'relative flex flex-row web:cursor-default gap-2 items-center rounded-sm px-2 py-1.5 native:py-2 web:outline-none web:focus:bg-accent active:bg-accent web:hover:bg-accent group',
@@ -150,7 +150,7 @@ function DropdownMenuItem({
         {...props}
       />
     </TextClassContext.Provider>
-  );
+  )
 }
 
 function DropdownMenuCheckboxItem({
@@ -159,8 +159,8 @@ function DropdownMenuCheckboxItem({
   checked,
   ...props
 }: DropdownMenuPrimitive.CheckboxItemProps & {
-  ref?: React.RefObject<DropdownMenuPrimitive.CheckboxItemRef>;
-  children?: React.ReactNode;
+  ref?: React.RefObject<DropdownMenuPrimitive.CheckboxItemRef>
+  children?: React.ReactNode
 }) {
   return (
     <DropdownMenuPrimitive.CheckboxItem
@@ -172,14 +172,14 @@ function DropdownMenuCheckboxItem({
       checked={checked}
       {...props}
     >
-      <View className='absolute left-2 flex h-3.5 w-3.5 items-center justify-center'>
-        <DropdownMenuPrimitive.ItemIndicator className='border-1 border-foreground rounded-sm'>
-          <Check size={14} strokeWidth={3} className='text-foreground' />
+      <View className="absolute left-2 flex h-3.5 w-3.5 items-center justify-center">
+        <DropdownMenuPrimitive.ItemIndicator className="border-1 border-foreground rounded-sm">
+          <Check size={14} strokeWidth={3} className="text-foreground" />
         </DropdownMenuPrimitive.ItemIndicator>
       </View>
       {children}
     </DropdownMenuPrimitive.CheckboxItem>
-  );
+  )
 }
 
 function DropdownMenuRadioItem({
@@ -187,8 +187,8 @@ function DropdownMenuRadioItem({
   children,
   ...props
 }: DropdownMenuPrimitive.RadioItemProps & {
-  ref?: React.RefObject<DropdownMenuPrimitive.RadioItemRef>;
-  children?: React.ReactNode;
+  ref?: React.RefObject<DropdownMenuPrimitive.RadioItemRef>
+  children?: React.ReactNode
 }) {
   return (
     <DropdownMenuPrimitive.RadioItem
@@ -199,14 +199,14 @@ function DropdownMenuRadioItem({
       )}
       {...props}
     >
-      <View className='absolute left-2 flex h-3.5 w-3.5 items-center justify-center'>
+      <View className="absolute left-2 flex h-3.5 w-3.5 items-center justify-center">
         <DropdownMenuPrimitive.ItemIndicator>
-          <View className='bg-foreground h-2 w-2 rounded-full' />
+          <View className="bg-foreground h-2 w-2 rounded-full" />
         </DropdownMenuPrimitive.ItemIndicator>
       </View>
       {children}
     </DropdownMenuPrimitive.RadioItem>
-  );
+  )
 }
 
 function DropdownMenuLabel({
@@ -214,9 +214,9 @@ function DropdownMenuLabel({
   inset,
   ...props
 }: DropdownMenuPrimitive.LabelProps & {
-  ref?: React.RefObject<DropdownMenuPrimitive.LabelRef>;
-  className?: string;
-  inset?: boolean;
+  ref?: React.RefObject<DropdownMenuPrimitive.LabelRef>
+  className?: string
+  inset?: boolean
 }) {
   return (
     <DropdownMenuPrimitive.Label
@@ -227,33 +227,33 @@ function DropdownMenuLabel({
       )}
       {...props}
     />
-  );
+  )
 }
 
-function DropdownMenuLabelText({
-  className,
-  ...props
-}: TextProps) {
+function DropdownMenuLabelText({ className, ...props }: TextProps) {
   return (
     <Text
-      className={cn('text-sm native:text-base font-semibold text-foreground web:cursor-default', className)}
+      className={cn(
+        'text-sm native:text-base font-semibold text-foreground web:cursor-default',
+        className
+      )}
       {...props}
     />
-  );
+  )
 }
 
 function DropdownMenuSeparator({
   className,
   ...props
 }: DropdownMenuPrimitive.SeparatorProps & {
-  ref?: React.RefObject<DropdownMenuPrimitive.SeparatorRef>;
+  ref?: React.RefObject<DropdownMenuPrimitive.SeparatorRef>
 }) {
   return (
     <DropdownMenuPrimitive.Separator
       className={cn('-mx-1 my-1 h-px bg-border', className)}
       {...props}
     />
-  );
+  )
 }
 
 function DropdownMenuShortcut({ className, ...props }: TextProps) {
@@ -265,7 +265,7 @@ function DropdownMenuShortcut({ className, ...props }: TextProps) {
       )}
       {...props}
     />
-  );
+  )
 }
 
 export {
@@ -274,7 +274,9 @@ export {
   DropdownMenuContent,
   DropdownMenuGroup,
   DropdownMenuItem,
-  DropdownMenuLabel, DropdownMenuLabelText, DropdownMenuPortal,
+  DropdownMenuLabel,
+  DropdownMenuLabelText,
+  DropdownMenuPortal,
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
   DropdownMenuSeparator,
@@ -282,6 +284,5 @@ export {
   DropdownMenuSub,
   DropdownMenuSubContent,
   DropdownMenuSubTrigger,
-  DropdownMenuTrigger
-};
-
+  DropdownMenuTrigger,
+}

@@ -5,6 +5,7 @@ import { ArrowLeft, NotebookText, PanelBottomClose } from 'lucide-react-native'
 import { Dimensions, ScrollView, View } from 'react-native'
 import { Colors } from 'react-native-ui-lib'
 
+import { BlurBackground } from '@/components/Background'
 import {
   CreateNewCollectionsProvider,
   useCardDetails,
@@ -13,7 +14,6 @@ import {
 import { Input } from '@/components/ui/input/base-input'
 import { useInputColors } from '@/components/ui/input/provider'
 import Animated from 'react-native-reanimated'
-import { thumbStyles } from '../../ui'
 import { FooterButton } from '../components/button'
 import { FooterStyles as styles } from '../components/styles'
 import { CreateCollectionInput } from './input'
@@ -130,6 +130,7 @@ export const CreateCollectionView = () => {
       <ScrollView
         style={{
           flex: 1,
+          overflow: 'visible',
         }}
         contentContainerClassName="flex flex-col gap-2 px-2"
       >
@@ -162,18 +163,7 @@ export const CreateCollectionView = () => {
           <VisibilitySelector />
         </View>
       </ScrollView>
-      <View
-        className="pt-4 px-4 gap-4 border-t-2 border-l-2 border-r-2"
-        style={[
-          thumbStyles.sheet,
-          {
-            width: W + 4,
-            left: -2,
-            flexDirection: 'row',
-            borderBottomWidth: 0,
-          },
-        ]}
-      >
+      <BlurBackground className="w-full flex flex-row pt-2 gap-4 px-4 z-1">
         <FooterButton
           highLighted
           style={{ flexGrow: 1, flex: 1, width: '100%' }}
@@ -182,7 +172,7 @@ export const CreateCollectionView = () => {
           iconSource={(style) => <ArrowLeft style={style} color={Colors.$iconDefaultLight} />}
         />
         <SubmitCollectionButton />
-      </View>
+      </BlurBackground>
     </CreateNewCollectionsProvider>
   )
 }

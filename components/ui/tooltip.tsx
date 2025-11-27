@@ -35,7 +35,7 @@ function TooltipContent({
             }
             exiting={FadeOut}
           >
-            <TextClassContext.Provider value="text-xs text-primary-foreground">
+            <TextClassContext.Provider value="text-primary-foreground">
               <TooltipPrimitive.Content
                 sideOffset={sideOffset}
                 className={cn(

@@ -7,7 +7,7 @@ import { formatPrice } from '@/components/utils'
 import { TCard } from '@/constants/types'
 import { cn } from '@/lib/utils/cn'
 import { Pressable, StyleSheet, View } from 'react-native'
-import { Assets, Button } from 'react-native-ui-lib'
+import { Assets, Button, Colors } from 'react-native-ui-lib'
 import { THUMBNAIL_HEIGHT, THUMBNAIL_WIDTH } from '../consts'
 import { LiquidGlassCard } from '../GlassCard'
 import { getDefaultPrice, useNavigateToDetailCard } from '../helpers'
@@ -46,7 +46,7 @@ export function ListCard({
   const [grade, displayPrice] = getDefaultPrice(card)
   return (
     <Pressable onPress={() => handlePress()}>
-      <View className={cn(expanded && 'flex flex-row items-center gap-2 p-2 w-full', className)}>
+      <View className={cn('flex flex-row items-center w-full', className)}>
         <LiquidGlassCard
           onPress={() => handlePress()}
           ref={cardElement}
@@ -65,20 +65,44 @@ export function ListCard({
           />
         </LiquidGlassCard>
         {expanded && (
-          <View className="flex flex-col gap-1 h-full items-start py-2 flex-1 px-2">
+          <View className="flex flex-col gap-1 h-full items-start p-4 flex-1 pt-2">
             <View>
-              <Text className="text-base text-muted-foreground pb-1 capitalize">
+              <Text
+                className="text-base pb-1 capitalize"
+                style={{
+                  color: Colors.$textNeutral,
+                }}
+              >
                 {card?.set_name}
               </Text>
-              <Text className="text-lg font-bold text-wrap leading-none">{card?.name}</Text>
+              <Text
+                className="text-lg font-bold text-wrap leading-none"
+                style={{
+                  color: Colors.$textDefault,
+                }}
+              >
+                {card?.name}
+              </Text>
             </View>
 
             <View className="self-stretch flex-1 flex flex-row items-stretch justify-between">
               <View className="flex-1 flex flex-col justify-start">
                 {displayPrice ? (
-                  <Text className="text-3xl font-bold">{formatPrice(displayPrice)}</Text>
+                  <Text
+                    className="text-3xl font-bold"
+                    style={{
+                      color: Colors.$textDefault,
+                    }}
+                  >
+                    {formatPrice(displayPrice)}
+                  </Text>
                 ) : (
-                  <Text className="text-3xl font-medium text-muted-foreground opacity-70">
+                  <Text
+                    className="text-3xl font-medium opacity-70"
+                    style={{
+                      color: Colors.$textDefault,
+                    }}
+                  >
                     $0.00-
                   </Text>
                 )}
@@ -86,7 +110,7 @@ export function ListCard({
 
               <View className="flex flex-row gap-1 items-end justify-end">
                 <Button
-                  outline={!isWishlisted}
+                  outline={isWishlisted}
                   onPress={() => {
                     toggleWishList.mutate({
                       kind: 'card',
@@ -101,6 +125,8 @@ export function ListCard({
                   round
                   outlineWidth={1.5}
                   iconSource={Assets.icons.BookmarkHeart}
+                  // outlineColor={Colors.$iconDefault}
+                  // backgroundColor={Colors.$iconDefault}
                 />
                 <Button
                   size="small"
@@ -109,6 +135,7 @@ export function ListCard({
                   iconStyle={styles.buttonIcon}
                   style={styles.button}
                   iconSource={Assets.icons.Folder}
+                  outline={true}
                 />
               </View>
             </View>

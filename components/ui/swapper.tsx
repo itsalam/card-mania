@@ -1,6 +1,6 @@
 // Swapper.tsx
 import React, { useMemo, useRef } from 'react'
-import { StyleSheet, View } from 'react-native'
+import { StyleSheet } from 'react-native'
 import Animated, {
   LinearTransition,
   SlideInLeft,
@@ -68,18 +68,15 @@ export function Swapper<T extends KeyLike>({
       : undefined
 
   return (
-    <View style={[styles.container, style]}>
-      {/* Key tells React it's a brand new view, triggering enter/exit */}
-      <Animated.View
-        key={String(currentKey)}
-        entering={entering}
-        exiting={exiting}
-        layout={LinearTransition.duration(duration)}
-        style={styles.fill}
-      >
-        {render(currentKey)}
-      </Animated.View>
-    </View>
+    <Animated.View
+      key={String(currentKey)}
+      entering={entering}
+      exiting={exiting}
+      layout={LinearTransition.duration(duration)}
+      style={[style, styles.fill]}
+    >
+      {render(currentKey)}
+    </Animated.View>
   )
 }
 

@@ -1,6 +1,6 @@
 import { useIsWishlisted } from '@/client/card/wishlist'
 import { useCardSearch, useSuggestionsFixed } from '@/client/price-charting'
-import { BlurBackground } from '@/components/Background'
+import { BlurGradientBackground } from '@/components/Background'
 import DraggableThumbContent from '@/components/tcg-card/views/DetailCardView/ui'
 import { AppStandaloneHeader } from '@/components/ui/headers'
 import { SearchBar } from '@/components/ui/search'
@@ -8,20 +8,21 @@ import { Spinner } from '@/components/ui/spinner'
 import { Portal } from '@rn-primitives/portal'
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { Keyboard, ScrollView, StyleSheet, View } from 'react-native'
-import {
-  KeyboardAvoidingView,
-  useReanimatedKeyboardAnimation,
-} from 'react-native-keyboard-controller'
-import Animated, { useAnimatedStyle, useDerivedValue, useSharedValue, withTiming } from 'react-native-reanimated'
+import { KeyboardAvoidingView } from 'react-native-keyboard-controller'
+import Animated, {
+  useAnimatedStyle,
+  useDerivedValue,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { SearchInput } from 'react-native-ui-lib'
 import { FiltersKeys, FiltersProvider, useFiltersStore } from './filters/providers'
-import { SearchFilters, SearchFiltersOptions } from './filters/SearchFilters'
+import { SearchFiltersOptions } from './filters/SearchFilters'
 import { PreviewCard } from './PreviewItem'
 
 export function MainSearchBar({ placeholder = 'Search...' }: { placeholder?: string }) {
   // Theme and store hooks
-  const { progress: keyboardProgress } = useReanimatedKeyboardAnimation()
   const filters = useFiltersStore()
   const filterQuery = useMemo(() => {
     const { min, max } = filters.priceRange
@@ -156,7 +157,10 @@ export function MainSearchBar({ placeholder = 'Search...' }: { placeholder?: str
               className="z-searchBar"
               // behavior={'translate-with-padding'}
             >
-              <BlurBackground opacity={blurOpacity} style={{ flex: 1, overflow: 'visible' }}>
+              <BlurGradientBackground
+                opacity={blurOpacity}
+                style={{ flex: 1, overflow: 'visible' }}
+              >
                 <Animated.View style={overlayStyle} className="h-full overflow-visible">
                   <AppStandaloneHeader
                     title="Search"
@@ -180,10 +184,11 @@ export function MainSearchBar({ placeholder = 'Search...' }: { placeholder?: str
                     </View>
                   </ScrollView>
                 </Animated.View>
-              </BlurBackground>
+              </BlurGradientBackground>
 
               <DraggableThumbContent
-                style={[
+                isKeyboardAccessory
+                containerStyle={[
                   inputContainerStyle,
                   {
                     flexGrow: 0,
@@ -192,7 +197,12 @@ export function MainSearchBar({ placeholder = 'Search...' }: { placeholder?: str
                 toggleLocked={filtersExpanded}
                 onLockedChange={setFiltersExpanded}
                 mainContent={
-                  <>
+                  <View
+                    style={{
+                      paddingBottom: 20,
+                      width: '100%',
+                    }}
+                  >
                     <SearchBar
                       style={{
                         borderWidth: 0,
@@ -214,8 +224,7 @@ export function MainSearchBar({ placeholder = 'Search...' }: { placeholder?: str
                         show()
                       }}
                     />
-                    <SearchFilters focused={focused} />
-                  </>
+                  </View>
                 }
                 // className="flex flex-col px-4 py-2 bg-white border-2 border-b-0 border-black/20"
               >

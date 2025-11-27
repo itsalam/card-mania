@@ -14,7 +14,7 @@ import Animated, {
   FadeOutLeft,
   FadeOutRight,
 } from 'react-native-reanimated'
-import { TouchableOpacity, Typography } from 'react-native-ui-lib'
+import { Colors, TouchableOpacity, Typography } from 'react-native-ui-lib'
 import { useCardDetails } from '../provider'
 import DraggableThumbContent from '../ui'
 import { FooterButton } from './components/button'
@@ -46,11 +46,38 @@ export const Footer = ({ card }: { card?: TCard }) => {
       toggleLocked={footerFullView}
       onLockedChange={setFooterFullView}
       mainContent={
-        <View>
-          {!footerFullView && (
+        <>
+          {footerFullView && page !== undefined && (
+            <TouchableOpacity
+              style={{
+                padding: 6,
+                position: 'absolute',
+                left: 12,
+                top: '50%',
+                transform: [{ translateY: '-50%' }],
+              }}
+              onPress={() => {
+                // go back to previous page if any, else close
+                if (page > 0) {
+                  setPage(page - 1)
+                } else {
+                  setFooterFullView(false)
+                }
+              }}
+              key={`footer-back-button-${page}`}
+            >
+              {page > 0 ? (
+                <ChevronLeft color={Colors.$textDefault} />
+              ) : (
+                <X color={Colors.$textDefault} />
+              )}
+            </TouchableOpacity>
+          )}
+
+          {!footerFullView ? (
             <Animated.View
               key="footer-buttons"
-              className="w-full flex flex-row gap-2 p-4"
+              className="w-full flex flex-row gap-2 p-4 flex-1"
               entering={FadeIn}
               exiting={FadeOut}
             >
@@ -79,11 +106,10 @@ export const Footer = ({ card }: { card?: TCard }) => {
                 fill={false}
               />
             </Animated.View>
-          )}
-          {footerFullView && page !== undefined && (
+          ) : (
             <Animated.View
               key={`footer-header-${page}`}
-              className="w-full flex flex-row gap-2 p-4"
+              className="w-full flex flex-row gap-2 p-4 flex-1"
               entering={
                 page === undefined
                   ? FadeIn
@@ -99,20 +125,6 @@ export const Footer = ({ card }: { card?: TCard }) => {
                   : FadeOutRight
               }
             >
-              <TouchableOpacity
-                style={{ padding: 6, position: 'absolute', left: 12, top: 4 }}
-                onPress={() => {
-                  // go back to previous page if any, else close
-                  if (page > 0) {
-                    setPage(page - 1)
-                  } else {
-                    setFooterFullView(false)
-                  }
-                }}
-                key={`footer-back-button-${page}`}
-              >
-                {page > 0 ? <ChevronLeft /> : <X />}
-              </TouchableOpacity>
               <View
                 style={{
                   flex: 1,
@@ -135,8 +147,11 @@ export const Footer = ({ card }: { card?: TCard }) => {
             <FooterButton icon={ShoppingCart} label="Add to Cart" onPress={() => {}} fill={false} /> */}
             </Animated.View>
           )}
-        </View>
+        </>
       }
+      style={{
+        height: H * 0.8,
+      }}
     >
       <FooterDetails card={card} />
     </DraggableThumbContent>
@@ -148,10 +163,6 @@ const FooterDetails = ({ card }: { card?: TCard }) => {
 
   return (
     <Swapper
-      style={{
-        height: H * 0.8,
-        width: '100%',
-      }}
       currentKey={page ?? 0}
       render={(key) => {
         if (!pages[key].page) return null

@@ -1,5 +1,4 @@
 import { Avatar, AvatarFallbackText, AvatarImage } from '@/components/ui/avatar'
-import { Heading } from '@/components/ui/heading'
 import { Text } from '@/components/ui/text'
 import {
   ArrowRight,
@@ -43,8 +42,8 @@ export function GalleryCard() {
           <View>
             <View className="flex-1">
               <View className="flex flex-col items-start justify-center">
-                <Heading size="md">Gallery Card</Heading>
-                <Heading size="md">Shohei Ohtani</Heading>
+                <Text variant="h4">Gallery Card</Text>
+                <Text variant="h4">Shohei Ohtani</Text>
               </View>
               <Text className="text-xs text-muted-foreground">
                 {USERS[0].name}-<Text className="text-xs text-primary-100">{USERS[0].handle}</Text>

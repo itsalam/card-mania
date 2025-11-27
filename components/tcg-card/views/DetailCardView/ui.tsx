@@ -1,19 +1,20 @@
-import { BlurBackground } from '@/components/Background'
+import { BlurBackground, BlurGradientBackground } from '@/components/Background'
 import { useMeasure } from '@/components/hooks/useMeasure'
-import { Heading } from '@/components/ui/heading'
 import { Text } from '@/components/ui/text'
-import { ComponentProps, useEffect } from 'react'
-import { Dimensions, StyleSheet, View } from 'react-native'
+import { useEffect } from 'react'
+import { Dimensions, StyleProp, StyleSheet, View, ViewStyle } from 'react-native'
 import { Gesture, GestureDetector } from 'react-native-gesture-handler'
 import { useReanimatedKeyboardAnimation } from 'react-native-keyboard-controller'
 import Animated, {
+  AnimatedStyle,
+  interpolate,
   SharedValue,
   useAnimatedReaction,
   useAnimatedStyle,
   useDerivedValue,
   useSharedValue,
   withSpring,
-  withTiming
+  withTiming,
 } from 'react-native-reanimated'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Colors } from 'react-native-ui-lib'
@@ -41,9 +42,9 @@ export const CardScreenHeader = (props: { title: string; backgroundColor?: strin
   return (
     <View className="w-full py-1 flex flex-row items-center justify-center gap-3">
       <View style={{ backgroundColor, height: 1.5, width: 32 }} />
-      <Heading style={{ color: backgroundColor }} size="lg" className="font-spaceMono">
+      <Text style={{ color: backgroundColor }} variant="large" className="font-spaceMono">
         {title}
-      </Heading>
+      </Text>
       <View style={{ backgroundColor, height: 2, flex: 1, marginLeft: 6 }} />
     </View>
   )
@@ -77,9 +78,11 @@ type ThumbProps = {
   onLockedChange?: (locked: boolean) => void
   toggleLocked?: boolean
   children: React.ReactNode
-  style?: ComponentProps<typeof View>['style']
+  style?: StyleProp<AnimatedStyle<StyleProp<ViewStyle>>>
   mainContentBreakpoint?: SharedValue<number>
   mainContent?: React.ReactNode
+  isKeyboardAccessory?: boolean
+  containerStyle?: StyleProp<AnimatedStyle<StyleProp<ViewStyle>>>
 }
 
 export default function DraggableThumbContent({
@@ -88,7 +91,10 @@ export default function DraggableThumbContent({
   style,
   mainContent,
   toggleLocked,
+  isKeyboardAccessory,
+  containerStyle,
 }: ThumbProps) {
+  const { progress: keyboardProgress, height: keyboardHeight } = useReanimatedKeyboardAnimation()
   const insets = useSafeAreaInsets()
   const {
     ref: mainContentRef,
@@ -107,7 +113,7 @@ export default function DraggableThumbContent({
     [mainContentLayout?.height, insets]
   )
   const restFull = useDerivedValue(
-    () => fullContentLayout?.height,
+    () => (fullContentLayout?.height ?? 0) - insets.bottom,
     [fullContentLayout?.height, insets]
   )
 
@@ -150,7 +156,7 @@ export default function DraggableThumbContent({
       const next = toggleRevealedSV.value ?? false
       if (isRevealed.value !== next) {
         isRevealed.value = next
-        onLockedChange && scheduleOnRN(onLockedChange,next)
+        onLockedChange && scheduleOnRN(onLockedChange, next)
       }
       translateY.value = withSpring(to, { damping: 100, stiffness: 300 })
     }
@@ -197,7 +203,11 @@ export default function DraggableThumbContent({
   const cardStyle = useAnimatedStyle(() => ({
     transform: [
       {
-        translateY: -translateY.value,
+        translateY:
+          -translateY.value +
+          (isKeyboardAccessory
+            ? interpolate(keyboardProgress.value, [0, 1], [0, keyboardHeight.value])
+            : 0),
       },
     ],
   }))
@@ -207,35 +217,63 @@ export default function DraggableThumbContent({
     opacity: translateY.value < SNAP.value[1] / 2 ? 0.9 : 0.2,
   }))
 
-  const { height } = useReanimatedKeyboardAnimation() // <- shared values
+  const paddingBottom = useDerivedValue(
+    () =>
+      insets.bottom +
+      (isKeyboardAccessory
+        ? 0
+        : interpolate(
+            keyboardProgress.value,
+            [0, 1],
+            [0, -keyboardHeight.value + 20 - insets.bottom]
+          )),
+    [keyboardProgress, isKeyboardAccessory, keyboardHeight]
+  )
 
-  const detailContentStyle = useAnimatedStyle(() => ({
-    opacity: withTiming(isRevealed.value ? 1 : 0, { duration: 250 }),
-    paddingBottom: Math.max(insets.bottom, -height.value + 12),
-  }))
+  const mainContentBlurOpacity = useDerivedValue<number>(() =>
+    withTiming(isRevealed.value ? 1 : 0, { duration: 250 })
+  )
+
+  const detailContentStyle = useAnimatedStyle(
+    () => ({
+      opacity: withTiming(isRevealed.value ? 1 : 0, { duration: 250 }),
+      paddingBottom: paddingBottom.value,
+    }),
+    [paddingBottom]
+  )
 
   return (
     <Animated.View
-      style={[style, thumbStyles.sheet, cardStyle]}
+      style={[containerStyle, thumbStyles.sheet, cardStyle]}
       className="flex flex-col items-center"
       ref={fullContentRef}
       onLayout={onFullContentLayout}
     >
-      <BlurBackground
+      <BlurGradientBackground
         style={[thumbStyles.sheetInner, { flex: 1, width: '100%' }]}
         backgroundOpacity={0.95}
       >
         <GestureDetector gesture={composed}>
-          <Animated.View
-            style={thumbStyles.mainContent}
-            ref={mainContentRef}
-            onLayout={onMainContentLayout}
+          <BlurBackground
+            style={{
+              zIndex: 2,
+              display: 'flex',
+              minHeight: 80,
+            }}
+            opacity={mainContentBlurOpacity}
           >
-            <Animated.View style={thumbStyles.thumbContainer}>
-              <Animated.View style={[thumbStyles.thumb, thumbStyle]} />
+            <Animated.View
+              style={thumbStyles.mainContent}
+              ref={mainContentRef}
+              onLayout={onMainContentLayout}
+            >
+              <Animated.View style={thumbStyles.thumbContainer}>
+                <Animated.View style={[thumbStyles.thumb, thumbStyle]} />
+              </Animated.View>
+
+              {mainContent}
             </Animated.View>
-            {mainContent}
-          </Animated.View>
+          </BlurBackground>
         </GestureDetector>
         <Animated.View
           style={[
@@ -244,14 +282,16 @@ export default function DraggableThumbContent({
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
-              // backgroundColor: Colors.$backgroundNeutralLight,
+              flex: 1,
+              zIndex: 1,
             },
             detailContentStyle,
+            style,
           ]}
         >
           {children}
         </Animated.View>
-      </BlurBackground>
+      </BlurGradientBackground>
     </Animated.View>
   )
 }
@@ -305,7 +345,11 @@ export const Prices = ({
                 }}
               >
                 <View className="flex flex-row gap-2 items-center justify-end">
-                  {selectedGrades.includes(key) ? <Eye size={16} /> : <EyeOff size={16} />}
+                  {selectedGrades.includes(key) ? (
+                    <Eye size={16} color={Colors.$iconDefault} />
+                  ) : (
+                    <EyeOff size={16} color={Colors.$iconDefault} />
+                  )}
                   <Text className="text-lg font-bold text-muted-foreground text-nowrap text-right font-spaceMono">
                     {formatLabel(key)}
                   </Text>
@@ -343,7 +387,7 @@ export const thumbStyles = StyleSheet.create({
     paddingTop: THUMB_PADDING,
   },
   thumb: {
-    backgroundColor: Colors.rgba(Colors.$backgroundDark, 0.3),
+    backgroundColor: Colors.rgba(Colors.$backgroundNeutralIdle, 0.3),
     height: THUMB_SIZE,
     width: '15%',
     borderRadius: 10,

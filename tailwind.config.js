@@ -219,10 +219,10 @@ module.exports = {
         hairline: hairlineWidth(),
       },
       fontFamily: {
-        heading: undefined,
         body: undefined,
         mono: undefined,
         sans: ['Montserrat_400Regular', 'sans-serif'],
+        heading: ["Montserrat_700Bold", "sans-serif"],
         roboto: ['Roboto', 'sans-serif'],
         spaceMono: ['SpaceMono', 'monospace'],
         bitcountGrid: ['BitcountGrid', 'monospace'],

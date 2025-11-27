@@ -1,4 +1,5 @@
 import { useViewCollectionsForCard } from '@/client/collections/query'
+import { BlurBackground } from '@/components/Background'
 import { SearchBar } from '@/components/ui/search'
 import { Text } from '@/components/ui/text'
 import { PanelBottomClose, Plus } from 'lucide-react-native'
@@ -17,45 +18,50 @@ export const AddToCollectionsView = () => {
 
   return (
     <>
-      <View
+      <ScrollView
         style={{
-          paddingTop: Spacings.s4,
-          paddingHorizontal: Spacings.s4,
+          flex: 1,
+          width: '100%',
+          overflow: 'visible',
+          paddingTop: Spacings.s2,
+          display: 'flex',
+          gap: Spacings.s2,
         }}
       >
-        <SearchBar onChangeText={setQuery} />
-      </View>
-      <View className="w-full grow pt-8 z-0">
-        <ScrollView>
-          {!!collection?.included.length && (
-            <>
-              <Text style={{ paddingHorizontal: Spacings.s4 }}>Saved In</Text>
-              <View className="py-2 flex flex-col">
-                {collection?.included.map((c) => (
-                  <CollectionListItem key={c.id} collection={c} />
-                ))}
-              </View>
-            </>
-          )}
-          {!!collection?.excluded && (
-            <>
-              <Text style={{ paddingHorizontal: Spacings.s4 }}>Other Collections</Text>
-              <View className="py-2 flex flex-col">
-                {collection?.excluded.length ? (
-                  collection?.excluded.map((c) => <CollectionListItem key={c.id} collection={c} />)
-                ) : (
-                  <View className="pt-4 flex items-center justify-center">
-                    <Text className="text-sm text-muted-foreground italic">
-                      No other collections
-                    </Text>
-                  </View>
-                )}
-              </View>
-            </>
-          )}
-        </ScrollView>
-      </View>
-      <View className="w-full flex flex-row pt-4 gap-4 px-4 z-1">
+        <View
+          style={{
+            width: '100%',
+            paddingHorizontal: Spacings.s4,
+          }}
+        >
+          <SearchBar onChangeText={setQuery} />
+        </View>
+        {!!collection?.included.length && (
+          <>
+            <Text style={{ paddingHorizontal: Spacings.s4 }}>Saved In</Text>
+            <View className="py-2 flex flex-col">
+              {collection?.included.map((c) => (
+                <CollectionListItem key={c.id} collection={c} />
+              ))}
+            </View>
+          </>
+        )}
+        {!!collection?.excluded && (
+          <>
+            <Text style={{ paddingHorizontal: Spacings.s4 }}>Other Collections</Text>
+            <View className="py-2 flex flex-col">
+              {collection?.excluded.length ? (
+                collection?.excluded.map((c) => <CollectionListItem key={c.id} collection={c} />)
+              ) : (
+                <View className="pt-4 flex items-center justify-center">
+                  <Text className="text-sm text-muted-foreground italic">No other collections</Text>
+                </View>
+              )}
+            </View>
+          </>
+        )}
+      </ScrollView>
+      <BlurBackground className="w-full flex flex-row pt-2 gap-4 px-4">
         <FooterButton
           highLighted
           style={{ flexGrow: 1, flex: 1, width: '100%' }}
@@ -74,7 +80,7 @@ export const AddToCollectionsView = () => {
             <PanelBottomClose color={Colors.$iconDefaultLight} style={style} />
           )}
         />
-      </View>
+      </BlurBackground>
     </>
   )
 }

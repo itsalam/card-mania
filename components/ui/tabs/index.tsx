@@ -38,7 +38,7 @@ function TabsTrigger({
   return (
     <TextClassContext.Provider
       value={cn(
-        'text-foreground dark:text-muted-foreground text-sm font-medium',
+        'text-foreground dark:text-muted-foreground font-medium',
         value === props.value && 'dark:text-foreground'
       )}
     >
@@ -52,12 +52,15 @@ function TabsTrigger({
           props.value === value && 'bg-background dark:border-foreground/10 dark:bg-input/30',
           className
         )}
-
-        style={props.value === value ?{
-          backgroundColor: Colors.$backgroundElevatedLight,
-        } : {
-          backgroundColor: Colors.$backgroundElevated,
-        }}
+        style={
+          props.value === value
+            ? {
+                backgroundColor: Colors.$backgroundElevatedLight,
+              }
+            : {
+                backgroundColor: Colors.$backgroundElevated,
+              }
+        }
         {...props}
       />
     </TextClassContext.Provider>
@@ -104,4 +107,3 @@ function TabsLabel({
 }
 
 export { Tabs, TabsContent, TabsLabel, TabsList, TabsTrigger }
-

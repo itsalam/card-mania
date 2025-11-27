@@ -1,11 +1,10 @@
 import { useCardQuery } from '@/client/card'
 import { useImageProxy } from '@/client/image-proxy'
-import { BlurBackground } from '@/components/Background'
+import { BlurGradientBackground } from '@/components/Background'
 import PriceGraph from '@/components/graphs/PriceGraph'
 import { GraphInputKey } from '@/components/graphs/ui/types'
 import { LiquidGlassCard } from '@/components/tcg-card/GlassCard'
 import { useInvalidateOnFocus } from '@/components/tcg-card/helpers'
-import { Heading } from '@/components/ui/heading'
 import { Text } from '@/components/ui/text'
 import { chunk, formatLabel, formatPrice } from '@/components/utils'
 import { TCard } from '@/constants/types'
@@ -37,7 +36,7 @@ import { CreateCollectionView } from './footer/create-collections'
 import { Footer } from './footer/footer'
 import { Coordinates, useSelectedGrades, useTransitionAnimation } from './helpers'
 import { CardDetailsProvider, useCardDetails } from './provider'
-import { Attribute, CardScreenHeader, Prices } from './ui'
+import { CardScreenHeader, Prices } from './ui'
 
 const { width: W, height: H } = Dimensions.get('window')
 
@@ -88,55 +87,11 @@ export default function FocusCardView({
         cardId={cardId}
         cardData={cardData}
         title={
-          <View className="px-8 flex flex-col items-start justify-stretch gap-4 w-full ">
-            <View>
-              <Heading size="3xl">{cardData?.name}</Heading>
-              <Heading className="font-spaceMono font-bold" size="lg">
-                {cardData?.set_name}
-              </Heading>
-            </View>
-
-            <View className="w-full">
-              <View
-                style={{
-                  minHeight: (W * 0.4 * 7) / 5,
-                  display: 'none',
-                }}
-                className="flex-row justify-between w-full"
-              >
-                {/* <Carousel
-                  style={{ flex: 1, minHeight: (W * 0.4 * 7) / 5, width: W * 0.4 }}
-                  pageHeight={(W * 0.4 * 7) / 5}
-                  itemSpacings={10}
-                  pageControlPosition={Carousel.pageControlPositions.UNDER}
-                  showCounter={images.length >= 2}
-                >
-                  <Image
-                    style={{ height: (W * 0.4 * 7) / 5, aspectRatio: 5 / 7, borderRadius: 4 }}
-                    source={{ uri: image, cacheKey: cardId }}
-                    cachePolicy="memory-disk"
-                    transition={0}
-                    contentFit="cover"
-                  />
-                </Carousel> */}
-                <View className="flex-1 pl-4">
-                  {cardData?.release_date && (
-                    <Attribute
-                      label="Released"
-                      value={new Date(cardData?.release_date).toLocaleDateString()}
-                    />
-                  )}
-                  <Attribute label="Genre" value={cardData?.genre || '--'} />
-                  {cardData?.last_updated && (
-                    <Attribute
-                      label="Last Updated"
-                      value={new Date(cardData?.last_updated).toLocaleDateString()}
-                    />
-                  )}
-                  {/* <Text>{data?.description}</Text> */}
-                </View>
-              </View>
-            </View>
+          <View className="p-8 flex flex-col items-start justify-stretch gap-1 w-full pt-0">
+            <Text variant="h1">{cardData?.name}</Text>
+            <Text className="font-spaceMono font-bold" variant="h2">
+              {cardData?.set_name}
+            </Text>
           </View>
         }
       >
@@ -252,7 +207,7 @@ const CardDetailContainer = ({
     fallbackHref: returnTo,
   })
   const insets = useSafeAreaInsets()
-  const TITLE_SPACING = 80 + insets.top
+  const TITLE_SPACING = 72 + insets.top
   const CARD_TITLE_POSITION = 1.0
   const { footerFullView, setFooterFullView } = useCardDetails()
   const container = useAnimatedStyle(() => ({
@@ -289,7 +244,7 @@ const CardDetailContainer = ({
   )
 
   const titleOpacity = useDerivedValue(
-    () => [interpolate(scrollProgress.value, [1.0, 1.2], [0, 0.8], Extrapolation.CLAMP), 1, 0.9, 0],
+    () => [interpolate(scrollProgress.value, [0.8, 1.0], [0, 0.8], Extrapolation.CLAMP), 1, 0.9, 0],
     [scrollProgress]
   )
 
@@ -336,10 +291,7 @@ const CardDetailContainer = ({
       transformStyle: 'top center',
       transform: [
         {
-          translateY: withTiming(
-            interpolate(scrollProgress.value, [0, 0.15], [0, 0], Extrapolation.CLAMP),
-            { duration: 200 }
-          ),
+          translateY: 44,
         },
         {
           scale: withTiming(
@@ -378,7 +330,7 @@ const CardDetailContainer = ({
         />
       )}
 
-      <BlurBackground
+      <BlurGradientBackground
         backgroundOpacity={backgroundOpacity}
         start={{ x: 0.5, y: 1.0 }}
         end={{ x: 0.5, y: 0.0 }}
@@ -429,7 +381,9 @@ const CardDetailContainer = ({
                     alignSelf: 'center',
                   },
                 ]}
-                source={[{ uri: image, cacheKey: cardId, width: W * 0.8, height: W * 0.8 / (5 / 7) }]}
+                source={[
+                  { uri: image, cacheKey: cardId, width: W * 0.8, height: (W * 0.8) / (5 / 7) },
+                ]}
                 placeholder={
                   thumbnailImage
                     ? {
@@ -448,7 +402,7 @@ const CardDetailContainer = ({
                 onLoad={handleImageLoad}
               />
             </Animated.View>
-            <BlurBackground
+            <BlurGradientBackground
               start={{ x: 0.5, y: 0 }}
               end={{ x: 0.5, y: 1 }}
               colors={[
@@ -460,21 +414,24 @@ const CardDetailContainer = ({
               backgroundOpacity={titleOpacity}
               positions={[0.2, 0.5, 0.9, 1]}
               opacity={titleBlur}
+              blurStyle={{
+                marginBottom: 32,
+              }}
             >
               <View
                 style={{
                   paddingTop: TITLE_SPACING,
-                  paddingBottom: 24,
+                  paddingBottom: 12,
                 }}
               >
                 {title}
               </View>
-            </BlurBackground>
+            </BlurGradientBackground>
 
             <Animated.View style={[{ position: 'relative' }]}>{children}</Animated.View>
           </Animated.ScrollView>
         </Animated.View>
-      </BlurBackground>
+      </BlurGradientBackground>
     </Animated.View>
   )
 }

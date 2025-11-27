@@ -41,10 +41,10 @@ const INVERTED_TEXT_COLOR = Colors.$textDefaultLight
 const INVERTED_ICON_COLOR = Colors.$iconDefaultLight
 const HIT_SLOP_VALUE = 20
 
-const OptionsButton = ({ onPress }: { onPress?: () => void }) => {
+const OptionsButton = ({ onPress, color }: { onPress?: () => void; color: string }) => {
   return (
     <TouchableOpacity hitSlop={20} onPress={onPress}>
-      <SlidersHorizontal size={18} style={{ marginHorizontal: 20 }} />
+      <SlidersHorizontal size={18} style={{ marginHorizontal: 20 }} color={color} />
     </TouchableOpacity>
   )
 }
@@ -78,17 +78,18 @@ export const SearchBar = forwardRef<SearchBarRef, SearchBarProps>(
   ) => {
     let rightEl: React.ReactElement | undefined
     if (!hideSideButton) {
+      const props = { onPress: onOptionsPress, color: Colors.$textDefault }
       if (!renderSideButton) {
-        rightEl = <OptionsButton onPress={onOptionsPress} />
+        rightEl = <OptionsButton {...props} />
       } else if (React.isValidElement(renderSideButton)) {
         // @ts-ignore
-        rightEl = React.cloneElement(renderSideButton, { onPress: onOptionsPress })
+        rightEl = React.cloneElement(renderSideButton, props)
       } else if (typeof renderSideButton === 'function') {
-        const el = renderSideButton({ onPress: onOptionsPress })
+        const el = renderSideButton(props)
         rightEl = React.isValidElement(el) ? el : <>{el as React.ReactNode}</>
       } else {
         const Comp = renderSideButton as React.ComponentType<{ onPress?: () => void }>
-        rightEl = <Comp onPress={onOptionsPress} />
+        rightEl = <Comp {...props} />
       }
     }
 
@@ -236,8 +237,6 @@ const SearchInput = forwardRef<
       >
         <Button
           link
-          grey10
-          text80
           iconSource={Assets.internal.icons.x}
           iconStyle={iconStyle}
           onPress={clearInput}
@@ -318,10 +317,11 @@ const SearchInput = forwardRef<
           tintColor: INVERTED_ICON_COLOR,
         }
       : undefined
+
     return (
       <View>
         <Icon
-          tintColor={invertedColor?.tintColor}
+          tintColor={Colors.$textDefault}
           style={[styles.icon, invertedColor, left && styles.leftIcon]}
           source={icon}
           size={ICON_SIZE}

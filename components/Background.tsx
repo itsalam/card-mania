@@ -8,8 +8,9 @@ import {
 } from '@shopify/react-native-skia'
 import { BlurView } from 'expo-blur'
 import React from 'react'
-import { ColorValue, StyleSheet, View } from 'react-native'
+import { ColorValue, StyleProp, StyleSheet, View, ViewStyle } from 'react-native'
 import Animated, {
+  AnimatedStyle,
   DerivedValue,
   useAnimatedProps,
   useDerivedValue,
@@ -146,16 +147,18 @@ export const GradientBackground = React.memo(BackgroundBase, (prev, next) => {
 })
 
 // Blur variant — no callback component; just memoize the wrapper
-export const BlurBackground = React.memo(function BlurBackground({
+export const BlurGradientBackground = React.memo(function BlurBackground({
   children,
   intensity = 30,
   opacity,
   backgroundOpacity,
+  blurStyle,
   ...props
 }: Omit<React.ComponentProps<typeof GradientBackground>, 'opacity'> & {
   intensity?: number
   opacity?: DerivedValue<number>
   backgroundOpacity?: AnimatedProp<number | number[]>
+  blurStyle?: StyleProp<AnimatedStyle<StyleProp<ViewStyle>>>
 }) {
   const fallbackOpacity = useSharedValue(1)
   const fOpacity = opacity ?? fallbackOpacity
@@ -169,12 +172,38 @@ export const BlurBackground = React.memo(function BlurBackground({
   return (
     <GradientBackground {...props} opacity={backgroundOpacity}>
       <ABlur
-        style={[StyleSheet.absoluteFill]}
+        style={[blurStyle, StyleSheet.absoluteFill]}
         pointerEvents="none"
         animatedProps={animProps}
       />
       {children}
     </GradientBackground>
+  )
+})
+
+export const BlurBackground = React.memo(function BlurBackground({
+  children,
+  intensity = 30,
+  opacity,
+  ...props
+}: Omit<React.ComponentProps<typeof View>, 'opacity'> & {
+  intensity?: number
+  opacity?: DerivedValue<number>
+}) {
+  const fallbackOpacity = useSharedValue(1)
+  const fOpacity = opacity ?? fallbackOpacity
+  const animProps = useAnimatedProps(
+    () => ({
+      intensity: fOpacity.value * intensity,
+    }),
+    [opacity]
+  )
+
+  return (
+    <View {...props}>
+      <ABlur style={[StyleSheet.absoluteFill]} pointerEvents="none" animatedProps={animProps} />
+      {children}
+    </View>
   )
 })
 
