@@ -1,0 +1,67 @@
+@startuml C4_Elements
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+!$ICONURL = "https://raw.githubusercontent.com/tupadr3/plantuml-icon-font-sprites/v3.0.0/icons"
+!define FONTAWESOME https://raw.githubusercontent.com/tupadr3/plantuml-icon-font-sprites/master/font-awesome-5
+!include $ICONURL/common.puml
+!include $ICONURL/devicons2/angular.puml
+!include $ICONURL/devicons2/postgresql.puml
+!include $ICONURL/devicons2/google.puml
+
+!include FONTAWESOME/users.puml
+
+LAYOUT_WITH_LEGEND()
+
+Person(generalUser, "User", "Anon, non-auth'd")
+Person(storeUser, "Merchant", "Authenticated Seller")
+Person(auth_user, "Users", "Identified Buyer ")
+
+System_Boundary(clients, "Card Mania Clients") {
+    Container(web_app, "Web Client", "React/Next.js", $descr="Allows public views for a merchants storefront", $link="https://github.com/plantuml-stdlib/C4-PlantUML/blob/master/LayoutOptions.md")
+    Container(mobile_app, "Mobile Application", "React Native/Expo.js", $descr="Allows merchants to display a webpage", $link="https://github.com/plantuml-stdlib/C4-PlantUML/blob/master/LayoutOptions.md")
+}
+
+System_Boundary(supabase, "Supabase") {
+
+    ContainerDb(sb_postgres, "Database", "Postgres", "Holds cards, user, storefront, and image metadata", $sprite="postgresql")
+    ContainerDb(s3_postgres, "CDN", $descr=Holds Images")
+
+    Container_Boundary(images_services, "Imaging processing/Retrieval") {
+        Container(image_search_fn, "Image Search", $descr="Searchs from multiple vendors to get data", $link="https://github.com/plantuml-stdlib/C4-PlantUML/blob/master/LayoutOptions.md")
+        Container(image_commit_fn, "Image Commit", $descr="Commits viable high-quality photos to storage", $link="https://github.com/plantuml-stdlib/C4-PlantUML/blob/master/LayoutOptions.md")
+        Container(image_proxy_fn,  "Image Proxy", $descr="Commits viable high-quality photos to storage", $link="https://github.com/plantuml-stdlib/C4-PlantUML/blob/master/LayoutOptions.md")
+        ContainerQueue(image_process_queue, "Image Processing Queue", $descr="Fetches images from APIs to be processed")
+    }
+
+    Container_Boundary(price_services, "Pricing & Market Data") {
+        Container(pricing_fn, "Pricing History", $descr="Views public Ebay data for similar historyical pricing", $link="https://github.com/plantuml-stdlib/C4-PlantUML/blob/master/LayoutOptions.md")
+    }
+
+    Container_Boundary(card_services, "Card/Player data") {
+    }
+
+}
+
+Container_Boundary(externals, "3rd Party services") {
+    Container(serp_api, "Serp API", $descr="Public Google images", $sprite="google")
+}
+
+' Person to Clients '
+Rel(generalUser, web_app, "Views products from")
+Rel(storeUser, mobile_app, "Manages storefront from")
+Rel(auth_user, mobile_app, "Views products/other merchants from")
+
+' Clients to Services '
+Rel(clients, price_services, "Fetches Pricing From")
+Rel(clients, image_proxy_fn, "Fetches Images From")
+
+Rel(image_search_fn, image_process_queue, "Adds querying req")
+Rel(image_process_queue, image_commit_fn, "Pulls to")
+Rel(image_commit_fn, serp_api, "Fetches public images from")
+Rel(image_commit_fn, sb_postgres, "Commits metadata")
+Rel(image_commit_fn, s3_postgres, "Commits popular found images to")
+Rel(image_commit_fn, s3_postgres, "Commits every 15m from queries")
+
+
+
+
+@enduml
