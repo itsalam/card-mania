@@ -1,17 +1,21 @@
-import { useIsWishlisted, useWishlistCardsEnriched } from '@/client/card/wishlist'
-import { ListCard } from '@/components/tcg-card/views/ListCard'
+import { ItemListView } from '@/components/tcg-card/views/ListCard'
 import { cn } from '@/lib/utils'
 import { useMemo } from 'react'
 import { ScrollView, View } from 'react-native'
+import { useGetCollectionItems } from '../hooks'
+import { PageTypes } from '../provider'
 
-export const WishlistPage = () => {
-  const { query, viewParams } = useWishlistCardsEnriched({ pageSize: 20 })
+export const WishlistPage = ({
+  collectionId,
+  collectionType,
+}: {
+  collectionId?: string
+  collectionType: PageTypes
+}) => {
+  const { query } = useGetCollectionItems({ collectionId, collectionType })
+
   const { data: items } = query
   const cards = useMemo(() => items?.pages.flat() ?? [], [items])
-  const { data: wishlistedIds, error } = useIsWishlisted(
-    'card',
-    cards?.map((item) => item.id) || []
-  )
 
   return (
     <View className="flex-1 flex flex-col gap-2 overflow-hidden pt-4">
@@ -19,11 +23,11 @@ export const WishlistPage = () => {
         <View className={cn('gap-y-4 px-4 flex flex-col')}>
           {cards.map((card) => (
             <View key={card.id} className="w-full">
-              <ListCard
-                card={card}
+              <ItemListView
+                item={card}
                 expanded
-                isWishlisted={wishlistedIds?.has(`${card.id}`) ?? false}
-                viewParams={viewParams}
+                // isWishlisted={wishlistedIds?.has(`${card.id}`) ?? false}
+                displayData={}
               />
             </View>
           ))}

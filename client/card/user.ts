@@ -1,3 +1,4 @@
+import { ItemKinds } from "@/constants/types";
 import { supabase } from "@/lib/store/client";
 import { qk } from "@/lib/store/functions/helpers";
 import { useInfiniteQuery } from "@tanstack/react-query";
@@ -7,7 +8,7 @@ export function useListingsForUser(opts?: {
     userId?: string;
     pageSize?: number;
     search?: string; // e.g. filter by card title (requires a title column in cards)
-    kind?: string;
+    kind?: ItemKinds;
 }) {
     const pageSize = opts?.pageSize ?? 50;
     const search = opts?.search?.trim() || "";

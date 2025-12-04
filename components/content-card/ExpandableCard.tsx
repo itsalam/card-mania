@@ -94,12 +94,12 @@ export function ExpandableCard<T extends object>({
             colors={['transparent', 'black', 'black', 'transparent']}
             start={isOpen ? { x: 0.5, y: 0.0 } : { x: 0.0, y: 0.5 }}
             end={isOpen ? { x: 0.5, y: 1 } : { x: 1, y: 0.5 }}
-            locations={[0, 0.05, 0.8, 1]}
+            locations={[0, 0.025, 0.9, 1]}
             style={{
               position: 'relative',
               height: '100%',
               width: '100%',
-              top: '-5%',
+              top: '-2.5%',
               left: '-0%',
             }}
           />

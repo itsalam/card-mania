@@ -2,6 +2,7 @@
 // COLLECTIONS
 // =========================
 
+import { ItemKinds } from "@/constants/types";
 import { supabase } from "../client";
 import { Database } from "../supabase";
 import { requireUser, unwrap } from "./helpers";
@@ -57,6 +58,16 @@ export async function viewCollectionItemsForCard(
       : null,
   }));
   return result;
+}
+
+export async function viewCollectionItemsForUser() {
+  const user = await requireUser();
+  const { data, error } = await supabase.from("collections").select("*").eq(
+    "user_id",
+    user.id,
+  );
+
+  return unwrap(data, error);
 }
 
 // /** Create a new collection (RPC: create_collection) */
@@ -133,7 +144,7 @@ export async function getCollectionItems(collectionId: string) {
 export async function addToCollection(
   params: Extract<
     Database["public"]["Functions"]["add_to_collection"]["Args"],
-    { "p_item_kind": string }
+    { "p_item_kind": ItemKinds }
   >,
 ) {
   await requireUser();

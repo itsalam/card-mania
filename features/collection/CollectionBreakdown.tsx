@@ -13,19 +13,20 @@ import { useWishlistTotal } from '@/client/card/wishlist'
 
 import { Text } from '@/components/ui/text'
 import { cn } from '@/lib/utils'
-import { AnimatePresence, MotiText, MotiView } from 'moti'
+import { AnimatePresence, motify, MotiView } from 'moti'
 import { motifySvg } from 'moti/svg'
 import { useMemo, useReducer } from 'react'
-import { Pressable, View } from 'react-native'
+import { Pressable, StyleProp, View, ViewStyle } from 'react-native'
 import { Easing } from 'react-native-reanimated'
 import { Circle, Defs, LinearGradient, Stop, Svg } from 'react-native-svg'
+import { Colors } from 'react-native-ui-lib'
 
 const MotiCircle = motifySvg(Circle)()
 
 interface ActivityData {
   label: string
   value: number
-  color: string
+  colors: string[]
   size: number
   current: number
   target: number
@@ -41,7 +42,7 @@ const activities: ActivityData[] = [
   {
     label: 'SEEKING',
     value: (479 / 800) * 100,
-    color: '#FF2D55',
+    colors: [Colors.red30, Colors.red40],
     size: 200,
     current: 479,
     target: 800,
@@ -50,8 +51,8 @@ const activities: ActivityData[] = [
   {
     label: 'SELLING',
     value: 60,
-    color: '#A3F900',
-    size: 160,
+    colors: [Colors.green30, Colors.green40],
+    size: 152,
     current: 24,
     target: 30,
     unit: '$',
@@ -59,8 +60,9 @@ const activities: ActivityData[] = [
   {
     label: 'HOLDING',
     value: 30,
-    color: '#04C7DD',
-    size: 120,
+
+    colors: [Colors.blue30, Colors.blue40],
+    size: 104,
     current: 6,
     target: 12,
     unit: '$',
@@ -68,7 +70,7 @@ const activities: ActivityData[] = [
 ]
 
 export const CircleProgress = ({ data, index }: CircleProgressProps) => {
-  const strokeWidth = 16
+  const strokeWidth = 18
   const radius = (data.size - strokeWidth) / 2
   const circumference = radius * 2 * Math.PI
   const progress = ((100 - data.value) / 100) * circumference
@@ -95,29 +97,19 @@ export const CircleProgress = ({ data, index }: CircleProgressProps) => {
 
           <Defs>
             <LinearGradient id={gradientId} x1="0%" y1="0%" x2="100%" y2="100%">
-              <Stop offset="0%" stopColor={data.color} stopOpacity={1} />
-              <Stop
-                offset="100%"
-                stopColor={
-                  data.color === '#FF2D55'
-                    ? '#FF6B8B'
-                    : data.color === '#A3F900'
-                    ? '#C5FF4D'
-                    : '#4DDFED'
-                }
-                stopOpacity={1}
-              />
+              <Stop offset="0%" stopColor={data.colors[0]} stopOpacity={1} />
+              <Stop offset="100%" stopColor={data.colors[1]} stopOpacity={1} />
             </LinearGradient>
           </Defs>
 
-          <Circle
+          {/* <Circle
             cx={data.size / 2}
             cy={data.size / 2}
             r={radius}
-            fill="none"
+            fill={Colors.$backgroundNeutral}
             strokeWidth={strokeWidth}
-            className="stroke-neutral-300/80 dark:stroke-zinc-800/50"
-          />
+            color={Colors.$backgroundNeutral}
+          /> */}
 
           <MotiCircle
             cx={data.size / 2}
@@ -141,9 +133,9 @@ export const CircleProgress = ({ data, index }: CircleProgressProps) => {
             cx={data.size / 2}
             cy={data.size / 2}
             r={radius}
-            fill="none"
+            fill={'none'}
             stroke={gradientUrl} // reuse your gradient
-            strokeOpacity={0.0}
+            strokeOpacity={0.2}
             strokeWidth={strokeWidth + 2} // wider than the main stroke
           />
         </Svg>
@@ -162,24 +154,41 @@ const DetailedActivityInfo = () => {
     >
       {activities.map((activity) => (
         <MotiView key={activity.label} className="flex flex-col">
-          <Text className="text-sm font-medium text-zinc-600 dark:text-zinc-400">
-            {activity.label}
-          </Text>
-          <Text className="text-2xl font-semibold" style={{ color: activity.color }}>
-            {activity.current}/{activity.target}
-            <Text className="text-base ml-1 text-zinc-600 dark:text-zinc-400">{activity.unit}</Text>
-          </Text>
+          <Text variant={'small'}>{activity.label}</Text>
+          <View
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              flexDirection: 'row',
+            }}
+          >
+            <Text
+              variant={'h3'}
+              style={{
+                color: activity.colors[1],
+                fontWeight: '400',
+              }}
+            >
+              {activity.current}/{activity.target}
+            </Text>
+
+            <Text className="ml-0.5">{activity.unit}</Text>
+          </View>
         </MotiView>
       ))}
     </MotiView>
   )
 }
 
+const MText = motify(Text)()
+
 export default function CollectionBreakdown({
   title = 'Collection Breakdown',
+  style,
   className,
 }: {
   title?: string
+  style?: StyleProp<ViewStyle>
   className?: string
 }) {
   const [visible, toggle] = useReducer((s) => !s, true)
@@ -195,35 +204,22 @@ export default function CollectionBreakdown({
   return (
     <View
       className={cn(
-        'relative w-full mx-auto p-8 pt-0 rounded-3xl',
-        'text-zinc-900 dark:text-white',
+        'relative w-full mx-auto p-2 rounded-3xl flex flex-row items-center justify-center',
         className
       )}
+      style={style}
     >
-      <View className="flex flex-col items-center gap-8">
-        <MotiText
-          className="text-2xl font-medium text-zinc-900 dark:text-white"
-          from={{ opacity: 0, translateY: -20 }}
-          animate={{ opacity: 1, translateY: 0 }}
-          transition={{ duration: 500 }}
-        >
-          {title}
-        </MotiText>
-
-        <View className="flex flex-row items-center">
-          <View className="relative w-[180px] h-[180px]">
-            <AnimatePresence>
-              {visible &&
-                totals.map((activity, index) => (
-                  <CircleProgress key={activity.label} data={activity} index={index} />
-                ))}
-            </AnimatePresence>
-          </View>
-          <Pressable onPress={toggle}>
-            <DetailedActivityInfo />
-          </Pressable>
-        </View>
+      <View className="relative w-[180px] h-[180px]">
+        <AnimatePresence>
+          {visible &&
+            totals.map((activity, index) => (
+              <CircleProgress key={activity.label} data={activity} index={index} />
+            ))}
+        </AnimatePresence>
       </View>
+      <Pressable onPress={toggle}>
+        <DetailedActivityInfo />
+      </Pressable>
     </View>
   )
 }

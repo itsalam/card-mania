@@ -1,5 +1,7 @@
-import { TCollection } from "@/constants/types";
+import { ItemKinds, TCollection } from "@/constants/types";
+import { CollectionRow } from "@/lib/store/functions/types";
 import { Database } from "@/lib/store/supabase";
+import { useInfiniteQuery } from "@tanstack/react-query";
 
 export type UpdateCollection =
     Database["public"]["Tables"]["collections"]["Update"];
@@ -20,16 +22,6 @@ export type EditCollectionArgs = {
     tags?: string[]; // desired tag ids
 };
 
-export type CollectionRow = {
-    id: string;
-    name: string;
-    user_id: string;
-    description: string | null;
-    visibility: TCollection["visibility"];
-    cover_image_url: string | null;
-    // ...other columns
-};
-
 export type EditCollectionResult = {
     collection: CollectionRow;
     addedTagIds: string[];
@@ -41,11 +33,15 @@ export type CollectionView = {
     excluded: CollectionLike[];
 };
 
-export type CollectionLike = Partial<
-    Database["public"]["Functions"]["collections_with_membership"]["Returns"][
-        number
-    ]
->;
+export type CollectionLike =
+    & Partial<
+        Database["public"]["Functions"]["collections_with_membership"][
+            "Returns"
+        ][
+            number
+        ]
+    >
+    & CollectionRow;
 
 export type CollectionItem =
     Database["public"]["Tables"]["collection_items"]["Row"];
@@ -59,3 +55,16 @@ export type EditCollectionArgsItem =
         id?: string;
         user_id?: string;
     };
+
+export type InifiniteQueryParams<T = { created_at: string | null }> =
+    Parameters<
+        typeof useInfiniteQuery<T[]>
+    >[0];
+
+export type InfQueryOptions<T = { created_at: string | null }> =
+    & {
+        pageSize?: number;
+        search?: string; // e.g. filter by card title (requires a title column in cards)
+        kind?: ItemKinds;
+    }
+    & Partial<InifiniteQueryParams<T>>;

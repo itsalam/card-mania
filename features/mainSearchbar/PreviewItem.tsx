@@ -1,5 +1,5 @@
 import { TCardSearchItem } from '@/client/price-charting/types'
-import { ListCard } from '@/components/tcg-card/views/ListCard'
+import { CardListView } from '@/components/tcg-card/views/ListCard'
 
 export function PreviewCard({
   searchItem,
@@ -10,5 +10,5 @@ export function PreviewCard({
 }) {
   const { card } = searchItem
 
-  return <ListCard isWishlisted={isWishlisted} card={card} expanded />
+  return <CardListView isWishlisted={isWishlisted} card={card} expanded />
 }

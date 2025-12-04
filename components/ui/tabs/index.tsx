@@ -13,18 +13,22 @@ function Tabs({
 
 function TabsList({
   className,
+  style,
   ...props
 }: TabsPrimitive.ListProps & React.RefAttributes<TabsPrimitive.ListRef>) {
   return (
     <TabsPrimitive.List
       className={cn(
-        'flex h-11 flex-row items-center justify-center rounded-lg p-[3px]',
+        'flex flex-row items-center justify-center rounded-lg p-2',
         Platform.select({ web: 'inline-flex w-fit', native: 'mr-auto' }),
         className
       )}
-      style={{
-        backgroundColor: Colors.$backgroundElevated,
-      }}
+      style={[
+        {
+          backgroundColor: Colors.$backgroundElevated,
+        },
+        style,
+      ]}
       {...props}
     />
   )
@@ -44,7 +48,7 @@ function TabsTrigger({
     >
       <TabsPrimitive.Trigger
         className={cn(
-          'flex h-[calc(100%-1px)] flex-row items-center justify-center gap-1.5 rounded-md border border-transparent px-2 py-1 shadow-none shadow-black/5',
+          'flex flex-row items-center justify-center gap-1.5 rounded-md border border-transparent px-3 py-1.5 shadow-none shadow-black/5',
           Platform.select({
             web: 'focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:outline-ring inline-flex cursor-default whitespace-nowrap transition-[color,box-shadow] focus-visible:outline-1 focus-visible:ring-[3px] disabled:pointer-events-none [&_svg]:pointer-events-none [&_svg]:shrink-0',
           }),
@@ -91,17 +95,26 @@ function TabsLabel({
   return (
     <View className="flex flex-row items-center justify-center gap-2">
       {children}
-      <Text
-        className="text-md"
-        style={[
-          style,
-          currentValue === value ? { color: Colors.$textDefault } : { color: Colors.$textDefault },
-          { display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
-        ]}
-        {...props}
-      >
-        {label.charAt(0).toUpperCase() + label.slice(1)}
-      </Text>
+      {label.length && (
+        <Text
+          variant={'h4'}
+          style={[
+            style,
+            currentValue === value
+              ? { color: Colors.$textDefault }
+              : { color: Colors.$textDefault },
+            {
+              display: 'flex',
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'center',
+            },
+          ]}
+          {...props}
+        >
+          {label.charAt(0).toUpperCase() + label.slice(1)}
+        </Text>
+      )}
     </View>
   )
 }

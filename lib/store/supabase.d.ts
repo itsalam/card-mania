@@ -1470,6 +1470,38 @@ export type Database = {
           last_seen: string
         }[]
       }
+      collection_item_query: {
+        Args: {
+          p_collection_id: string
+          p_page_param?: string
+          p_page_size?: number
+          p_search?: string
+        }
+        Returns: {
+          back_id: string
+          collection_id: string
+          collection_item_id: string
+          created_at: string
+          extras: string[]
+          front_id: string
+          genre: string
+          grade_condition_id: string
+          grades_prices: Json
+          grading_company: string
+          id: string
+          item_kind: Database["public"]["Enums"]["item_kind"]
+          last_updated: string
+          latest_price: number
+          name: string
+          position: number
+          quantity: number
+          ref_id: string
+          set_name: string
+          updated_at: string
+          user_id: string
+          variants: string[]
+        }[]
+      }
       collection_items_by_ref: {
         Args: {
           p_collection_id: string

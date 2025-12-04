@@ -1,5 +1,6 @@
 import { useViewCollectionsForCard } from '@/client/collections/query'
 import { BlurBackground } from '@/components/Background'
+import { ExpandableCollectionEntryListItem } from '@/components/collections/items/expandable-entry-item'
 import { SearchBar } from '@/components/ui/search'
 import { Text } from '@/components/ui/text'
 import { PanelBottomClose, Plus } from 'lucide-react-native'
@@ -8,7 +9,6 @@ import { ScrollView, View } from 'react-native'
 import { Colors, Spacings } from 'react-native-ui-lib'
 import { useCardDetails } from '../../provider'
 import { FooterButton } from '../components/button'
-import { CollectionListItem } from './components'
 // import { Label } from '@react-navigation/elements'
 
 export const AddToCollectionsView = () => {
@@ -41,7 +41,11 @@ export const AddToCollectionsView = () => {
             <Text style={{ paddingHorizontal: Spacings.s4 }}>Saved In</Text>
             <View className="py-2 flex flex-col">
               {collection?.included.map((c) => (
-                <CollectionListItem key={c.id} collection={c} />
+                <ExpandableCollectionEntryListItem
+                  card={card ?? undefined}
+                  key={c.id}
+                  collection={c}
+                />
               ))}
             </View>
           </>
@@ -51,7 +55,13 @@ export const AddToCollectionsView = () => {
             <Text style={{ paddingHorizontal: Spacings.s4 }}>Other Collections</Text>
             <View className="py-2 flex flex-col">
               {collection?.excluded.length ? (
-                collection?.excluded.map((c) => <CollectionListItem key={c.id} collection={c} />)
+                collection?.excluded.map((c) => (
+                  <ExpandableCollectionEntryListItem
+                    card={card ?? undefined}
+                    key={c.id}
+                    collection={c}
+                  />
+                ))
               ) : (
                 <View className="pt-4 flex items-center justify-center">
                   <Text className="text-sm text-muted-foreground italic">No other collections</Text>

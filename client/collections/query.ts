@@ -1,16 +1,26 @@
 import {
     viewCollectionItemsForCard,
+    viewCollectionItemsForUser,
     viewCollectionsForCard,
 } from "@/lib/store/functions/collections";
 import { qk } from "@/lib/store/functions/helpers";
+import { CollectionRow } from "@/lib/store/functions/types";
 import {
     DefaultError,
     keepPreviousData,
+    useInfiniteQuery,
     useQuery,
 } from "@tanstack/react-query";
 import React from "react";
+import { ViewParams } from "../card/types";
 import { useIsWishlisted } from "../card/wishlist";
-import { CollectionItem, CollectionLike, CollectionView } from "./types";
+import {
+    CollectionItem,
+    CollectionLike,
+    CollectionView,
+    InfQueryOptions,
+    InifiniteQueryParams,
+} from "./types";
 
 export function useViewCollectionsForCard(cardId = "", query?: string) {
     const { data: isWishlisted } = useIsWishlisted("card", [cardId]);
@@ -70,4 +80,42 @@ export function useViewCollectionItemsForCard(
         enabled: enabled && !!cardId.length && !!collectionId.length,
         initialData: [],
     });
+}
+
+export const DEFAULT_INF_Q_OPTIONS: InfQueryOptions = {
+    pageSize: 50,
+    kind: "card",
+};
+
+export function useViewCollectionForUser() {
+    return useQuery<
+        {},
+        DefaultError,
+        CollectionRow[]
+    >({
+        queryKey: qk.collections,
+        queryFn: viewCollectionItemsForUser,
+        placeholderData: keepPreviousData,
+        initialData: [],
+    });
+}
+
+export function useViewCollectionItems<T extends { created_at: string | null }>(
+    opts: InifiniteQueryParams<T>,
+) {
+    let {
+        queryKey,
+        getNextPageParam,
+        ...infiniteQueryOpts
+    } = opts;
+
+    const query = useInfiniteQuery({
+        staleTime: 60_000,
+        gcTime: 5 * 60_000,
+        queryKey,
+        getNextPageParam,
+        ...infiniteQueryOpts,
+    });
+
+    return { query, viewParams: { key: queryKey } as ViewParams };
 }

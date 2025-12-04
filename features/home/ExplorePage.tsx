@@ -1,6 +1,5 @@
 import { GalleryCard } from '@/components/tcg-card/views/GalleryCard'
 import { GridCard } from '@/components/tcg-card/views/GridCard'
-import { ListCard } from '@/components/tcg-card/views/ListCard'
 
 import { DropdownMenuLabel } from '@/components/ui/dropdown-menu'
 import { ToggleGroup, ToggleGroupIcon, ToggleGroupItem } from '@/components/ui/toggle-group'
@@ -48,7 +47,7 @@ export function ExplorePage() {
       case 'grid':
         return GridCard
       case 'list':
-        return ListCard
+        return CardListView
       case 'gallery':
         return GalleryCard
       default:
@@ -87,12 +86,11 @@ export function ExplorePageMenu() {
   const { exploreLayout, setExploreLayout } = useHomePageStore()
   return (
     <>
-      <View className='w-full flex flex-row justify-between items-end'>
-       <View className='flex flex-row items-center gap-2'>
-        <DropdownMenuLabel>Layout</DropdownMenuLabel>
-               <ViewToggle value={exploreLayout} setValue={setExploreLayout} />
-       </View>
-
+      <View className="w-full flex flex-row justify-between items-end">
+        <View className="flex flex-row items-center gap-2">
+          <DropdownMenuLabel>Layout</DropdownMenuLabel>
+          <ViewToggle value={exploreLayout} setValue={setExploreLayout} />
+        </View>
       </View>
     </>
   )

@@ -252,7 +252,7 @@ const CardDetailContainer = ({
     variant: 'detail',
     shape: 'card',
     cardId: cardId,
-    kind: 'front',
+    imageType: 'front',
     quality: 100,
     queryHash: cardData?.image?.query_hash ?? undefined,
   })
@@ -261,7 +261,7 @@ const CardDetailContainer = ({
     variant: 'tiny',
     shape: 'card',
     cardId: cardId,
-    kind: 'front',
+    imageType: 'front',
     queryHash: cardData?.image?.query_hash ?? undefined,
   })
 

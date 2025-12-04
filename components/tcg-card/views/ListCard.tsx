@@ -1,49 +1,97 @@
-import { ViewParams } from '@/client/card/types'
 import { useToggleWishlist } from '@/client/card/wishlist'
-import { useImageProxy } from '@/client/image-proxy'
+import { ImageProxyOpts, useImageProxy } from '@/client/image-proxy'
 import { CARD_ASPECT_RATIO } from '@/components/consts'
 import { Text } from '@/components/ui/text'
 import { formatPrice } from '@/components/utils'
-import { TCard } from '@/constants/types'
+import { ItemKinds, TCard } from '@/constants/types'
 import { cn } from '@/lib/utils/cn'
 import { Pressable, StyleSheet, View } from 'react-native'
 import { Assets, Button, Colors } from 'react-native-ui-lib'
 import { THUMBNAIL_HEIGHT, THUMBNAIL_WIDTH } from '../consts'
 import { LiquidGlassCard } from '../GlassCard'
-import { getDefaultPrice, useNavigateToDetailCard } from '../helpers'
+import { getDefaultPrice, useNavigateToItem } from '../helpers'
 import { LoadingImagePlaceholder } from '../placeholders'
 
-export function ListCard({
-  card,
-  expanded = true,
-  isLoading = false,
-  isWishlisted = false,
-  className,
-  viewParams,
-}: {
-  card: TCard
+type ItemListingProps = {
+  item: { id: string }
+  kind?: ItemKinds
+  displayData: {
+    title: string
+    subHeading?: string
+    displayPrice?: number
+    imageProxyArgs: ImageProxyOpts
+  }
   expanded?: boolean
   isLoading?: boolean
   isWishlisted?: boolean
   className?: string
-  viewParams?: ViewParams
+}
+
+export function CardListView({
+  card,
+  ...props
+}: { card: TCard } & Omit<ItemListingProps, 'item' | 'displayData'>) {
+  const [, displayPrice] = getDefaultPrice(card)
+  const displayData = {
+    title: card.name,
+    subHeading: card.set_name,
+    imageProxyArgs: {
+      variant: 'tiny',
+      shape: 'card',
+      cardId: card?.id ?? undefined,
+      imageType: 'front',
+      queryHash: card?.image?.query_hash ?? undefined,
+    } as ImageProxyOpts,
+    displayPrice,
+  }
+  return <ItemListView item={card} displayData={displayData} {...props} />
+}
+
+export function ItemListView({
+  item,
+  kind = 'card',
+  displayData,
+  expanded = true,
+  isLoading = false,
+  isWishlisted = false,
+  className,
+}: {
+  item: { id: string }
+  kind?: ItemKinds
+  displayData: {
+    title: string
+    subHeading?: string
+    displayPrice?: number
+    imageProxyArgs: ImageProxyOpts
+  }
+  expanded?: boolean
+  isLoading?: boolean
+  isWishlisted?: boolean
+  className?: string
 }) {
+  // const {
+  //   data: thumbnailImg,
+  //   isLoading: isImageLoading,
+  //   status,
+  // } = useImageProxy({
+  //   variant: 'tiny',
+  //   shape: 'card',
+  //   cardId: card?.id ?? undefined,
+  //   imageType: 'front',
+  //   queryHash: card?.image?.query_hash ?? undefined,
+  // })
+
   const {
     data: thumbnailImg,
     isLoading: isImageLoading,
     status,
-  } = useImageProxy({
-    variant: 'tiny',
-    shape: 'card',
-    cardId: card?.id ?? undefined,
-    kind: 'front',
-    queryHash: card?.image?.query_hash ?? undefined,
-  })
+  } = useImageProxy({ variant: 'tiny', ...displayData.imageProxyArgs })
 
   const toggleWishList = useToggleWishlist('card')
 
-  const { cardElement, handlePress } = useNavigateToDetailCard(card, () => {})
-  const [grade, displayPrice] = getDefaultPrice(card)
+  const { cardElement, handlePress } = useNavigateToItem(kind, item)
+  // const [,displayPrice] = getDefaultPrice(card)
+
   return (
     <Pressable onPress={() => handlePress()}>
       <View className={cn('flex flex-row items-center w-full', className)}>
@@ -57,7 +105,7 @@ export function ListCard({
           <LoadingImagePlaceholder
             source={{
               uri: thumbnailImg,
-              cacheKey: `${card?.id}-thumb`,
+              cacheKey: `${item?.id}-thumb`,
               width: THUMBNAIL_WIDTH,
               height: THUMBNAIL_HEIGHT,
             }}
@@ -73,7 +121,7 @@ export function ListCard({
                   color: Colors.$textNeutral,
                 }}
               >
-                {card?.set_name}
+                {displayData?.subHeading}
               </Text>
               <Text
                 className="text-lg font-bold text-wrap leading-none"
@@ -81,20 +129,20 @@ export function ListCard({
                   color: Colors.$textDefault,
                 }}
               >
-                {card?.name}
+                {displayData?.title}
               </Text>
             </View>
 
             <View className="self-stretch flex-1 flex flex-row items-stretch justify-between">
               <View className="flex-1 flex flex-col justify-start">
-                {displayPrice ? (
+                {displayData.displayPrice ? (
                   <Text
                     className="text-3xl font-bold"
                     style={{
                       color: Colors.$textDefault,
                     }}
                   >
-                    {formatPrice(displayPrice)}
+                    {formatPrice(displayData.displayPrice)}
                   </Text>
                 ) : (
                   <Text
@@ -113,10 +161,8 @@ export function ListCard({
                   outline={isWishlisted}
                   onPress={() => {
                     toggleWishList.mutate({
-                      kind: 'card',
-                      id: card.id,
-                      viewParams,
-                      p_metadata: { grades: [grade].filter(Boolean) },
+                      kind,
+                      id: item.id,
                     })
                   }}
                   iconStyle={styles.buttonIcon}

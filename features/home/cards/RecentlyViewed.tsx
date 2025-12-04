@@ -3,7 +3,7 @@ import { useIsWishlisted } from '@/client/card/wishlist'
 import { ExpandableCard } from '@/components/content-card'
 import { THUMBNAIL_HEIGHT, THUMBNAIL_WIDTH } from '@/components/tcg-card/consts'
 import { LiquidGlassCard } from '@/components/tcg-card/GlassCard'
-import { ListCard } from '@/components/tcg-card/views/ListCard'
+import { CardListView } from '@/components/tcg-card/views/ListCard'
 import { Text } from '@/components/ui/text'
 import { useRecentViews } from '@/lib/store/functions/hooks'
 import { Database } from '@/lib/store/supabase'
@@ -28,7 +28,7 @@ export function RecentlyViewedCard({
     return null
   }
 
-  return <ListCard isLoading={loading} expanded={isOpen} card={data} {...props} />
+  return <CardListView isLoading={loading} expanded={isOpen} card={data} {...props} />
 }
 
 export function RecentlyViewed() {

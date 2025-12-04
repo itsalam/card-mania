@@ -1,15 +1,19 @@
-import { TCard } from "@/constants/types";
+import { ItemKinds, TCard } from "@/constants/types";
 import { supabase } from "@/lib/store/client";
 import { qk, WishlistKey } from "@/lib/store/functions/helpers";
 import { Database, Json } from "@/lib/store/supabase";
 import {
     InfiniteData,
     QueryClient,
-    useInfiniteQuery,
     useMutation,
     useQuery,
     useQueryClient,
 } from "@tanstack/react-query";
+import {
+    DEFAULT_INF_Q_OPTIONS,
+    useViewCollectionItems,
+} from "../collections/query";
+import { InfQueryOptions, InifiniteQueryParams } from "../collections/types";
 import { ViewParams } from "./types";
 
 const buildPrefixKey = (wishlistKey: WishlistKey, separator = "/") => {
@@ -21,7 +25,7 @@ class WishlistBatcher {
     private resolvers: ((s: Set<string>) => void)[] = [];
     private timer?: number;
 
-    request(kind: string, ids: string[]) {
+    request(kind: ItemKinds, ids: string[]) {
         const k = kind;
         const set = this.pending.get(k) ?? new Set<string>();
         ids.forEach((id) => set.add(id));
@@ -90,21 +94,21 @@ export function useIsWishlisted(kind: string, ids: string[]) {
 }
 
 type ToggleWishlistParams = {
-    kind: string;
+    kind: ItemKinds;
     id: string;
     p_metadata?: Json;
     viewParams?: ViewParams;
 };
 
 type ToggleWishlistContext = Partial<{
-    prev: InfiniteData<Row[], unknown> | undefined;
+    prev: InfiniteData<WishlistRow[], unknown> | undefined;
 
     touched?: boolean;
 }>;
 
 function setWishlist(
     qc: QueryClient,
-    kind: string,
+    kind: ItemKinds,
     fn: (s: Set<string>) => Set<string>,
 ) {
     qc.setQueryData<Set<string>>(
@@ -113,7 +117,7 @@ function setWishlist(
     );
 }
 
-export function useToggleWishlist(kind: string) {
+export function useToggleWishlist(kind: ItemKinds) {
     const qc = useQueryClient();
 
     return useMutation({
@@ -198,81 +202,51 @@ export function useWishlistTotal() {
     });
 }
 
-type Row =
+type WishlistRow =
     & Database["public"]["Views"]["wishlist_cards_enriched"]["Row"]
     & TCard;
 // Otherwise, a quick fallback:
 // type Row = { user_id: string; created_at: string; id: string; title: string; /* ...other card columns... */ };
 
-export function useWishlistCardsEnriched(opts?: {
-    pageSize?: number;
-    search?: string; // e.g. filter by card title (requires a title column in cards)
-    kind?: string;
-}) {
-    const pageSize = opts?.pageSize ?? 50;
-    const search = opts?.search?.trim() || "";
-    const kind = opts?.kind ?? "card";
-
+export function getWishlistQueryArgs(opts?: InfQueryOptions) {
+    let { pageSize, search, kind } = { ...DEFAULT_INF_Q_OPTIONS, ...opts };
     const queryKey = [...buildPrefixKey(WishlistKey.View), kind, "enriched", {
         search,
         pageSize,
     }];
 
-    const query = useInfiniteQuery({
+    const args = {
         queryKey,
-        initialPageParam: null as string | null, // cursor = created_at (ISO string)
+        getNextPageParam: (lastPage) =>
+            lastPage?.length ? lastPage[lastPage.length - 1].created_at : null,
         queryFn: async ({ pageParam }) => {
             let qb = supabase
                 .from("wishlist_cards_enriched")
                 .select("*")
                 .order("created_at", { ascending: false })
-                .limit(pageSize);
+                .limit(pageSize!);
 
             if (pageParam) qb = qb.lt("created_at", pageParam);
             if (search) qb = qb.ilike("title", `%${search}%`); // adjust column name(s) to your schema
 
             const { data, error } = await qb;
             if (error) throw error;
-            return data as Row[];
+            return data as WishlistRow[];
         },
-        getNextPageParam: (lastPage) =>
-            lastPage?.length ? lastPage[lastPage.length - 1].created_at : null,
-        staleTime: 60_000,
-        gcTime: 5 * 60_000,
-    });
+        initialPageParam: null as string | null,
+    } as InifiniteQueryParams<WishlistRow>;
 
-    return { query, viewParams: { key: queryKey, pageSize } as ViewParams };
+    return args as any as InifiniteQueryParams;
 }
 
-// Helpers
-//     { idKey, kind, qc, isOn }: {
-//         idKey: string;
-//         kind: string;
-//         qc: QueryClient;
-//         isOn?: boolean;
-//     },
-// ) => {
-//     qc.getQueryCache().findAll({
-//         queryKey: [...buildPrefixKey(WishlistKey.Set), kind],
-//     })
-//         .forEach((q) => {
-//             const key = q.queryKey as [string, string, ...string[]];
+export function useWishlistCardsEnriched(
+    opts: InfQueryOptions,
+) {
+    let { pageSize = 50, search = "", kind = "card", ...queryOpts } = opts;
+    const wishlistArgs = {
+        ...queryOpts,
+        ...getWishlistQueryArgs(opts),
+    } as InifiniteQueryParams<WishlistRow>;
 
-//             const [, , ...ids] = key;
-//             if (ids?.includes(idKey)) {
-//                 qc.setQueryData<Set<string>>(key, (prev) => {
-//                     const next = new Set(prev ?? []);
-//                     if (typeof isOn === "boolean") {
-//                         if (isOn) {
-//                             next.add(idKey);
-//                         } else {
-//                             next.delete(idKey);
-//                         }
-//                     } else {
-//                         next.has(idKey) ? next.delete(idKey) : next.add(idKey);
-//                     }
-//                     return next;
-//                 });
-//             }
-//         });
-// };
+    return useViewCollectionItems<WishlistRow>(wishlistArgs);
+}

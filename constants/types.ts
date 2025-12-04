@@ -1,4 +1,5 @@
-import { Json } from "@/lib/store/supabase";
+import { ImageProxyOpts } from "@/client/image-proxy";
+import { Database, Json } from "@/lib/store/supabase";
 import { z } from "zod";
 
 export const JsonSchema: z.ZodType<Json> = z.lazy(() =>
@@ -78,6 +79,16 @@ export const Tag = z.object({
   approved_at: z.string().nullable(),
   popularity: z.number().int().default(0),
 });
+
+export type ItemKinds = Database["public"]["Enums"]["item_kind"];
+
+export type ItemLike = {
+  kind: ItemKinds;
+  title: string;
+  subHeading: string;
+  imageProxyArgs: ImageProxyOpts;
+  id: string;
+};
 
 export type TCard = z.infer<typeof Card>;
 export type TCollection = z.infer<typeof TCollection>;

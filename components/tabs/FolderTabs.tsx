@@ -39,7 +39,11 @@ export function FolderTabTrigger({
               backgroundColor: Colors.$backgroundElevatedLight,
               borderColor: Colors.$outlineNeutral,
             }
-          : { backgroundColor: Colors.$backgroundNeutral, borderColor: Colors.$outlineNeutral, transform: [{ translateY: -1 }] }
+          : {
+              backgroundColor: Colors.$backgroundNeutral,
+              borderColor: Colors.$outlineNeutral,
+              transform: [{ translateY: -1 }],
+            }
       }
     >
       {children}
@@ -49,6 +53,7 @@ export function FolderTabTrigger({
 
 export function FolderTabComponent({
   className,
+  style,
   ...props
 }: React.ComponentProps<typeof Pressable>) {
   return (
@@ -57,7 +62,7 @@ export function FolderTabComponent({
         `flex flex-row gap-2 px-4 py-2 rounded-t-md border border-b-0  shadow-none`,
         className
       )}
-      style={{ backgroundColor: Colors.$backgroundNeutral, borderColor: Colors.$outlineNeutral }}
+      style={[{ borderColor: Colors.$outlineNeutral }, style]}
       {...props}
     />
   )
