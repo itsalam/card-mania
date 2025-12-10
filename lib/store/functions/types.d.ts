@@ -8,7 +8,7 @@ export type ProfileUpdate = Partial<
   Pick<ProfileRow, "username" | "display_name" | "avatar_url" | "bio">
 >;
 
-export type CollectionRow = Database["public"]["Views"]["collections"]["Row"];
+export type CollectionRow = Database["public"]["Tables"]["collections"]["Row"];
 export type CollectionWithTagRow =
   Database["public"]["Views"]["collections_with_tags"]["Row"];
 export type CollectionInsert =
@@ -25,6 +25,9 @@ export type GradeCondition =
 
 export type CollectionItemRow =
   & Database["public"]["Tables"]["collection_items"]["Row"]
-  & { grade_condition: GradeCondition | null };
+  & { grade_condition?: GradeCondition | null };
+
+export type CollectionItemQueryView =
+  Database["public"]["Functions"]["collection_item_query"]["Returns"][number];
 
 export type RecentViewRow = Database["public"]["Tables"]["recent_views"]["Row"];

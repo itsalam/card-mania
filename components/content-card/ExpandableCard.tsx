@@ -6,7 +6,6 @@ import React, { ComponentProps, ReactNode, useState } from 'react'
 import { ScrollView, View } from 'react-native'
 import { Colors } from 'react-native-ui-lib'
 import { CARD_ASPECT_RATIO } from '../consts'
-import { Box } from '../ui/box'
 import { Button } from '../ui/button'
 import { Card } from '../ui/card'
 import { HStack } from '../ui/hstack'
@@ -32,10 +31,10 @@ export function PlaceholderBox({
 
 export const ExpandedContent = () => {
   return (
-    <VStack className="flex-1">
-      <Text variant="large">{'Placeholder box.'}</Text>
+    <View className="flex-1">
+      <Text variant="large">Placeholder box.</Text>
       <Text>You can replace this with any content you like, such as a card or an image.</Text>
-    </VStack>
+    </View>
   )
 }
 
@@ -62,7 +61,6 @@ export function ExpandableCard<T extends object>({
 
   const minItemHeight = itemWidth / CARD_ASPECT_RATIO + 24
   const expandedItemHeight = getExpandedHeight(itemWidth)
-  console.log(minItemHeight)
 
   return (
     <Card size="md" className={cn('overflow-hidden px-0', className)} {...cardProps}>
@@ -71,15 +69,15 @@ export function ExpandableCard<T extends object>({
         onPress={() => setIsOpen(!isOpen)}
         className="h-auto w-full py-6 z-button"
       >
-        <Box className="w-full items-center flex flex-row p-1 gap-2 px-4">
-          {title}
+        <View className="w-full items-center flex flex-row p-1 gap-2 px-4">
+          <Text>{title}</Text>
           <Icon
             style={{ transform: [{ rotate: !isOpen ? '-90deg' : '0deg' }] }}
             as={ChevronDown}
             color={Colors.$iconDefault}
             size={24}
           />
-        </Box>
+        </View>
       </Button>
       <MaskedView
         className={cn('z-0 overflow-visible min-w-max')}
@@ -125,7 +123,7 @@ export function ExpandableCard<T extends object>({
             {items.map((item, i) => {
               const ItemComponent = ({ item, isOpen }: { item: T; isOpen?: boolean }) =>
                 renderItem({ item, isOpen }, i)
-              return <ItemComponent key={item.item_id} item={item} isOpen={isOpen} />
+              return <ItemComponent key={item?.item_id} item={item} isOpen={isOpen} />
             })}
           </View>
         </ScrollView>

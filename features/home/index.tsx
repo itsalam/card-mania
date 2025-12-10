@@ -35,30 +35,34 @@ export default function HomeScreen() {
   const { currentPage, setCurrentPage } = useHomePageStore()
   const insets = useSafeAreaInsets()
   return (
-    <SafeAreaView
-      className="flex-1 w-full h-full overflow-visible"
-      style={{ paddingTop: 8 }}
-    >
+    <SafeAreaView className="flex-1 w-full h-full overflow-visible" style={{ paddingTop: 8 }}>
       <MainSearchBar />
-      
+
       <Tabs className="flex-1 gap-0 py-2" value={currentPage} onValueChange={setCurrentPage}>
-        <TabsList className='ml-4'>
+        <TabsList className="ml-4">
           {tabValues.map((tab) => (
-                <TabsTrigger key={tab} value={tab}>
-                  
-                  <TabsLabel label={tab} value={tab}>{React.createElement(tabIcons[tab], { size: 16, color: Colors.$textDefault })}</TabsLabel>
-                </TabsTrigger>
-            ))}
+            <TabsTrigger key={tab} value={tab}>
+              <TabsLabel
+                label={tab}
+                value={tab}
+                leftElement={(isCurrent) =>
+                  React.createElement(tabIcons[tab], {
+                    size: 16,
+                    color: isCurrent ? Colors.$textPrimary : Colors.$textDefault,
+                  })
+                }
+              />
+            </TabsTrigger>
+          ))}
 
           {/* <TabOptions currentTab={currentPage} /> */}
         </TabsList>
-        
-          {tabValues.map((tab) => (
-            <TabsContent key={tab} value={tab} className="flex-1">
-              {tabContent[tab]}
-            </TabsContent>
-          ))}
-        
+
+        {tabValues.map((tab) => (
+          <TabsContent key={tab} value={tab} className="flex-1">
+            {tabContent[tab]}
+          </TabsContent>
+        ))}
       </Tabs>
     </SafeAreaView>
   )
@@ -75,7 +79,10 @@ const TabOptions = ({ currentTab }: { currentTab: string }) => {
         <Button
           variant="ghost"
           className="p-2 rounded-t-md rounded-b-none border border-b-0  translate-y-px px-3"
-          style={{ borderColor: Colors.$outlineNeutral, backgroundColor: Colors.$backgroundNeutral }}
+          style={{
+            borderColor: Colors.$outlineNeutral,
+            backgroundColor: Colors.$backgroundNeutral,
+          }}
         >
           <Menu size={16} />
         </Button>

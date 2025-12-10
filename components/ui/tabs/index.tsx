@@ -1,7 +1,8 @@
 import { Text, TextClassContext } from '@/components/ui/text'
 import { cn } from '@/lib/utils'
 import * as TabsPrimitive from '@rn-primitives/tabs'
-import { Platform, TextProps, View } from 'react-native'
+import { ReactNode } from 'react'
+import { Platform, StyleProp, TextProps, View, ViewStyle } from 'react-native'
 import { Colors } from 'react-native-ui-lib'
 
 function Tabs({
@@ -39,6 +40,7 @@ function TabsTrigger({
   ...props
 }: TabsPrimitive.TriggerProps & React.RefAttributes<TabsPrimitive.TriggerRef>) {
   const { value } = TabsPrimitive.useRootContext()
+
   return (
     <TextClassContext.Provider
       value={cn(
@@ -77,7 +79,7 @@ function TabsContent({
 }: TabsPrimitive.ContentProps & React.RefAttributes<TabsPrimitive.ContentRef>) {
   return (
     <TabsPrimitive.Content
-      className={cn(Platform.select({ web: 'flex-1 outline-none' }), className)}
+      className={cn(Platform.select({ web: 'flex-1' }), className)}
       {...props}
     />
   )
@@ -88,21 +90,28 @@ function TabsLabel({
   label,
   value,
   style,
-  children,
+  leftElement,
+  rightElement,
+  containerStyle,
   ...props
-}: TextProps & { label: string; value: string }) {
+}: TextProps & {
+  leftElement?: (current: boolean) => ReactNode | ReactNode
+  rightElement?: (current: boolean) => ReactNode | ReactNode
+  label: string
+  value: string
+  containerStyle?: StyleProp<ViewStyle>
+}) {
   const { value: currentValue } = TabsPrimitive.useRootContext()
+  const isCurrent = currentValue === value
   return (
-    <View className="flex flex-row items-center justify-center gap-2">
-      {children}
+    <View className="flex flex-row items-center justify-center gap-2" style={containerStyle}>
+      {leftElement instanceof Function ? leftElement(isCurrent) : leftElement}
       {label.length && (
         <Text
           variant={'h4'}
           style={[
             style,
-            currentValue === value
-              ? { color: Colors.$textDefault }
-              : { color: Colors.$textDefault },
+            isCurrent ? { color: Colors.$textPrimary } : { color: Colors.$textDefault },
             {
               display: 'flex',
               flexDirection: 'row',
@@ -115,6 +124,7 @@ function TabsLabel({
           {label.charAt(0).toUpperCase() + label.slice(1)}
         </Text>
       )}
+      {rightElement instanceof Function ? rightElement(isCurrent) : rightElement}
     </View>
   )
 }

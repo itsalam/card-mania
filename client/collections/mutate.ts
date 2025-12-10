@@ -1,11 +1,11 @@
 import { TCollection, TTag } from "@/constants/types";
 import { supabase } from "@/lib/store/client";
 import { qk, requireUser } from "@/lib/store/functions/helpers";
+import { CollectionRow } from "@/lib/store/functions/types";
 import { useUserStore } from "@/lib/store/useUserStore";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
     CollectionItem,
-    CollectionRow,
     EditCollectionArgs,
     EditCollectionArgsItem,
     EditCollectionResult,

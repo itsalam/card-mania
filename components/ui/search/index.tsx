@@ -201,7 +201,6 @@ const SearchInput = forwardRef<
     return useSafeArea ? TOP_INPUT_HEIGHT : INPUT_HEIGHT
   }
   const onChangeTextHandler = (text: string) => {
-    console.log(`onChangeTextHandler, text:`, text)
     onChangeText?.(text)
     setValue(text)
     setHasValue(!(text.length === 0))

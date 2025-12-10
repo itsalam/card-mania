@@ -10,7 +10,10 @@
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.smoodee.cardmania"
+      "bundleIdentifier": "com.smoodee.cardmania",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -50,10 +53,30 @@
         }
       ],
       "expo-font",
-      "expo-web-browser"
+      "expo-web-browser",
+      [
+        "@sentry/react-native/expo",
+        {
+          "url": "https://sentry.io/",
+          "project": "react-native",
+          "organization": "vincentlamdev"
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "7cb44e39-440b-46be-b799-ba4b345ed43c"
+      }
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/7cb44e39-440b-46be-b799-ba4b345ed43c"
     }
   }
 }

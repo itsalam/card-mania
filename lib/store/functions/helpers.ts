@@ -24,7 +24,6 @@ export enum WishlistKey {
 
 export const qk = {
   me: ["me"] as const,
-
   card: (cardId: string) => ["card", cardId] as const,
   profile: ["profile"] as const,
   collections: ["collections", "me"] as const,

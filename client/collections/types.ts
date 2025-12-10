@@ -1,5 +1,6 @@
 import { ItemKinds, TCollection } from "@/constants/types";
-import { CollectionRow } from "@/lib/store/functions/types";
+import { DefaultPageTypes } from "@/features/collection/provider";
+import { CollectionItemRow, CollectionRow } from "@/lib/store/functions/types";
 import { Database } from "@/lib/store/supabase";
 import { useInfiniteQuery } from "@tanstack/react-query";
 
@@ -41,7 +42,7 @@ export type CollectionLike =
             number
         ]
     >
-    & CollectionRow;
+    & Partial<CollectionRow>;
 
 export type CollectionItem =
     Database["public"]["Tables"]["collection_items"]["Row"];
@@ -56,12 +57,24 @@ export type EditCollectionArgsItem =
         user_id?: string;
     };
 
-export type InifiniteQueryParams<T = { created_at: string | null }> =
-    Parameters<
-        typeof useInfiniteQuery<T[]>
-    >[0];
+export type InifiniteQueryParams<T = CollectionItemRow> = Parameters<
+    typeof useInfiniteQuery<T[]>
+>[0];
 
-export type InfQueryOptions<T = { created_at: string | null }> =
+export type CollectionItemQueryRow =
+    Database["public"]["Functions"]["collection_item_query"]["Returns"][number];
+
+export type CollectionIdArgs =
+    | {
+        collectionId: string;
+        collectionType?: Exclude<DefaultPageTypes, "wishlist">;
+    }
+    | { collectionId?: undefined; collectionType: "wishlist" }
+    | { collectionId?: undefined; collectionType: DefaultPageTypes };
+
+export type CollectionReturn = CollectionItemQueryRow;
+
+export type InfQueryOptions<T extends CollectionItemRow> =
     & {
         pageSize?: number;
         search?: string; // e.g. filter by card title (requires a title column in cards)

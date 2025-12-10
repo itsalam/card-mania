@@ -27,7 +27,6 @@ interface ActivityData {
   label: string
   value: number
   colors: string[]
-  size: number
   current: number
   target: number
   unit: string
@@ -37,6 +36,10 @@ interface CircleProgressProps {
   data: ActivityData
   index: number
 }
+
+const BASE_RING_SIZE = 80
+const RING_GAP = 8
+const RING_WIDTH = 18
 
 const activities: ActivityData[] = [
   {
@@ -70,8 +73,8 @@ const activities: ActivityData[] = [
 ]
 
 export const CircleProgress = ({ data, index }: CircleProgressProps) => {
-  const strokeWidth = 18
-  const radius = (data.size - strokeWidth) / 2
+  const size = BASE_RING_SIZE + (RING_WIDTH + RING_GAP) * index * 2
+  const radius = (size - RING_WIDTH) / 2
   const circumference = radius * 2 * Math.PI
   const progress = ((100 - data.value) / 100) * circumference
 
@@ -87,9 +90,9 @@ export const CircleProgress = ({ data, index }: CircleProgressProps) => {
     >
       <View className="relative">
         <Svg
-          width={data.size}
-          height={data.size}
-          viewBox={`0 0 ${data.size} ${data.size}`}
+          width={size}
+          height={size}
+          viewBox={`0 0 ${size} ${size}`}
           className="transform -rotate-90"
           aria-label={`${data.label} Activity Progress - ${data.value}%`}
         >
@@ -112,12 +115,12 @@ export const CircleProgress = ({ data, index }: CircleProgressProps) => {
           /> */}
 
           <MotiCircle
-            cx={data.size / 2}
-            cy={data.size / 2}
+            cx={size / 2}
+            cy={size / 2}
             r={radius}
             fill="none"
             stroke={gradientUrl}
-            strokeWidth={strokeWidth}
+            strokeWidth={RING_WIDTH}
             strokeDasharray={[`${circumference}`]}
             from={{ strokeDashoffset: circumference }}
             animate={{ strokeDashoffset: progress }}
@@ -130,13 +133,13 @@ export const CircleProgress = ({ data, index }: CircleProgressProps) => {
             strokeLinecap="round"
           />
           <Circle
-            cx={data.size / 2}
-            cy={data.size / 2}
+            cx={size / 2}
+            cy={size / 2}
             r={radius}
             fill={'none'}
             stroke={gradientUrl} // reuse your gradient
             strokeOpacity={0.2}
-            strokeWidth={strokeWidth + 2} // wider than the main stroke
+            strokeWidth={RING_WIDTH + 2} // wider than the main stroke
           />
         </Svg>
       </View>

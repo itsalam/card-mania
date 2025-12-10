@@ -4,7 +4,7 @@ import {
     viewCollectionsForCard,
 } from "@/lib/store/functions/collections";
 import { qk } from "@/lib/store/functions/helpers";
-import { CollectionRow } from "@/lib/store/functions/types";
+import { CollectionItemRow, CollectionRow } from "@/lib/store/functions/types";
 import {
     DefaultError,
     keepPreviousData,
@@ -77,12 +77,12 @@ export function useViewCollectionItemsForCard(
         ],
         queryFn: () => viewCollectionItemsForCard(collectionId, cardId),
         placeholderData: keepPreviousData,
-        enabled: enabled && !!cardId.length && !!collectionId.length,
+        enabled: enabled && !!cardId && !!collectionId,
         initialData: [],
     });
 }
 
-export const DEFAULT_INF_Q_OPTIONS: InfQueryOptions = {
+export const DEFAULT_INF_Q_OPTIONS: InfQueryOptions<CollectionItemRow> = {
     pageSize: 50,
     kind: "card",
 };
@@ -100,7 +100,7 @@ export function useViewCollectionForUser() {
     });
 }
 
-export function useViewCollectionItems<T extends { created_at: string | null }>(
+export function useViewCollectionItems<T extends CollectionItemRow>(
     opts: InifiniteQueryParams<T>,
 ) {
     let {

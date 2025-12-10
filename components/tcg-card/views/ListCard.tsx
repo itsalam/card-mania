@@ -2,7 +2,7 @@ import { useToggleWishlist } from '@/client/card/wishlist'
 import { ImageProxyOpts, useImageProxy } from '@/client/image-proxy'
 import { CARD_ASPECT_RATIO } from '@/components/consts'
 import { Text } from '@/components/ui/text'
-import { formatPrice } from '@/components/utils'
+import { formatLabel, formatPrice } from '@/components/utils'
 import { ItemKinds, TCard } from '@/constants/types'
 import { cn } from '@/lib/utils/cn'
 import { Pressable, StyleSheet, View } from 'react-native'
@@ -61,6 +61,7 @@ export function ItemListView({
   displayData: {
     title: string
     subHeading?: string
+    metadata?: string
     displayPrice?: number
     imageProxyArgs: ImageProxyOpts
   }
@@ -113,24 +114,36 @@ export function ItemListView({
           />
         </LiquidGlassCard>
         {expanded && (
-          <View className="flex flex-col gap-1 h-full items-start p-4 flex-1 pt-2">
+          <View className="flex flex-col h-full items-start p-4 flex-1 pt-2">
             <View>
               <Text
-                className="text-base pb-1 capitalize"
-                style={{
-                  color: Colors.$textNeutral,
-                }}
-              >
-                {displayData?.subHeading}
-              </Text>
-              <Text
-                className="text-lg font-bold text-wrap leading-none"
+                variant={'large'}
+                className="font-bold text-wrap leading-none"
                 style={{
                   color: Colors.$textDefault,
                 }}
               >
                 {displayData?.title}
               </Text>
+              <Text
+                variant={'muted'}
+                className="text-base capitalize"
+                style={{
+                  color: Colors.$textNeutral,
+                }}
+              >
+                {displayData?.subHeading}
+              </Text>
+              {displayData?.metadata && (
+                <Text
+                  className="text-base uppercase font-spaceMono"
+                  style={{
+                    color: Colors.$textNeutralLight,
+                  }}
+                >
+                  {formatLabel(displayData?.metadata)}
+                </Text>
+              )}
             </View>
 
             <View className="self-stretch flex-1 flex flex-row items-stretch justify-between">

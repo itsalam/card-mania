@@ -1,10 +1,10 @@
 // store.ts
-import { createContext, ReactNode, useContext, useRef } from 'react'
+import { createContext, ReactNode, useContext, useEffect, useRef } from 'react'
 import { createStore, StoreApi, useStore } from 'zustand'
 import { PreferenceState, useCollectionUiPreferences } from './hooks'
 
 export const defaultPages = ['default', 'vault', 'wishlist', 'selling'] as const
-export type PageTypes = (typeof defaultPages)[number]
+export type DefaultPageTypes = (typeof defaultPages)[number]
 
 type CollectionsState = {
   preferenceState: PreferenceState
@@ -30,6 +30,11 @@ export const CollectionsViewProvider = (props: { children: ReactNode }) => {
 
   const storeRef = useRef<StoreApi<CollectionsState> | null>(null)
   if (!storeRef.current) storeRef.current = createCollectionPageStore(preferencesState)
+
+  // Keep zustand store in sync when preferences change
+  useEffect(() => {
+    storeRef.current?.setState({ preferenceState: preferencesState })
+  }, [preferencesState])
 
   return <CollectionPageContext.Provider value={storeRef.current} {...props} />
 }

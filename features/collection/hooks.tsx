@@ -1,13 +1,13 @@
 import { getWishlistQueryArgs } from '@/client/card/wishlist'
 import { DEFAULT_INF_Q_OPTIONS, useViewCollectionItems } from '@/client/collections/query'
-import { InfQueryOptions, InifiniteQueryParams } from '@/client/collections/types'
+import { CollectionIdArgs, InfQueryOptions, InifiniteQueryParams } from '@/client/collections/types'
 import { supabase } from '@/lib/store/client'
-import { qk } from '@/lib/store/functions/helpers'
-import { Database } from '@/lib/store/supabase'
-import { TCard } from '@/constants/types'
+import { qk, requireUser, unwrap } from '@/lib/store/functions/helpers'
+import { CollectionItemQueryView, CollectionItemRow } from '@/lib/store/functions/types'
 import AsyncStorage from '@react-native-async-storage/async-storage'
+import { useQuery } from '@tanstack/react-query'
 import { useCallback, useEffect, useState } from 'react'
-import { PageTypes } from './provider'
+import { defaultPages } from './provider'
 
 const COLLECTION_UI_PREFERENCES_KEY = 'collections-ui-preferences'
 
@@ -26,7 +26,9 @@ export type PreferenceState = {
   updatePreferences: (updates: Partial<CollectionUiPreferences>) => Promise<void>
 }
 
-const defaultCollectionUiPreferences: CollectionUiPreferences = {}
+const defaultCollectionUiPreferences: CollectionUiPreferences = {
+  tabs: defaultPages.slice(1),
+}
 
 export function useCollectionUiPreferences() {
   const [preferences, setPreferences] = useState<CollectionUiPreferences>(
@@ -64,13 +66,12 @@ export function useCollectionUiPreferences() {
     setLoading(true)
 
     try {
-      let nextValue: CollectionUiPreferences = defaultCollectionUiPreferences
-
-      setPreferences((prev) => {
-        nextValue = { ...defaultCollectionUiPreferences, ...prev, ...updates }
-        return nextValue
-      })
-
+      let nextValue: CollectionUiPreferences = {
+        ...defaultCollectionUiPreferences,
+        ...preferences,
+        ...updates,
+      }
+      setPreferences(nextValue)
       await AsyncStorage.setItem(COLLECTION_UI_PREFERENCES_KEY, JSON.stringify(nextValue))
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to update collection UI preferences')
@@ -88,29 +89,17 @@ export function useCollectionUiPreferences() {
   }
 }
 
-type CollectionItemQueryRow =
-  Database['public']['Functions']['collection_item_query']['Returns'][number]
-type WishlistRow = Database['public']['Views']['wishlist_cards_enriched']['Row'] & TCard
-
-type CollectionArgs =
-  | { collectionId: string; collectionType: Exclude<PageTypes, 'wishlist'> }
-  | { collectionId?: undefined; collectionType: 'wishlist' }
-
-type CollectionReturn<T extends CollectionArgs> = T extends { collectionType: 'wishlist' }
-  ? WishlistRow
-  : CollectionItemQueryRow
-
-function getCollectionArgs<T extends CollectionArgs>(
-  { collectionId, collectionType }: T,
-  opts?: InfQueryOptions<CollectionReturn<T>>
-): InifiniteQueryParams<CollectionReturn<T>> {
-  opts = opts ?? DEFAULT_INF_Q_OPTIONS
+function getCollectionArgs<T extends CollectionItemRow>(
+  { collectionId, collectionType }: CollectionIdArgs,
+  opts?: InfQueryOptions<T>
+): InifiniteQueryParams<T> {
+  const finalOpts = { ...DEFAULT_INF_Q_OPTIONS, ...opts } as InfQueryOptions<T>
 
   if (collectionId) {
-    const { pageSize, search, kind, ...queryOpts } = opts
+    const { pageSize, search, kind, ...queryOpts } = finalOpts
     return {
       ...queryOpts,
-      queryKey: [...qk.collections, collectionId],
+      queryKey: qk.collectionItems(collectionId),
       queryFn: async ({ pageParam }) => {
         const { data, error } = await supabase.rpc('collection_item_query', {
           p_collection_id: collectionId,
@@ -120,29 +109,51 @@ function getCollectionArgs<T extends CollectionArgs>(
         })
 
         if (error) throw error
-        return data as CollectionReturn<T>[]
+        return (data ?? []) as unknown as T[]
       },
-      getNextPageParam: (lastPage) =>
-        lastPage?.length ? lastPage[lastPage.length - 1].created_at : null,
+      getNextPageParam(lastPage) {
+        return lastPage?.length ? lastPage[lastPage.length - 1].created_at : null
+      },
       initialPageParam: null as string | null,
     }
   }
 
   if (collectionType === 'wishlist') {
     return {
-      ...(opts as InfQueryOptions<WishlistRow>),
-      ...getWishlistQueryArgs(opts as InfQueryOptions<WishlistRow>),
-    } as InifiniteQueryParams<CollectionReturn<T>>
+      ...finalOpts,
+      ...getWishlistQueryArgs(finalOpts),
+    } as InifiniteQueryParams<T>
   }
 
   // Future collection types should be added here.
   throw new Error('Unsupported collection type')
 }
 
-export function useGetCollectionItems<T extends CollectionArgs>(
-  args: T,
-  opts?: InfQueryOptions<CollectionReturn<T>>
+export function useGetCollection(args: CollectionIdArgs) {
+  const isWishlist = args.collectionType === 'wishlist'
+
+  return useQuery({
+    queryKey: [...qk.collections, ...Object.values(args)],
+    staleTime: 60_000, // tweak to taste
+    queryFn: async () => {
+      // 1) Check existence with a cheap HEAD+COUNT (RLS: returns only your row if any)
+      let req = supabase.from('collections').select('*')
+      if (isWishlist) {
+        const user = await requireUser()
+        req = req.eq('user_id', user.id).eq('is_wishlist', true)
+      } else if (args.collectionId) {
+        req = req.eq('id', args.collectionId)
+      }
+      const { data, error } = await req.single()
+      return unwrap(data, error)
+    },
+  })
+}
+
+export function useGetCollectionItems<T extends CollectionItemQueryView>(
+  args: CollectionIdArgs,
+  opts?: InfQueryOptions<T>
 ) {
-  const queryArgs = getCollectionArgs(args, opts)
-  return useViewCollectionItems<CollectionReturn<T>>(queryArgs)
+  const queryArgs = getCollectionArgs<T>(args, opts)
+  return useViewCollectionItems<T>(queryArgs)
 }

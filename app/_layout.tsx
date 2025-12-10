@@ -7,11 +7,28 @@ import '../global.css'
 require('react-native-ui-lib/config').setConfig({ appScheme: 'default' })
 
 import { PortalHost } from '@rn-primitives/portal'
+import * as Sentry from '@sentry/react-native'
+import { isRunningInExpoGo } from 'expo'
+import { useNavigationContainerRef } from 'expo-router'
 import React from 'react'
 import { Appearance, Platform } from 'react-native'
 import { configureReanimatedLogger, ReanimatedLogLevel } from 'react-native-reanimated'
 import { Colors } from 'react-native-ui-lib'
 import Providers from './_providers'
+
+const navigationIntegration = Sentry.reactNavigationIntegration({
+  enableTimeToInitialDisplay: !isRunningInExpoGo(),
+})
+
+Sentry.init({
+  dsn: process.env.EXPO_PUBLIC_SENTRY_DSN,
+  tracesSampleRate: Number(process.env.EXPO_PUBLIC_SENTRY_SAMPLE_RATE) ?? 1.0,
+  integrations: [navigationIntegration],
+  enableNativeFramesTracking: !isRunningInExpoGo(),
+
+  enabled: true, // <—— force enabled in dev
+  // debug: true,
+})
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -57,7 +74,13 @@ Colors.loadSchemes({
   },
 })
 
-export default function RootLayout() {
+export default Sentry.wrap(function RootLayout() {
+  const ref = useNavigationContainerRef()
+  React.useEffect(() => {
+    if (ref) {
+      navigationIntegration.registerNavigationContainer(ref)
+    }
+  }, [ref])
   return (
     <Providers>
       <Stack
@@ -84,4 +107,4 @@ export default function RootLayout() {
       <PortalHost />
     </Providers>
   )
-}
+})
