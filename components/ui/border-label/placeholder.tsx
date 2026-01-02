@@ -76,10 +76,6 @@ const FloatingPlaceholder = (props: FloatingPlaceholderProps) => {
     )
   }, [placeHolderStyle, floatingPlaceholderStyle])
 
-  const placeHolderTextHeightOffset = useMemo(() => {
-    return getOffsetHeight(floatingPlaceholderStyle) ?? ((14 as number) * 3) / 4
-  }, [floatingPlaceholderStyle])
-
   const scale = useMemo(() => {
     const floatingSize = getTextSize(floatingPlaceholderStyle) || 14
     const placeHolderSize = getTextSize(placeHolderStyle) || 14
@@ -90,7 +86,7 @@ const FloatingPlaceholder = (props: FloatingPlaceholderProps) => {
   const fieldY = useSharedValue(0)
   const inputX = useSharedValue(0)
   const inputY = useSharedValue(0)
-  const textH = useSharedValue(0)
+  const textH = useSharedValue(getTextSize(placeHolderStyle) || 14)
   const gap = useSharedValue(GAP_PADDING)
   const phTextYOffset = useSharedValue(0)
   const s = useSharedValue(scale)
@@ -102,6 +98,7 @@ const FloatingPlaceholder = (props: FloatingPlaceholderProps) => {
   const ty = useDerivedValue(
     () =>
       // combine both translateY effects into one to avoid order-dependent jumps
+
       interpolate(animation.value, [0, 1], [0, -textH.value - fieldY.value - inputY.value]) +
       interpolate(animation.value, [0, 1], [0, phTextYOffset.value])
   )
@@ -112,19 +109,10 @@ const FloatingPlaceholder = (props: FloatingPlaceholderProps) => {
     fieldY.value = fieldOffset?.y ?? 0
     inputX.value = inputOffset.x ?? 0
     inputY.value = inputOffset.y ?? 0
-    textH.value = textHeightOffset ?? 0
-    phTextYOffset.value = placeHolderTextHeightOffset ?? 0
+    textH.value = textHeightOffset ?? getTextSize(placeHolderStyle) ?? 14
     s.value = scale
     gap.value = GAP_PADDING
-  }, [
-    fieldOffset?.x,
-    fieldOffset?.y,
-    inputOffset.x,
-    inputOffset.y,
-    textHeightOffset,
-    placeHolderTextHeightOffset,
-    scale,
-  ])
+  }, [fieldOffset?.x, fieldOffset?.y, inputOffset.x, inputOffset.y, textHeightOffset, scale])
 
   const animatedStyle = useAnimatedStyle(() => {
     return {
@@ -146,7 +134,7 @@ const FloatingPlaceholder = (props: FloatingPlaceholderProps) => {
   )
 
   return (
-    <Animated.View style={containerStyle} pointerEvents={'none'}>
+    <Animated.View style={[containerStyle]} pointerEvents={'none'}>
       <Animated.Text style={style} numberOfLines={1}>
         {shouldRenderIndication ? placeholder?.concat('*') : placeholder}
       </Animated.Text>

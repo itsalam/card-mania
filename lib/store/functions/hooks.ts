@@ -16,7 +16,7 @@ import {
 
 export function useMyCollections() {
   return useQuery({
-    queryKey: qk.collections,
+    queryKey: qk.userCollections,
     queryFn: () => listMyCollections(),
   });
 }

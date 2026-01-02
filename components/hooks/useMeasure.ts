@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
     findNodeHandle,
     LayoutChangeEvent,
@@ -21,13 +21,18 @@ type Options = {
     /** Optional external onLayout you still want to run */
     onLayout?: ViewProps["onLayout"];
     layoutOnce?: boolean;
+    onMeasure?: (ml?: MeasuredLayout) => void;
 };
 
 type HasMeasure = Pick<NativeMethods, "measure">;
 
 export function useMeasure<T extends HasMeasure>(opts: Options = {}) {
-    const { round = false, onLayout: externalOnLayout, layoutOnce = true } =
-        opts;
+    const {
+        round = false,
+        onLayout: externalOnLayout,
+        layoutOnce = true,
+        onMeasure,
+    } = opts;
 
     const hasMeasured = useRef(false);
     const ref = useRef<T | null>(null);
@@ -92,6 +97,10 @@ export function useMeasure<T extends HasMeasure>(opts: Options = {}) {
         // Manually remeasure later (e.g., after animations or modal open)
         measureInWindow();
     }, [measureInWindow]);
+
+    useEffect(() => {
+        onMeasure?.(layout ?? undefined);
+    }, [layout]);
 
     return { ref, layout, onLayout, remeasure };
 }

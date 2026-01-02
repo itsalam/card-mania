@@ -5,7 +5,8 @@ import { useState } from 'react'
 import { Pressable, StyleSheet, View } from 'react-native'
 import { Button, Colors, Hint, SegmentedControl } from 'react-native-ui-lib'
 import { HintPositions } from 'react-native-ui-lib/src/components/hint/types'
-import { useCreateNewCollections, VISIBILITY_OPTIONS } from '../../provider'
+import { useCreateNewCollections } from '../../provider'
+import { VISIBILITY_OPTIONS } from '../../ui'
 
 export function VisibilitySelector() {
   const [toggleHint, setToggleHint] = useState(false)

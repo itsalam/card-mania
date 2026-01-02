@@ -26,7 +26,8 @@ export const qk = {
   me: ["me"] as const,
   card: (cardId: string) => ["card", cardId] as const,
   profile: ["profile"] as const,
-  collections: ["collections", "me"] as const,
+  collections: ["collections"] as const,
+  userCollections: ["collections", "me"] as const,
   collectionForCard: (cardId: string, userId?: string) =>
     ["collections", "card", userId ?? "me", cardId] as const,
   collectionItems: (id: string) => ["collections", id, "items"] as const,

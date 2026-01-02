@@ -138,12 +138,13 @@ export const Input = forwardRef<TextInput, InputProps>((props, ref) => {
       return Object.assign({}, node, {
         validate: context.validateField,
         clear: () => {
+          node?.clear?.()
           context.onChangeText?.('')
           onClear?.()
         },
       }) as TextFieldHandle
     },
-    [combinedRefs, context.validateField]
+    [combinedRefs, context.validateField, context.onChangeText, onClear]
   )
 
   const leadingAccessoryClone = useMemo(() => {
@@ -172,61 +173,54 @@ export const Input = forwardRef<TextInput, InputProps>((props, ref) => {
   const forceFloatFinal = forceFloat || shouldPlaceholderFloat(context)
 
   return (
-    <DynamicBorderBox
-      {...containerProps}
-      label={placeholder}
-      labelStyle={[floatingPlaceholderStyle]}
-      style={[containerStyle, styles.container]}
-      color={color}
-      opacity={opacity}
-      forceFloat={forceFloatFinal}
-    >
-      <View style={styles.field} ref={fieldLayoutRef} onLayout={onFieldLayout}>
-        {leadingAccessory}
-        {floatingPlaceholder && (
-          <FloatingPlaceholder
-            placeholder={placeholder}
-            floatingPlaceholderStyle={floatingPlaceholderStyle}
-            placeHolderStyle={[styles.inputTextStyle, inputStyle]}
-            fieldOffset={fieldLayout ?? undefined}
-            inputOffset={inputLayout ?? undefined}
-            showMandatoryIndication={showMandatoryIndication}
+    <View>
+      <DynamicBorderBox
+        {...containerProps}
+        label={placeholder}
+        labelStyle={[floatingPlaceholderStyle]}
+        style={[containerStyle, styles.container]}
+        color={color}
+        opacity={opacity}
+        forceFloat={forceFloatFinal}
+      >
+        <View style={[styles.field]} ref={fieldLayoutRef} onLayout={onFieldLayout}>
+          {leadingAccessory}
+          {floatingPlaceholder && (
+            <FloatingPlaceholder
+              placeholder={placeholder}
+              floatingPlaceholderStyle={floatingPlaceholderStyle}
+              placeHolderStyle={[styles.inputTextStyle, inputStyle]}
+              fieldOffset={fieldLayout ?? undefined}
+              inputOffset={inputLayout ?? undefined}
+              showMandatoryIndication={showMandatoryIndication}
+            />
+          )}
+          <TextInput
+            {...others}
+            ref={combinedRefs}
+            hitSlop={{
+              top: 20,
+              bottom: 20,
+            }}
+            value={context.value}
+            style={[styles.inputBody, styles.inputTextStyle, inputStyle]}
+            onFocus={context.onFocus}
+            onBlur={context.onBlur}
+            onChangeText={context.onChangeText}
+            onLayout={onLayoutCombined}
+          />
+        </View>
+        {showClearButton && (
+          <ClearButton
+            onClear={onClear}
+            testID={`${props.testID}.clearButton`}
+            onChangeText={context.onChangeText}
+            clearButtonStyle={clearButtonStyle}
           />
         )}
-        <TextInput
-          {...others}
-          ref={combinedRefs}
-          hitSlop={{
-            top: 20,
-            bottom: 20,
-          }}
-          value={context.value}
-          style={[styles.inputBody, styles.inputTextStyle, inputStyle]}
-          onFocus={context.onFocus}
-          onBlur={context.onBlur}
-          onChangeText={context.onChangeText}
-          onLayout={onLayoutCombined}
-        />
-      </View>
-      {showClearButton && (
-        <ClearButton
-          onClear={onClear}
-          testID={`${props.testID}.clearButton`}
-          onChangeText={context.onChangeText}
-          clearButtonStyle={clearButtonStyle}
-        />
-      )}
-      {trailingAccessory}
-    </DynamicBorderBox>
-    //   {others.validationMessage && context.failingValidatorIndex && (
-    //     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 }}>
-    //       <TriangleAlert size={20} color={Colors.$textDanger} />
-    //       <Text style={{ color: Colors.$textDanger }}>
-    //         {others.validationMessage[context.failingValidatorIndex]}
-    //       </Text>
-    //     </View>
-    //   )}
-    // </FieldContext.Provider>
+        {trailingAccessory}
+      </DynamicBorderBox>
+    </View>
   )
 })
 Input.displayName = 'TextField'

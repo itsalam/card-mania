@@ -3,7 +3,7 @@ import { Text } from '@/components/ui/text'
 import { TagCategoryToIcon } from '@/components/icons'
 import { BADGE_HEIGHT, ToggleBadge } from '@/components/ui/badge'
 import { splitToNChunks } from '@/components/utils'
-import { once } from 'lodash'
+import { once, uniqueId } from 'lodash'
 import {
   createContext,
   forwardRef,
@@ -28,7 +28,6 @@ import { Colors } from 'react-native-ui-lib'
 import { BadgeInputInner, ChipsInputProps } from '../input/badge-input'
 import { TextField, TextFieldHandle } from '../input/base-input'
 import { FieldContext } from '../input/provider'
-import { InputProps } from '../input/types'
 
 export type ChipsContextValue<T extends BaseTagObject> = {
   items: T[]
@@ -39,7 +38,7 @@ export type ChipsContextValue<T extends BaseTagObject> = {
   renderIconElement: (reqTag?: T | undefined) => React.JSX.Element
 }
 
-type MultiChipInputProps<T> = Omit<ChipsInputProps, 'children'> & {
+export type MultiChipInputProps<T> = Omit<ChipsInputProps, 'children'> & {
   fetchSuggestions: (query?: string) => Promise<T[]>
   compare?: (i1: T, i2: T) => boolean
   renderIcon?: (item?: Partial<T> & BaseTagObject) => React.ReactElement
@@ -48,7 +47,7 @@ type MultiChipInputProps<T> = Omit<ChipsInputProps, 'children'> & {
   onItemsChange?: (items: T[]) => void
   children?:
     | React.JSX.Element
-    | ((props: MultiChipInputProps<T>, ref: Ref<TextFieldHandle>) => React.JSX.Element)
+    | ((props: MultiChipInputProps<T>, ref?: Ref<TextFieldHandle>) => React.JSX.Element)
 }
 
 type BaseTagObject = {
@@ -85,27 +84,19 @@ export const useChipContext = <T extends BaseTagObject>() => {
   return context
 }
 
-export const MultiChipInput = <T extends BaseTagObject>(props: MultiChipInputProps<T>) => {
+const Provider = <T extends BaseTagObject>(
+  props: MultiChipInputProps<T>,
+  ref: Ref<TextFieldHandle>
+) => {
   const {
     fetchSuggestions,
     compare = (a: BaseTagObject, b: BaseTagObject) => a.id === b.id,
     renderIcon,
     extractCat = (item: BaseTagObject) => item.category ?? 'general',
     onItemsChange,
-    ...badgeProps
-  } = props
-
-  return <TextField {...badgeProps}>{MultiChipInput.Provider<T>(props)}</TextField>
-}
-
-MultiChipInput.Provider = <T extends BaseTagObject>(props: MultiChipInputProps<T>) => {
-  const {
-    fetchSuggestions,
-    compare = (a: BaseTagObject, b: BaseTagObject) => a.id === b.id,
-    renderIcon,
-    extractCat = (item: BaseTagObject) => item.category ?? 'general',
-    onItemsChange,
+    onChange,
     children,
+    ...textFieldProps
   } = props
 
   const ChipsContext = createChipsContext<T>()
@@ -124,17 +115,19 @@ MultiChipInput.Provider = <T extends BaseTagObject>(props: MultiChipInputProps<T
   useEffect(() => {
     if (fetchSuggestions) {
       fetchSuggestions().then((s) => {
-        hasResults.set(s.length > 0)
-        setSuggestions(s)
+        const safeSuggestions = Array.isArray(s) ? s : []
+        hasResults.value = safeSuggestions.length > 0
+        setSuggestions(safeSuggestions)
       })
     }
-  }, [fetchSuggestions])
+  }, [fetchSuggestions, query])
 
   useEffect(() => {
     if (fetchSuggestions) {
       fetchSuggestions(query).then((s) => {
-        hasResults.set(s.length > 0)
-        setSuggestions(s)
+        const safeSuggestions = Array.isArray(s) ? s : []
+        hasResults.value = safeSuggestions.length > 0
+        setSuggestions(safeSuggestions)
       })
     }
   }, [query])
@@ -143,38 +136,28 @@ MultiChipInput.Provider = <T extends BaseTagObject>(props: MultiChipInputProps<T
     onItemsChange?.(items)
   }, [items])
 
-  return (_: InputProps, ref: Ref<TextFieldHandle>) => (
+  return (
     <ChipsContext.Provider
       value={{ items, setItems, suggestions, setSuggestions, hasResults, renderIconElement }}
     >
-      {typeof children === 'function' ? (
-        children(props, ref)
-      ) : children ? (
-        children
-      ) : (
-        <View>
-          <MultiChipInput.Input<T> {...props} ref={ref} />
-          <MultiChipInput.Suggestions<T> compare={compare} />
-        </View>
-      )}
+      <TextField {...textFieldProps} ref={ref}>
+        {typeof children === 'function'
+          ? children(props)
+          : children
+          ? children
+          : (_, ref) => (
+              <View>
+                <Input<T> {...props} ref={ref} onChange={onChange} />
+                <Suggestions<T> compare={compare} />
+              </View>
+            )}
+      </TextField>
     </ChipsContext.Provider>
   )
 }
 
-MultiChipInput._ForwardRef = <T extends BaseTagObject>(
-  {
-    floatingPlaceholderStyle,
-    onChangeText,
-    fetchSuggestions,
-    compare = (a: T, b: T) => a.id === b.id,
-    renderIcon,
-    extractCat = (item: T) => item.category ?? 'general',
-    onChange,
-    onItemsChange,
-    fetchItems,
-    containerStyle,
-    ...props
-  }: MultiChipInputProps<T>,
+const InputForwardRef = <T extends BaseTagObject>(
+  { onChange, fetchItems, containerStyle, children, ...badgeProps }: MultiChipInputProps<T>,
   ref: Ref<TextFieldHandle>
 ) => {
   const { items, setItems, renderIconElement } = useChipContext<T>()
@@ -193,7 +176,7 @@ MultiChipInput._ForwardRef = <T extends BaseTagObject>(
 
   return (
     <BadgeInputInner
-      {...props}
+      {...badgeProps}
       ref={ref}
       containerStyle={[{ zIndex: 1 }, containerStyle]}
       chips={chips}
@@ -211,7 +194,7 @@ MultiChipInput._ForwardRef = <T extends BaseTagObject>(
             }
             return Promise.resolve(
               viableChips.map((nc) => {
-                return { name: nc.label!, id: nc.id! } as T
+                return { name: nc.label!, id: nc.id || uniqueId('chip') } as T
               })
             )
           }
@@ -234,14 +217,12 @@ MultiChipInput._ForwardRef = <T extends BaseTagObject>(
   )
 }
 
-MultiChipInput.Input = forwardRef(MultiChipInput._ForwardRef) as <T extends BaseTagObject>(
+const Input = forwardRef(InputForwardRef) as <T extends BaseTagObject>(
   props: MultiChipInputProps<T> & { ref?: Ref<TextFieldHandle> }
 ) => React.JSX.Element
 
-MultiChipInput.Suggestions = <T extends BaseTagObject>(
-  props: Pick<MultiChipInputProps<T>, 'compare'>
-) => {
-  const NUM_PRICE_ROWS = 2
+const Suggestions = <T extends BaseTagObject>(props: Pick<MultiChipInputProps<T>, 'compare'>) => {
+  const NUM_ROWS = 2
 
   const { compare = (a: T, b: T) => a.id === b.id } = props
   const { items, setItems, suggestions, hasResults, renderIconElement } = useChipContext<T>()
@@ -249,12 +230,11 @@ MultiChipInput.Suggestions = <T extends BaseTagObject>(
   const isFocused = context.isFocused
 
   const suggestionContainerStyle = useAnimatedStyle(() => {
+    const hasAnyResults = (Array.isArray(suggestions) && suggestions.length > 0) || hasResults.value
+    const targetHeight =
+      isFocused && hasAnyResults ? BADGE_HEIGHT * NUM_ROWS + (NUM_ROWS - 1) * 4 + 60 : 0
     return {
-      height: withTiming(
-        isFocused && (suggestions.length || hasResults.get())
-          ? BADGE_HEIGHT * NUM_PRICE_ROWS + (NUM_PRICE_ROWS - 1) * 4 + 60
-          : 0
-      ),
+      height: withTiming(targetHeight),
     }
   }, [isFocused, suggestions, hasResults])
 
@@ -262,7 +242,7 @@ MultiChipInput.Suggestions = <T extends BaseTagObject>(
     () =>
       splitToNChunks(
         suggestions?.filter((s) => !items.find((t) => compare(t, s))) ?? [],
-        NUM_PRICE_ROWS,
+        NUM_ROWS,
         3
       ).filter((r) => r.length > 0) as T[][],
     [suggestions, items]
@@ -351,3 +331,10 @@ MultiChipInput.Suggestions = <T extends BaseTagObject>(
     </Animated.View>
   )
 }
+
+export const MultiChipInput = forwardRef(Provider) as <T extends BaseTagObject>(
+  props: MultiChipInputProps<T> & { ref?: Ref<TextFieldHandle> }
+) => React.JSX.Element
+
+export const MultiChipInnerInput = Input
+export const MultiChipSuggestions = Suggestions

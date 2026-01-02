@@ -38,7 +38,7 @@ export const ExpandableCollectionEntryListItem = ({
 
   return (
     <ExpandableSection expanded={expanded} sectionHeader={<ItemView />}>
-      <CollectionCardEntries collection={collection} isShown={expanded} />
+      {card && <CollectionCardEntries collection={collection} isShown={expanded} card={card} />}
     </ExpandableSection>
   )
 }

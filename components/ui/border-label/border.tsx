@@ -58,7 +58,7 @@ export const DynamicBorderBox = forwardRef<View, DynamicBorderBoxProps>(
 
     const inset = strokeWidth / 2
 
-    const targetGap = useSharedValue(20)
+    const targetGap = useSharedValue(30)
     const gap = useDerivedValue(() => {
       const target = shouldFloat ? targetGap.value : 0
       // clamp safely on the UI thread after perimeter is known
@@ -69,10 +69,7 @@ export const DynamicBorderBox = forwardRef<View, DynamicBorderBoxProps>(
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [shouldFloat, targetGap])
     const rw = useDerivedValue(() => Math.max(0, size.value.width - strokeWidth), [size])
-    const rh = useDerivedValue(
-      () => Math.max(0, size.value.height - fontSize * 0.5 - strokeWidth),
-      [size, fontSize]
-    )
+    const rh = useDerivedValue(() => Math.max(0, size.value.height - strokeWidth), [size, fontSize])
     const r = useDerivedValue(() => Math.min(radius, rw.value / 2, rh.value / 2))
     const bgWidth = useDerivedValue(() => rw.value - 2 * inset, [rw])
     const bgHeight = useDerivedValue(() => rh.value - 2 * inset, [rh])
@@ -93,7 +90,7 @@ export const DynamicBorderBox = forwardRef<View, DynamicBorderBoxProps>(
       const arcs = 2 * Math.PI * r.value
       P = straight + arcs
       const clampedGap = Math.max(0, Math.min(gap.value, P - 0.0001))
-      const offset = vertical + arcs / 4
+      const offset = vertical + arcs / 4 - GAP_PADDING * 1.5
       const dashArray = [offset, clampedGap, P - clampedGap - offset, 0]
 
       return dashArray
@@ -133,7 +130,7 @@ export const DynamicBorderBox = forwardRef<View, DynamicBorderBoxProps>(
               <RoundedRect
                 opacity={opacity}
                 x={inset}
-                y={inset + fontSize * 0.5}
+                y={inset}
                 width={rw}
                 height={rh}
                 r={r}
@@ -164,7 +161,7 @@ export const DynamicBorderBox = forwardRef<View, DynamicBorderBoxProps>(
             onTextLayout={(e) => {
               const { lines } = e.nativeEvent
               if (lines.length > 0) {
-                targetGap.set(lines[0]?.width + GAP_PADDING)
+                targetGap.set(lines[0]?.width + GAP_PADDING * 4)
               }
             }}
             numberOfLines={1}

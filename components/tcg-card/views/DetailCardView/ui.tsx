@@ -1,5 +1,5 @@
 import { BlurBackground, BlurGradientBackground } from '@/components/Background'
-import { useMeasure } from '@/components/hooks/useMeasure'
+import { MeasuredLayout, useMeasure } from '@/components/hooks/useMeasure'
 import { Text } from '@/components/ui/text'
 import { useEffect } from 'react'
 import { Dimensions, StyleProp, StyleSheet, View, ViewStyle } from 'react-native'
@@ -17,11 +17,11 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { Colors } from 'react-native-ui-lib'
+import { Assets, Colors } from 'react-native-ui-lib'
 
 import { LiquidGlassCard } from '@/components/tcg-card/GlassCard'
 import { formatLabel, formatPrice, splitToNChunks } from '@/components/utils'
-import { Eye, EyeOff, Plus } from 'lucide-react-native'
+import { Eye, EyeOff, Plus, SearchX } from 'lucide-react-native'
 import React, { useMemo } from 'react'
 import { ScrollView } from 'react-native'
 import { scheduleOnRN } from 'react-native-worklets'
@@ -81,6 +81,7 @@ type ThumbProps = {
   style?: StyleProp<AnimatedStyle<StyleProp<ViewStyle>>>
   mainContentBreakpoint?: SharedValue<number>
   mainContent?: React.ReactNode
+  onMainContentMeasure?: (ml?: MeasuredLayout) => void
   isKeyboardAccessory?: boolean
   containerStyle?: StyleProp<AnimatedStyle<StyleProp<ViewStyle>>>
 }
@@ -93,6 +94,7 @@ export default function DraggableThumbContent({
   toggleLocked,
   isKeyboardAccessory,
   containerStyle,
+  onMainContentMeasure,
 }: ThumbProps) {
   const { progress: keyboardProgress, height: keyboardHeight } = useReanimatedKeyboardAnimation()
   const insets = useSafeAreaInsets()
@@ -100,7 +102,7 @@ export default function DraggableThumbContent({
     ref: mainContentRef,
     layout: mainContentLayout,
     onLayout: onMainContentLayout,
-  } = useMeasure<Animated.View>()
+  } = useMeasure<Animated.View>({ onMeasure: onMainContentMeasure })
   const {
     ref: fullContentRef,
     layout: fullContentLayout,
@@ -418,3 +420,27 @@ export const thumbStyles = StyleSheet.create({
     overflow: 'hidden',
   },
 })
+
+export const VISIBILITY_OPTIONS = [
+  {
+    key: 'private' as const,
+    icon: EyeOff,
+    label: 'Private',
+    description: 'Only you can see this collection.',
+    iconSource: Assets.lucide['eye-off'],
+  },
+  {
+    key: 'public' as const,
+    icon: Eye,
+    label: 'Public',
+    description: 'Anyone can see this collection.',
+    iconSource: Assets.lucide.eye,
+  },
+  {
+    key: 'unlisted' as const,
+    icon: SearchX,
+    label: 'Unlisted',
+    description: 'Only people with the link can see this collection.',
+    iconSource: Assets.lucide['search-x'],
+  },
+] as const

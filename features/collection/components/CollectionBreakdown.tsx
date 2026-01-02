@@ -46,7 +46,6 @@ const activities: ActivityData[] = [
     label: 'SEEKING',
     value: (479 / 800) * 100,
     colors: [Colors.red30, Colors.red40],
-    size: 200,
     current: 479,
     target: 800,
     unit: '$',
@@ -55,7 +54,6 @@ const activities: ActivityData[] = [
     label: 'SELLING',
     value: 60,
     colors: [Colors.green30, Colors.green40],
-    size: 152,
     current: 24,
     target: 30,
     unit: '$',
@@ -63,9 +61,7 @@ const activities: ActivityData[] = [
   {
     label: 'HOLDING',
     value: 30,
-
     colors: [Colors.blue30, Colors.blue40],
-    size: 104,
     current: 6,
     target: 12,
     unit: '$',
@@ -150,7 +146,7 @@ export const CircleProgress = ({ data, index }: CircleProgressProps) => {
 const DetailedActivityInfo = () => {
   return (
     <MotiView
-      className="flex flex-col gap-6 ml-8"
+      className="flex flex-col gap-6"
       from={{ opacity: 0, translateX: 20 }}
       animate={{ opacity: 1, translateX: 0 }}
       transition={{ duration: 500, delay: 300 }}
@@ -204,15 +200,23 @@ export default function CollectionBreakdown({
     return [seeking, selling, holding]
   }, [wishlistTotal])
 
+  const size = BASE_RING_SIZE + (RING_WIDTH + RING_GAP) * (totals.length - 1) * 2
+
   return (
     <View
       className={cn(
-        'relative w-full mx-auto p-2 rounded-3xl flex flex-row items-center justify-center',
+        'relative w-full rounded-3xl flex gap-8 mx-auto my-auto flex-row items-center justify-center',
         className
       )}
       style={style}
     >
-      <View className="relative w-[180px] h-[180px]">
+      <View
+        className="relative"
+        style={{
+          height: size,
+          width: size,
+        }}
+      >
         <AnimatePresence>
           {visible &&
             totals.map((activity, index) => (

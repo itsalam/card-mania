@@ -123,7 +123,7 @@ export function ExpandableCard<T extends object>({
             {items.map((item, i) => {
               const ItemComponent = ({ item, isOpen }: { item: T; isOpen?: boolean }) =>
                 renderItem({ item, isOpen }, i)
-              return <ItemComponent key={item?.item_id} item={item} isOpen={isOpen} />
+              return <ItemComponent key={`${item?.id}-${i}`} item={item} isOpen={isOpen} />
             })}
           </View>
         </ScrollView>

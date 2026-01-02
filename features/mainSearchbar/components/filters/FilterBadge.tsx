@@ -1,12 +1,9 @@
 import { ToggleBadge } from '@/components/ui/badge'
 import { DollarSign } from 'lucide-react-native'
 import { ComponentProps } from 'react'
-import { View } from 'react-native'
-import Animated from 'react-native-reanimated'
 import { Assets, Chip } from 'react-native-ui-lib'
 import { DisplayFilterLabels, FiltersKeys } from './providers'
 require('@/assets/rn-ui')
-const AnimatedView = Animated.createAnimatedComponent(View)
 
 const LabelToBadgeIcon = {
   cards: {

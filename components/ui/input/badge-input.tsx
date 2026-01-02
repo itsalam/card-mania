@@ -1,6 +1,7 @@
 import { useCombinedRefs } from '@/components/hooks/useCombinedRefs'
 import _isUndefined from 'lodash/isUndefined'
-import { forwardRef, useCallback, useContext, useMemo, useState } from 'react'
+import { forwardRef, useCallback, useContext, useMemo, useRef, useState } from 'react'
+import { TextInputChangeEvent } from 'react-native'
 import { Assets, ChipProps, ChipsInputChipProps, Constants } from 'react-native-ui-lib'
 import { ChipsInputChangeReason } from 'react-native-ui-lib/src/components/chipsInput'
 import { useDidUpdate } from 'react-native-ui-lib/src/hooks'
@@ -9,9 +10,9 @@ import { Input, TextField, TextFieldHandle } from './base-input'
 import { FieldContext, FieldStore } from './provider'
 import { InputProps } from './types'
 
-export type ChipsInputProps = InputProps & {
+export type ChipsInputProps = Omit<InputProps, 'onChange'> & {
   /**
-   * Chip items to render in the input
+   * Inital Chip items to render in the input
    */
   chips?: ChipProps[] | undefined
   /**
@@ -33,6 +34,14 @@ export type ChipsInputProps = InputProps & {
       ) => void)
     | undefined
   /**
+   * Inner onchange for input component
+   */
+  innerOnChange?: ((e: TextInputChangeEvent) => void) | undefined
+  /**
+   * Flag to ensure each tag's label is unique
+   */
+  unique?: boolean
+  /**
    * Maximum chips
    */
   maxChips?: number | undefined
@@ -46,11 +55,14 @@ export const BadgeInput = forwardRef<TextFieldHandle, ChipsInputProps>((props, r
     invalidChipProps,
     leadingAccessory,
     maxChips,
+    onChange,
     ...inputProps
   } = props
   return (
     <TextField {...inputProps} ref={refToForward}>
-      {(_, ref) => <BadgeInputInner ref={ref} {...props} />}
+      {({ onChange: innerOnChange, ...innerProps }, ref) => (
+        <BadgeInputInner ref={ref} {...{ ...innerProps, ...props, innerOnChange, onChange }} />
+      )}
     </TextField>
   )
 })
@@ -63,21 +75,33 @@ export const BadgeInputInner = forwardRef<TextFieldHandle, ChipsInputProps>(
       invalidChipProps,
       leadingAccessory,
       onChange,
+      innerOnChange,
       maxChips,
       validate,
       onChangeText,
+      unique,
       ...props
     },
     refToForward
   ) => {
     // Deep merge BaseBadgeProps and defaultChipProps
+    const mainFieldRef = useRef(null)
     const context = useContext<FieldStore>(FieldContext)
     const [markedForRemoval, setMarkedForRemoval] = useState<number | undefined>(undefined)
-    const fieldRef = useCombinedRefs(refToForward)
+    const fieldRef = useCombinedRefs(refToForward, mainFieldRef)
     const fieldValue = useMemo(() => context.value, [context.value])
+    const [currentChips, setCurrentChips] = useState(chips)
 
     const addChip = useCallback(() => {
-      const reachedMaximum = maxChips && chips?.length >= maxChips
+      const reachedMaximum = maxChips && currentChips?.length >= maxChips
+      if (unique) {
+        const shouldBeUnique = Boolean(
+          currentChips.find((c) => {
+            c.label === fieldValue
+          })
+        )
+        if (shouldBeUnique) return
+      }
       if (fieldValue && !reachedMaximum) {
         const newChip = {
           label: fieldValue,
@@ -86,27 +110,33 @@ export const BadgeInputInner = forwardRef<TextFieldHandle, ChipsInputProps>(
         fieldRef.current?.clear?.()
         // fieldValue.current = ''
         /* NOTE: Delay change event to give clear field time to complete and avoid a flickering */
+
         setTimeout(() => {
-          onChange?.([...chips, newChip], ChipsInputChangeReason.Added, newChip)
+          onChange?.([...currentChips, newChip], ChipsInputChangeReason.Added, newChip)
+          fieldRef.current?.focus()
         }, 0)
+        setCurrentChips([...currentChips, newChip])
+        context.onChangeText?.('')
       }
-    }, [onChange, chips, maxChips])
+      fieldRef.current?.focus()
+    }, [onChange, currentChips, maxChips])
 
     const removeMarkedChip = useCallback(() => {
       if (!_isUndefined(markedForRemoval)) {
-        const removedChip = chips?.splice(markedForRemoval, 1)
-        onChange?.([...chips], ChipsInputChangeReason.Removed, removedChip?.[0])
+        const removedChip = currentChips?.splice(markedForRemoval, 1)
+        onChange?.([...currentChips], ChipsInputChangeReason.Removed, removedChip?.[0])
+        setCurrentChips(currentChips)
         setMarkedForRemoval(undefined)
       }
-    }, [chips, markedForRemoval, onChange])
+    }, [currentChips, markedForRemoval, onChange])
 
     const onChipPress = useCallback<NonNullable<ChipProps['onPress']>>(
       ({ customValue: index }) => {
-        const selectedChip = chips[index]
+        const selectedChip = currentChips[index]
         selectedChip?.onPress?.()
         setMarkedForRemoval(index)
       },
-      [chips]
+      [currentChips]
     )
 
     const onChangeTextCb = useCallback<NonNullable<InputProps['onChangeText']>>(
@@ -125,18 +155,18 @@ export const BadgeInputInner = forwardRef<TextFieldHandle, ChipsInputProps>(
         props.onKeyPress?.(event)
         const keyCode = event?.nativeEvent?.key
         const pressedBackspace = keyCode === Constants.backspaceKey
-        if (pressedBackspace && !fieldValue && chips.length > 0) {
-          if (_isUndefined(markedForRemoval) || markedForRemoval !== chips.length - 1) {
-            setMarkedForRemoval(chips.length - 1)
+        if (pressedBackspace && !fieldValue && currentChips.length > 0) {
+          if (_isUndefined(markedForRemoval) || markedForRemoval !== currentChips.length - 1) {
+            setMarkedForRemoval(currentChips.length - 1)
           } else {
             removeMarkedChip()
           }
         }
       },
-      [chips, props.onKeyPress, markedForRemoval, removeMarkedChip]
+      [currentChips, props.onKeyPress, markedForRemoval, removeMarkedChip]
     )
 
-    const renderChip = (props: {
+    const renderBadge = (props: {
       index: number
       chip: ChipProps & { invalid?: boolean }
       isMarkedForRemoval: boolean
@@ -173,7 +203,7 @@ export const BadgeInputInner = forwardRef<TextFieldHandle, ChipsInputProps>(
           {chips.map((chip, index) => {
             const isMarkedForRemoval = index === markedForRemoval
             if (!maxChips || index < maxChips) {
-              return renderChip({
+              return renderBadge({
                 index,
                 chip,
                 isMarkedForRemoval,
@@ -182,7 +212,15 @@ export const BadgeInputInner = forwardRef<TextFieldHandle, ChipsInputProps>(
           })}
         </>
       )
-    }, [chips, leadingAccessory, defaultChipProps, removeMarkedChip, markedForRemoval, maxChips])
+    }, [
+      currentChips,
+      leadingAccessory,
+      defaultChipProps,
+      removeMarkedChip,
+      markedForRemoval,
+      maxChips,
+    ])
+
     const isRequired = useMemo(() => {
       if (!validate) {
         return false
@@ -191,8 +229,9 @@ export const BadgeInputInner = forwardRef<TextFieldHandle, ChipsInputProps>(
       return inputValidators.includes('required')
     }, [validate])
     const requiredValidator = useCallback(() => {
-      return !isRequired || (chips?.length ?? 0) > 0
-    }, [isRequired, chips])
+      return !isRequired || (currentChips?.length ?? 0) > 0
+    }, [isRequired, currentChips])
+
     const _validate = useMemo(() => {
       if (!validate) {
         return undefined
@@ -210,7 +249,7 @@ export const BadgeInputInner = forwardRef<TextFieldHandle, ChipsInputProps>(
       if (props.validateOnChange) {
         fieldRef.current?.validate?.()
       }
-    }, [chips, props.validateOnChange])
+    }, [currentChips, props.validateOnChange])
 
     return (
       <Input
@@ -221,6 +260,7 @@ export const BadgeInputInner = forwardRef<TextFieldHandle, ChipsInputProps>(
         onChangeText={onChangeTextCb}
         onSubmitEditing={addChip}
         onKeyPress={onKeyPress}
+        onChange={innerOnChange}
         accessibilityHint={
           props.editable ? 'press keyboard delete button to remove last tag' : undefined
         }

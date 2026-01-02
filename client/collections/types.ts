@@ -55,6 +55,12 @@ export type EditCollectionArgsItem =
     & {
         id?: string;
         user_id?: string;
+        grade_condition?: {
+            company_id?: string;
+            grade_value?: number;
+            label?: string;
+            id?: string;
+        };
     };
 
 export type InifiniteQueryParams<T = CollectionItemRow> = Parameters<

@@ -10,8 +10,13 @@ type CollectionsState = {
   preferenceState: PreferenceState
   currentPage: string
   exploreLayout: string
+  expanded?: boolean
   setCurrentPage: (page: string) => void
   setExploreLayout: (layout: string) => void
+  setIsExpanded: (expanded: boolean) => void
+  searchQuery?: string
+  setSearchQuery: (searchQuery: string) => void
+  resetSearchQuery: () => void
 }
 
 export const createCollectionPageStore = (preferenceState: PreferenceState) =>
@@ -21,6 +26,11 @@ export const createCollectionPageStore = (preferenceState: PreferenceState) =>
     exploreLayout: 'grid',
     setExploreLayout: (layout) => set({ exploreLayout: layout }),
     setCurrentPage: (page) => set({ currentPage: page }),
+    expanded: false,
+    setIsExpanded: (expanded) => set({ expanded }),
+    searchQuery: undefined,
+    setSearchQuery: (searchQuery) => set({ searchQuery }),
+    resetSearchQuery: () => set({ searchQuery: undefined }),
   }))
 
 export const CollectionPageContext = createContext<StoreApi<CollectionsState> | null>(null)

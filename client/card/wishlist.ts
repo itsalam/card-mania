@@ -1,6 +1,7 @@
+import React from "react";
 import { ItemKinds } from "@/constants/types";
 import { supabase } from "@/lib/store/client";
-import { qk, WishlistKey } from "@/lib/store/functions/helpers";
+import { qk, requireUser, WishlistKey } from "@/lib/store/functions/helpers";
 import { CollectionItemRow } from "@/lib/store/functions/types";
 import { Database } from "@/lib/store/supabase";
 import {
@@ -24,7 +25,7 @@ const buildPrefixKey = (wishlistKey: WishlistKey, separator = "/") => {
 let cachedWishlistCollectionId: string | null | undefined;
 let loadingWishlistCollectionId: PromiseLike<string | null> | undefined;
 
-async function getWishlistCollectionId() {
+export async function getWishlistCollectionId() {
     if (cachedWishlistCollectionId !== undefined) {
         return cachedWishlistCollectionId;
     }
@@ -56,7 +57,6 @@ class WishlistBatcher {
         const set = this.pending.get(k) ?? new Set<string>();
         ids.forEach((id) => set.add(id));
         this.pending.set(k, set);
-
         return new Promise<Set<string>>((resolve) => {
             this.resolvers.push(resolve);
             if (!this.timer) {
@@ -71,10 +71,11 @@ class WishlistBatcher {
     private async fetchWishlistCollectionId() {
         if (this.wishlistCollectionId) return this.wishlistCollectionId;
         if (this.loadingWishlistId) return this.loadingWishlistId;
-
+        const user = await requireUser();
         this.loadingWishlistId = supabase
             .from("wishlist")
             .select("collection_id")
+            .eq("user_id", user.id)
             .maybeSingle()
             .then(({ data, error }) => {
                 this.loadingWishlistId = undefined;
@@ -91,7 +92,6 @@ class WishlistBatcher {
         const batches = Array.from(this.pending.entries()); // [[kind, Set(ids)], ...]
         this.pending.clear();
         this.timer = undefined;
-
         if (!batches.length) {
             this.resolvers.splice(0).forEach((r) => r(new Set()));
             return;
@@ -124,32 +124,73 @@ class WishlistBatcher {
 
 export const wishlistBatcher = new WishlistBatcher();
 
+function toSet(value: unknown): Set<string> {
+    if (value instanceof Set) return value;
+    if (Array.isArray(value)) return new Set(value as string[]);
+    return new Set();
+}
+
+function union(a: Set<string>, b: Set<string>) {
+    const next = new Set(a);
+    b.forEach((v) => next.add(v));
+    return next;
+}
+
+function difference(a: Set<string>, b: Set<string>) {
+    const next = new Set(a);
+    b.forEach((v) => next.delete(v));
+    return next;
+}
+
+function intersection(a: Set<string>, b: Set<string>) {
+    const next = new Set<string>();
+    b.forEach((v) => {
+        if (a.has(v)) next.add(v);
+    });
+    return next;
+}
+
 export function useIsWishlisted(kind: ItemKinds, ids: string[]) {
-    const sorted = [...new Set(ids)].sort(); // stable key
+    const idSet = new Set(ids);
     const qc = useQueryClient();
-    const queryKey = qk.wishlist("card");
+    const queryKey = qk.wishlist(kind);
+    const negativeQueryKey = [...queryKey, "negative"];
+    const unvisitedKey = [...idSet].sort().join(",");
 
-    let cached = (qc.getQueryCache().find<Set<string>>({
-        queryKey,
-    })?.state.data) as Set<string>;
-    cached = !cached || Object.entries(cached).length === 0
-        ? new Set<string>()
-        : cached;
+    const cachedPos = toSet(qc.getQueryData(queryKey));
+    const cachedNeg = toSet(qc.getQueryData(negativeQueryKey));
 
-    const unvisited = sorted.filter((id) => !cached.has(id));
-    const visited = new Set(sorted.filter((id) => cached.has(id)));
+    const alreadyKnown = union(cachedPos, cachedNeg);
+    const unvisited = difference(idSet, alreadyKnown);
+    const visited = intersection(idSet, cachedPos);
 
-    return useQuery({
-        enabled: cached.size === 0 && unvisited.length > 0,
+    const query = useQuery({
+        enabled: false, // manual refetch when unvisited changes
         initialData: visited,
         queryKey,
         queryFn: async () => {
-            const result = await wishlistBatcher.request(kind, unvisited);
-            const newSet = new Set<string>([...cached, ...result]);
-            return newSet;
+            const result = await wishlistBatcher.request(kind, [
+                ...unvisited.values(),
+            ]);
+            const newPos = union(cachedPos, result);
+            // Negatives = requested ids that did not come back as wishlisted.
+            const negatives = difference(unvisited, newPos);
+            qc.setQueryData<Set<string>>(
+                negativeQueryKey,
+                (prev) => union(negatives, toSet(prev)),
+            );
+            return newPos;
         },
         staleTime: 60_000,
     });
+
+    // Fire the batch request whenever we see new ids that aren't cached yet.
+    React.useEffect(() => {
+        if (unvisited.size === 0) return;
+        query.refetch();
+    }, [unvisitedKey]);
+
+    return query;
 }
 
 type ToggleWishlistParams = {

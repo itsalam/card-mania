@@ -1,6 +1,10 @@
 import { populateTagOptions, suggestedTagsOptions } from '@/client/collections/tags'
 import { useInputColors } from '@/components/ui/input/provider'
-import { MultiChipInput } from '@/components/ui/multi-select-input/multi-select-input'
+import {
+  MultiChipInnerInput,
+  MultiChipInput,
+  MultiChipSuggestions,
+} from '@/components/ui/multi-select-input/multi-select-input'
 import { useQueryClient } from '@tanstack/react-query'
 import { Tags } from 'lucide-react-native'
 import { useCallback } from 'react'
@@ -72,9 +76,9 @@ export const CreateCollectionChipInput = () => {
           <View
             style={{ flexDirection: 'row', gap: 8, alignItems: 'center', marginRight: 12, flex: 1 }}
           >
-            <MultiChipInput.Input<CategoryTag> {...props} ref={ref} />
+            <MultiChipInnerInput<CategoryTag> {...props} ref={ref} />
           </View>
-          <MultiChipInput.Suggestions<CategoryTag> compare={(a, b) => a.id === b.id} />
+          <MultiChipSuggestions<CategoryTag> compare={(a, b) => a.id === b.id} />
         </View>
       )}
     </MultiChipInput>

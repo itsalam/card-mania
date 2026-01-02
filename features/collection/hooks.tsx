@@ -1,4 +1,4 @@
-import { getWishlistQueryArgs } from '@/client/card/wishlist'
+import { getWishlistCollectionId, getWishlistQueryArgs } from '@/client/card/wishlist'
 import { DEFAULT_INF_Q_OPTIONS, useViewCollectionItems } from '@/client/collections/query'
 import { CollectionIdArgs, InfQueryOptions, InifiniteQueryParams } from '@/client/collections/types'
 import { supabase } from '@/lib/store/client'
@@ -7,7 +7,7 @@ import { CollectionItemQueryView, CollectionItemRow } from '@/lib/store/function
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { useQuery } from '@tanstack/react-query'
 import { useCallback, useEffect, useState } from 'react'
-import { defaultPages } from './provider'
+import { defaultPages, DefaultPageTypes } from './provider'
 
 const COLLECTION_UI_PREFERENCES_KEY = 'collections-ui-preferences'
 
@@ -15,6 +15,7 @@ export type CollectionUiPreferences = {
   layout?: 'grid' | 'list'
   sortBy?: string
   tabs?: string[]
+  defaultIds: Partial<Record<DefaultPageTypes, string | null>>
   [key: string]: unknown
 }
 
@@ -28,6 +29,7 @@ export type PreferenceState = {
 
 const defaultCollectionUiPreferences: CollectionUiPreferences = {
   tabs: defaultPages.slice(1),
+  defaultIds: {},
 }
 
 export function useCollectionUiPreferences() {
@@ -43,12 +45,31 @@ export function useCollectionUiPreferences() {
       setError(null)
 
       const stored = await AsyncStorage.getItem(COLLECTION_UI_PREFERENCES_KEY)
+      let isDirty = false
+      let preferences: Partial<CollectionUiPreferences> = defaultCollectionUiPreferences
       if (stored) {
         const parsed = JSON.parse(stored)
-        setPreferences({ ...defaultCollectionUiPreferences, ...(parsed ?? {}) })
-      } else {
-        setPreferences(defaultCollectionUiPreferences)
+        preferences = { ...preferences, ...(parsed ?? {}) }
       }
+      if (
+        !preferences.defaultIds ||
+        Object.values(preferences.defaultIds).filter(Boolean).length === 0
+      ) {
+        const wishlistId = getWishlistCollectionId()
+        const defaultIds = {
+          wishlist: await wishlistId,
+        }
+        let isDirty = true
+        const ids = Object.values(defaultIds).filter(Boolean)
+        const tabs = preferences.tabs?.filter((t) => !ids.includes(t))
+        preferences = { ...preferences, tabs, defaultIds }
+      }
+
+      if (isDirty) {
+        AsyncStorage.setItem(COLLECTION_UI_PREFERENCES_KEY, JSON.stringify(preferences))
+      }
+
+      setPreferences(preferences as CollectionUiPreferences)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load collection UI preferences')
       setPreferences(defaultCollectionUiPreferences)
@@ -89,17 +110,25 @@ export function useCollectionUiPreferences() {
   }
 }
 
-function getCollectionArgs<T extends CollectionItemRow>(
+function getCollectionItemsArgs<T extends CollectionItemRow>(
   { collectionId, collectionType }: CollectionIdArgs,
   opts?: InfQueryOptions<T>
 ): InifiniteQueryParams<T> {
   const finalOpts = { ...DEFAULT_INF_Q_OPTIONS, ...opts } as InfQueryOptions<T>
-
+  if (collectionType === 'default') {
+    return {
+      enabled: false,
+      queryKey: [qk.userCollections, 'default', 'items'],
+      queryFn: async () => [] as T[],
+      getNextPageParam: () => null,
+      initialPageParam: null,
+    }
+  }
   if (collectionId) {
     const { pageSize, search, kind, ...queryOpts } = finalOpts
     return {
       ...queryOpts,
-      queryKey: qk.collectionItems(collectionId),
+      queryKey: [...qk.collectionItems(collectionId), 'infinite'],
       queryFn: async ({ pageParam }) => {
         const { data, error } = await supabase.rpc('collection_item_query', {
           p_collection_id: collectionId,
@@ -107,7 +136,6 @@ function getCollectionArgs<T extends CollectionItemRow>(
           p_search: search,
           p_page_size: pageSize,
         })
-
         if (error) throw error
         return (data ?? []) as unknown as T[]
       },
@@ -133,6 +161,7 @@ export function useGetCollection(args: CollectionIdArgs) {
   const isWishlist = args.collectionType === 'wishlist'
 
   return useQuery({
+    enabled: Object.values(args).some(Boolean),
     queryKey: [...qk.collections, ...Object.values(args)],
     staleTime: 60_000, // tweak to taste
     queryFn: async () => {
@@ -150,10 +179,28 @@ export function useGetCollection(args: CollectionIdArgs) {
   })
 }
 
+export function useGetCollectionCountInfo(args: CollectionIdArgs) {
+  return useQuery({
+    enabled: Boolean(args.collectionId),
+    queryKey: [...qk.collections, ...Object.values(args), 'count'],
+    staleTime: 60_000, // tweak to taste
+    queryFn: async () => {
+      // Only need the count; use HEAD + count to avoid fetching rows.
+      const { count, error } = await supabase
+        .from('collection_items')
+        .select('id', { count: 'exact', head: true })
+        .eq('collection_id', args.collectionId!)
+
+      if (error) throw error
+      return count ?? 0
+    },
+  })
+}
+
 export function useGetCollectionItems<T extends CollectionItemQueryView>(
   args: CollectionIdArgs,
   opts?: InfQueryOptions<T>
 ) {
-  const queryArgs = getCollectionArgs<T>(args, opts)
+  const queryArgs = getCollectionItemsArgs<T>(args, opts)
   return useViewCollectionItems<T>(queryArgs)
 }

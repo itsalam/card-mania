@@ -1,13 +1,9 @@
 import * as Haptics from 'expo-haptics'
-import { ComponentProps, ComponentPropsWithoutRef } from 'react'
+import { ComponentProps } from 'react'
 import { View } from 'react-native'
 import { Gesture, GestureDetector } from 'react-native-gesture-handler'
-import Animated, {
-  useAnimatedStyle,
-  useSharedValue,
-  withTiming
-} from 'react-native-reanimated'
-import { Chip, ChipsInput, Colors } from 'react-native-ui-lib'
+import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated'
+import { Chip, Colors } from 'react-native-ui-lib'
 import { scheduleOnRN } from 'react-native-worklets'
 require('@/assets/rn-ui')
 const AnimatedView = Animated.createAnimatedComponent(View)
@@ -19,13 +15,13 @@ export const BaseBadgeProps: Partial<ComponentProps<typeof Chip>> = {
   iconStyle: {
     width: ICON_SIZE,
     height: ICON_SIZE,
-    marginLeft: 10,
   },
   size: BADGE_HEIGHT,
   backgroundColor: Colors.$backgroundPrimaryHeavy,
   containerStyle: {
     borderWidth: 0,
     padding: 2,
+    paddingLeft: 4,
   },
   labelStyle: {
     color: Colors.$textDefaultLight,
@@ -87,25 +83,4 @@ export function ToggleBadge({
 
 export function Badge({ ...props }: ComponentProps<typeof Chip>) {
   return <Chip {...BaseBadgeProps} {...props} />
-}
-
-export const BadgeInput = ({
-  defaultChipProps,
-  ...props
-}: ComponentPropsWithoutRef<typeof ChipsInput>) => {
-  // Deep merge BaseBadgeProps and defaultChipProps
-  const mergedChipProps = {
-    ...BaseBadgeProps,
-    ...defaultChipProps,
-    iconStyle: [BaseBadgeProps.iconStyle, defaultChipProps?.iconStyle || {}],
-    containerStyle: [
-      BaseBadgeProps.containerStyle,
-      defaultChipProps?.containerStyle || {},
-      {
-        marginTop: 0,
-      },
-    ],
-    labelStyle: [BaseBadgeProps.labelStyle, defaultChipProps?.labelStyle || {}],
-  }
-  return <ChipsInput {...props} defaultChipProps={mergedChipProps} />
 }

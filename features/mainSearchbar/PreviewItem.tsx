@@ -1,14 +1,13 @@
 import { TCardSearchItem } from '@/client/price-charting/types'
-import { CardListView } from '@/components/tcg-card/views/ListCard'
+import { CardItemListProps, CardListView } from '@/components/tcg-card/views/ListCard'
 
-export function PreviewCard({
+export function SearchPreviewCard({
   searchItem,
-  isWishlisted = false,
-}: {
+  ...props
+}: CardItemListProps & {
   searchItem: TCardSearchItem
-  isWishlisted?: boolean
 }) {
   const { card } = searchItem
 
-  return <CardListView isWishlisted={isWishlisted} card={card} expanded />
+  return <CardListView card={card} expanded {...props} />
 }

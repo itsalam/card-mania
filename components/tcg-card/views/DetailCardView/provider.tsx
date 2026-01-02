@@ -1,9 +1,8 @@
 import { usePopulateTagCategory } from '@/client/collections/tags'
 import { TCard, TTag } from '@/constants/types'
-import { Eye, EyeOff, SearchX } from 'lucide-react-native'
 import { createContext, useContext, useEffect, useMemo, useRef } from 'react'
-import { Assets } from 'react-native-ui-lib'
 import { createStore, StoreApi, useStore } from 'zustand'
+import { VISIBILITY_OPTIONS } from './ui'
 
 export type CardDetailsStore = {
   card: TCard | null
@@ -82,30 +81,6 @@ export function useCardDetails() {
   if (!store) throw new Error('useCardDetails must be used within CardDetailsProvider')
   return useStore(store)
 }
-
-export const VISIBILITY_OPTIONS = [
-  {
-    key: 'private' as const,
-    icon: EyeOff,
-    label: 'Private',
-    description: 'Only you can see this collection.',
-    iconSource: Assets.lucide['eye-off'],
-  },
-  {
-    key: 'public' as const,
-    icon: Eye,
-    label: 'Public',
-    description: 'Anyone can see this collection.',
-    iconSource: Assets.lucide.eye,
-  },
-  {
-    key: 'unlisted' as const,
-    icon: SearchX,
-    label: 'Unlisted',
-    description: 'Only people with the link can see this collection.',
-    iconSource: Assets.lucide['search-x'],
-  },
-] as const
 
 export type VisibilityKey = (typeof VISIBILITY_OPTIONS)[number]['key']
 

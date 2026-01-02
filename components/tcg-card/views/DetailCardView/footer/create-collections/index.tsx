@@ -101,7 +101,6 @@ const SubmitCollectionButton = () => {
         backgroundColor: Colors.$backgroundPrimaryMedium,
       }}
       onPress={() => {
-        console.log('Submitting new collection:', { name, description, visibility, tags })
         if (validate()) {
           submit
             .mutateAsync({

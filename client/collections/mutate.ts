@@ -127,14 +127,14 @@ export const useEditCollection = (
 ) => {
     const qc = useQueryClient();
     const collectionData = qc.getQueryData([
-        ...qk.collections,
+        ...qk.userCollections,
         collectionId,
     ]) as
         | TCollection
         | undefined;
 
     const collectionTagData = qc.getQueryData([
-        ...qk.collections,
+        ...qk.userCollections,
         collectionId,
         "tags",
     ]) as TTag["id"][] | undefined;
@@ -144,19 +144,19 @@ export const useEditCollection = (
         onMutate: async (patch) => {
             if (collectionData) {
                 await qc.cancelQueries({
-                    queryKey: [...qk.collections, collectionId],
+                    queryKey: [...qk.userCollections, collectionId],
                 });
             }
 
             const prevCollection = qc.getQueryData<TCollection>([
-                ...qk.collections,
+                ...qk.userCollections,
                 collectionId,
             ]);
 
             // Optimistically apply patch to detail
             if (prevCollection) {
                 qc.setQueryData<TCollection>([
-                    ...qk.collections,
+                    ...qk.userCollections,
                     collectionId,
                 ], {
                     ...prevCollection,
@@ -171,7 +171,7 @@ export const useEditCollection = (
             if (!ctx) return;
             if (ctx.prev) {
                 qc.setQueryData(
-                    [...qk.collections, ctx.prev.id],
+                    [...qk.userCollections, ctx.prev.id],
                     ctx.prev,
                 );
             }
@@ -179,7 +179,10 @@ export const useEditCollection = (
         onSettled: (_data, _err, vars) => {
             // Revalidate to ensure canonical server state
             const collection = _data?.collection;
-            qc.setQueryData([...qk.collections, vars.id], _data?.collection);
+            qc.setQueryData(
+                [...qk.userCollections, vars.id],
+                _data?.collection,
+            );
             const collectionTags = collectionTagData ?? [];
             const updatedTags = collectionTags.filter(
                 (tagId) =>
@@ -188,7 +191,7 @@ export const useEditCollection = (
             ).concat(_data?.addedTagIds ?? []);
             if (collection) {
                 qc.setQueryData([
-                    ...qk.collections,
+                    ...qk.userCollections,
                     collectionId,
                     "tags",
                 ], updatedTags);
@@ -211,12 +214,12 @@ async (
 ) => {
     const { delete: deleteRecord, item } = args;
     const user = await requireUser();
+    const { grade_condition, ...parsedItem } = { ...itemData, ...item };
     const fullArgs = {
-        ...itemData,
-        ...item,
+        ...parsedItem,
         user_id: item.user_id ?? user.id,
     };
-    if (deleteRecord && fullArgs.id) {
+    if (fullArgs.id && (deleteRecord || fullArgs.quantity === 0)) {
         const { data, error } = await supabase
             .from("collection_items")
             .delete()
@@ -302,6 +305,9 @@ export const useEditCollectionItem = (
                     ...prevItems.filter((pi) => pi.id !== data.id),
                 ]);
             }
+        },
+        onSettled: () => {
+            qc.invalidateQueries({ queryKey });
         },
     });
 };

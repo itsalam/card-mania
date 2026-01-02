@@ -9,7 +9,7 @@ function Tabs({
   className,
   ...props
 }: TabsPrimitive.RootProps & React.RefAttributes<TabsPrimitive.RootRef>) {
-  return <TabsPrimitive.Root className={cn('flex flex-col gap-2', className)} {...props} />
+  return <TabsPrimitive.Root className={cn('flex flex-col', className)} {...props} />
 }
 
 function TabsList({
@@ -97,7 +97,7 @@ function TabsLabel({
 }: TextProps & {
   leftElement?: (current: boolean) => ReactNode | ReactNode
   rightElement?: (current: boolean) => ReactNode | ReactNode
-  label: string
+  label?: string
   value: string
   containerStyle?: StyleProp<ViewStyle>
 }) {
@@ -106,7 +106,7 @@ function TabsLabel({
   return (
     <View className="flex flex-row items-center justify-center gap-2" style={containerStyle}>
       {leftElement instanceof Function ? leftElement(isCurrent) : leftElement}
-      {label.length && (
+      {label?.length && (
         <Text
           variant={'h4'}
           style={[

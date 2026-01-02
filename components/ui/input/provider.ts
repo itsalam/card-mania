@@ -174,6 +174,7 @@ export default function useFieldState({
     const onChangeText = useCallback<
         NonNullable<TextInputProps["onChangeText"]>
     >((text) => {
+        console.log("HUH", { text });
         setValue(text);
         _onChangeText?.(text);
         if (validateOnChange) {

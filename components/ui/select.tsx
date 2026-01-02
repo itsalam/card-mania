@@ -8,7 +8,7 @@ import * as React from 'react'
 import { Platform, ScrollView, StyleSheet, View } from 'react-native'
 import { FadeIn, FadeOut } from 'react-native-reanimated'
 import { FullWindowOverlay as RNFullWindowOverlay } from 'react-native-screens'
-import { Colors } from 'react-native-ui-lib'
+import { BorderRadiuses, Colors } from 'react-native-ui-lib'
 import { useCombinedRefs } from '../hooks/useCombinedRefs'
 import { MeasuredLayout, useMeasure } from '../hooks/useMeasure'
 import { DynamicBorderBox } from './border-label/border'
@@ -49,7 +49,6 @@ function SelectValue({
     className?: string
     placeholder?: string
   }) {
-  const { value, open } = SelectPrimitive.useRootContext()
   const {
     ref: inputLayoutRef,
     layout: inputLayout,
@@ -63,22 +62,34 @@ function SelectValue({
       <SelectPrimitive.Value
         placeholder=""
         ref={combinedRef}
-        onLayout={onInputLayout}
+        onLayout={(e) => {
+          onInputLayout(e)
+        }}
         className={cn('line-clamp-1 flex flex-row items-center gap-2', className)}
         style={[
           styles.inputTextStyle,
+          styles.inputBody,
+          // styles.inputBody,
           {
             flexDirection: 'row',
             alignItems: 'center',
             flex: 1,
-            marginTop: 18,
           },
         ]}
         {...props}
       />
+
       <FloatingPlaceholder
         placeholder={placeholder}
-        placeHolderStyle={[styles.inputTextStyle]}
+        placeHolderStyle={[
+          styles.inputTextStyle,
+          styles.inputBody,
+          {
+            alignItems: 'center',
+            display: 'flex',
+            justifyContent: 'center',
+          },
+        ]}
         fieldOffset={fieldLayout ?? undefined}
         inputOffset={inputLayout ?? undefined}
         // inputOffset={inputLayout ?? undefined}
@@ -132,14 +143,7 @@ function SelectTrigger({
     <SelectPrimitive.Trigger
       {...props}
       ref={ref}
-      className={cn(
-        'flex flex-row items-center justify-between gap-2 shadow-sm shadow-black/5',
-        Platform.select({
-          web: 'focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive dark:hover:bg-input/50 w-fit whitespace-nowrap text-sm outline-none transition-[color,box-shadow] focus-visible:ring-[3px] disabled:cursor-not-allowed [&_svg]:pointer-events-none [&_svg]:shrink-0',
-        }),
-        props.disabled && 'opacity-50',
-        className
-      )}
+      className={cn(props.disabled && 'opacity-25', className)}
     >
       <DynamicBorderBox
         forceFloat={open || Boolean(value)}
@@ -180,7 +184,11 @@ function SelectContent({
           <TextClassContext.Provider value="text-popover-foreground">
             <NativeOnlyAnimatedView className="z-50" entering={FadeIn} exiting={FadeOut}>
               <SelectPrimitive.Content
-                style={{ width: layout?.width, backgroundColor: Colors.$backgroundDefault }}
+                style={{
+                  width: layout?.width,
+                  backgroundColor: Colors.$backgroundDefault,
+                  borderRadius: BorderRadiuses.br40,
+                }}
                 className={cn(
                   'border-border relative z-50 rounded-md border shadow-md shadow-black/5',
                   Platform.select({
@@ -238,8 +246,10 @@ function SelectLabel({
 function SelectItem({
   className,
   children,
+  groupItem,
   ...props
-}: SelectPrimitive.ItemProps & React.RefAttributes<SelectPrimitive.ItemRef>) {
+}: SelectPrimitive.ItemProps &
+  React.RefAttributes<SelectPrimitive.ItemRef> & { groupItem?: boolean }) {
   return (
     <SelectPrimitive.Item
       className={cn(
@@ -248,9 +258,10 @@ function SelectItem({
           web: 'focus:bg-accent focus:text-accent-foreground *:[span]:last:flex *:[span]:last:items-center *:[span]:last:gap-2 cursor-default outline-none data-[disabled]:pointer-events-none [&_svg]:pointer-events-none',
         }),
         props.disabled && 'opacity-50',
+        groupItem && 'py-3 pl-1.5',
         className
       )}
-      style={[styles.container]}
+      // style={[styles.container]}
       {...props}
     >
       <View className="absolute right-2 flex size-3.5 items-center justify-center">

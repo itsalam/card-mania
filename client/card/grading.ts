@@ -22,7 +22,7 @@ const PayloadZ = z.array(CompanyRowZ);
 export type GradeCondition = z.infer<typeof GradeConditionZ>;
 export type CompanyRow = z.infer<typeof CompanyRowZ>;
 
-export type CompanyWithGrades = {
+export type Graders = {
     id: string;
     slug: string; // 'psa' | 'bgs' | 'cgc' | 'tag' | 'ace'
     name: string;
@@ -40,7 +40,7 @@ export const gradingConditionsKeys = {
 
 async function fetchCompaniesWithGrades(
     companySlug?: string,
-): Promise<CompanyWithGrades[]> {
+): Promise<Graders[]> {
     // Embedded select returns companies with joined grade_conditions, ordered desc by grade
     // NOTE: order(...) with foreignTable is how we sort the embedded relation.
     let q = supabase
@@ -49,7 +49,7 @@ async function fetchCompaniesWithGrades(
             `
       id, slug, name,
       grade_conditions:grade_conditions (
-        id, grade_value, label
+        *
       )
     `,
         )
@@ -92,14 +92,14 @@ export function useGradingConditions(opts?: { companySlug?: string }) {
 // ---------- Niceties: helpers for consumers ----------
 
 export type GradingLookups = {
-    bySlug: Record<string, CompanyWithGrades>;
+    bySlug: Record<string, Graders>;
     // e.g., "cgc:10.0" -> ['Pristine','Gem Mint']
     labelsByCompanyAndValue: Record<string, string[]>;
 };
 
 /** Build quick lookup maps from the hook’s data */
-export function buildGradingLookups(rows: CompanyWithGrades[]): GradingLookups {
-    const bySlug: Record<string, CompanyWithGrades> = {};
+export function buildGradingLookups(rows: Graders[]): GradingLookups {
+    const bySlug: Record<string, Graders> = {};
     const labelsByCompanyAndValue: Record<string, string[]> = {};
     for (const c of rows) {
         bySlug[c.slug] = c;

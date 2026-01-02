@@ -1,10 +1,12 @@
-import { useToggleWishlist } from '@/client/card/wishlist'
+import { useIsWishlisted, useToggleWishlist } from '@/client/card/wishlist'
 import { ImageProxyOpts, useImageProxy } from '@/client/image-proxy'
 import { CARD_ASPECT_RATIO } from '@/components/consts'
 import { Text } from '@/components/ui/text'
 import { formatLabel, formatPrice } from '@/components/utils'
 import { ItemKinds, TCard } from '@/constants/types'
+import { CollectionItemQueryView } from '@/lib/store/functions/types'
 import { cn } from '@/lib/utils/cn'
+import { ReactNode } from 'react'
 import { Pressable, StyleSheet, View } from 'react-native'
 import { Assets, Button, Colors } from 'react-native-ui-lib'
 import { THUMBNAIL_HEIGHT, THUMBNAIL_WIDTH } from '../consts'
@@ -18,19 +20,116 @@ type ItemListingProps = {
   displayData: {
     title: string
     subHeading?: string
+    metadata?: string
     displayPrice?: number
     imageProxyArgs: ImageProxyOpts
   }
   expanded?: boolean
   isLoading?: boolean
-  isWishlisted?: boolean
   className?: string
+}
+
+export type ItemListViewProps = ItemListingProps & {
+  renderAccessories?: (props: ItemListViewProps) => ReactNode
+}
+
+export type CardItemListProps = Omit<ItemListViewProps, 'item' | 'displayData'>
+
+const DefaultAccessories = ({ kind, item, displayData }: ItemListViewProps) => {
+  const toggleWishList = useToggleWishlist('card')
+
+  const { data: wishlistedIds } = useIsWishlisted('card', [item.id])
+  const isWishlisted = [...wishlistedIds?.values()].some((i) => i === item.id)
+
+  return (
+    <View className="self-stretch flex-1 flex flex-col items-stretch justify-between pr-4">
+      <View className="flex-1 flex flex-col justify-start">
+        {displayData?.metadata && (
+          <Text
+            className="text-base uppercase font-spaceMono"
+            style={{
+              color: Colors.$textNeutralLight,
+            }}
+          >
+            {formatLabel(displayData?.metadata)}
+          </Text>
+        )}
+        {displayData.displayPrice ? (
+          <Text
+            className="text-3xl font-bold"
+            style={{
+              color: Colors.$textDefault,
+            }}
+          >
+            {formatPrice(displayData.displayPrice)}
+          </Text>
+        ) : (
+          <Text
+            className="text-3xl font-medium opacity-70"
+            style={{
+              color: Colors.$textDefault,
+            }}
+          >
+            $0.00-
+          </Text>
+        )}
+      </View>
+      <View className="flex flex-row gap-1 items-end justify-end">
+        <Button
+          outline={!isWishlisted}
+          onPress={() => {
+            toggleWishList.mutate({
+              kind: kind ?? 'card',
+              id: item.id,
+            })
+          }}
+          iconStyle={styles.buttonIcon}
+          style={styles.button}
+          size="small"
+          round
+          outlineWidth={1.5}
+          iconSource={Assets.icons.BookmarkHeart}
+          // outlineColor={Colors.$iconDefault}
+          // backgroundColor={Colors.$iconDefault}
+        />
+        <Button
+          size="small"
+          round
+          outlineWidth={1.5}
+          iconStyle={styles.buttonIcon}
+          style={styles.button}
+          iconSource={Assets.icons.Folder}
+          outline={true}
+        />
+      </View>
+    </View>
+  )
+}
+
+const getPriceFix = (card: Partial<CollectionItemQueryView> & TCard) => {
+  let price = card.collection_item_value
+  if (price) return price
+
+  if (!card.price_key) return undefined
+
+  const priceKey = card.price_key.replace(/(\d+)(?:\.(\d))?/g, (_match, intPart, fracPart) =>
+    !fracPart || fracPart === '0' ? intPart : `${intPart}_${fracPart}`
+  )
+
+  const gradePrice = card.grades_prices as Record<string, number>
+
+  if (priceKey in gradePrice) return gradePrice[priceKey]
+  return undefined
 }
 
 export function CardListView({
   card,
   ...props
-}: { card: TCard } & Omit<ItemListingProps, 'item' | 'displayData'>) {
+}: { card: TCard & Partial<CollectionItemQueryView> } & Omit<
+  ItemListViewProps,
+  'item' | 'displayData'
+>) {
+  const displayPriceFix = getPriceFix(card)
   const [, displayPrice] = getDefaultPrice(card)
   const displayData = {
     title: card.name,
@@ -42,60 +141,25 @@ export function CardListView({
       imageType: 'front',
       queryHash: card?.image?.query_hash ?? undefined,
     } as ImageProxyOpts,
-    displayPrice,
+    displayPrice: displayPriceFix ?? displayPrice,
+    metadata: card.price_key,
   }
   return <ItemListView item={card} displayData={displayData} {...props} />
 }
 
-export function ItemListView({
-  item,
-  kind = 'card',
-  displayData,
-  expanded = true,
-  isLoading = false,
-  isWishlisted = false,
-  className,
-}: {
-  item: { id: string }
-  kind?: ItemKinds
-  displayData: {
-    title: string
-    subHeading?: string
-    metadata?: string
-    displayPrice?: number
-    imageProxyArgs: ImageProxyOpts
-  }
-  expanded?: boolean
-  isLoading?: boolean
-  isWishlisted?: boolean
-  className?: string
-}) {
-  // const {
-  //   data: thumbnailImg,
-  //   isLoading: isImageLoading,
-  //   status,
-  // } = useImageProxy({
-  //   variant: 'tiny',
-  //   shape: 'card',
-  //   cardId: card?.id ?? undefined,
-  //   imageType: 'front',
-  //   queryHash: card?.image?.query_hash ?? undefined,
-  // })
+export function ItemListView({ renderAccessories, ...props }: ItemListViewProps) {
+  const { item, kind = 'card', displayData, expanded = true, isLoading = false, className } = props
 
-  const {
-    data: thumbnailImg,
-    isLoading: isImageLoading,
-    status,
-  } = useImageProxy({ variant: 'tiny', ...displayData.imageProxyArgs })
-
-  const toggleWishList = useToggleWishlist('card')
+  const { data: thumbnailImg, isLoading: isImageLoading } = useImageProxy({
+    variant: 'tiny',
+    ...displayData.imageProxyArgs,
+  })
 
   const { cardElement, handlePress } = useNavigateToItem(kind, item)
-  // const [,displayPrice] = getDefaultPrice(card)
 
   return (
     <Pressable onPress={() => handlePress()}>
-      <View className={cn('flex flex-row items-center w-full', className)}>
+      <View className={cn('flex flex-row items-start w-full', className)}>
         <LiquidGlassCard
           onPress={() => handlePress()}
           ref={cardElement}
@@ -114,7 +178,7 @@ export function ItemListView({
           />
         </LiquidGlassCard>
         {expanded && (
-          <View className="flex flex-col h-full items-start p-4 flex-1 pt-2">
+          <View className="flex flex-col h-full items-start p-4 pr-0 flex-1 pt-2">
             <View>
               <Text
                 variant={'large'}
@@ -134,70 +198,9 @@ export function ItemListView({
               >
                 {displayData?.subHeading}
               </Text>
-              {displayData?.metadata && (
-                <Text
-                  className="text-base uppercase font-spaceMono"
-                  style={{
-                    color: Colors.$textNeutralLight,
-                  }}
-                >
-                  {formatLabel(displayData?.metadata)}
-                </Text>
-              )}
             </View>
 
-            <View className="self-stretch flex-1 flex flex-row items-stretch justify-between">
-              <View className="flex-1 flex flex-col justify-start">
-                {displayData.displayPrice ? (
-                  <Text
-                    className="text-3xl font-bold"
-                    style={{
-                      color: Colors.$textDefault,
-                    }}
-                  >
-                    {formatPrice(displayData.displayPrice)}
-                  </Text>
-                ) : (
-                  <Text
-                    className="text-3xl font-medium opacity-70"
-                    style={{
-                      color: Colors.$textDefault,
-                    }}
-                  >
-                    $0.00-
-                  </Text>
-                )}
-              </View>
-
-              <View className="flex flex-row gap-1 items-end justify-end">
-                <Button
-                  outline={isWishlisted}
-                  onPress={() => {
-                    toggleWishList.mutate({
-                      kind,
-                      id: item.id,
-                    })
-                  }}
-                  iconStyle={styles.buttonIcon}
-                  style={styles.button}
-                  size="small"
-                  round
-                  outlineWidth={1.5}
-                  iconSource={Assets.icons.BookmarkHeart}
-                  // outlineColor={Colors.$iconDefault}
-                  // backgroundColor={Colors.$iconDefault}
-                />
-                <Button
-                  size="small"
-                  round
-                  outlineWidth={1.5}
-                  iconStyle={styles.buttonIcon}
-                  style={styles.button}
-                  iconSource={Assets.icons.Folder}
-                  outline={true}
-                />
-              </View>
-            </View>
+            {renderAccessories ? renderAccessories(props) : <DefaultAccessories {...props} />}
           </View>
         )}
       </View>

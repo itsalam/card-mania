@@ -93,7 +93,7 @@ export function useViewCollectionForUser() {
         DefaultError,
         CollectionRow[]
     >({
-        queryKey: qk.collections,
+        queryKey: qk.userCollections,
         queryFn: viewCollectionItemsForUser,
         placeholderData: keepPreviousData,
         initialData: [],

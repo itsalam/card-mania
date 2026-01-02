@@ -1,11 +1,11 @@
 import { useIsWishlisted, useToggleWishlist } from '@/client/card/wishlist'
 import { getDefaultPrice } from '@/components/tcg-card/helpers'
+import { AppStandaloneHeader } from '@/components/ui/headers'
 import { Swapper } from '@/components/ui/swapper'
-import { Text } from '@/components/ui/text'
 import { TCard } from '@/constants/types'
-import { ChevronLeft, FolderHeart, ShoppingCart, Star, X } from 'lucide-react-native'
+import { FolderHeart, ShoppingCart, Star } from 'lucide-react-native'
 import { useEffect, useMemo, useRef } from 'react'
-import { Dimensions, View } from 'react-native'
+import { Dimensions } from 'react-native'
 import Animated, {
   FadeIn,
   FadeInLeft,
@@ -14,7 +14,6 @@ import Animated, {
   FadeOutLeft,
   FadeOutRight,
 } from 'react-native-reanimated'
-import { Colors, TouchableOpacity, Typography } from 'react-native-ui-lib'
 import { useCardDetails } from '../provider'
 import DraggableThumbContent from '../ui'
 import { FooterButton } from './components/button'
@@ -47,33 +46,6 @@ export const Footer = ({ card }: { card?: TCard }) => {
       onLockedChange={setFooterFullView}
       mainContent={
         <>
-          {footerFullView && page !== undefined && (
-            <TouchableOpacity
-              style={{
-                padding: 6,
-                position: 'absolute',
-                left: 12,
-                top: '50%',
-                transform: [{ translateY: '-50%' }],
-              }}
-              onPress={() => {
-                // go back to previous page if any, else close
-                if (page > 0) {
-                  setPage(page - 1)
-                } else {
-                  setFooterFullView(false)
-                }
-              }}
-              key={`footer-back-button-${page}`}
-            >
-              {page > 0 ? (
-                <ChevronLeft color={Colors.$textDefault} />
-              ) : (
-                <X color={Colors.$textDefault} />
-              )}
-            </TouchableOpacity>
-          )}
-
           {!footerFullView ? (
             <Animated.View
               key="footer-buttons"
@@ -106,10 +78,10 @@ export const Footer = ({ card }: { card?: TCard }) => {
                 fill={false}
               />
             </Animated.View>
-          ) : (
+          ) : page !== undefined ? (
             <Animated.View
               key={`footer-header-${page}`}
-              className="w-full flex flex-row gap-2 p-4 flex-1"
+              className="w-full flex flex-row flex-1"
               entering={
                 page === undefined
                   ? FadeIn
@@ -125,28 +97,20 @@ export const Footer = ({ card }: { card?: TCard }) => {
                   : FadeOutRight
               }
             >
-              <View
-                style={{
-                  flex: 1,
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  justifyContent: 'center',
+              <AppStandaloneHeader
+                onBack={() => {
+                  // go back to previous page if any, else close
+                  if (page > 0) {
+                    setPage(page - 1)
+                  } else {
+                    setFooterFullView(false)
+                  }
                 }}
-              >
-                <Text style={Typography.text60M}>{pages?.[page].title}</Text>
-              </View>
-              {/* <FooterButton
-              disabled={!card}
-              highLighted={card && wishlistSet?.has?.(card.id)}
-              icon={Star}
-              label="Wishlist"
-              onPress={() =>
-                card && toggleWishlist.mutate({ kind: 'card', id: card.id, p_metadata: { grades } })
-              }
-            />
-            <FooterButton icon={ShoppingCart} label="Add to Cart" onPress={() => {}} fill={false} /> */}
+                title={pages?.[page].title}
+                style={{ flex: 1 }}
+              />
             </Animated.View>
-          )}
+          ) : null}
         </>
       }
       style={{

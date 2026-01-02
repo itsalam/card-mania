@@ -1,18 +1,11 @@
-import { Avatar, AvatarFallbackText, AvatarImage } from '@/components/ui/avatar'
 import { Box } from '@/components/ui/box'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Text } from '@/components/ui/text'
+import { UserAvatar } from '@/features/users/components/UserAvatars'
+import { DUMMY_USERS } from '@/features/users/helpers'
 import React, { ComponentProps } from 'react'
 import { View } from 'react-native'
-import { Colors } from 'react-native-ui-lib'
-
-const USERS = [
-  { name: 'ToppsCollector', handle: '@topps.cards', avatar: 'https://via.placeholder.com/150' },
-  { name: 'PSA Finder', handle: '@psa_grader', avatar: 'https://via.placeholder.com/150' },
-  { name: 'RookieChaser', handle: '@rookiechaser', avatar: 'https://via.placeholder.com/150' },
-  { name: 'WaxPackMike', handle: '@waxpackmike', avatar: 'https://via.placeholder.com/150' },
-]
 
 type ExpandableCardProps = {} & ComponentProps<typeof Card>
 
@@ -23,21 +16,12 @@ export function SuggestedSellers(props: ExpandableCardProps) {
         <Text className="font-bold">{'Suggested Sellers'}</Text>
       </Box>
       <View className="w-full flex flex-col pt-4">
-        {USERS.map((user) => (
-          <View key={user.handle} className="flex flex-row items-center gap-4 p-4 py-2">
-            <Avatar size="md">
-              <AvatarFallbackText>{user.name[0]}</AvatarFallbackText>
-              <AvatarImage
-                source={{
-                  uri: `https://picsum.photos/seed/${Math.random()}/200/200`,
-                }}
-              />
-              {/* <AvatarBadge /> */}
-            </Avatar>
-            <View className="flex-1">
-              <Text style={{ color: Colors.$textDefault }}>{user.name}</Text>
-              <Text style={{ color: Colors.$textNeutral }}>{user.handle}</Text>
-            </View>
+        {DUMMY_USERS.map((user) => (
+          <View
+            key={user.handle}
+            className="flex flex-row items-center justify-between gap-4 p-4 py-2"
+          >
+            <UserAvatar user={user} />
             <Button className="rounded-full border" variant="outline">
               <Text>Follow</Text>
             </Button>

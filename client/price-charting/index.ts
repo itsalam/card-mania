@@ -1,4 +1,4 @@
-import { FiltersKeys } from "@/features/mainSearchbar/filters/providers";
+import { FiltersKeys } from "@/features/mainSearchbar/components/filters/providers";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import { invokeFx } from "../helper";
