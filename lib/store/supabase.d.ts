@@ -1430,6 +1430,7 @@ export type Database = {
       collection_item_query: {
         Args: {
           p_collection_id: string
+          p_group?: boolean
           p_page_param?: string
           p_page_size?: number
           p_search?: string

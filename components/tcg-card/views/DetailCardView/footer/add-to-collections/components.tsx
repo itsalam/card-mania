@@ -9,26 +9,11 @@ import { TCard } from '@/constants/types'
 import { CollectionItemRow } from '@/lib/store/functions/types'
 import { Plus, TriangleAlert } from 'lucide-react-native'
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
-import {
-  Modal,
-  Platform,
-  Pressable,
-  StyleProp,
-  Text,
-  useWindowDimensions,
-  View,
-  ViewStyle,
-} from 'react-native'
-import { Gesture, GestureDetector } from 'react-native-gesture-handler'
-import Animated, {
-  Easing,
-  useAnimatedStyle,
-  useSharedValue,
-  withTiming,
-} from 'react-native-reanimated'
+import { StyleProp, Text, View, ViewStyle } from 'react-native'
 import { Button, Colors } from 'react-native-ui-lib'
 
 import { useGradingConditions } from '@/client/card/grading'
+import { getContentInsets, Modal } from '@/components/ui/modal'
 import {
   NativeSelectScrollView,
   Select,
@@ -40,22 +25,21 @@ import {
 } from '@/components/ui/select'
 import { qk } from '@/lib/store/functions/helpers'
 import { useQueryClient } from '@tanstack/react-query'
-import { KeyboardAvoidingView } from 'react-native-keyboard-controller'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { scheduleOnRN } from 'react-native-worklets'
-import { thumbStyles } from '../../ui'
 // import { Label } from '@react-navigation/elements'
 
-export const CollectionCardEntries = ({
+export const CollectionCardItemEntries = ({
   collection,
   isShown,
   card,
   style,
+  editable,
 }: {
   collection: CollectionLike
   isShown: boolean
   card: TCard
   style?: StyleProp<ViewStyle>
+  editable?: boolean
 }) => {
   const {
     data: loadedEntries,
@@ -110,7 +94,7 @@ export const CollectionCardEntries = ({
   }, [loadedEntries])
 
   return (
-    <View style={[style]}>
+    <View style={[style, { paddingRight: editable ? 0 : 12 }]}>
       {isLoading || card === null ? (
         <Spinner />
       ) : (
@@ -121,6 +105,7 @@ export const CollectionCardEntries = ({
               key={`${index}-new`}
               collectionItem={entry}
               collection={collection}
+              editable={editable}
             />
           )
         })
@@ -135,7 +120,7 @@ export const CollectionCardEntries = ({
           marginTop: 8,
           paddingHorizontal: 20,
           paddingVertical: 4,
-          marginRight: 34,
+          marginRight: 34 + (editable ? 24 : 0),
         }}
         onPress={() => {
           setShowModal(true)
@@ -171,8 +156,10 @@ const AddVariantModal = ({
 }) => {
   const qc = useQueryClient()
   const { data: gradeData, error } = useGradingConditions()
-  const { height: screenHeight } = useWindowDimensions()
-  const translateY = useSharedValue(screenHeight)
+
+  const insets = useSafeAreaInsets()
+  const contentInsets = getContentInsets(insets)
+
   const [saving, setSaving] = useState(false)
 
   const initialDraft = useMemo<EditCollectionArgsItem>(() => {
@@ -208,14 +195,6 @@ const AddVariantModal = ({
 
   const isComplete = (draft: EditCollectionArgsItem) =>
     Boolean(draft.grading_company && draft.grade_condition_id)
-
-  const insets = useSafeAreaInsets()
-  const contentInsets = {
-    top: insets.top,
-    bottom: Platform.select({ ios: insets.bottom, android: insets.bottom + 24 }),
-    left: 12,
-    right: 12,
-  }
 
   const isEqualToInitial = (draft: EditCollectionArgsItem) =>
     draft.quantity === initialDraft.quantity &&
@@ -253,217 +232,146 @@ const AddVariantModal = ({
     setDraft((prev) => ({ ...prev, ...patch }))
   }
 
-  useEffect(() => {
-    if (!visible) return
-    translateY.value = screenHeight
-    translateY.value = withTiming(0, {
-      duration: 240,
-      easing: Easing.out(Easing.ease),
-    })
-  }, [screenHeight, translateY, visible])
-
-  const dismiss = useCallback(() => {
-    translateY.value = withTiming(
-      screenHeight,
-      { duration: 200, easing: Easing.in(Easing.ease) },
-      (finished) => {
-        if (finished) scheduleOnRN(onDismiss)
-      }
-    )
-  }, [onDismiss, screenHeight, translateY])
-
-  const panGesture = Gesture.Pan()
-    .onChange((e) => {
-      if (e.translationY > 0) translateY.value = e.translationY
-    })
-    .onEnd((e) => {
-      const shouldDismiss = e.translationY > screenHeight * 0.2 || e.velocityY > 900
-      if (shouldDismiss) {
-        scheduleOnRN(dismiss)
-      } else {
-        translateY.value = withTiming(0, {
-          duration: 200,
-          easing: Easing.out(Easing.ease),
-        })
-      }
-    })
-
-  const sheetStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: translateY.value }],
-  }))
-
   return (
-    <Modal transparent visible={visible} animationType="none" onRequestClose={dismiss}>
-      <KeyboardAvoidingView
-        style={{ flex: 1, backgroundColor: Colors.rgba(Colors.$backgroundDefault, 0.5) }}
-        behavior={'translate-with-padding'}
-      >
-        <Pressable style={{ flex: 1 }} onPress={dismiss} />
-        <GestureDetector gesture={panGesture}>
-          <Animated.View
-            style={[
-              thumbStyles.thumbContainer,
-              {
-                position: 'absolute',
-                left: 0,
-                right: 0,
-                bottom: 0,
-                padding: 16,
-                paddingBottom: contentInsets.bottom,
-                backgroundColor: Colors.$backgroundDefault,
-                borderTopLeftRadius: 24,
-                borderTopRightRadius: 24,
-                justifyContent: 'center',
-                width: '100%',
-                alignItems: 'stretch',
-              },
-              sheetStyle,
-            ]}
+    <Modal visible={visible} onDismiss={onDismiss}>
+      <View className="flex flex-col gap-4 flex-1 pt-4">
+        <View className="flex flex-row gap-4 w-full">
+          <Select
+            value={
+              company
+                ? {
+                    value: company.id,
+                    label: company.slug.toLocaleUpperCase(),
+                  }
+                : undefined
+            }
+            onValueChange={(option) => {
+              const company = gradeData?.find((c) => c.id === option?.value)
+              updateDraft({
+                grading_company: company?.slug ?? null,
+                // reset condition when company changes
+                grade_condition_id: null,
+              })
+            }}
+            style={{
+              flex: 1.0,
+            }}
           >
-            <View style={[thumbStyles.thumb, { marginHorizontal: 'auto' }]} />
-            <View className="flex flex-col gap-4 flex-1 pt-4">
-              <View className="flex flex-row gap-4 w-full">
-                <Select
-                  value={
-                    company
-                      ? {
-                          value: company.id,
-                          label: company.slug.toLocaleUpperCase(),
-                        }
-                      : undefined
-                  }
-                  onValueChange={(option) => {
-                    const company = gradeData?.find((c) => c.id === option?.value)
-                    updateDraft({
-                      grading_company: company?.slug ?? null,
-                      // reset condition when company changes
-                      grade_condition_id: null,
-                    })
-                  }}
-                  style={{
-                    flex: 1.0,
-                  }}
-                >
-                  <SelectTrigger label="Format">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent insets={contentInsets} side="top" sideOffset={12}>
-                    <SelectGroup>
-                      {gradeData?.map((gradingCompany) => (
-                        <SelectItem
-                          groupItem
-                          key={gradingCompany.id}
-                          label={gradingCompany.slug.toLocaleUpperCase()}
-                          value={gradingCompany.id}
-                        >
-                          {gradingCompany.slug}
-                        </SelectItem>
-                      ))}
-                    </SelectGroup>
-                  </SelectContent>
-                </Select>
+            <SelectTrigger label="Format">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent insets={contentInsets} side="top" sideOffset={12}>
+              <SelectGroup>
+                {gradeData?.map((gradingCompany) => (
+                  <SelectItem
+                    groupItem
+                    key={gradingCompany.id}
+                    label={gradingCompany.slug.toLocaleUpperCase()}
+                    value={gradingCompany.id}
+                  >
+                    {gradingCompany.slug}
+                  </SelectItem>
+                ))}
+              </SelectGroup>
+            </SelectContent>
+          </Select>
 
-                <Select
-                  onOpenChange={(open) => {
-                    if (!draft.grading_company) return
-                  }}
-                  style={{
-                    flex: 1,
-                  }}
-                  disabled={!draft.grading_company}
-                  value={
-                    gradeIdx !== undefined && gradeIdx >= 0 && company?.grades[gradeIdx]
-                      ? {
-                          value: String(gradeIdx),
-                          label: String(company.grades[gradeIdx].grade_value),
-                        }
-                      : undefined
+          <Select
+            onOpenChange={(open) => {
+              if (!draft.grading_company) return
+            }}
+            style={{
+              flex: 1,
+            }}
+            disabled={!draft.grading_company}
+            value={
+              gradeIdx !== undefined && gradeIdx >= 0 && company?.grades[gradeIdx]
+                ? {
+                    value: String(gradeIdx),
+                    label: String(company.grades[gradeIdx].grade_value),
                   }
-                  onValueChange={(option) => {
-                    const gradeIdx = Number(option?.value)
-                    if (isFinite(gradeIdx)) {
-                      const grade = company?.grades[gradeIdx]
-                      const grade_condition = {
-                        ...grade,
-                        company_id: company?.id,
-                      }
-                      updateDraft({ grade_condition_id: grade?.id, grade_condition })
-                    }
-                  }}
-                >
-                  <SelectTrigger label="Condition" disabled={!draft.grading_company}>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent insets={contentInsets} side="top" sideOffset={12}>
-                    <NativeSelectScrollView>
-                      <SelectGroup>
-                        {company?.grades.map((grade, index) => (
-                          <SelectItem
-                            key={`${grade.id}-${grade.grade_value}`}
-                            label={`${grade.grade_value}`}
-                            value={String(index)}
-                            groupItem
-                          >
-                            {`${grade.grade_value}`}
-                          </SelectItem>
-                        ))}
-                      </SelectGroup>
-                    </NativeSelectScrollView>
-                  </SelectContent>
-                </Select>
-              </View>
+                : undefined
+            }
+            onValueChange={(option) => {
+              const gradeIdx = Number(option?.value)
+              if (isFinite(gradeIdx)) {
+                const grade = company?.grades[gradeIdx]
+                const grade_condition = {
+                  ...grade,
+                  company_id: company?.id,
+                }
+                updateDraft({ grade_condition_id: grade?.id, grade_condition })
+              }
+            }}
+          >
+            <SelectTrigger label="Condition" disabled={!draft.grading_company}>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent insets={contentInsets} side="top" sideOffset={12}>
+              <NativeSelectScrollView>
+                <SelectGroup>
+                  {company?.grades.map((grade, index) => (
+                    <SelectItem
+                      key={`${grade.id}-${grade.grade_value}`}
+                      label={`${grade.grade_value}`}
+                      value={String(index)}
+                      groupItem
+                    >
+                      {`${grade.grade_value}`}
+                    </SelectItem>
+                  ))}
+                </SelectGroup>
+              </NativeSelectScrollView>
+            </SelectContent>
+          </Select>
+        </View>
 
-              <View className="flex flex-col">
-                {/* {alreadyExists && <Text></Text>} */}
-                <VariantsSelect
-                  card={item}
-                  inputProps={{
-                    onItemsChange: (items) => {
-                      updateDraft({
-                        variants: items.map((i) => i.name),
-                      })
-                    },
-                  }}
-                />
-              </View>
-              {alreadyExists(draft) && (
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 }}>
-                  <TriangleAlert size={20} color={Colors.$textDanger} />
-                  <Text style={{ color: Colors.$textDanger }}>
-                    {'Collection type already exists.'}
-                  </Text>
-                </View>
-              )}
+        <View className="flex flex-col">
+          {/* {alreadyExists && <Text></Text>} */}
+          <VariantsSelect
+            card={item}
+            inputProps={{
+              onItemsChange: (items) => {
+                updateDraft({
+                  variants: items.map((i) => i.name),
+                })
+              },
+            }}
+          />
+        </View>
+        {alreadyExists(draft) && (
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 }}>
+            <TriangleAlert size={20} color={Colors.$textDanger} />
+            <Text style={{ color: Colors.$textDanger }}>{'Collection type already exists.'}</Text>
+          </View>
+        )}
 
-              <Button
-                label="Add"
-                disabled={!enableSave}
-                onPress={() => {
-                  setSaving(true)
-                  if (collection.id) {
-                    qc.setQueryData<Partial<CollectionItem>[]>(collectionItemsKey, (prev) => {
-                      const current = prev ?? []
-                      const exists = current.some(
-                        (e) =>
-                          e.grade_condition_id === draft.grade_condition_id &&
-                          variantsEqual(
-                            e.variants as string[] | undefined,
-                            draft.variants as string[] | undefined
-                          )
-                      )
-                      if (exists) return current
-                      return [...current, draft]
-                    })
-                  }
-                  setSaving(false)
-                  dismiss()
-                }}
-                iconSource={() => (saving ? <Spinner color={Colors.$textDefaultLight} /> : null)}
-              ></Button>
-            </View>
-          </Animated.View>
-        </GestureDetector>
-      </KeyboardAvoidingView>
+        <Button
+          label="Add"
+          disabled={!enableSave}
+          onPress={() => {
+            setSaving(true)
+            if (collection.id) {
+              qc.setQueryData<Partial<CollectionItem>[]>(collectionItemsKey, (prev) => {
+                const current = prev ?? []
+                const exists = current.some(
+                  (e) =>
+                    e.grade_condition_id === draft.grade_condition_id &&
+                    variantsEqual(
+                      e.variants as string[] | undefined,
+                      draft.variants as string[] | undefined
+                    )
+                )
+                if (exists) return current
+                return [...current, draft]
+              })
+            }
+            setSaving(false)
+            onDismiss()
+          }}
+          iconSource={() => (saving ? <Spinner color={Colors.$textDefaultLight} /> : null)}
+        ></Button>
+      </View>
     </Modal>
   )
 }

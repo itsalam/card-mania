@@ -32,6 +32,7 @@ type NumberTickerProps = TextFieldProps & {
   initialNumber?: number
   min?: number
   max?: number
+  stepperProps?: StepperProps
 }
 
 export const NumberTicker = ({
@@ -44,6 +45,7 @@ export const NumberTicker = ({
   margin,
   min,
   max,
+  stepperProps,
   ...props
 }: NumberTickerProps) => {
   const [number, setNumber] = useState(initialNumber || 0)
@@ -51,21 +53,6 @@ export const NumberTicker = ({
   useEffect(() => {
     onChangeNumber && onChangeNumber(number)
   }, [number])
-
-  const onChangeText = (str: string) => {
-    let num = Number(Number(str).toFixed(fractionDigits))
-    if (isNaN(num)) {
-      setNumber(number)
-      return
-    }
-    if (min !== undefined) {
-      num = Math.max(num, min)
-    }
-    if (max !== undefined) {
-      num = Math.min(num, max)
-    }
-    setNumber(num)
-  }
 
   return (
     <View
@@ -77,61 +64,15 @@ export const NumberTicker = ({
       className={className}
     >
       <Stepper
-        small
+        // small
         minValue={min}
         maxValue={max}
         onValueChange={onChangeNumber}
+        //@ts-ignore
         value={initialNumber}
         type="floating"
+        {...stepperProps}
       />
-      {/* <TouchableOpacity
-        onPress={() => setNumber(Math.min(number + 1, max ?? Infinity))}
-        style={{ marginBottom: 0 }}
-        hitSlop={{ top: 10, bottom: 0, left: 10, right: 10 }}
-        disabled={number >= (max ?? Infinity)}
-      >
-        <ChevronUp
-          size={24}
-          color={number >= (max ?? Infinity) ? Colors.$iconDisabled : Colors.$iconDefault}
-        />
-      </TouchableOpacity>
-      <TextField
-        {...props}
-        containerStyle={[
-          containerStyle,
-          {
-            borderWidth: 2,
-            borderColor: Colors.$outlineDefault,
-            borderRadius: BorderRadiuses.br20,
-            minWidth: 44,
-            padding: 8,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-          },
-        ]}
-        style={[
-          style,
-          {
-            fontSize: 20,
-          },
-        ]}
-        onChangeText={onChangeText}
-        value={String(number)}
-        keyboardType="numeric"
-        centered
-      />
-      <TouchableOpacity
-        onPress={() => setNumber(Math.max(number - 1, min ?? -Infinity))}
-        style={{ marginTop: 4 }}
-        hitSlop={{ top: 0, bottom: 10, left: 10, right: 10 }}
-        disabled={number <= (min ?? -Infinity)}
-      >
-        <ChevronDown
-          size={24}
-          color={number <= (min ?? -Infinity) ? Colors.$iconDisabled : Colors.$iconDefault}
-        />
-      </TouchableOpacity> */}
     </View>
   )
 }

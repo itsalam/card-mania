@@ -2,7 +2,7 @@ import { BlurBackground, BlurGradientBackground } from '@/components/Background'
 import { MeasuredLayout, useMeasure } from '@/components/hooks/useMeasure'
 import { Text } from '@/components/ui/text'
 import { useEffect } from 'react'
-import { Dimensions, StyleProp, StyleSheet, View, ViewStyle } from 'react-native'
+import { StyleProp, View, ViewStyle } from 'react-native'
 import { Gesture, GestureDetector } from 'react-native-gesture-handler'
 import { useReanimatedKeyboardAnimation } from 'react-native-keyboard-controller'
 import Animated, {
@@ -20,13 +20,12 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Assets, Colors } from 'react-native-ui-lib'
 
 import { LiquidGlassCard } from '@/components/tcg-card/GlassCard'
+import { thumbStyles } from '@/components/ui/modal'
 import { formatLabel, formatPrice, splitToNChunks } from '@/components/utils'
 import { Eye, EyeOff, Plus, SearchX } from 'lucide-react-native'
 import React, { useMemo } from 'react'
 import { ScrollView } from 'react-native'
 import { scheduleOnRN } from 'react-native-worklets'
-
-const { width: W, height: H } = Dimensions.get('window')
 
 export const Attribute = ({ label, value }: { label: string; value: string }) => {
   return (
@@ -378,48 +377,8 @@ export const Prices = ({
   )
 }
 
-const THUMB_SIZE = 5
-const THUMB_PADDING = 8
-
-export const thumbStyles = StyleSheet.create({
-  thumbContainer: {
-    width: '100%',
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingTop: THUMB_PADDING,
-  },
-  thumb: {
-    backgroundColor: Colors.rgba(Colors.$backgroundNeutralIdle, 0.3),
-    height: THUMB_SIZE,
-    width: '15%',
-    borderRadius: 10,
-  },
-  mainContent: {
-    width: '100%',
-    flex: 1,
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    height: '100%',
-  },
-  sheet: {
-    width: W + 4,
-    position: 'absolute',
-    top: '100%',
-    left: -2,
-    right: 0,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    borderColor: Colors.$outlineNeutral,
-    borderWidth: 2,
-  },
-
-  sheetInner: {
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    overflow: 'hidden',
-  },
-})
+export const THUMB_SIZE = 5
+export const THUMB_PADDING = 8
 
 export const VISIBILITY_OPTIONS = [
   {

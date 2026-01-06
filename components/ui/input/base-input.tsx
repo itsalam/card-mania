@@ -171,56 +171,57 @@ export const Input = forwardRef<TextInput, InputProps>((props, ref) => {
 
   const { color, opacity } = useInputColors()
   const forceFloatFinal = forceFloat || shouldPlaceholderFloat(context)
-
+  const fullFloatingPlaceholderStyle = [
+    styles.floatingPlaceholderTextStyle,
+    floatingPlaceholderStyle,
+  ]
   return (
-    <View>
-      <DynamicBorderBox
-        {...containerProps}
-        label={placeholder}
-        labelStyle={[floatingPlaceholderStyle]}
-        style={[containerStyle, styles.container]}
-        color={color}
-        opacity={opacity}
-        forceFloat={forceFloatFinal}
-      >
-        <View style={[styles.field]} ref={fieldLayoutRef} onLayout={onFieldLayout}>
-          {leadingAccessory}
-          {floatingPlaceholder && (
-            <FloatingPlaceholder
-              placeholder={placeholder}
-              floatingPlaceholderStyle={floatingPlaceholderStyle}
-              placeHolderStyle={[styles.inputTextStyle, inputStyle]}
-              fieldOffset={fieldLayout ?? undefined}
-              inputOffset={inputLayout ?? undefined}
-              showMandatoryIndication={showMandatoryIndication}
-            />
-          )}
-          <TextInput
-            {...others}
-            ref={combinedRefs}
-            hitSlop={{
-              top: 20,
-              bottom: 20,
-            }}
-            value={context.value}
-            style={[styles.inputBody, styles.inputTextStyle, inputStyle]}
-            onFocus={context.onFocus}
-            onBlur={context.onBlur}
-            onChangeText={context.onChangeText}
-            onLayout={onLayoutCombined}
-          />
-        </View>
-        {showClearButton && (
-          <ClearButton
-            onClear={onClear}
-            testID={`${props.testID}.clearButton`}
-            onChangeText={context.onChangeText}
-            clearButtonStyle={clearButtonStyle}
+    <DynamicBorderBox
+      {...containerProps}
+      label={placeholder}
+      labelStyle={[fullFloatingPlaceholderStyle]}
+      style={[containerStyle, styles.container]}
+      color={color}
+      opacity={opacity}
+      forceFloat={forceFloatFinal}
+    >
+      <View style={[styles.field]} ref={fieldLayoutRef} onLayout={onFieldLayout}>
+        {leadingAccessory}
+        {floatingPlaceholder && (
+          <FloatingPlaceholder
+            placeholder={placeholder}
+            floatingPlaceholderStyle={fullFloatingPlaceholderStyle}
+            placeHolderStyle={[styles.inputTextStyle, inputStyle]}
+            fieldOffset={fieldLayout ?? undefined}
+            inputOffset={inputLayout ?? undefined}
+            showMandatoryIndication={showMandatoryIndication}
           />
         )}
-        {trailingAccessory}
-      </DynamicBorderBox>
-    </View>
+        <TextInput
+          {...others}
+          ref={combinedRefs}
+          hitSlop={{
+            top: 20,
+            bottom: 20,
+          }}
+          value={context.value}
+          style={[styles.inputBody, styles.inputTextStyle, inputStyle]}
+          onFocus={context.onFocus}
+          onBlur={context.onBlur}
+          onChangeText={context.onChangeText}
+          onLayout={onLayoutCombined}
+        />
+      </View>
+      {showClearButton && (
+        <ClearButton
+          onClear={onClear}
+          testID={`${props.testID}.clearButton`}
+          onChangeText={context.onChangeText}
+          clearButtonStyle={clearButtonStyle}
+        />
+      )}
+      {trailingAccessory}
+    </DynamicBorderBox>
   )
 })
 Input.displayName = 'TextField'

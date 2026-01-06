@@ -13,7 +13,7 @@ export const defaultColors = {
 
 export const DURATION = 600;
 export const GAP_PADDING = 6;
-export const BASE_PLACEHOLDER_FONT_SIZE = 8;
+export const BASE_PLACEHOLDER_FONT_SIZE = 14;
 export const FLOATING_PLACEHOLDER_SCALE = 0.875;
 
 export const styles = StyleSheet.create({

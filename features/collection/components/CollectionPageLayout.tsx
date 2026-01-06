@@ -5,6 +5,7 @@ import { TCard } from '@/constants/types'
 import { CollectionItemQueryView, CollectionRow } from '@/lib/store/functions/types'
 
 import { useIsWishlisted } from '@/client/card/wishlist'
+import { CollectionCardItemEntries } from '@/components/tcg-card/views/DetailCardView/footer/add-to-collections/components'
 import { CardListView } from '@/components/tcg-card/views/ListCard'
 import { Tabs } from '@/components/ui/tabs'
 import { Text } from '@/components/ui/text'
@@ -12,8 +13,8 @@ import React, { useCallback, useEffect, useMemo, useRef } from 'react'
 import { SafeAreaView, View } from 'react-native'
 import { FlatList, GestureDetector } from 'react-native-gesture-handler'
 import Animated, { useSharedValue } from 'react-native-reanimated'
-import { useGetCollectionItems } from '../hooks'
-import { defaultPages, DefaultPageTypes, useCollectionsPageStore } from '../provider'
+import { useGetCollection, useGetCollectionItems } from '../hooks'
+import { getCollectionIdArgs, useCollectionsPageStore } from '../provider'
 import { useCollaspableHeader } from '../ui'
 import CollectionBreakdown from './CollectionBreakdown'
 import { CollectionInfo } from './CollectionInfo'
@@ -61,17 +62,17 @@ export const CollectionsPageLayout = () => {
   const shouldRemeasureHeader = useRef(false)
 
   const { data: collections, error } = useViewCollectionForUser()
+
+  const { data: collection } = useGetCollection(getCollectionIdArgs(currentPage))
   const { query: collectionItemsQuery } = useGetCollectionItems<CollectionItemQueryView & TCard>(
-    defaultPages.includes(currentPage as (typeof defaultPages)[number])
-      ? { collectionType: currentPage as DefaultPageTypes }
-      : { collectionId: currentPage },
-    { enabled: !isDefaultPage }
+    getCollectionIdArgs(currentPage),
+    { enabled: !isDefaultPage, pageSize: 20 },
+    true
   )
 
-  const collectionItems = useMemo(
-    () => collectionItemsQuery.data?.pages.flat() ?? [],
-    [collectionItemsQuery.data]
-  )
+  const collectionItems = useMemo(() => {
+    return collectionItemsQuery.data?.pages.flat() ?? []
+  }, [collectionItemsQuery.data])
   const {
     tabsExpanded,
     headerAnimatedStyle,
@@ -123,6 +124,9 @@ export const CollectionsPageLayout = () => {
       return (
         <CardListView
           card={item.item}
+          renderAccessories={() => (
+            <CollectionCardItemEntries card={item.item} collection={collection!} isShown editable />
+          )}
           // isWishlisted={wishlistedIds?.has(`${card.id}`) ?? false}
         />
       )
@@ -185,7 +189,7 @@ export const CollectionsPageLayout = () => {
               contentContainerStyle={{
                 display: 'flex',
                 gap: 18,
-                paddingHorizontal: 12,
+                paddingLeft: 12,
                 paddingTop: 18,
               }}
               keyExtractor={keyExtractor}

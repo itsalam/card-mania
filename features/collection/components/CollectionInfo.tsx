@@ -152,7 +152,14 @@ export const CollectionInfo = () => {
                 <ToggleBadge
                   label={item[1].label}
                   checked
-                  leftElement={<Icon color={Colors.$icon} size={20} />}
+                  leftElement={
+                    <Icon
+                      color={Colors.$iconDefaultLight}
+                      size={18}
+                      strokeWidth={2.5}
+                      style={{ marginLeft: 4 }}
+                    />
+                  }
                 />
               </TouchableOpacity>
             )

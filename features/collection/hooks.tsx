@@ -112,7 +112,8 @@ export function useCollectionUiPreferences() {
 
 function getCollectionItemsArgs<T extends CollectionItemRow>(
   { collectionId, collectionType }: CollectionIdArgs,
-  opts?: InfQueryOptions<T>
+  opts?: InfQueryOptions<T>,
+  group?: boolean
 ): InifiniteQueryParams<T> {
   const finalOpts = { ...DEFAULT_INF_Q_OPTIONS, ...opts } as InfQueryOptions<T>
   if (collectionType === 'default') {
@@ -135,6 +136,7 @@ function getCollectionItemsArgs<T extends CollectionItemRow>(
           p_page_param: pageParam as string,
           p_search: search,
           p_page_size: pageSize,
+          p_group: true,
         })
         if (error) throw error
         return (data ?? []) as unknown as T[]
@@ -199,8 +201,9 @@ export function useGetCollectionCountInfo(args: CollectionIdArgs) {
 
 export function useGetCollectionItems<T extends CollectionItemQueryView>(
   args: CollectionIdArgs,
-  opts?: InfQueryOptions<T>
+  opts?: InfQueryOptions<T>,
+  group?: boolean
 ) {
-  const queryArgs = getCollectionItemsArgs<T>(args, opts)
+  const queryArgs = getCollectionItemsArgs<T>(args, opts, group)
   return useViewCollectionItems<T>(queryArgs)
 }

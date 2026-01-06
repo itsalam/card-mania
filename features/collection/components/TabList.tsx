@@ -10,7 +10,12 @@ import { FlatList } from 'react-native-gesture-handler'
 import { LinearGradient } from 'expo-linear-gradient'
 import { BorderRadiuses, Colors } from 'react-native-ui-lib'
 import { useGetCollection } from '../hooks'
-import { DefaultPageTypes, defaultPages, useCollectionsPageStore } from '../provider'
+import {
+  DefaultPageTypes,
+  defaultPages,
+  getCollectionIdArgs,
+  useCollectionsPageStore,
+} from '../provider'
 
 export const CollectionTabList = () => {
   const { currentPage, preferenceState } = useCollectionsPageStore()
@@ -88,11 +93,7 @@ export const CollectionTabList = () => {
             renderItem={({ item: tab }) => (
               <CollectionTab
                 key={tab}
-                collectionKey={{
-                  ...(defaultPages.includes(tab as (typeof defaultPages)[number])
-                    ? { collectionType: tab as DefaultPageTypes }
-                    : { collectionId: tab }),
-                }}
+                collectionKey={getCollectionIdArgs(tab as (typeof defaultPages)[number])}
               />
             )}
             contentContainerStyle={{

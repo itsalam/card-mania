@@ -6,6 +6,11 @@ import { PreferenceState, useCollectionUiPreferences } from './hooks'
 export const defaultPages = ['default', 'vault', 'wishlist', 'selling'] as const
 export type DefaultPageTypes = (typeof defaultPages)[number]
 
+export const getCollectionIdArgs = (currentPage: string) =>
+  defaultPages.includes(currentPage as (typeof defaultPages)[number])
+    ? { collectionType: currentPage as DefaultPageTypes }
+    : { collectionId: currentPage }
+
 type CollectionsState = {
   preferenceState: PreferenceState
   currentPage: string

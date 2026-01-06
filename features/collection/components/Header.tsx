@@ -1,13 +1,12 @@
 import { Text } from '@/components/ui/text'
 
-import { CollectionIdArgs } from '@/client/collections/types'
 import { SearchBar, SearchBarProps } from '@/components/ui/search'
 import { motify, MotiView } from 'moti'
 import React, { useState } from 'react'
 import { View } from 'react-native'
 import { Colors } from 'react-native-ui-lib'
 import { useGetCollection } from '../hooks'
-import { defaultPages, DefaultPageTypes, useCollectionsPageStore } from '../provider'
+import { DefaultPageTypes, getCollectionIdArgs, useCollectionsPageStore } from '../provider'
 
 const MView = motify(View)()
 const MSearchBar = motify(SearchBar)()
@@ -51,11 +50,7 @@ export const ExpandableSearchBar = (props: SearchBarProps & { expanded: boolean 
 
 export const ScreenHeader = () => {
   const { currentPage, expanded } = useCollectionsPageStore()
-  const collectionKey = {
-    ...(defaultPages.includes(currentPage as (typeof defaultPages)[number])
-      ? { collectionType: currentPage as DefaultPageTypes }
-      : { collectionId: currentPage }),
-  } as CollectionIdArgs
+  const collectionKey = getCollectionIdArgs(currentPage)
   const isBasicPage = Boolean(collectionKey.collectionType)
   const isDefault = currentPage === 'default'
   const { data: collection } = useGetCollection(collectionKey)

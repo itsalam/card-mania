@@ -90,7 +90,7 @@ export const DynamicBorderBox = forwardRef<View, DynamicBorderBoxProps>(
       const arcs = 2 * Math.PI * r.value
       P = straight + arcs
       const clampedGap = Math.max(0, Math.min(gap.value, P - 0.0001))
-      const offset = vertical + arcs / 4 - GAP_PADDING * 1.5
+      const offset = vertical + arcs / 4 - GAP_PADDING * 2
       const dashArray = [offset, clampedGap, P - clampedGap - offset, 0]
 
       return dashArray
@@ -134,6 +134,7 @@ export const DynamicBorderBox = forwardRef<View, DynamicBorderBoxProps>(
                 width={rw}
                 height={rh}
                 r={r}
+                //@ts-ignore
                 color={color}
                 strokeWidth={strokeWidth}
                 style="stroke"
@@ -161,7 +162,7 @@ export const DynamicBorderBox = forwardRef<View, DynamicBorderBoxProps>(
             onTextLayout={(e) => {
               const { lines } = e.nativeEvent
               if (lines.length > 0) {
-                targetGap.set(lines[0]?.width + GAP_PADDING * 4)
+                targetGap.set(lines[0]?.width + GAP_PADDING)
               }
             }}
             numberOfLines={1}

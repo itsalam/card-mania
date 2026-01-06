@@ -1,7 +1,7 @@
 import { useToggleWishlist } from '@/client/card/wishlist'
 
 import { CollectionLike } from '@/client/collections/types'
-import { CollectionCardEntries } from '@/components/tcg-card/views/DetailCardView/footer/add-to-collections/components'
+import { CollectionCardItemEntries } from '@/components/tcg-card/views/DetailCardView/footer/add-to-collections/components'
 import { TCard } from '@/constants/types'
 import { Blocks, Heart } from 'lucide-react-native'
 import React, { useState } from 'react'
@@ -38,7 +38,7 @@ export const ExpandableCollectionEntryListItem = ({
 
   return (
     <ExpandableSection expanded={expanded} sectionHeader={<ItemView />}>
-      {card && <CollectionCardEntries collection={collection} isShown={expanded} card={card} />}
+      {card && <CollectionCardItemEntries collection={collection} isShown={expanded} card={card} />}
     </ExpandableSection>
   )
 }
