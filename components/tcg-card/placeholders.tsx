@@ -1,4 +1,3 @@
-
 import { supabase } from '@/lib/store/client'
 import { TransformOptions } from '@supabase/storage-js'
 import { ImageBackground } from 'expo-image'

@@ -9,10 +9,10 @@ import { cn } from '@/lib/utils/cn'
 import { ReactNode } from 'react'
 import { Pressable, StyleSheet, View } from 'react-native'
 import { Assets, Button, Colors } from 'react-native-ui-lib'
-import { THUMBNAIL_HEIGHT, THUMBNAIL_WIDTH } from '../consts'
-import { LiquidGlassCard } from '../GlassCard'
-import { getDefaultPrice, useNavigateToItem } from '../helpers'
-import { LoadingImagePlaceholder } from '../placeholders'
+import { THUMBNAIL_HEIGHT, THUMBNAIL_WIDTH } from '../../components/tcg-card/consts'
+import { LiquidGlassCard } from '../../components/tcg-card/GlassCard'
+import { getDefaultPrice, useNavigateToItem } from '../../components/tcg-card/helpers'
+import { LoadingImagePlaceholder } from '../../components/tcg-card/placeholders'
 
 type ItemListingProps = {
   item: { id: string }
@@ -89,8 +89,6 @@ const DefaultAccessories = ({ kind, item, displayData }: ItemListViewProps) => {
           round
           outlineWidth={1.5}
           iconSource={Assets.icons.BookmarkHeart}
-          // outlineColor={Colors.$iconDefault}
-          // backgroundColor={Colors.$iconDefault}
         />
         <Button
           size="small"

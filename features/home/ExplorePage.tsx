@@ -1,5 +1,5 @@
-import { GalleryCard } from '@/components/tcg-card/views/GalleryCard'
-import { GridCard } from '@/components/tcg-card/views/GridCard'
+import { GalleryCard } from '@/features/tcg-card-views/GalleryCard'
+import { GridCard } from '@/features/tcg-card-views/GridCard'
 
 import { DropdownMenuLabel } from '@/components/ui/dropdown-menu'
 import { ToggleGroup, ToggleGroupIcon, ToggleGroupItem } from '@/components/ui/toggle-group'

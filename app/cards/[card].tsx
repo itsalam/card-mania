@@ -1,6 +1,6 @@
-import FocusCardView from '@/components/tcg-card/views/DetailCardView';
-import { useRoute } from '@react-navigation/native';
-import { Href } from 'expo-router';
+import FocusCardView from '@/features/tcg-card-views/DetailCardView'
+import { useRoute } from '@react-navigation/native'
+import { Href } from 'expo-router'
 
 type CardRouteParams = {
   card: string

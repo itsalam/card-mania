@@ -1,12 +1,13 @@
-import { VISIBILITY_OPTIONS } from '@/components/tcg-card/views/DetailCardView/ui'
 import { ToggleBadge } from '@/components/ui/badge'
 import { Text } from '@/components/ui/text'
+import { VISIBILITY_OPTIONS } from '@/features/tcg-card-views/DetailCardView/ui'
 import { UserAvatar } from '@/features/users/components/UserAvatars'
 import { DUMMY_USERS } from '@/features/users/helpers'
 import { useUserStore } from '@/lib/store/useUserStore'
 import { useRouter } from 'expo-router'
 import { LayoutList, LucideIcon, Pencil, Plus, SeparatorHorizontal } from 'lucide-react-native'
 import { MotiView } from 'moti'
+import { useState } from 'react'
 import { FlatList, TouchableOpacity, View } from 'react-native'
 import { Colors } from 'react-native-ui-lib'
 import { useGetCollection, useGetCollectionCountInfo } from '../hooks'
@@ -22,6 +23,8 @@ type Option = {
 export const CollectionInfo = () => {
   const { currentPage, preferenceState } = useCollectionsPageStore()
   const { user } = useUserStore()
+
+  const [showEditHeader, setShowEditHeader] = useState(false)
 
   const collectionId =
     preferenceState.preferences.defaultIds[currentPage as DefaultPageTypes] ?? currentPage
@@ -77,15 +80,24 @@ export const CollectionInfo = () => {
     edit: {
       label: 'Edit',
       icon: Pencil,
+      onClick() {
+        setShowEditHeader(true)
+      },
     },
     sort: {
       label: 'Sort',
       icon: SeparatorHorizontal,
+      //TODO
     },
     display: {
       label: 'Display',
       icon: LayoutList,
+      //TODO
     },
+  }
+
+  if (showEditHeader) {
+    return <MotiView key={`${collectionId}-edit`}></MotiView>
   }
 
   return (

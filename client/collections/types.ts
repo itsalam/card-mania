@@ -21,6 +21,8 @@ export type EditCollectionArgs = {
     visibility: TCollection["visibility"];
     cover_image_url?: string | null;
     tags?: string[]; // desired tag ids
+    hide_sold_items?: boolean;
+    is_storefront?: boolean;
 };
 
 export type EditCollectionResult = {

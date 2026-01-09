@@ -20,7 +20,7 @@ import { Colors } from 'react-native-ui-lib'
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller'
 import { EdgeInsets, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { scheduleOnRN } from 'react-native-worklets'
-import { THUMB_PADDING, THUMB_SIZE } from '../tcg-card/views/DetailCardView/ui'
+import { THUMB_PADDING, THUMB_SIZE } from '../../features/tcg-card-views/DetailCardView/ui'
 
 export const getContentInsets = (insets: EdgeInsets) => ({
   top: insets.top,

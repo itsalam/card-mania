@@ -1,8 +1,8 @@
 import { CollectionLike } from '@/client/collections/types'
-import { CollectionCardItemEntries } from '@/components/tcg-card/views/DetailCardView/footer/add-to-collections/components'
-import { ItemListViewProps } from '@/components/tcg-card/views/ListCard'
 import { TCard } from '@/constants/types'
 import { SearchScreen } from '@/features/mainSearchbar/components/SearchScreen'
+import { CollectionCardItemEntries } from '@/features/tcg-card-views/DetailCardView/footer/add-to-collections/components'
+import { ItemListViewProps } from '@/features/tcg-card-views/ListCard'
 import { router } from 'expo-router'
 import { useGetCollection } from '../hooks'
 

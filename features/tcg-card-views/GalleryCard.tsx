@@ -10,7 +10,7 @@ import {
   ThumbsUp,
 } from 'lucide-react-native'
 import { View } from 'react-native'
-import { LiquidGlassCard } from '../GlassCard'
+import { LiquidGlassCard } from '../../components/tcg-card/GlassCard'
 
 const USERS = [
   { name: 'John Doe', handle: '@johndoe', avatar: 'https://via.placeholder.com/150' },

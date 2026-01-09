@@ -159,23 +159,25 @@ export function SplashPage() {
       >
         <View className="w-full px-4 flex flex-row justify-between">
           <Text className="text-white text-2xl">Log in to CardMania</Text>
-          <Button >
+          <Button>
             <AtSign size={16} className="text-white" />
             <Text className="text-sm text-white">Sign up</Text>
           </Button>
         </View>
         <TextField
-          leadingAccessory={<User size={20} onPress={handleAnonSignIn}  color={Colors.$textPrimary}/>}
+          leadingAccessory={
+            <User size={20} onPress={handleAnonSignIn} color={Colors.$textPrimary} />
+          }
           placeholder="Sign in with email"
-      showClearButton
-      floatingPlaceholder
-      containerStyle={{
-        backgroundColor: Colors.rgba(Colors.$backgroundElevated, 0.4),
-      }}
+          showClearButton
+          floatingPlaceholder
+          containerStyle={{
+            backgroundColor: Colors.rgba(Colors.$backgroundElevated, 0.4),
+          }}
         />
-        <BaseButton>
+        {/* <BaseButton>
             <Text className="text-white"></Text>
-        </BaseButton>
+        </BaseButton> */}
         <View className="w-min flex flex-row items-center text-white gap-6 justify-center">
           <Separator orientation="horizontal" className="flex-1 background-white" />
           <Text className="text-white">or</Text>

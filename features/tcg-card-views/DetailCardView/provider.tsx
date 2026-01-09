@@ -93,24 +93,31 @@ type CollectionState = {
   tags: TagDraft[]
 }
 
-export type CreateNewCollectionsState = CollectionState & {
-  requestedTags: TagDraft[]
-  isValid: Record<keyof CollectionState, boolean> | boolean
-
-  // actions (pure)
-  setName(name: string): void
-  setDescription(description: string): void
-  setVisibility(v: VisibilityKey): void
-  setTags(tags: TagDraft[]): void
-  setRequestedTags(tags: TagDraft[]): void
-  setValid(isValid: Record<keyof CollectionState, boolean> | boolean): void
-  validate(): boolean
-
-  // helper to merge/normalize requested tags after categorization
-  applyRequestedTagCategories(
-    map: Map<string, { tag_id?: string; category_slugs?: string[] }>
-  ): void
+type OptionalState = {
+  isStoreFront: boolean
+  hideSoldItems: boolean
 }
+
+export type CreateNewCollectionsState = CollectionState &
+  Partial<OptionalState> & {
+    requestedTags: TagDraft[]
+    isValid: Record<keyof CollectionState, boolean> | boolean
+
+    // actions (pure)
+    setName(name: string): void
+    setDescription(description: string): void
+    setVisibility(v: VisibilityKey): void
+    setTags(tags: TagDraft[]): void
+    setRequestedTags(tags: TagDraft[]): void
+    setValid(isValid: Record<keyof CollectionState, boolean> | boolean): void
+    setStoreOptions({ isStoreFront, hideSoldItems }: Partial<OptionalState>): void
+    validate(): boolean
+
+    // helper to merge/normalize requested tags after categorization
+    applyRequestedTagCategories(
+      map: Map<string, { tag_id?: string; category_slugs?: string[] }>
+    ): void
+  }
 
 export function createNewCollectionsStore() {
   return createStore<CreateNewCollectionsState>((set, get) => ({
@@ -119,6 +126,8 @@ export function createNewCollectionsStore() {
     visibility: 'public',
     tags: [],
     requestedTags: [],
+    isStoreFront: false,
+    hideSoldItems: false,
     isValid: false,
     setName: (name) => set({ name }),
     setDescription: (description) => set({ description }),
@@ -126,6 +135,8 @@ export function createNewCollectionsStore() {
     setTags: (tags) => set({ tags }),
     setRequestedTags: (requestedTags) => set({ requestedTags }),
     setValid: (isValid) => set({ isValid }),
+    setStoreOptions: ({ isStoreFront, hideSoldItems }: Partial<OptionalState>) =>
+      set({ isStoreFront, hideSoldItems }),
     validate: () => {
       const { name, description, visibility, tags } = get()
       const isValid = {

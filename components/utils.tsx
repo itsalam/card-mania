@@ -117,7 +117,7 @@ export function useSharedValueLogger<T>(label: string, shared: { value: T }, opt
         globalThis[key] = now
       }
 
-      scheduleOnRN(log,`[SV:${label}]`, curr, prev ?? null)
+      scheduleOnRN(log, `[SV:${label}]`, curr, prev ?? null)
     },
     // deps for label/options (safe to pass; they live on JS thread)
     [label, distinct, throttleMs]

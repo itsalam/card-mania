@@ -3,7 +3,7 @@ import { CardPlaceholderImage } from '@/components/tcg-card/placeholders'
 import { VStack } from '@/components/ui/vstack'
 import { cn } from '@/lib/utils/cn'
 import { ComponentProps } from 'react'
-import { StyleSheet, View } from 'react-native'
+import { View } from 'react-native'
 import { Colors } from 'react-native-ui-lib'
 
 const ITEM_WIDTH = 72
@@ -33,8 +33,7 @@ export function CollectionsPreviewIcon({
     style,
     ...props
   }: { index: number; width: number } & ComponentProps<typeof VStack>) {
-    const centerOffset = ((TOTAL_CARDS - 1) * 7) / 4
-    const height = Math.round(width * (7 / 5))
+    const height = Math.round(width / ITEM_ASPECT_RATIO)
     // Initial stacked position - centered with slight overlap
     const defaultX =
       (index % 2 ? -1 : 1) * Math.floor(index / 2) * 2 * width * Constants.translateXPerCard
@@ -48,30 +47,32 @@ export function CollectionsPreviewIcon({
       <LiquidGlassCard
         className={cn(className, 'absolute')}
         variant="primary"
-        style={{
-          top: 0,
-          left: 10,
-          padding: 0,
-          position: 'absolute',
-          width,
-          aspectRatio: ITEM_ASPECT_RATIO,
-          transform: [
-            {
-              translateX: defaultX,
-            },
-            { translateY: defaultY },
-            {
-              rotate: `${defaultRotate}deg`,
-            },
-            {
-              scale: defaultScale,
-            },
-          ],
-          transformOrigin: 'bottom',
-          zIndex: TOTAL_CARDS - index,
-          overflow: 'hidden',
-          ...StyleSheet.flatten(style),
-        }}
+        style={[
+          {
+            top: 0,
+            left: 10,
+            padding: 0,
+            width,
+            aspectRatio: ITEM_ASPECT_RATIO,
+            height,
+            transform: [
+              {
+                translateX: defaultX,
+              },
+              { translateY: defaultY },
+              {
+                rotate: `${defaultRotate}deg`,
+              },
+              {
+                scale: defaultScale,
+              },
+            ],
+            transformOrigin: 'bottom',
+            zIndex: TOTAL_CARDS - index,
+            overflow: 'hidden',
+          },
+          style,
+        ]}
         {...props}
       >
         <View
@@ -94,6 +95,8 @@ export function CollectionsPreviewIcon({
     )
   }
 
+  console.log({ HEIGHT })
+
   return (
     <View
       style={{
@@ -102,6 +105,7 @@ export function CollectionsPreviewIcon({
         aspectRatio: ITEM_ASPECT_RATIO,
         position: 'relative',
         overflow: 'hidden',
+        backgroundColor: 'blue',
       }}
     >
       {Array(TOTAL_CARDS)

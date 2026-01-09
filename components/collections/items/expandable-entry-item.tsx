@@ -1,8 +1,8 @@
 import { useToggleWishlist } from '@/client/card/wishlist'
 
 import { CollectionLike } from '@/client/collections/types'
-import { CollectionCardItemEntries } from '@/components/tcg-card/views/DetailCardView/footer/add-to-collections/components'
 import { TCard } from '@/constants/types'
+import { CollectionCardItemEntries } from '@/features/tcg-card-views/DetailCardView/footer/add-to-collections/components'
 import { Blocks, Heart } from 'lucide-react-native'
 import React, { useState } from 'react'
 import { ExpandableSection, RadioButton } from 'react-native-ui-lib'

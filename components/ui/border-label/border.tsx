@@ -146,7 +146,7 @@ export const DynamicBorderBox = forwardRef<View, DynamicBorderBoxProps>(
               {backgroundColor && (
                 <RoundedRect
                   x={1 + inset}
-                  y={1 + inset + fontSize * 0.5}
+                  y={1 + inset}
                   width={bgWidth}
                   height={bgHeight}
                   r={r}

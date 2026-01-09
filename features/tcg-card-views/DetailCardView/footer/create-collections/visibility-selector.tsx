@@ -1,12 +1,12 @@
 import { Text } from '@/components/ui/text'
 
-import { CircleQuestionMark, Eye } from 'lucide-react-native'
+import { Eye } from 'lucide-react-native'
 import { useState } from 'react'
-import { Pressable, StyleSheet, View } from 'react-native'
-import { Button, Colors, Hint, SegmentedControl } from 'react-native-ui-lib'
-import { HintPositions } from 'react-native-ui-lib/src/components/hint/types'
+import { StyleSheet, View } from 'react-native'
+import { Colors, SegmentedControl } from 'react-native-ui-lib'
 import { useCreateNewCollections } from '../../provider'
 import { VISIBILITY_OPTIONS } from '../../ui'
+import { OptionLabel } from './components'
 
 export function VisibilitySelector() {
   const [toggleHint, setToggleHint] = useState(false)
@@ -36,43 +36,7 @@ export function VisibilitySelector() {
           gap: 8,
         }}
       >
-        <Pressable
-          style={{
-            display: 'flex',
-            flexDirection: 'row',
-            alignItems: 'center',
-            gap: 6,
-          }}
-          onPress={() => {
-            setToggleHint(!toggleHint)
-          }}
-        >
-          <Eye color={Colors.$textNeutralLight} size={32} />
-          <Text
-            style={[
-              { color: Colors.$textNeutralLight, fontSize: 20, lineHeight: 24, fontWeight: '500' },
-            ]}
-          >
-            Visibility
-          </Text>
-          <Hint
-            visible={toggleHint}
-            useModal
-            message={HintMessage}
-            position={HintPositions.TOP}
-            onBackgroundPress={() => setToggleHint(false)}
-          >
-            <Button
-              onPress={() => {
-                setToggleHint(!toggleHint)
-              }}
-              size="large"
-              iconSource={(style) => (
-                <CircleQuestionMark style={style} color={Colors.$iconDefaultLight} />
-              )}
-            />
-          </Hint>
-        </Pressable>
+        <OptionLabel icon={Eye} label={'Visibility'} hintProps={{ message: HintMessage }} />
       </View>
       <SegmentedControl
         style={{ width: '100%', marginTop: 8 }}
