@@ -1,4 +1,3 @@
-import React from "react";
 import { ItemKinds } from "@/constants/types";
 import { supabase } from "@/lib/store/client";
 import { qk, requireUser, WishlistKey } from "@/lib/store/functions/helpers";
@@ -11,6 +10,7 @@ import {
     useQuery,
     useQueryClient,
 } from "@tanstack/react-query";
+import React from "react";
 import {
     DEFAULT_INF_Q_OPTIONS,
     useViewCollectionItems,
@@ -31,15 +31,18 @@ export async function getWishlistCollectionId() {
     }
     if (loadingWishlistCollectionId) return loadingWishlistCollectionId;
 
+    const user = await requireUser();
     loadingWishlistCollectionId = supabase
-        .from("wishlist")
-        .select("collection_id")
-        .maybeSingle()
+        .from("collections")
+        .select("id")
+        .eq("user_id", user.id)
+        .eq("is_wishlist", true)
+        .single()
         .then(({ data, error }) => {
             loadingWishlistCollectionId = undefined;
             if (error) throw error;
-            cachedWishlistCollectionId = data?.collection_id ?? null;
-            return cachedWishlistCollectionId;
+            cachedWishlistCollectionId = data?.id ?? null;
+            return cachedWishlistCollectionId ?? null;
         });
 
     return loadingWishlistCollectionId;
@@ -310,7 +313,8 @@ type WishlistRow =
 // Otherwise, a quick fallback:
 // type Row = { user_id: string; created_at: string; id: string; title: string; /* ...other card columns... */ };
 
-export function getWishlistQueryArgs<T extends CollectionItemRow>(
+export function getDefaultCollectionPageQueryArgs<T extends CollectionItemRow>(
+    collecitonIdPromise?: () => Promise<string | null | undefined>,
     opts?: InfQueryOptions<T>,
 ) {
     let { pageSize, search, kind } = { ...DEFAULT_INF_Q_OPTIONS, ...opts };
@@ -329,13 +333,13 @@ export function getWishlistQueryArgs<T extends CollectionItemRow>(
         getNextPageParam: (lastPage) =>
             lastPage?.length ? lastPage[lastPage.length - 1].created_at : null,
         queryFn: async ({ pageParam }) => {
-            const wishlistCollectionId = await getWishlistCollectionId();
-            if (!wishlistCollectionId) return [];
+            const collectionId = await collecitonIdPromise?.();
+            if (!collectionId) return [];
 
             const { data, error } = await supabase.rpc(
                 "collection_item_query",
                 {
-                    p_collection_id: wishlistCollectionId,
+                    p_collection_id: collectionId,
                     p_page_param: pageParam as string,
                     p_search: search,
                     p_page_size: pageSize,
@@ -343,6 +347,7 @@ export function getWishlistQueryArgs<T extends CollectionItemRow>(
             );
 
             if (error) throw error;
+            //@ts-ignore
             return (data ?? []) as CollectionItemRow[];
         },
         initialPageParam: null as string | null,
@@ -355,9 +360,10 @@ export function useWishlistCardsEnriched(
     opts: InfQueryOptions<CollectionItemRow>,
 ) {
     let { pageSize = 50, search = "", kind = "card", ...queryOpts } = opts;
+    const getWishlistId = () => getWishlistCollectionId();
     const wishlistArgs = {
         ...queryOpts,
-        ...getWishlistQueryArgs(opts),
+        ...getDefaultCollectionPageQueryArgs(getWishlistId, opts),
     } as InifiniteQueryParams;
 
     return useViewCollectionItems(wishlistArgs);

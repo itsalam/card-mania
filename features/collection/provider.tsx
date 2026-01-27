@@ -1,4 +1,5 @@
 // store.ts
+import { CollectionLike } from '@/client/collections/types'
 import { createContext, ReactNode, useContext, useEffect, useRef } from 'react'
 import { createStore, StoreApi, useStore } from 'zustand'
 import { PreferenceState, useCollectionUiPreferences } from './hooks'
@@ -22,6 +23,10 @@ type CollectionsState = {
   searchQuery?: string
   setSearchQuery: (searchQuery: string) => void
   resetSearchQuery: () => void
+  showEditView: boolean
+  setShowEditView: (showEditView: boolean) => void
+  newCollectionInfo?: CollectionLike
+  setNewCollectionInfo: (ci: CollectionLike) => void
 }
 
 export const createCollectionPageStore = (preferenceState: PreferenceState) =>
@@ -30,10 +35,14 @@ export const createCollectionPageStore = (preferenceState: PreferenceState) =>
     currentPage: defaultPages[0],
     exploreLayout: 'grid',
     setExploreLayout: (layout) => set({ exploreLayout: layout }),
-    setCurrentPage: (page) => set({ currentPage: page }),
+    setCurrentPage: (page) => set({ currentPage: page, showEditView: page === 'new' }),
+    showEditView: false,
+    setShowEditView: (showEditView) => set({ showEditView }),
     expanded: false,
     setIsExpanded: (expanded) => set({ expanded }),
     searchQuery: undefined,
+    newCollectionInfo: undefined,
+    setNewCollectionInfo: (ci) => set({ newCollectionInfo: ci }),
     setSearchQuery: (searchQuery) => set({ searchQuery }),
     resetSearchQuery: () => set({ searchQuery: undefined }),
   }))

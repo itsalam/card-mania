@@ -3,7 +3,7 @@ import { Text } from '@/components/ui/text'
 import { BottomTabHeaderProps } from '@react-navigation/bottom-tabs'
 import { Header, HeaderBackButton } from '@react-navigation/elements'
 import { ChevronLeft } from 'lucide-react-native'
-import React from 'react'
+import React, { ComponentProps } from 'react'
 import { Pressable, StyleProp, View, ViewStyle } from 'react-native'
 
 /** Use this for screens that live inside a React Navigation Stack */
@@ -37,12 +37,14 @@ export function AppStandaloneHeader({
   right,
   background,
   style,
+  variant = 'h2',
 }: {
   title: React.ReactNode
   onBack?: () => void
   right?: React.ReactNode
   background?: React.ReactNode
   style?: StyleProp<ViewStyle>
+  variant?: ComponentProps<typeof Text>['variant']
 }) {
   return (
     <View style={[{ paddingTop: 10, paddingBottom: 6 }, style]}>
@@ -62,7 +64,7 @@ export function AppStandaloneHeader({
           )}
         </View>
         <View style={{ flex: 1, alignItems: 'center' }}>
-          <Text variant={'h2'}>{title}</Text>
+          <Text variant={variant}>{title}</Text>
         </View>
         <View style={{ width: 64, alignItems: 'flex-end' }}>{right}</View>
       </View>

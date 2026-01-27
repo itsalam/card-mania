@@ -5,7 +5,6 @@ import Animated, {
   clamp,
   interpolate,
   scrollTo,
-  SharedValue,
   useAnimatedReaction,
   useAnimatedRef,
   useAnimatedStyle,
@@ -19,17 +18,23 @@ import { scheduleOnRN } from 'react-native-worklets'
 
 type AnimatedScrollRef = Animated.FlatList
 
-export function useCollaspableHeader(measuredHeaderHeight: SharedValue<number>) {
+export function useCollaspableHeader(disable?: boolean) {
   const [tabsExpanded, setTabsExpanded] = useState(false)
   const expandProgress = useSharedValue(0)
   const gestureRef = useRef<GestureType>(undefined)
   const scrollViewRef = useAnimatedRef<AnimatedScrollRef>()
   const headerContentRef = useAnimatedRef<View>()
   const scrollOffset = useScrollOffset(scrollViewRef)
+  const measuredHeaderHeight = useSharedValue(0)
   const contentHeight = useSharedValue(0)
   const containerHeight = useSharedValue(0)
 
   const virtualOffset = useSharedValue(0)
+  const blockHeaderMeasurement = useSharedValue(false)
+
+  const toggleHeader = (toggle: boolean) => {
+    !disable && setTabsExpanded(toggle)
+  }
 
   const updateOffsets = () => {
     'worklet'
@@ -40,7 +45,7 @@ export function useCollaspableHeader(measuredHeaderHeight: SharedValue<number>) 
     const expand = clamp(v / H, 0, 1)
     expandProgress.value = expand
 
-    scheduleOnRN(setTabsExpanded, expand === 1)
+    scheduleOnRN(toggleHeader, expand === 1)
 
     // Scroll begins after header is fully collapsed
     const scroll = Math.max(0, v - H)
@@ -53,6 +58,9 @@ export function useCollaspableHeader(measuredHeaderHeight: SharedValue<number>) 
     () => virtualOffset.value,
     () => {
       updateOffsets()
+      if (expandProgress.value === 0 || expandProgress.value === 1) {
+        blockHeaderMeasurement.value = false
+      }
     },
     []
   )
@@ -64,6 +72,9 @@ export function useCollaspableHeader(measuredHeaderHeight: SharedValue<number>) 
 
   const panGesture = Gesture.Pan()
     .withRef(gestureRef)
+    .onBegin(() => {
+      blockHeaderMeasurement.value = true
+    })
     .onChange((e) => {
       if (measuredHeaderHeight.value <= 0) return
 
@@ -144,8 +155,20 @@ export function useCollaspableHeader(measuredHeaderHeight: SharedValue<number>) 
       },
       [contentHeight]
     ),
+    onHeaderLayout: React.useCallback(
+      (e: any) => {
+        // Only capture height when header is fully expanded
+        console.log('HEY', e.nativeEvent.layout.height)
+        if (expandProgress.value === 0 && !blockHeaderMeasurement.value) {
+          measuredHeaderHeight.value = e.nativeEvent.layout.height
+        }
+      },
+      [blockHeaderMeasurement, measuredHeaderHeight, expandProgress]
+    ),
     gestureRef,
     scrollViewRef,
     headerContentRef,
+    blockHeaderMeasurement,
+    measuredHeaderHeight,
   }
 }

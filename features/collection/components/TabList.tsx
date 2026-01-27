@@ -3,11 +3,13 @@ import { Separator } from '@/components/ui/separator'
 import { TabsLabel, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import MaskedView from '@react-native-masked-view/masked-view'
 import { Coins, Heart, Layers, LucideIcon, Plus, Vault, X } from 'lucide-react-native'
-import React, { useEffect, useRef } from 'react'
-import { TouchableOpacity, View } from 'react-native'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
+import { LayoutChangeEvent, TouchableOpacity, View } from 'react-native'
 import { FlatList } from 'react-native-gesture-handler'
 
+import { Spinner } from '@/components/ui/spinner'
 import { LinearGradient } from 'expo-linear-gradient'
+import Animated from 'react-native-reanimated'
 import { BorderRadiuses, Colors } from 'react-native-ui-lib'
 import { useGetCollection } from '../hooks'
 import {
@@ -17,24 +19,51 @@ import {
   useCollectionsPageStore,
 } from '../provider'
 
+type CollectionTabProps = {
+  collectionKey: CollectionIdArgs
+  onLayout?: (event: LayoutChangeEvent) => void
+}
+
 export const CollectionTabList = () => {
-  const { currentPage, preferenceState } = useCollectionsPageStore()
+  const { currentPage, preferenceState, setCurrentPage, newCollectionInfo } =
+    useCollectionsPageStore()
   const { preferences } = preferenceState
   const scrollViewRef = useRef<FlatList>(null)
-  const tabs = preferences.tabs ?? defaultPages.slice(1)
+  const [listWidth, setListWidth] = useState(0)
+  const [lastTabWidth, setLastTabWidth] = useState(0)
+  const leftPadding = 12
+  const trailingSpace = listWidth ? Math.max(listWidth - (lastTabWidth + leftPadding * 2), 0) : 20
+  const tabs = useMemo(() => {
+    const tabs = [...defaultPages.slice(1), ...(preferences?.tabs ?? [])]
+    return tabs
+  }, [preferences, defaultPages, currentPage, newCollectionInfo?.name])
+
+  useEffect(() => {
+    setLastTabWidth(0)
+  }, [tabs])
 
   const scrollToIndex = (index: number) =>
     scrollViewRef.current?.scrollToIndex({
       index,
       animated: true,
-      // viewOffset: 20,
-      viewPosition: 0.1,
+      viewPosition: 0,
+      viewOffset: leftPadding,
     })
+
+  const scrollToTabKey = (key: string) => {
+    const index = tabs.findIndex((tab) => tab === key)
+    if (index !== -1) scrollToIndex(index)
+  }
 
   useEffect(() => {
     const index = tabs.findIndex((tab) => tab === currentPage)
-    if (index !== -1 && scrollViewRef) {
-      scrollToIndex(index)
+    if (currentPage === 'new') {
+      scrollViewRef.current?.scrollToOffset({
+        animated: true,
+        offset: 10000,
+      })
+    } else if (index !== -1 && scrollViewRef) {
+      scrollToTabKey(currentPage)
     }
   }, [tabs, currentPage])
 
@@ -66,7 +95,10 @@ export const CollectionTabList = () => {
         </TabsTrigger>
         <Separator orientation="vertical" className="mb-2 pb-2 z-10" />
         <MaskedView
-          style={{ flex: 1.0, position: 'relative' }}
+          style={[
+            { flex: 1.0, position: 'relative' },
+            currentPage === 'new' && { flex: 0, width: 0, opacity: 0 },
+          ]}
           maskElement={
             <LinearGradient
               // MaskedView uses the alpha channel: solid shows content, transparent hides it.
@@ -90,19 +122,33 @@ export const CollectionTabList = () => {
             scrollIndicatorInsets={{ bottom: -10 }}
             style={{ overflow: 'visible', zIndex: 0 }}
             data={tabs}
-            renderItem={({ item: tab }) => (
+            keyExtractor={(tab) => tab}
+            renderItem={({ item: tab, index }) => (
               <CollectionTab
                 key={tab}
                 collectionKey={getCollectionIdArgs(tab as (typeof defaultPages)[number])}
+                onLayout={
+                  index === tabs.length - 1
+                    ? (event) => {
+                        const width = Math.round(event.nativeEvent.layout.width)
+                        console.log(width)
+                        if (width && width !== lastTabWidth) setLastTabWidth(width)
+                      }
+                    : undefined
+                }
               />
             )}
             contentContainerStyle={{
-              paddingLeft: 4,
-              paddingRight: 20,
+              paddingLeft: leftPadding,
+              paddingRight: leftPadding,
               display: 'flex',
               flexDirection: 'row',
               gap: 0,
               zIndex: -1,
+            }}
+            onLayout={(event) => {
+              const width = Math.round(event.nativeEvent.layout.width)
+              if (width && width !== listWidth) setListWidth(width)
             }}
             onScrollToIndexFailed={(info) => {
               const wait = new Promise((resolve) => setTimeout(resolve, 100))
@@ -111,75 +157,136 @@ export const CollectionTabList = () => {
               })
             }}
             ListFooterComponent={
-              <TouchableOpacity
-                style={{
-                  alignSelf: 'stretch',
-                  aspectRatio: 1,
-                  padding: 8,
-                }}
-              >
-                <View
-                  style={{
-                    borderColor: Colors.$outlineDefault,
-                    display: 'flex',
-                    borderWidth: 2,
-                    borderRadius: BorderRadiuses.br40,
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                    aspectRatio: 1,
-                  }}
-                >
-                  <Plus size={18} color={Colors.$textDefault} />
-                </View>
-              </TouchableOpacity>
+              <>
+                <View style={{ width: trailingSpace }} />
+              </>
             }
           >
             {/* </View> */}
           </FlatList>
         </MaskedView>
+        <Animated.View
+          style={[
+            {
+              alignItems: 'center',
+              justifyContent: 'center',
+              alignSelf: 'stretch',
+            },
+            currentPage === 'new' ? { flex: 1 } : { flexGrow: 0, flexShrink: 0 },
+          ]}
+        >
+          {currentPage !== 'new' ? (
+            <TouchableOpacity
+              style={{
+                alignSelf: 'stretch',
+                padding: 8,
+              }}
+              onPress={() => setCurrentPage('new')}
+            >
+              <View
+                style={{
+                  borderColor: Colors.$outlineDefault,
+                  display: 'flex',
+                  borderWidth: 2,
+                  borderRadius: BorderRadiuses.br40,
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  aspectRatio: 1,
+                }}
+              >
+                <Plus size={18} color={Colors.$textDefault} />
+              </View>
+            </TouchableOpacity>
+          ) : (
+            <TabsLabel
+              label={newCollectionInfo?.name?.length ? newCollectionInfo?.name : 'New Collection'}
+              value={'new'}
+              className="text-xl"
+              style={{
+                color: Colors.$textDefault,
+                flex: 1,
+                alignItems: 'center',
+                justifyContent: 'center',
+                textAlign: 'center',
+                textAlignVertical: 'center',
+              }}
+              containerStyle={{
+                padding: 6,
+                paddingHorizontal: 12,
+                borderRadius: BorderRadiuses.br30,
+                borderColor: Colors.$outlineGeneral,
+                borderWidth: 2,
+                flex: 1,
+              }}
+            />
+          )}
+        </Animated.View>
       </TabsList>
     </View>
   )
 }
 
-const CollectionTab = (props: { collectionKey: CollectionIdArgs }) => {
-  const { collectionKey } = props
-  const { currentPage } = useCollectionsPageStore()
+const CollectionTab = ({ collectionKey, onLayout }: CollectionTabProps) => {
+  const { currentPage, preferenceState, setCurrentPage } = useCollectionsPageStore()
 
   const key = [...Object.values(collectionKey)][0]
+
   const isDefault = Boolean(collectionKey.collectionType)
   const isCurrent = currentPage === key
   const { data: collection } = useGetCollection(collectionKey)
-  const label = collection?.name ?? [...Object.values(collectionKey)][0].slice(0, 20)
+  const label = collection?.name
 
   return (
-    <TabsTrigger key={key} value={key} className="pt-px p-0">
-      <TabsLabel
-        label={label}
-        value={key}
-        className="text-xl"
-        style={{
-          color: Colors.$textDefault,
-        }}
-        containerStyle={{
-          padding: 6,
-          paddingHorizontal: 12,
-          borderRadius: BorderRadiuses.br30,
-          ...(isCurrent ? { borderColor: Colors.$outlineGeneral, borderWidth: 2 } : { padding: 8 }),
-        }}
-        leftElement={(current: boolean) =>
-          React.createElement(tabIcons[key as keyof typeof tabIcons] ?? tabIcons['default'], {
-            size: 20,
-            color: current ? Colors.$textPrimary : Colors.$textDefault,
-          })
-        }
-        rightElement={(current: boolean) =>
-          current && !isDefault ? (
-            <X size={16} color={current ? Colors.$textPrimary : Colors.$textDefault} />
-          ) : null
-        }
-      />
-    </TabsTrigger>
+    <View style={{ flexGrow: 0, flexShrink: 0 }} onLayout={onLayout}>
+      <TabsTrigger key={key} value={key} className="pt-px p-0">
+        <TabsLabel
+          label={label}
+          value={key}
+          className="text-xl"
+          style={{
+            color: Colors.$textDefault,
+          }}
+          containerStyle={{
+            padding: 6,
+            paddingHorizontal: 12,
+            borderRadius: BorderRadiuses.br30,
+            ...(isCurrent
+              ? { borderColor: Colors.$outlineGeneral, borderWidth: 2 }
+              : { padding: 8 }),
+          }}
+          leftElement={(current: boolean) =>
+            collection ? (
+              React.createElement(tabIcons[key as keyof typeof tabIcons] ?? tabIcons['default'], {
+                size: 20,
+                color: current ? Colors.$textPrimary : Colors.$textDefault,
+              })
+            ) : (
+              <Spinner />
+            )
+          }
+          rightElement={(current: boolean) =>
+            current && !isDefault ? (
+              <TouchableOpacity
+                hitSlop={10}
+                onPress={() =>
+                  preferenceState
+                    .updatePreferences({
+                      tabs: Array.from(
+                        new Set([
+                          ...(preferenceState.preferences.tabs?.filter((t) => t !== key) ?? []),
+                        ])
+                      ),
+                    })
+                    .then(() => setCurrentPage('default'))
+                }
+              >
+                <X size={16} color={current ? Colors.$textPrimary : Colors.$textDefault} />
+              </TouchableOpacity>
+            ) : null
+          }
+        />
+      </TabsTrigger>
+    </View>
   )
 }
 

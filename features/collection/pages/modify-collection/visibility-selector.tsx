@@ -4,8 +4,8 @@ import { Eye } from 'lucide-react-native'
 import { useState } from 'react'
 import { StyleSheet, View } from 'react-native'
 import { Colors, SegmentedControl } from 'react-native-ui-lib'
-import { useCreateNewCollections } from '../../provider'
-import { VISIBILITY_OPTIONS } from '../../ui'
+import { useCreateNewCollections } from '../../../tcg-card-views/DetailCardView/provider'
+import { VISIBILITY_OPTIONS } from '../../../tcg-card-views/DetailCardView/ui'
 import { OptionLabel } from './components'
 
 export function VisibilitySelector() {

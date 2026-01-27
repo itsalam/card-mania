@@ -11,7 +11,7 @@ import { useCallback } from 'react'
 import { View } from 'react-native'
 import Animated from 'react-native-reanimated'
 import { Colors } from 'react-native-ui-lib'
-import { useCreateNewCollections } from '../../provider'
+import { useCreateNewCollections } from '../../../tcg-card-views/DetailCardView/provider'
 
 const AnimTags = Animated.createAnimatedComponent(Tags)
 
@@ -74,7 +74,13 @@ export const CreateCollectionChipInput = () => {
       {(props, ref) => (
         <View style={{ flex: 1 }}>
           <View
-            style={{ flexDirection: 'row', gap: 8, alignItems: 'center', marginRight: 22, flex: 1 }}
+            style={{
+              flexDirection: 'row',
+              gap: 8,
+              alignItems: 'center',
+              flex: 1,
+              marginHorizontal: 20,
+            }}
           >
             <MultiChipInnerInput<CategoryTag> {...props} ref={ref} />
           </View>

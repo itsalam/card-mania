@@ -66,7 +66,6 @@ export async function viewCollectionItemsForUser() {
     "user_id",
     user.id,
   );
-
   return unwrap(data, error);
 }
 

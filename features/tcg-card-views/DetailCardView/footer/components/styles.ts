@@ -1,13 +1,17 @@
 import { StyleSheet } from "react-native";
 
 export const FooterStyles = StyleSheet.create({
-    titleFloatingPlaceholderStyle: { fontSize: 22, lineHeight: 22 },
+    titleFloatingPlaceholderStyle: { fontSize: 16, lineHeight: 18 },
     formContainer: {
-        paddingHorizontal: 12,
+        paddingLeft: 20,
+    },
+    inputContainer: {
+        paddingRight: 20,
     },
     titleInputBody: {
         fontSize: 32,
-        lineHeight: 40,
+        lineHeight: 36,
+        margin: 2,
     },
     footerButton: {},
 });

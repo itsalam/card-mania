@@ -72,13 +72,10 @@ export type InifiniteQueryParams<T = CollectionItemRow> = Parameters<
 export type CollectionItemQueryRow =
     Database["public"]["Functions"]["collection_item_query"]["Returns"][number];
 
-export type CollectionIdArgs =
-    | {
-        collectionId: string;
-        collectionType?: Exclude<DefaultPageTypes, "wishlist">;
-    }
-    | { collectionId?: undefined; collectionType: "wishlist" }
-    | { collectionId?: undefined; collectionType: DefaultPageTypes };
+export type CollectionIdArgs = {
+    collectionId?: string;
+    collectionType?: DefaultPageTypes;
+};
 
 export type CollectionReturn = CollectionItemQueryRow;
 

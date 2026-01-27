@@ -232,7 +232,7 @@ const Suggestions = <T extends BaseTagObject>(props: Pick<MultiChipInputProps<T>
   const suggestionContainerStyle = useAnimatedStyle(() => {
     const hasAnyResults = (Array.isArray(suggestions) && suggestions.length > 0) || hasResults.value
     const targetHeight =
-      isFocused && hasAnyResults ? BADGE_HEIGHT * NUM_ROWS + (NUM_ROWS - 1) * 4 + 60 : 0
+      isFocused && hasAnyResults ? BADGE_HEIGHT * NUM_ROWS + (NUM_ROWS - 1) * 4 + 44 : 0
     return {
       height: withTiming(targetHeight),
     }
@@ -259,6 +259,8 @@ const Suggestions = <T extends BaseTagObject>(props: Pick<MultiChipInputProps<T>
     >
       <Text
         style={{
+          paddingVertical: 4,
+          paddingHorizontal: 40,
           color: Colors.$textNeutralLight,
         }}
       >
@@ -270,9 +272,10 @@ const Suggestions = <T extends BaseTagObject>(props: Pick<MultiChipInputProps<T>
           {
             display: 'flex',
             flexDirection: 'column',
-            paddingVertical: 4,
+            marginHorizontal: 20,
           },
         ]}
+        style={{ overflow: 'visible' }}
       >
         {rows.length ? (
           rows.map((row, index) => (

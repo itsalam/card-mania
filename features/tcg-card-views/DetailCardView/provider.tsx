@@ -1,4 +1,5 @@
 import { usePopulateTagCategory } from '@/client/collections/tags'
+import { CollectionLike } from '@/client/collections/types'
 import { TCard, TTag } from '@/constants/types'
 import { createContext, useContext, useEffect, useMemo, useRef } from 'react'
 import { createStore, StoreApi, useStore } from 'zustand'
@@ -119,15 +120,15 @@ export type CreateNewCollectionsState = CollectionState &
     ): void
   }
 
-export function createNewCollectionsStore() {
+export function modifyCollectionStore(collection?: CollectionLike) {
   return createStore<CreateNewCollectionsState>((set, get) => ({
-    name: '',
-    description: '',
-    visibility: 'public',
-    tags: [],
+    name: collection?.name ?? '',
+    description: collection?.description ?? '',
+    visibility: (collection?.visibility as VisibilityKey) ?? 'public',
+    tags: collection?.tags_cache ?? [],
     requestedTags: [],
-    isStoreFront: false,
-    hideSoldItems: false,
+    isStoreFront: collection?.is_storefront ?? false,
+    hideSoldItems: collection?.hide_sold_items ?? false,
     isValid: false,
     setName: (name) => set({ name }),
     setDescription: (description) => set({ description }),
@@ -136,7 +137,10 @@ export function createNewCollectionsStore() {
     setRequestedTags: (requestedTags) => set({ requestedTags }),
     setValid: (isValid) => set({ isValid }),
     setStoreOptions: ({ isStoreFront, hideSoldItems }: Partial<OptionalState>) =>
-      set({ isStoreFront, hideSoldItems }),
+      set((state) => ({
+        isStoreFront: isStoreFront ?? state.isStoreFront,
+        hideSoldItems: hideSoldItems ?? state.hideSoldItems,
+      })),
     validate: () => {
       const { name, description, visibility, tags } = get()
       const isValid = {
@@ -177,10 +181,18 @@ export function createNewCollectionsStore() {
 
 const Ctx = createContext<StoreApi<CreateNewCollectionsState> | null>(null)
 
-export function CreateNewCollectionsProvider({ children }: { children: React.ReactNode }) {
+export function ModifyCollectionProvider({
+  children,
+  collection,
+  onChange,
+}: {
+  collection?: CollectionLike
+  children: React.ReactNode
+  onChange?: (state: CreateNewCollectionsState) => void
+}) {
   // create once
   const storeRef = useRef<StoreApi<CreateNewCollectionsState> | null>(null)
-  if (!storeRef.current) storeRef.current = createNewCollectionsStore()
+  if (!storeRef.current) storeRef.current = modifyCollectionStore(collection)
 
   // derive category info for requested tags, then apply into the store
   const requested = useStore(storeRef.current, (s) => s.requestedTags)
@@ -193,6 +205,14 @@ export function CreateNewCollectionsProvider({ children }: { children: React.Rea
   useEffect(() => {
     if (map) storeRef.current!.getState().applyRequestedTagCategories(map)
   }, [map])
+
+  useEffect(() => {
+    if (!onChange || !storeRef.current) return
+    const unsubscribe = storeRef.current.subscribe(onChange)
+    // fire once with current state so listeners have initial snapshot
+    onChange(storeRef.current.getState())
+    return unsubscribe
+  }, [onChange])
 
   return <Ctx.Provider value={storeRef.current}>{children}</Ctx.Provider>
 }

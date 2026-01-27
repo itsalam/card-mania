@@ -1,31 +1,141 @@
-import { CollectionsPreviewIcon } from '@/features/collection/components/PreviewIcon'
-
 import { useEditCollection } from '@/client/collections/mutate'
-import { ArrowLeft, CopyX, NotebookText, PanelBottomClose, Store } from 'lucide-react-native'
-import { Dimensions, ScrollView, View } from 'react-native'
-import { Colors } from 'react-native-ui-lib'
-
-import { BlurBackground } from '@/components/Background'
-import { Input } from '@/components/ui/input/base-input'
-import { useInputColors } from '@/components/ui/input/provider'
-import { Separator } from '@/components/ui/separator'
-import { Switch } from '@/components/ui/switch'
+import { Text } from '@/components/ui/text'
 import {
-  CreateNewCollectionsProvider,
-  useCardDetails,
-  useCreateNewCollections,
-} from '@/features/tcg-card-views/DetailCardView/provider'
+  CircleQuestionMark,
+  CopyX,
+  LucideIcon,
+  NotebookText,
+  PanelBottomClose,
+  Store,
+} from 'lucide-react-native'
+import { ReactNode, useState } from 'react'
+import { StyleProp, TouchableOpacity, View, ViewStyle } from 'react-native'
+import { Button, Colors, Hint, HintProps } from 'react-native-ui-lib'
+import { HintPositions } from 'react-native-ui-lib/src/components/hint/types'
+
+import { EditCollectionResult } from '@/client/collections/types'
+import { useInputColors } from '@/components/ui/input/provider'
+import { Switch } from '@/components/ui/switch'
+import { useCreateNewCollections } from '@/features/tcg-card-views/DetailCardView/provider'
 import Animated, { FadeInUp, FadeOut } from 'react-native-reanimated'
-import { FooterButton } from '../components/button'
-import { FooterStyles as styles } from '../components/styles'
-import { OptionLabel } from './components'
+import { FooterButton } from '../../../tcg-card-views/DetailCardView/footer/components/button'
+import { FooterStyles as styles } from '../../../tcg-card-views/DetailCardView/footer/components/styles'
 import { CreateCollectionInput } from './input'
-import { CreateCollectionChipInput } from './tags-input'
-import { VisibilitySelector } from './visibility-selector'
 
-const { width } = Dimensions.get('window')
+export const OptionLabel = ({
+  icon: Icon,
+  label,
+  hintProps,
+  description,
+  style,
+}: {
+  icon: LucideIcon
+  description?: string
+  label: ReactNode
+  hintProps?: HintProps
+  style?: StyleProp<ViewStyle>
+}) => {
+  const [toggleHint, setToggleHint] = useState(false)
+  const { onBackgroundPress, ...rest } = hintProps ?? {}
 
-const CollectionsNameInput = () => {
+  return (
+    <View
+      style={[
+        {
+          display: 'flex',
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: 8,
+        },
+        style,
+      ]}
+    >
+      <TouchableOpacity
+        style={{
+          display: 'flex',
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: 6,
+        }}
+        {...(hintProps
+          ? {
+              onPress: () => {
+                setToggleHint(!toggleHint)
+              },
+            }
+          : {
+              disabled: true,
+              activeOpacity: 1,
+            })}
+      >
+        <Icon color={Colors.$textNeutralLight} size={30} />
+        <View>
+          <View
+            style={{
+              display: 'flex',
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 6,
+            }}
+          >
+            <Text
+              style={[
+                {
+                  color: Colors.$textNeutralLight,
+                  fontSize: 20,
+                  lineHeight: 24,
+                  fontWeight: '500',
+                },
+              ]}
+            >
+              {label}
+            </Text>
+            {hintProps && (
+              <Hint
+                visible={toggleHint}
+                useModal
+                position={HintPositions.TOP}
+                onBackgroundPress={(e) => {
+                  onBackgroundPress?.(e)
+                  setToggleHint(false)
+                }}
+                {...rest}
+              >
+                <Button
+                  onPress={() => {
+                    setToggleHint(!toggleHint)
+                  }}
+                  size="large"
+                  iconSource={(style) => (
+                    <CircleQuestionMark style={style} color={Colors.$iconDefaultLight} />
+                  )}
+                />
+              </Hint>
+            )}
+          </View>
+          {description && (
+            <Text
+              numberOfLines={2}
+              style={[
+                {
+                  color: Colors.$textNeutralLight,
+                  fontSize: 10,
+                  lineHeight: 12,
+                  fontWeight: '500',
+                  flexShrink: 1,
+                },
+              ]}
+            >
+              {description}
+            </Text>
+          )}
+        </View>
+      </TouchableOpacity>
+    </View>
+  )
+}
+
+export const CollectionsNameInput = () => {
   const collectionName = useCreateNewCollections((s) => s.name)
   const setCollectionName = useCreateNewCollections((s) => s.setName)
 
@@ -36,14 +146,15 @@ const CollectionsNameInput = () => {
       floatingPlaceholderStyle={styles.titleFloatingPlaceholderStyle}
       containerStyle={{
         backgroundColor: Colors.rgba(Colors.$backgroundElevated, 0.4),
+        margin: 0,
       }}
       value={collectionName}
       onChangeText={setCollectionName}
-      validateOnBlur
+      floatingPlaceholder
+      showCharCounter
       validate={['required', (value) => (value ? value.length > 3 : true)]}
       validationMessage={['Name is required', 'Name must be at least 4 characters']}
       showClearButton
-      floatingPlaceholder
     />
   )
 }
@@ -56,40 +167,33 @@ const ANotebookText = () => {
   return <AnimNotebookText size={28} color={color} />
 }
 
-const CollectionsDescriptionInput = () => {
+export const CollectionsDescriptionInput = () => {
   const description = useCreateNewCollections((s) => s.description)
   const setDescription = useCreateNewCollections((s) => s.setDescription)
   return (
     <CreateCollectionInput
+      placeholder={'Description'}
       containerStyle={{
         backgroundColor: Colors.rgba(Colors.$backgroundElevated, 0.4),
       }}
-      placeholder={'Description'}
       value={description}
       onChangeText={setDescription}
       floatingPlaceholder
       showCharCounter
       showClearButton
-      multiline
       leadingAccessory={<ANotebookText />}
       maxLength={120}
-    >
-      {(props, ref) => (
-        <View
-          style={{
-            flexDirection: 'row',
-            gap: 8,
-            alignItems: 'center',
-          }}
-        >
-          <Input {...props} ref={ref} />
-        </View>
-      )}
-    </CreateCollectionInput>
+    />
   )
 }
 
-const SubmitCollectionButton = () => {
+export const SubmitCollectionButton = ({
+  onSubmit,
+  collectionId,
+}: {
+  onSubmit?: (res: EditCollectionResult) => void
+  collectionId?: string
+}) => {
   const name = useCreateNewCollections((s) => s.name)
   const description = useCreateNewCollections((s) => s.description)
   const hideSoldItems = useCreateNewCollections((s) => s.hideSoldItems)
@@ -97,8 +201,7 @@ const SubmitCollectionButton = () => {
   const tags = useCreateNewCollections((s) => s.tags)
   const visibility = useCreateNewCollections((s) => s.visibility)
   const validate = useCreateNewCollections((s) => s.validate)
-  const { setPage, card } = useCardDetails()
-  const submit = useEditCollection(undefined, card?.id)
+  const submit = useEditCollection(collectionId)
   return (
     <FooterButton
       style={{
@@ -116,8 +219,10 @@ const SubmitCollectionButton = () => {
               is_storefront: isStoreFront,
               hide_sold_items: hideSoldItems,
             })
-            .then(() => setPage(0))
+            .then((res) => onSubmit?.(res))
             .catch((e) => console.error('Error creating collection:', e))
+        } else {
+          //TODO: Alert the improper state
         }
       }}
       label="Done"
@@ -126,7 +231,7 @@ const SubmitCollectionButton = () => {
   )
 }
 
-const StorefrontOptions = () => {
+export const StorefrontOptions = () => {
   const isStoreFront = useCreateNewCollections(({ isStoreFront }) => isStoreFront)
   const hideSoldItems = useCreateNewCollections(({ hideSoldItems }) => hideSoldItems)
   const setStoreOptions = useCreateNewCollections(({ setStoreOptions }) => setStoreOptions)
@@ -174,75 +279,5 @@ const StorefrontOptions = () => {
         </Animated.View>
       )}
     </View>
-  )
-}
-
-export const CreateCollectionView = () => {
-  const { card, setPage, setFooterFullView } = useCardDetails()
-
-  return (
-    <CreateNewCollectionsProvider>
-      <ScrollView
-        style={{
-          flex: 1,
-        }}
-        contentContainerClassName="flex flex-col pl-2"
-      >
-        <View className="flex items-center justify-center mt-8 pb-4">
-          <CollectionsPreviewIcon width={width * 0.23} />
-        </View>
-        <View style={[styles.formContainer, { paddingVertical: 8, marginRight: 12 }]}>
-          <CollectionsNameInput />
-        </View>
-        <Separator
-          style={{ marginLeft: 30, marginRight: 52, marginVertical: 8 }}
-          orientation="horizontal"
-        />
-        <View style={[styles.formContainer, { paddingRight: 0, gap: 8, paddingBottom: 12 }]}>
-          <View
-            style={{
-              flexDirection: 'row',
-              gap: 8,
-              alignItems: 'center',
-              marginRight: 22,
-            }}
-          >
-            <CollectionsDescriptionInput />
-          </View>
-          <View
-            style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              gap: 8,
-            }}
-          >
-            <CreateCollectionChipInput />
-          </View>
-          <Separator
-            style={{ marginLeft: 30, marginRight: 52, marginVertical: 8 }}
-            orientation="horizontal"
-          />
-          <View
-            style={{
-              gap: 16,
-              marginRight: 22,
-            }}
-          >
-            <VisibilitySelector />
-            <StorefrontOptions />
-          </View>
-        </View>
-      </ScrollView>
-      <BlurBackground className="w-full flex flex-row pt-2 gap-4 px-4 z-1">
-        <FooterButton
-          highLighted
-          style={{ flexGrow: 1, flex: 1, width: '100%' }}
-          onPress={() => setPage(0)}
-          label="Back"
-          iconSource={(style) => <ArrowLeft style={style} color={Colors.$iconDefaultLight} />}
-        />
-        <SubmitCollectionButton />
-      </BlurBackground>
-    </CreateNewCollectionsProvider>
   )
 }

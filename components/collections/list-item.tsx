@@ -25,18 +25,19 @@ export const CollectionListView = ({
           flexDirection: 'row',
           alignItems: 'center',
           gap: Spacings.s4,
-          paddingRight: Spacings.s6,
-          padding: Spacings.s4,
+          paddingRight: Spacings.s2,
+          paddingLeft: Spacings.s1,
         }}
         key={collection.id}
       >
         <CollectionsAvatar icon={icon} iconImageSrc={collection.cover_image_url ?? undefined} />
-        <View key={collection.id} className="shrink-0 grow">
+        <View key={collection.id} className="shrink-1 flex-1">
           <Text variant={'h4'}>{collection.name}</Text>
           <Text
-            // variant={'l'}
             style={{
               color: Colors.$textNeutralHeavy,
+              flexWrap: 'wrap',
+              width: '100%',
             }}
           >
             {collection.description}

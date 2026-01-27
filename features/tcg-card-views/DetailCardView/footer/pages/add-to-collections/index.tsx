@@ -7,8 +7,8 @@ import { PanelBottomClose, Plus } from 'lucide-react-native'
 import React, { useState } from 'react'
 import { ScrollView, View } from 'react-native'
 import { Colors, Spacings } from 'react-native-ui-lib'
-import { useCardDetails } from '../../provider'
-import { FooterButton } from '../components/button'
+import { useCardDetails } from '../../../provider'
+import { FooterButton } from '../../components/button'
 // import { Label } from '@react-navigation/elements'
 
 export const AddToCollectionsView = () => {

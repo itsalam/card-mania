@@ -123,7 +123,6 @@ const mutateCollectionFn =
 
 export const useEditCollection = (
     collectionId?: string,
-    cardId?: string,
 ) => {
     const qc = useQueryClient();
     const collectionData = qc.getQueryData([
@@ -196,11 +195,6 @@ export const useEditCollection = (
                     "tags",
                 ], updatedTags);
             }
-            //Invalidate card in current view if provided
-            cardId &&
-                qc.invalidateQueries({
-                    queryKey: qk.collectionForCard(cardId),
-                });
         },
     });
 };

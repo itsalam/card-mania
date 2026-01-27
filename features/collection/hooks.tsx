@@ -1,12 +1,14 @@
-import { getWishlistCollectionId, getWishlistQueryArgs } from '@/client/card/wishlist'
+import { getDefaultCollectionPageQueryArgs } from '@/client/card/wishlist'
 import { DEFAULT_INF_Q_OPTIONS, useViewCollectionItems } from '@/client/collections/query'
 import { CollectionIdArgs, InfQueryOptions, InifiniteQueryParams } from '@/client/collections/types'
 import { supabase } from '@/lib/store/client'
 import { qk, requireUser, unwrap } from '@/lib/store/functions/helpers'
 import { CollectionItemQueryView, CollectionItemRow } from '@/lib/store/functions/types'
+import { useUserStore } from '@/lib/store/useUserStore'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { useQuery } from '@tanstack/react-query'
 import { useCallback, useEffect, useState } from 'react'
+import { getDefaultPageCollectionId } from './cached-ids'
 import { defaultPages, DefaultPageTypes } from './provider'
 
 const COLLECTION_UI_PREFERENCES_KEY = 'collections-ui-preferences'
@@ -33,18 +35,22 @@ const defaultCollectionUiPreferences: CollectionUiPreferences = {
 }
 
 export function useCollectionUiPreferences() {
+  const userId = useUserStore((s) => s.user?.id)
   const [preferences, setPreferences] = useState<CollectionUiPreferences>(
     defaultCollectionUiPreferences
   )
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const storageKey = userId
+    ? `${COLLECTION_UI_PREFERENCES_KEY}-${userId}`
+    : COLLECTION_UI_PREFERENCES_KEY
 
   const loadPreferences = useCallback(async () => {
     try {
       setLoading(true)
       setError(null)
 
-      const stored = await AsyncStorage.getItem(COLLECTION_UI_PREFERENCES_KEY)
+      const stored = await AsyncStorage.getItem(storageKey)
       let isDirty = false
       let preferences: Partial<CollectionUiPreferences> = defaultCollectionUiPreferences
       if (stored) {
@@ -53,21 +59,19 @@ export function useCollectionUiPreferences() {
       }
       if (
         !preferences.defaultIds ||
-        Object.values(preferences.defaultIds).filter(Boolean).length === 0
+        Object.values(preferences.defaultIds).filter(Boolean).length < defaultPages.length - 1
       ) {
-        const wishlistId = getWishlistCollectionId()
         const defaultIds = {
-          wishlist: await wishlistId,
+          wishlist: await getDefaultPageCollectionId('wishlist'),
+          selling: await getDefaultPageCollectionId('selling'),
+          vault: await getDefaultPageCollectionId('vault'),
         }
-        let isDirty = true
         const ids = Object.values(defaultIds).filter(Boolean)
         const tabs = preferences.tabs?.filter((t) => !ids.includes(t))
         preferences = { ...preferences, tabs, defaultIds }
       }
 
-      if (isDirty) {
-        AsyncStorage.setItem(COLLECTION_UI_PREFERENCES_KEY, JSON.stringify(preferences))
-      }
+      AsyncStorage.setItem(storageKey, JSON.stringify(preferences))
 
       setPreferences(preferences as CollectionUiPreferences)
     } catch (err) {
@@ -76,30 +80,34 @@ export function useCollectionUiPreferences() {
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [storageKey])
 
   useEffect(() => {
+    setPreferences(defaultCollectionUiPreferences)
     loadPreferences()
-  }, [loadPreferences])
+  }, [loadPreferences, userId])
 
-  const updatePreferences = useCallback(async (updates: Partial<CollectionUiPreferences>) => {
-    setError(null)
-    setLoading(true)
+  const updatePreferences = useCallback(
+    async (updates: Partial<CollectionUiPreferences>) => {
+      setError(null)
+      setLoading(true)
 
-    try {
-      let nextValue: CollectionUiPreferences = {
-        ...defaultCollectionUiPreferences,
-        ...preferences,
-        ...updates,
+      try {
+        let nextValue: CollectionUiPreferences = {
+          ...defaultCollectionUiPreferences,
+          ...preferences,
+          ...updates,
+        }
+        setPreferences(nextValue)
+        await AsyncStorage.setItem(storageKey, JSON.stringify(nextValue))
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to update collection UI preferences')
+      } finally {
+        setLoading(false)
       }
-      setPreferences(nextValue)
-      await AsyncStorage.setItem(COLLECTION_UI_PREFERENCES_KEY, JSON.stringify(nextValue))
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update collection UI preferences')
-    } finally {
-      setLoading(false)
-    }
-  }, [])
+    },
+    [preferences, storageKey]
+  )
 
   return {
     preferences,
@@ -146,21 +154,28 @@ function getCollectionItemsArgs<T extends CollectionItemRow>(
       },
       initialPageParam: null as string | null,
     }
-  }
-
-  if (collectionType === 'wishlist') {
+  } else if (collectionType) {
     return {
       ...finalOpts,
-      ...getWishlistQueryArgs(finalOpts),
-    } as InifiniteQueryParams<T>
+      ...getDefaultCollectionPageQueryArgs(
+        () => getDefaultPageCollectionId(collectionType),
+        finalOpts
+      ),
+    }
   }
-
   // Future collection types should be added here.
   throw new Error('Unsupported collection type')
 }
 
 export function useGetCollection(args: CollectionIdArgs) {
-  const isWishlist = args.collectionType === 'wishlist'
+  const collectionFlag =
+    args.collectionType === 'wishlist'
+      ? 'is_wishlist'
+      : args.collectionType === 'selling'
+      ? 'is_selling'
+      : args.collectionType === 'vault'
+      ? 'is_vault'
+      : null
 
   return useQuery({
     enabled: Object.values(args).some(Boolean),
@@ -169,9 +184,9 @@ export function useGetCollection(args: CollectionIdArgs) {
     queryFn: async () => {
       // 1) Check existence with a cheap HEAD+COUNT (RLS: returns only your row if any)
       let req = supabase.from('collections').select('*')
-      if (isWishlist) {
+      if (collectionFlag) {
         const user = await requireUser()
-        req = req.eq('user_id', user.id).eq('is_wishlist', true)
+        req = req.eq('user_id', user.id).eq(collectionFlag, true)
       } else if (args.collectionId) {
         req = req.eq('id', args.collectionId)
       }

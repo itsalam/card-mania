@@ -25,9 +25,10 @@ export type GradeCondition =
 
 export type CollectionItemRow =
   & Database["public"]["Tables"]["collection_items"]["Row"]
-  & { grade_condition?: GradeCondition | null };
+  & { grade_condition?: GradeCondition | null; collection_ref: string | null };
 
 export type CollectionItemQueryView =
-  Database["public"]["Functions"]["collection_item_query"]["Returns"][number];
+  & Database["public"]["Functions"]["collection_item_query"]["Returns"][number]
+  & { collection_ref: string | null };
 
 export type RecentViewRow = Database["public"]["Tables"]["recent_views"]["Row"];

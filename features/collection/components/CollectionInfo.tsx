@@ -1,15 +1,17 @@
 import { ToggleBadge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Modal } from '@/components/ui/modal'
 import { Text } from '@/components/ui/text'
 import { VISIBILITY_OPTIONS } from '@/features/tcg-card-views/DetailCardView/ui'
 import { UserAvatar } from '@/features/users/components/UserAvatars'
 import { DUMMY_USERS } from '@/features/users/helpers'
-import { useUserStore } from '@/lib/store/useUserStore'
 import { useRouter } from 'expo-router'
 import { LayoutList, LucideIcon, Pencil, Plus, SeparatorHorizontal } from 'lucide-react-native'
 import { MotiView } from 'moti'
 import { useState } from 'react'
 import { FlatList, TouchableOpacity, View } from 'react-native'
 import { Colors } from 'react-native-ui-lib'
+import { isDefaultCollection } from '../helpers'
 import { useGetCollection, useGetCollectionCountInfo } from '../hooks'
 import { DefaultPageTypes, useCollectionsPageStore } from '../provider'
 
@@ -20,24 +22,23 @@ type Option = {
   iconColor?: string
 }
 
-export const CollectionInfo = () => {
-  const { currentPage, preferenceState } = useCollectionsPageStore()
-  const { user } = useUserStore()
+const SortOptions = ['name', 'added_on', 'custom', 'set_name']
 
-  const [showEditHeader, setShowEditHeader] = useState(false)
+const DisplayOptions = ['compact', 'list', 'grid']
+
+export const CollectionInfo = () => {
+  const { currentPage, setCurrentPage, preferenceState, showEditView, setShowEditView } =
+    useCollectionsPageStore()
+
+  const [showSortModal, setShowSortModal] = useState(false)
+  const [showDisplayModal, setShowDisplayModal] = useState(false)
 
   const collectionId =
     preferenceState.preferences.defaultIds[currentPage as DefaultPageTypes] ?? currentPage
   const { data: collection } = useGetCollection({ collectionId })
   const { data: count } = useGetCollectionCountInfo({ collectionId })
 
-  if (!collection) {
-    return null
-  }
-
-  const isPublic = collection.visibility === 'public'
-  const isUsers = collection.user_id === user?.id
-  const visiblityInfo = VISIBILITY_OPTIONS.find((v) => v.key === collection.visibility)
+  const visiblityInfo = VISIBILITY_OPTIONS.find((v) => v.key === collection?.visibility)
   const VisibilityIcon = visiblityInfo?.icon
   const publicAttr = (
     <>
@@ -58,7 +59,7 @@ export const CollectionInfo = () => {
           color: Colors.$textNeutral,
         }}
       >
-        {`${count} items`}
+        {`${count ?? '0'} items`}
       </Text>
     ),
     visibility: publicAttr,
@@ -81,7 +82,7 @@ export const CollectionInfo = () => {
       label: 'Edit',
       icon: Pencil,
       onClick() {
-        setShowEditHeader(true)
+        setShowEditView(true)
       },
     },
     sort: {
@@ -96,88 +97,110 @@ export const CollectionInfo = () => {
     },
   }
 
-  if (showEditHeader) {
-    return <MotiView key={`${collectionId}-edit`}></MotiView>
+  if (showEditView) {
+    return null
   }
 
+  //@ts-ignore
+  const tabs = [...Object.entries(options)].filter(
+    (option) => !collection || !isDefaultCollection(collection) || option[0] !== 'edit'
+  )
+
   return (
-    <MotiView
-      key={collectionId}
-      from={{ flex: 0 }}
-      animate={{ flex: 1 }}
-      style={{
-        padding: 12,
-        paddingHorizontal: 20,
-        display: 'flex',
-        gap: 4,
-      }}
-    >
-      <View
+    <>
+      <MotiView
+        // entering={FadeInRight}
+        // exiting={FadeOutLeft}
+        key={collection ? `loaded-${collection.id}` : collectionId}
+        from={{ flex: 0 }}
+        animate={{ flex: 1 }}
         style={{
-          paddingBottom: 4,
+          padding: 16,
+          paddingHorizontal: 20,
+          display: 'flex',
+          gap: 4,
         }}
       >
-        <Text variant={'lead'}>{collection.description}</Text>
-      </View>
+        {collection?.description && (
+          <View
+            style={{
+              paddingBottom: 8,
+            }}
+          >
+            <Text variant={'small'}>{collection.description}</Text>
+          </View>
+        )}
 
-      <View style={{ display: 'flex', gap: 8 }}>
-        <View style={{ display: 'flex', gap: 4 }}>
-          <UserAvatar user={DUMMY_USERS[0]} size="sm" />
+        <View style={{ display: 'flex', gap: 8 }}>
+          <View style={{ display: 'flex', gap: 4 }}>
+            <UserAvatar user={DUMMY_USERS[0]} size="sm" />
 
+            <FlatList
+              horizontal
+              data={Object.entries(attributes)}
+              bounces={false}
+              renderItem={({ item }) => (
+                <View
+                  key={item[0]}
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'row',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    gap: 2,
+                  }}
+                >
+                  {item[1]}
+                </View>
+              )}
+              ItemSeparatorComponent={() => (
+                <Text style={{ color: Colors.$textNeutral, paddingHorizontal: 3 }}>•</Text>
+              )}
+            />
+          </View>
           <FlatList
+            data={tabs}
             horizontal
-            data={Object.entries(attributes)}
-            bounces={false}
-            renderItem={({ item }) => (
-              <View
-                key={item[0]}
-                style={{
-                  display: 'flex',
-                  flexDirection: 'row',
-                  justifyContent: 'center',
-                  alignItems: 'center',
-                  gap: 2,
-                }}
-              >
-                {item[1]}
-              </View>
-            )}
-            ItemSeparatorComponent={() => (
-              <Text style={{ color: Colors.$textNeutral, paddingHorizontal: 3 }}>•</Text>
-            )}
+            contentContainerStyle={{
+              display: 'flex',
+              flexDirection: 'row',
+              gap: 8,
+              // overflow: 'visible',
+            }}
+            style={{ overflow: 'visible' }}
+            renderItem={({ item }) => {
+              const Icon = item[1].icon
+              return (
+                <TouchableOpacity onPress={() => item[1].onClick?.()}>
+                  <ToggleBadge
+                    label={item[1].label}
+                    checked
+                    leftElement={
+                      <Icon
+                        color={Colors.$iconDefaultLight}
+                        size={18}
+                        strokeWidth={2.5}
+                        style={{ marginLeft: 4 }}
+                      />
+                    }
+                  />
+                </TouchableOpacity>
+              )
+            }}
           />
         </View>
-        <FlatList
-          data={Object.entries(options)}
-          horizontal
-          contentContainerStyle={{
-            display: 'flex',
-            flexDirection: 'row',
-            gap: 8,
-            // overflow: 'visible',
-          }}
-          style={{ overflow: 'visible' }}
-          renderItem={({ item }) => {
-            const Icon = item[1].icon
-            return (
-              <TouchableOpacity onPress={() => item[1].onClick?.()}>
-                <ToggleBadge
-                  label={item[1].label}
-                  checked
-                  leftElement={
-                    <Icon
-                      color={Colors.$iconDefaultLight}
-                      size={18}
-                      strokeWidth={2.5}
-                      style={{ marginLeft: 4 }}
-                    />
-                  }
-                />
-              </TouchableOpacity>
-            )
-          }}
-        />
-      </View>
-    </MotiView>
+        <Modal visible={showSortModal} onDismiss={() => setShowSortModal(false)}>
+          {SortOptions.map((option) => (
+            <Button>{option}</Button>
+          ))}
+        </Modal>
+
+        <Modal visible={showDisplayModal} onDismiss={() => setShowDisplayModal(false)}>
+          {DisplayOptions.map((option) => (
+            <Button>{option}</Button>
+          ))}
+        </Modal>
+      </MotiView>
+    </>
   )
 }

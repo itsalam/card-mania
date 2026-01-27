@@ -94,9 +94,6 @@ export function CollectionsPreviewIcon({
       </LiquidGlassCard>
     )
   }
-
-  console.log({ HEIGHT })
-
   return (
     <View
       style={{

@@ -31,16 +31,15 @@ import Animated, {
 } from 'react-native-reanimated'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Button, Colors, Dialog, PanningProvider } from 'react-native-ui-lib'
-import { AddToCollectionsView } from './footer/add-to-collections'
-import { CreateCollectionView } from './footer/create-collections'
+
 import { Footer } from './footer/footer'
+import { AddToCollectionsView } from './footer/pages/add-to-collections'
+import { CreateCollectionView } from './footer/pages/create-collection'
 import { Coordinates, useSelectedGrades, useTransitionAnimation } from './helpers'
 import { CardDetailsProvider, useCardDetails } from './provider'
 import { CardScreenHeader, Prices } from './ui'
 
 const { width: W, height: H } = Dimensions.get('window')
-
-const AnimatedImage = Animated.createAnimatedComponent(Image)
 
 export default function FocusCardView({
   cardId,
@@ -68,8 +67,6 @@ export default function FocusCardView({
     cardData,
     visibleGrades
   )
-
-  const [images, setImages] = useState([])
 
   useInvalidateOnFocus(qk.recent)
 

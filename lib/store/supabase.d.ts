@@ -7,10 +7,30 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instantiate createClient with right options
-  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
-  __InternalSupabase: {
-    PostgrestVersion: "13.0.4"
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
   }
   public: {
     Tables: {
@@ -190,6 +210,7 @@ export type Database = {
       collection_items: {
         Row: {
           collection_id: string
+          collection_ref: string | null
           created_at: string
           grade_condition_id: string | null
           grading_company: string | null
@@ -204,6 +225,7 @@ export type Database = {
         }
         Insert: {
           collection_id: string
+          collection_ref?: string | null
           created_at?: string
           grade_condition_id?: string | null
           grading_company?: string | null
@@ -218,6 +240,7 @@ export type Database = {
         }
         Update: {
           collection_id?: string
+          collection_ref?: string | null
           created_at?: string
           grade_condition_id?: string | null
           grading_company?: string | null
@@ -255,6 +278,20 @@ export type Database = {
           {
             foreignKeyName: "collection_items_collection_id_fkey"
             columns: ["collection_id"]
+            isOneToOne: false
+            referencedRelation: "collections_with_tags"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "collection_items_collection_ref_fkey"
+            columns: ["collection_ref"]
+            isOneToOne: false
+            referencedRelation: "collections"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "collection_items_collection_ref_fkey"
+            columns: ["collection_ref"]
             isOneToOne: false
             referencedRelation: "collections_with_tags"
             referencedColumns: ["id"]
@@ -352,7 +389,11 @@ export type Database = {
           cover_image_url: string | null
           created_at: string
           description: string | null
+          hide_sold_items: boolean | null
           id: string
+          is_selling: boolean | null
+          is_storefront: boolean | null
+          is_vault: boolean | null
           is_wishlist: boolean
           name: string
           updated_at: string
@@ -363,7 +404,11 @@ export type Database = {
           cover_image_url?: string | null
           created_at?: string
           description?: string | null
+          hide_sold_items?: boolean | null
           id?: string
+          is_selling?: boolean | null
+          is_storefront?: boolean | null
+          is_vault?: boolean | null
           is_wishlist?: boolean
           name: string
           updated_at?: string
@@ -374,7 +419,11 @@ export type Database = {
           cover_image_url?: string | null
           created_at?: string
           description?: string | null
+          hide_sold_items?: boolean | null
           id?: string
+          is_selling?: boolean | null
+          is_storefront?: boolean | null
+          is_vault?: boolean | null
           is_wishlist?: boolean
           name?: string
           updated_at?: string
@@ -1388,7 +1437,10 @@ export type Database = {
       }
     }
     Functions: {
-      _clamp_nonnegative: { Args: { val: number }; Returns: number }
+      _clamp_nonnegative: {
+        Args: { val: number }
+        Returns: number
+      }
       _wishlist_row_cost_cents: {
         Args: { p_kind: string; p_metadata?: Json; p_ref_id: string }
         Returns: number
@@ -1426,6 +1478,30 @@ export type Database = {
           hits: number
           last_seen: string
         }[]
+      }
+      citext: {
+        Args: { "": boolean } | { "": string } | { "": unknown }
+        Returns: string
+      }
+      citext_hash: {
+        Args: { "": string }
+        Returns: number
+      }
+      citextin: {
+        Args: { "": unknown }
+        Returns: string
+      }
+      citextout: {
+        Args: { "": string }
+        Returns: unknown
+      }
+      citextrecv: {
+        Args: { "": unknown }
+        Returns: string
+      }
+      citextsend: {
+        Args: { "": string }
+        Returns: string
       }
       collection_item_query: {
         Args: {
@@ -1470,6 +1546,7 @@ export type Database = {
         }
         Returns: {
           collection_id: string
+          collection_ref: string | null
           created_at: string
           grade_condition_id: string | null
           grading_company: string | null
@@ -1482,12 +1559,6 @@ export type Database = {
           user_id: string
           variants: string[] | null
         }[]
-        SetofOptions: {
-          from: "*"
-          to: "collection_items"
-          isOneToOne: false
-          isSetofReturn: true
-        }
       }
       collections_with_membership: {
         Args: { p_card: string; p_user: string }
@@ -1527,8 +1598,22 @@ export type Database = {
         Args: { p_name: string; p_slug: string; p_weight?: number }
         Returns: string
       }
-      curated_tags_import: { Args: { payload: Json }; Returns: Json }
-      effective_user_id: { Args: never; Returns: string }
+      curated_tags_import: {
+        Args: { payload: Json }
+        Returns: Json
+      }
+      effective_user_id: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
+      ensure_default_collections: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
+      ensure_default_collections_for_user: {
+        Args: { p_user_id: string }
+        Returns: undefined
+      }
       ensure_demo_mapping: {
         Args: { p_base_user_id: string }
         Returns: undefined
@@ -1544,7 +1629,30 @@ export type Database = {
           tag_slug: string
         }[]
       }
-      is_demo_user: { Args: never; Returns: boolean }
+      gtrgm_compress: {
+        Args: { "": unknown }
+        Returns: unknown
+      }
+      gtrgm_decompress: {
+        Args: { "": unknown }
+        Returns: unknown
+      }
+      gtrgm_in: {
+        Args: { "": unknown }
+        Returns: unknown
+      }
+      gtrgm_options: {
+        Args: { "": unknown }
+        Returns: undefined
+      }
+      gtrgm_out: {
+        Args: { "": unknown }
+        Returns: unknown
+      }
+      is_demo_user: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
       most_used_variants: {
         Args: { p_card_id: string; p_limit?: number; p_query?: string }
         Returns: {
@@ -1583,8 +1691,18 @@ export type Database = {
           snippet: string
         }[]
       }
-      show_limit: { Args: never; Returns: number }
-      show_trgm: { Args: { "": string }; Returns: string[] }
+      set_limit: {
+        Args: { "": number }
+        Returns: number
+      }
+      show_limit: {
+        Args: Record<PropertyKey, never>
+        Returns: number
+      }
+      show_trgm: {
+        Args: { "": string }
+        Returns: string[]
+      }
       suggest_tags: {
         Args: {
           category_ids?: string[]
@@ -1625,25 +1743,22 @@ export type Database = {
           score: number
         }[]
       }
-      touch_recent_view:
-        | {
-            Args: {
+      touch_recent_view: {
+        Args:
+          | {
               p_ctx?: Json
               p_source?: string
               p_target_id: string
               p_target_type: Database["public"]["Enums"]["view_target"]
             }
-            Returns: undefined
-          }
-        | {
-            Args: {
+          | {
               p_item_id: string
               p_item_type: string
               p_meta?: Json
               p_user_id: string
             }
-            Returns: undefined
-          }
+        Returns: undefined
+      }
       upsert_collection_items: {
         Args: { p_collection_id: string; p_items: Json; p_owner: string }
         Returns: undefined
@@ -1652,7 +1767,10 @@ export type Database = {
         Args: { p_h: number; p_mime: string; p_url: string; p_w: number }
         Returns: string
       }
-      wishlist_recompute_total: { Args: never; Returns: number }
+      wishlist_recompute_total: {
+        Args: Record<PropertyKey, never>
+        Returns: number
+      }
       wishlist_set_grades: {
         Args: {
           p_delete_when_empty?: boolean
@@ -1681,7 +1799,10 @@ export type Database = {
           grades: string[]
         }[]
       }
-      wishlist_total: { Args: never; Returns: number }
+      wishlist_total: {
+        Args: Record<PropertyKey, never>
+        Returns: number
+      }
     }
     Enums: {
       item_kind: "card"
@@ -1811,6 +1932,9 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {
       item_kind: ["card"],
@@ -1818,3 +1942,4 @@ export const Constants = {
     },
   },
 } as const
+
