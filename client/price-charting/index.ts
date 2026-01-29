@@ -69,11 +69,12 @@ export function useSuggestionsFixed() {
     queryKey: ["price-charting-suggestions"],
     enabled: true,
     queryFn: async () => {
-      const { data } = await invokeFx<typeof payload, TSearchRes>(
+      const { data, error } = await invokeFx<typeof payload, TSearchRes>(
         "price-charting",
         payload,
         { parseOut: SearchResponse, useQueryParams: true },
       );
+      if (error) throw error;
       return data;
     },
     staleTime: 60_000,

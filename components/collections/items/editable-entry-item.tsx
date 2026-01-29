@@ -17,6 +17,7 @@ import {
 } from '@/components/ui/multi-select-input/multi-select-input'
 import { NumberTicker } from '@/components/ui/number-ticker'
 import { Separator } from '@/components/ui/separator'
+import { Skeleton } from '@/components/ui/skeleton'
 import { Text } from '@/components/ui/text'
 import { formatPrice } from '@/components/utils'
 import { TCard } from '@/constants/types'
@@ -87,12 +88,14 @@ export const CollectionItemEntry = ({
   onDelete,
   card,
   editable,
+  isLoading,
 }: {
   collection: CollectionLike
   collectionItem: Partial<CollectionItemRow>
   onDelete?: () => void
-  card: TCard
+  card: TCard | null
   editable?: boolean
+  isLoading?: boolean
 }) => {
   const { data: gradeData, error } = useGradingConditions()
   const [priceModalVisible, setPriceModalVisible] = useState(false)
@@ -103,7 +106,7 @@ export const CollectionItemEntry = ({
     collectionItem?.id
   )
 
-  const { data: cardData } = useCardQuery(card.id)
+  const { data: cardData } = useCardQuery(card?.id)
 
   const initialDraft = useMemo(() => {
     const gradeFormat = gradeData?.find((c) => c.slug === collectionItem.grading_company)
@@ -183,7 +186,7 @@ export const CollectionItemEntry = ({
   const price = useMemo(() => {
     if (cardData && gradeData && currentGrade) {
       return getGradedPrice({ card: cardData, graders: gradeData, gradeId: currentGrade.id })
-    } else return getDefaultPrice(card)
+    } else return getDefaultPrice(card ?? undefined)
   }, [collectionItem, gradeData, currentGrade])
 
   //TODO: Implement modal overriwte/selling options
@@ -217,8 +220,13 @@ export const CollectionItemEntry = ({
               fontSize: 12,
             }}
           >
-            {(currentGrader ? `${currentGrader.slug} ` : 'ungraded').toLocaleUpperCase()}
-            {currentGrade?.grade_value.toPrecision(2)}
+            {isLoading ? (
+              <Skeleton style={{ height: 12, width: 50 }} />
+            ) : (
+              `${(currentGrader ? `${currentGrader.slug} ` : 'ungraded').toLocaleUpperCase()}${
+                currentGrade?.grade_value.toPrecision(2) ?? ''
+              }`
+            )}
           </Text>
         </View>
         <View
@@ -229,7 +237,9 @@ export const CollectionItemEntry = ({
             gap: 10,
           }}
         >
-          {price?.[1] ? (
+          {isLoading ? (
+            <Skeleton style={{ height: 15, width: 66 }} />
+          ) : price?.[1] ? (
             <Text>{formatPrice(price[1])}</Text>
           ) : (
             <Text style={{ color: Colors.$textNeutralLight }}>{'--.--'}</Text>
@@ -237,10 +247,12 @@ export const CollectionItemEntry = ({
 
           <X size={8} />
           <NumberTicker
+            disabled={isLoading}
+            containerStyle={{ opacity: isLoading ? 0.6 : 1 }}
             stepperProps={{ small: true }}
             min={0}
             max={999}
-            initialNumber={draft.quantity ?? 0}
+            initialNumber={isLoading ? undefined : draft.quantity ?? 0}
             onChangeNumber={(n) => updateDraft({ quantity: n })}
           />
 
@@ -252,11 +264,19 @@ export const CollectionItemEntry = ({
               gap: 0,
             }}
           >
-            <TouchableOpacity onPress={() => deleteEntry(draft)}>
+            <TouchableOpacity
+              onPress={() => deleteEntry(draft)}
+              disabled={isLoading}
+              style={{ opacity: isLoading ? 0.4 : 1 }}
+            >
               <XCircle />
             </TouchableOpacity>
             {editable && (
-              <TouchableOpacity onPress={() => setPriceModalVisible(true)}>
+              <TouchableOpacity
+                onPress={() => setPriceModalVisible(true)}
+                disabled={isLoading}
+                style={{ opacity: isLoading ? 0.4 : 1 }}
+              >
                 <EllipsisVertical />
               </TouchableOpacity>
             )}

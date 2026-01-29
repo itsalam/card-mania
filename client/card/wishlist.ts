@@ -1,7 +1,6 @@
 import { ItemKinds } from "@/constants/types";
-import { supabase } from "@/lib/store/client";
+import { getSupabase } from "@/lib/store/client";
 import { qk, requireUser, WishlistKey } from "@/lib/store/functions/helpers";
-import { CollectionItemRow } from "@/lib/store/functions/types";
 import { Database } from "@/lib/store/supabase";
 import {
     InfiniteData,
@@ -11,11 +10,6 @@ import {
     useQueryClient,
 } from "@tanstack/react-query";
 import React from "react";
-import {
-    DEFAULT_INF_Q_OPTIONS,
-    useViewCollectionItems,
-} from "../collections/query";
-import { InfQueryOptions, InifiniteQueryParams } from "../collections/types";
 import { ViewParams } from "./types";
 
 const buildPrefixKey = (wishlistKey: WishlistKey, separator = "/") => {
@@ -32,7 +26,7 @@ export async function getWishlistCollectionId() {
     if (loadingWishlistCollectionId) return loadingWishlistCollectionId;
 
     const user = await requireUser();
-    loadingWishlistCollectionId = supabase
+    loadingWishlistCollectionId = getSupabase()
         .from("collections")
         .select("id")
         .eq("user_id", user.id)
@@ -75,7 +69,7 @@ class WishlistBatcher {
         if (this.wishlistCollectionId) return this.wishlistCollectionId;
         if (this.loadingWishlistId) return this.loadingWishlistId;
         const user = await requireUser();
-        this.loadingWishlistId = supabase
+        this.loadingWishlistId = getSupabase()
             .from("wishlist")
             .select("collection_id")
             .eq("user_id", user.id)
@@ -110,7 +104,7 @@ class WishlistBatcher {
 
         for (const [kind, ids] of batches) {
             if (!ids.size) continue;
-            const { data, error } = await supabase
+            const { data, error } = await getSupabase()
                 .from("collection_items")
                 .select("ref_id")
                 .eq("collection_id", wishlistCollectionId)
@@ -227,7 +221,7 @@ export function useToggleWishlist(kind: ItemKinds) {
         mutationFn: async (
             { kind, id, grade_condition_id }: ToggleWishlistParams,
         ) => {
-            const { data, error } = await supabase.rpc("wishlist_toggle", {
+            const { data, error } = await getSupabase().rpc("wishlist_toggle", {
                 p_kind: kind,
                 p_ref_id: id,
                 p_grade_cond_id: grade_condition_id,
@@ -284,7 +278,7 @@ export function useWishlistTotal() {
         staleTime: 60_000, // tweak to taste
         queryFn: async () => {
             // 1) Check existence with a cheap HEAD+COUNT (RLS: returns only your row if any)
-            const { count, error: headErr } = await supabase
+            const { count, error: headErr } = await getSupabase()
                 .from("wishlist_totals")
                 .select("user_id", { count: "exact", head: true });
 
@@ -292,7 +286,7 @@ export function useWishlistTotal() {
 
             // 2) If absent -> recompute (also upserts the row)
             if (!count || count === 0) {
-                const { data, error } = await supabase.rpc(
+                const { data, error } = await getSupabase().rpc(
                     "wishlist_recompute_total",
                 );
                 if (error) throw error;
@@ -301,7 +295,7 @@ export function useWishlistTotal() {
             }
 
             // 3) If present -> fast path
-            const { data, error } = await supabase.rpc("wishlist_total");
+            const { data, error } = await getSupabase().rpc("wishlist_total");
             if (error) throw error;
             return data ?? 0;
         },
@@ -312,59 +306,3 @@ type WishlistRow =
     Database["public"]["Functions"]["collection_item_query"]["Returns"][number];
 // Otherwise, a quick fallback:
 // type Row = { user_id: string; created_at: string; id: string; title: string; /* ...other card columns... */ };
-
-export function getDefaultCollectionPageQueryArgs<T extends CollectionItemRow>(
-    collecitonIdPromise?: () => Promise<string | null | undefined>,
-    opts?: InfQueryOptions<T>,
-) {
-    let { pageSize, search, kind } = { ...DEFAULT_INF_Q_OPTIONS, ...opts };
-    const queryKey = [
-        ...buildPrefixKey(WishlistKey.View),
-        kind,
-        "collection-backed",
-        {
-            search,
-            pageSize,
-        },
-    ];
-
-    const args = {
-        queryKey,
-        getNextPageParam: (lastPage) =>
-            lastPage?.length ? lastPage[lastPage.length - 1].created_at : null,
-        queryFn: async ({ pageParam }) => {
-            const collectionId = await collecitonIdPromise?.();
-            if (!collectionId) return [];
-
-            const { data, error } = await supabase.rpc(
-                "collection_item_query",
-                {
-                    p_collection_id: collectionId,
-                    p_page_param: pageParam as string,
-                    p_search: search,
-                    p_page_size: pageSize,
-                },
-            );
-
-            if (error) throw error;
-            //@ts-ignore
-            return (data ?? []) as CollectionItemRow[];
-        },
-        initialPageParam: null as string | null,
-    } as InifiniteQueryParams<CollectionItemRow>;
-
-    return args as any as InifiniteQueryParams;
-}
-
-export function useWishlistCardsEnriched(
-    opts: InfQueryOptions<CollectionItemRow>,
-) {
-    let { pageSize = 50, search = "", kind = "card", ...queryOpts } = opts;
-    const getWishlistId = () => getWishlistCollectionId();
-    const wishlistArgs = {
-        ...queryOpts,
-        ...getDefaultCollectionPageQueryArgs(getWishlistId, opts),
-    } as InifiniteQueryParams;
-
-    return useViewCollectionItems(wishlistArgs);
-}

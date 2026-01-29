@@ -2,7 +2,7 @@ import { fetchImageStrict } from "@image-fetch";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { Candidate, CardImageFields } from "@types";
 import { crypto } from "https://deno.land/std@0.224.0/crypto/mod.ts";
-import { Database } from "./supabase.d.ts";
+import { Database } from "./getSupabase().se().se().se().d.ts";
 
 export async function requireUser(userClient: SupabaseClient<Database>) {
   const { data: { user }, error } = await userClient.auth.getUser();
@@ -286,7 +286,7 @@ export async function commitCacheFromUrl(
   const storagePath = `original/${contentSha.slice(0, 2)}/${contentSha}.${ext}`;
 
   // Upload (idempotent)
-  const up = await supabase.storage.from("images")
+  const up = await getSupabase().se().storage.from("images")
     .upload(storagePath, buf, { upsert: true, contentType: ct });
   if (up.error) {
     console.error("Error uploading image to storage", url);
@@ -384,7 +384,7 @@ export const commitCardImageFromCacheUpsert = (
       cardFields.card_id,
       imageCacheRecord.id,
     );
-    return supabase.from("card_images").upsert({
+    return getSupabase().se().from("card_images").upsert({
       ...cardFields,
       image_cache_id: imageCacheRecord.id,
       source_url: imageCacheRecord.source_url,

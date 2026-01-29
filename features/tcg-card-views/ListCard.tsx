@@ -1,6 +1,7 @@
 import { useIsWishlisted, useToggleWishlist } from '@/client/card/wishlist'
 import { ImageProxyOpts, useImageProxy } from '@/client/image-proxy'
 import { CARD_ASPECT_RATIO } from '@/components/consts'
+import { Skeleton } from '@/components/ui/skeleton'
 import { Text } from '@/components/ui/text'
 import { formatLabel, formatPrice } from '@/components/utils'
 import { ItemKinds, TCard } from '@/constants/types'
@@ -23,7 +24,7 @@ type ItemListingProps = {
     metadata?: string
     displayPrice?: number
     imageProxyArgs: ImageProxyOpts
-  }
+  } | null
   expanded?: boolean
   isLoading?: boolean
   className?: string
@@ -54,7 +55,7 @@ const DefaultAccessories = ({ kind, item, displayData }: ItemListViewProps) => {
             {formatLabel(displayData?.metadata)}
           </Text>
         )}
-        {displayData.displayPrice ? (
+        {displayData?.displayPrice ? (
           <Text
             className="text-3xl font-bold"
             style={{
@@ -127,21 +128,24 @@ export function CardListView({
   ItemListViewProps,
   'item' | 'displayData'
 >) {
-  const displayPriceFix = getPriceFix(card)
-  const [, displayPrice] = getDefaultPrice(card)
-  const displayData = {
-    title: card.name,
-    subHeading: card.set_name,
-    imageProxyArgs: {
-      variant: 'tiny',
-      shape: 'card',
-      cardId: card?.id ?? undefined,
-      imageType: 'front',
-      queryHash: card?.image?.query_hash ?? undefined,
-    } as ImageProxyOpts,
-    displayPrice: displayPriceFix ?? displayPrice,
-    metadata: card.price_key,
-  }
+  const displayPriceFix = props.isLoading ? null : getPriceFix(card)
+  const [, displayPrice] = props.isLoading ? [null, null] : getDefaultPrice(card)
+  const displayData = props.isLoading
+    ? null
+    : {
+        title: card.name,
+        subHeading: card.set_name,
+        imageProxyArgs: {
+          variant: 'tiny',
+          shape: 'card',
+          cardId: card?.id ?? undefined,
+          imageType: 'front',
+          queryHash: card?.image?.query_hash ?? undefined,
+        } as ImageProxyOpts,
+        displayPrice: displayPriceFix ?? displayPrice,
+        metadata: card.price_key,
+      }
+  //@ts-ignore
   return <ItemListView item={card} displayData={displayData} {...props} />
 }
 
@@ -150,7 +154,7 @@ export function ItemListView({ renderAccessories, ...props }: ItemListViewProps)
 
   const { data: thumbnailImg, isLoading: isImageLoading } = useImageProxy({
     variant: 'tiny',
-    ...displayData.imageProxyArgs,
+    ...displayData?.imageProxyArgs,
   })
 
   const { cardElement, handlePress } = useNavigateToItem(kind, item)
@@ -176,26 +180,35 @@ export function ItemListView({ renderAccessories, ...props }: ItemListViewProps)
           />
         </LiquidGlassCard>
         {expanded && (
-          <View className="flex flex-col h-full items-start p-4 pr-0 flex-1 pt-2">
+          <View className="flex flex-col h-full w-full items-start p-4 pr-0 flex-1 pt-2">
             <View>
-              <Text
-                variant={'large'}
-                className="font-bold text-wrap leading-none"
-                style={{
-                  color: Colors.$textDefault,
-                }}
-              >
-                {displayData?.title}
-              </Text>
-              <Text
-                variant={'muted'}
-                className="text-base capitalize"
-                style={{
-                  color: Colors.$textNeutral,
-                }}
-              >
-                {displayData?.subHeading}
-              </Text>
+              {isLoading ? (
+                <>
+                  <Skeleton style={{ height: 18, width: 190, marginBottom: 6 }} />
+                  <Skeleton style={{ height: 14, width: 275, marginBottom: 4 }} />
+                </>
+              ) : (
+                <>
+                  <Text
+                    variant={'large'}
+                    className="font-bold text-wrap leading-none"
+                    style={{
+                      color: Colors.$textDefault,
+                    }}
+                  >
+                    {displayData?.title}
+                  </Text>
+                  <Text
+                    variant={'muted'}
+                    className="text-base capitalize"
+                    style={{
+                      color: Colors.$textNeutral,
+                    }}
+                  >
+                    {displayData?.subHeading}
+                  </Text>
+                </>
+              )}
             </View>
 
             {renderAccessories ? renderAccessories(props) : <DefaultAccessories {...props} />}

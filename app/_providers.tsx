@@ -1,21 +1,33 @@
-import { Montserrat_100Thin, Montserrat_100Thin_Italic, Montserrat_200ExtraLight, Montserrat_300Light, Montserrat_400Regular, Montserrat_500Medium, Montserrat_600SemiBold, Montserrat_700Bold, Montserrat_800ExtraBold, Montserrat_900Black } from '@expo-google-fonts/montserrat';
-import { useFonts } from 'expo-font';
-import * as SplashScreen from 'expo-splash-screen';
+import {
+  Montserrat_100Thin,
+  Montserrat_100Thin_Italic,
+  Montserrat_200ExtraLight,
+  Montserrat_300Light,
+  Montserrat_400Regular,
+  Montserrat_500Medium,
+  Montserrat_600SemiBold,
+  Montserrat_700Bold,
+  Montserrat_800ExtraBold,
+  Montserrat_900Black,
+} from '@expo-google-fonts/montserrat'
+import { useFonts } from 'expo-font'
+import * as SplashScreen from 'expo-splash-screen'
 
-import { GluestackUIProvider } from '@/components/ui/gluestack-ui-provider';
-import { useColorScheme } from '@/lib/hooks/useColorScheme';
+import { GluestackUIProvider } from '@/components/ui/gluestack-ui-provider'
+import { useColorScheme } from '@/lib/hooks/useColorScheme'
 
-import { NAV_THEME } from '@/lib/constants';
-import { StoreProvider } from '@/lib/store/provider';
-import { AuthStatus, useUserStore } from '@/lib/store/useUserStore';
-import { DarkTheme, DefaultTheme, Theme, ThemeProvider } from '@react-navigation/native';
-import { Session } from '@supabase/supabase-js';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import React, { useRef } from 'react';
-import { Platform } from 'react-native';
-import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { KeyboardProvider } from 'react-native-keyboard-controller';
-import { supabase } from '../lib/store/client';
+import { NAV_THEME } from '@/lib/constants'
+import { StoreProvider } from '@/lib/store/provider'
+import { AuthStatus, useUserStore } from '@/lib/store/useUserStore'
+import { DarkTheme, DefaultTheme, Theme, ThemeProvider } from '@react-navigation/native'
+import { Session } from '@supabase/supabase-js'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import Constants from 'expo-constants'
+import React, { useEffect, useRef } from 'react'
+import { Platform } from 'react-native'
+import { GestureHandlerRootView } from 'react-native-gesture-handler'
+import { KeyboardProvider } from 'react-native-keyboard-controller'
+import { getSupabase } from '../lib/store/client'
 const qc = new QueryClient()
 
 const LIGHT_THEME: Theme = {
@@ -25,10 +37,23 @@ const LIGHT_THEME: Theme = {
 const DARK_THEME: Theme = {
   ...DarkTheme,
   colors: NAV_THEME.dark,
+}
 
+export function getEnvFingerprint() {
+  return Constants.expoConfig?.extra?.supabaseUrl
 }
 
 export default function Providers({ children }: { children: React.ReactNode }) {
+  const envFingerprint = getEnvFingerprint()
+  const prevEnv = useRef<string | null>(null)
+
+  useEffect(() => {
+    if (prevEnv.current && prevEnv.current !== envFingerprint) {
+      qc.clear()
+    }
+    prevEnv.current = envFingerprint ?? null
+  }, [envFingerprint])
+
   const hasMounted = React.useRef(false)
   const { isDarkColorScheme } = useColorScheme()
   const [loaded] = useFonts({
@@ -65,14 +90,14 @@ export default function Providers({ children }: { children: React.ReactNode }) {
       const {
         data: { session },
         error,
-      } = await supabase.auth.getSession()
+      } = await getSupabase().auth.getSession()
 
       if (error) setStatus('error')
       await updateStatus(session)
     })()
 
     // 2) Subscribe to future auth changes
-    const { data: sub } = supabase.auth.onAuthStateChange(async (_event, session) => {
+    const { data: sub } = getSupabase().auth.onAuthStateChange(async (_event, session) => {
       await updateStatus(session)
     })
 

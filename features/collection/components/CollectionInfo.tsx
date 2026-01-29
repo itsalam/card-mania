@@ -1,12 +1,21 @@
 import { ToggleBadge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Modal } from '@/components/ui/modal'
+import { Spinner } from '@/components/ui/spinner'
 import { Text } from '@/components/ui/text'
 import { VISIBILITY_OPTIONS } from '@/features/tcg-card-views/DetailCardView/ui'
 import { UserAvatar } from '@/features/users/components/UserAvatars'
 import { DUMMY_USERS } from '@/features/users/helpers'
 import { useRouter } from 'expo-router'
-import { LayoutList, LucideIcon, Pencil, Plus, SeparatorHorizontal } from 'lucide-react-native'
+import {
+  BanknoteX,
+  LayoutList,
+  LucideIcon,
+  Pencil,
+  Plus,
+  SeparatorHorizontal,
+  Store,
+} from 'lucide-react-native'
 import { MotiView } from 'moti'
 import { useState } from 'react'
 import { FlatList, TouchableOpacity, View } from 'react-native'
@@ -52,6 +61,33 @@ export const CollectionInfo = () => {
       </Text>
     </>
   )
+
+  const storeFrontAttr = (
+    <>
+      {collection?.is_storefront ? <Store color={Colors.$textDefault} size={14} /> : null}
+      <Text
+        style={{
+          color: Colors.$textNeutral,
+        }}
+      >
+        {'Storefront'}
+      </Text>
+    </>
+  )
+
+  const hideSoldAttr = (
+    <>
+      {collection?.hide_sold_items ? <BanknoteX color={Colors.$textDefault} size={14} /> : null}
+      <Text
+        style={{
+          color: Colors.$textNeutral,
+        }}
+      >
+        {'Sold items hidden'}
+      </Text>
+    </>
+  )
+
   const attributes = {
     items: (
       <Text
@@ -63,6 +99,8 @@ export const CollectionInfo = () => {
       </Text>
     ),
     visibility: publicAttr,
+    ...(collection?.is_storefront ? { storefront: storeFrontAttr } : {}),
+    ...(collection?.hide_sold_items ? { hidden_items: hideSoldAttr } : {}),
   }
 
   const router = useRouter()
@@ -88,12 +126,19 @@ export const CollectionInfo = () => {
     sort: {
       label: 'Sort',
       icon: SeparatorHorizontal,
+      onClick() {
+        setShowSortModal(true)
+      },
       //TODO
     },
     display: {
       label: 'Display',
       icon: LayoutList,
       //TODO
+
+      onClick() {
+        setShowDisplayModal(true)
+      },
     },
   }
 
@@ -121,7 +166,7 @@ export const CollectionInfo = () => {
           gap: 4,
         }}
       >
-        {collection?.description && (
+        {collection?.description ? (
           <View
             style={{
               paddingBottom: 8,
@@ -129,6 +174,8 @@ export const CollectionInfo = () => {
           >
             <Text variant={'small'}>{collection.description}</Text>
           </View>
+        ) : (
+          <Spinner />
         )}
 
         <View style={{ display: 'flex', gap: 8 }}>

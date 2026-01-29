@@ -2,7 +2,6 @@
 // RECENT VIEWS (uses RPC: touch_recent_view)
 // =========================
 
-import { supabase } from "../client";
 import { Database } from "../supabase";
 import { requireUser, unwrap } from "./helpers";
 import { ViewTarget } from "./types";
@@ -15,7 +14,7 @@ export async function touchRecentView(params: {
   ctx?: Record<string, unknown>;
 }) {
   const user = await requireUser(); // ensures auth; RPC uses auth.uid()
-  const { error } = await supabase.rpc("touch_recent_view", {
+  const { error } = await getSupabase().rpc("touch_recent_view", {
     p_user_id: user.id,
     p_item_type: params.targetType,
     p_item_id: params.targetId,

@@ -4,6 +4,8 @@
   "version": "1.0.0",
   "scripts": {
     "start": "expo start",
+    "start:local": "ENVFILE=.env.local expo start",
+    "start:test": "ENVFILE=.env.test expo start",
     "reset-project": "node ./scripts/reset-project.js",
     "android": "DARK_MODE=media expo start --android",
     "ios": "DARK_MODE=media expo start --ios",
@@ -66,7 +68,7 @@
     "expo-asset": "~12.0.10",
     "expo-blur": "~15.0.7",
     "expo-build-properties": "~1.0.9",
-    "expo-constants": "~18.0.10",
+    "expo-constants": "~18.0.13",
     "expo-crypto": "~15.0.7",
     "expo-font": "~14.0.9",
     "expo-haptics": "~15.0.7",

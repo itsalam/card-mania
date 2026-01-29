@@ -3,7 +3,7 @@
 // =========================
 
 import { ItemKinds } from "@/constants/types";
-import { supabase } from "../client";
+import { getSupabase } from "@/lib/store/client";
 import { Database } from "../supabase";
 import { requireUser, unwrap } from "./helpers";
 import {
@@ -20,11 +20,11 @@ export async function viewCollectionsForCard(
 ) {
   const user = await requireUser();
   const { data, error } = await (query !== null
-    ? supabase.rpc(
+    ? getSupabase().rpc(
       "collections_with_membership_query",
       { p_user: user.id, p_card: cardId, p_query: query as string },
     )
-    : supabase.rpc(
+    : getSupabase().rpc(
       "collections_with_membership",
       { p_user: user.id, p_card: cardId },
     )).select("*").order("updated_at", { ascending: false });
@@ -38,7 +38,7 @@ export async function viewCollectionItemsForCard(
   collectionId: string,
   cardId: string,
 ) {
-  const { data, error } = await supabase.rpc(
+  const { data, error } = await getSupabase().rpc(
     "collection_items_by_ref",
     { p_ref_id: cardId, p_collection_id: collectionId },
   ).select(
@@ -60,14 +60,25 @@ export async function viewCollectionItemsForCard(
   return result;
 }
 
-export async function viewCollectionItemsForUser() {
-  const user = await requireUser();
-  const { data, error } = await supabase.from("collections").select("*").eq(
-    "user_id",
-    user.id,
-  );
-  return unwrap(data, error);
-}
+export const viewCollectionItemsForUser =
+  (hideDefaults = false) => async () => {
+    const user = await requireUser();
+    const req = getSupabase()
+      .from("collections")
+      .select("*")
+      .eq("user_id", user.id);
+
+    if (hideDefaults) {
+      // Include rows where the flags are either false or null
+      req
+        .not("is_selling", "is", true)
+        .not("is_vault", "is", true)
+        .not("is_wishlist", "is", true);
+    }
+
+    const { data, error } = await req;
+    return unwrap(data, error);
+  };
 
 // /** Create a new collection (RPC: create_collection) */
 // export async function createCollection(name: string, opts?: {
@@ -75,7 +86,7 @@ export async function viewCollectionItemsForUser() {
 //   isPublic?: boolean;
 // }) {
 //   await requireUser();
-//   const { data, error } = await supabase.rpc("create_collection", {
+//   const { data, error } = await getSupabase().rpc("create_collection", {
 //     p_name: name,
 //     p_desc: opts?.description ?? undefined,
 //     p_is_public: opts?.isPublic ?? false,
@@ -91,7 +102,7 @@ export async function updateCollection(
   patch: CollectionUpdate,
 ) {
   await requireUser();
-  const { data, error } = await supabase
+  const { data, error } = await getSupabase()
     .from("collections")
     .update(patch)
     .eq("id", collectionId)
@@ -103,7 +114,7 @@ export async function updateCollection(
 /** Delete a collection (items cascade via FK) */
 export async function deleteCollection(collectionId: string) {
   await requireUser();
-  const { error } = await supabase.from("collections").delete().eq(
+  const { error } = await getSupabase().from("collections").delete().eq(
     "id",
     collectionId,
   );
@@ -114,7 +125,7 @@ export async function deleteCollection(collectionId: string) {
 /** List my collections with item counts */
 export async function listMyCollections() {
   await requireUser();
-  const { data, error } = await supabase
+  const { data, error } = await getSupabase()
     .from("collections_with_tags")
     .select(
       "id,name,description,visibility,cover_image_url,created_at,collection_items:collection_items!collection_id(count),tags_cache",
@@ -131,7 +142,7 @@ export async function listMyCollections() {
 
 /** Fetch collection items (owner or public via RLS) */
 export async function getCollectionItems(collectionId: string) {
-  const { data, error } = await supabase
+  const { data, error } = await getSupabase()
     .from("collection_items")
     .select()
     .eq("collection_id", collectionId)
@@ -147,7 +158,7 @@ export async function addToCollection(
   >,
 ) {
   await requireUser();
-  const { error } = await supabase.rpc("add_to_collection", {
+  const { error } = await getSupabase().rpc("add_to_collection", {
     ...params,
   });
   if (error) throw error;
@@ -161,7 +172,7 @@ export async function removeFromCollection(
   targetId: string,
 ) {
   await requireUser();
-  const { error } = await supabase
+  const { error } = await getSupabase()
     .from("collection_items")
     .delete()
     .match({
@@ -182,7 +193,7 @@ export async function reorderCollectionItems(
   // Update positions one-by-one (PostgREST doesn't support case/when batch easily)
   // Keep it simple; for many items consider a SQL RPC for atomic bulk update.
   const updates = orderedItemIds.map((id, idx) =>
-    supabase.from("collection_items").update({ position: idx }).match({
+    getSupabase().from("collection_items").update({ position: idx }).match({
       id,
       collection_id: collectionId,
     })
@@ -200,7 +211,7 @@ export async function reorderCollectionItems(
 
 /** Fetch a public collection and its item count by id */
 export async function getPublicCollection(collectionId: string) {
-  const { data, error } = await supabase
+  const { data, error } = await getSupabase()
     .from("collections")
     .select(
       "id,name,description,visibility,cover_image_url,created_at,collection_items(count)",

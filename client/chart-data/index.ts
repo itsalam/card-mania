@@ -1,4 +1,5 @@
 import { TCard } from "@/constants/types";
+import { qk } from "@/lib/store/functions/helpers";
 import { Json } from "@/lib/store/supabase";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { invokeFx } from "../helper";
@@ -33,7 +34,7 @@ export function usePriceChartingData(params: {
     mock_data: { endCost: getField(card.grades_prices, grade) },
   });
   return useQuery({
-    queryKey: ["price-query", card.id, grade],
+    queryKey: qk.priceQuery(card.id, grade),
     enabled: true,
     queryFn: async () => {
       return await invokeFx<typeof payload, TPriceChartingRes>(
@@ -55,7 +56,7 @@ export function usePriceChartingDataBatch(params: {
   const sortedGrades = [...grades].sort();
 
   return useQuery({
-    queryKey: ["price-query", card?.id, { grades: sortedGrades }],
+    queryKey: qk.priceQuery(card?.id, { grades: sortedGrades }),
     enabled: !!card?.id && grades.length > 0,
     queryFn: async () => {
       const promises = sortedGrades.map((grade) => {

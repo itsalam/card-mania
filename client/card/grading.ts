@@ -1,5 +1,5 @@
 // hooks/useGradingConditions.ts
-import { supabase } from "@/lib/store/client";
+import { getSupabase } from "@/lib/store/client";
 import { useQuery } from "@tanstack/react-query";
 import { z } from "zod";
 
@@ -43,7 +43,7 @@ async function fetchCompaniesWithGrades(
 ): Promise<Graders[]> {
     // Embedded select returns companies with joined grade_conditions, ordered desc by grade
     // NOTE: order(...) with foreignTable is how we sort the embedded relation.
-    let q = supabase
+    let q = getSupabase()
         .from("grading_companies")
         .select(
             `

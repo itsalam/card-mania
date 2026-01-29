@@ -1,4 +1,4 @@
-import { supabase } from "@/lib/store/client";
+import { getSupabase } from "@/lib/store/client";
 import { Database } from "@/lib/store/supabase";
 import {
     keepPreviousData,
@@ -27,7 +27,7 @@ export const suggestedVariantsOptions = (
     queryFn: async (): Promise<
         Partial<Variant> & Pick<Variant, "id" | "name">[]
     > => {
-        const { data, error } = await supabase.rpc("most_used_variants", {
+        const { data, error } = await getSupabase().rpc("most_used_variants", {
             p_limit: args.maxResults ?? 8,
             p_query: (args.search ?? "").trim(),
             p_card_id: args.cardId,

@@ -5,7 +5,10 @@
 // Setup type definitions for built-in Supabase Runtime APIs
 import { Database } from "@schema";
 import { createClient } from "@supabase/supabase-js";
-import { commitCacheFromQueryHash, commitCardImageFromCacheUpsert } from "@utils";
+import {
+  commitCacheFromQueryHash,
+  commitCardImageFromCacheUpsert,
+} from "@utils";
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 // --- config
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
@@ -30,7 +33,9 @@ function logAuthInfo(req: Request) {
   }
 }
 
-async function readJson<T extends Record<string, unknown>>(req: Request): Promise<T> {
+async function readJson<T extends Record<string, unknown>>(
+  req: Request,
+): Promise<T> {
   const ct = req.headers.get("content-type") || "";
   if (!ct.includes("application/json")) {
     // try best-effort parse, but don't crash
@@ -51,7 +56,15 @@ async function readJson<T extends Record<string, unknown>>(req: Request): Promis
 Deno.serve(async (req) => {
   try {
     logAuthInfo(req);
-    const body = await readJson<{ query_hash: string, sample: number, card_id: string, type: string, hashes: string[] }>(req);
+    const body = await readJson<
+      {
+        query_hash: string;
+        sample: number;
+        card_id: string;
+        type: string;
+        hashes: string[];
+      }
+    >(req);
     const { card_id, kind } = { kind: "front", ...body };
     const query_hash = body?.query_hash?.trim();
     const sample = Math.max(1, Number(body?.sample ?? DEFAULT_SAMPLE));
@@ -61,11 +74,15 @@ Deno.serve(async (req) => {
       const cacheCommits = await commitCacheFromQueryHash(
         query_hash,
         sample,
-      )
+      );
       console.log("Committed images", cacheCommits);
-      const cardImagePromise = await commitCardImageFromCacheUpsert({ card_id, kind }, cacheCommits, supabase);
+      const cardImagePromise = await commitCardImageFromCacheUpsert(
+        { card_id, kind },
+        cacheCommits,
+        supabase,
+      );
 
-      const commitUpdatedPromise = supabase.from("search_queries")
+      const commitUpdatedPromise = getSupabase().from("search_queries")
         .update({ committed_at: new Date().toISOString() })
         .eq("query_hash", query_hash).select().maybeSingle();
 
@@ -91,7 +108,11 @@ Deno.serve(async (req) => {
 
       const hashPromises = hashes.map(async (h) => {
         const cacheCommits = await commitCacheFromQueryHash(String(h), sample);
-        return commitCardImageFromCacheUpsert({ card_id, kind }, cacheCommits, supabase);
+        return commitCardImageFromCacheUpsert(
+          { card_id, kind },
+          cacheCommits,
+          supabase,
+        );
       });
       await Promise.all(hashPromises);
       return new Response(

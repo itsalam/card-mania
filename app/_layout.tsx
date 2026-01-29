@@ -9,6 +9,7 @@ require('react-native-ui-lib/config').setConfig({ appScheme: 'default' })
 import { PortalHost } from '@rn-primitives/portal'
 import * as Sentry from '@sentry/react-native'
 import { isRunningInExpoGo } from 'expo'
+import Constants from 'expo-constants'
 import { useNavigationContainerRef } from 'expo-router'
 import React from 'react'
 import { Appearance, Platform } from 'react-native'
@@ -21,8 +22,8 @@ const navigationIntegration = Sentry.reactNavigationIntegration({
 })
 
 Sentry.init({
-  dsn: process.env.EXPO_PUBLIC_SENTRY_DSN,
-  tracesSampleRate: Number(process.env.EXPO_PUBLIC_SENTRY_SAMPLE_RATE) ?? 1.0,
+  dsn: Constants.expoConfig?.extra?.sentryDSN,
+  tracesSampleRate: Number(Constants.expoConfig?.extra?.sentrySampleRate) ?? 1.0,
   integrations: [navigationIntegration],
   enableNativeFramesTracking: !isRunningInExpoGo(),
 

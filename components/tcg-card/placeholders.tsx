@@ -1,4 +1,4 @@
-import { supabase } from '@/lib/store/client'
+import { getSupabase } from '@/lib/store/client'
 import { TransformOptions } from '@supabase/storage-js'
 import { ImageBackground } from 'expo-image'
 import { ComponentProps } from 'react'
@@ -33,8 +33,8 @@ export function CardPlaceholderImage({
     height: finalHeight,
   }
 
-  const placeholderUrl = supabase.storage
-    .from('placeholder')
+  const placeholderUrl = getSupabase()
+    .storage.from('placeholder')
     .getPublicUrl('default.png', { transform: transformParams }).data.publicUrl
   const defaultPlaceHolder = {
     uri: placeholderUrl,

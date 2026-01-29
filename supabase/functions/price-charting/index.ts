@@ -1,4 +1,9 @@
-import { BlendedSearchResultItem, Card, PriceChartingEntry, SearchResultItem } from "@types";
+import {
+  BlendedSearchResultItem,
+  Card,
+  PriceChartingEntry,
+  SearchResultItem,
+} from "@types";
 import {
   buildSerpQuery,
   createSupabaseServiceClient,
@@ -304,7 +309,11 @@ async function attachImageHints(
   const augmented = await Promise.all(entries.map(async (e) => {
     // If/when you can resolve bound images via card_images→image_cache, prefer those here.
     // For now, return candidate top_url (or null) and prewarm if needed.
-    const { url, qHash } = await getCandidateTopUrlOrPrewarm(e.card, supa, srole);
+    const { url, qHash } = await getCandidateTopUrlOrPrewarm(
+      e.card,
+      supa,
+      srole,
+    );
     const proxy =
       `${supa}/functions/v1/image-proxy?query_hash=${qHash}&variant=thumb&shape=card`;
 
@@ -335,7 +344,7 @@ function handleCommitImages(
 ) {
   const promises = Promise.resolve(
     commitImages ||
-      isHot(cacheKey, queryNorm, queryHash)
+      isHot(cacheKey, queryNorm, queryHash),
   ).then((shouldCommit) => {
     if (!shouldCommit) {
       return;
@@ -404,8 +413,7 @@ async function isHot(
   queryNorm: string,
   queryHash: string,
 ) {
- 
-  const bump = await supabase.rpc("bump_search_query", {
+  const bump = await getSupabase().rpc("bump_search_query", {
     p_query_raw: qRaw,
     p_query_norm: queryNorm,
     p_query_hash: queryHash,
@@ -516,7 +524,9 @@ const fetchFromProvider = async (
       item: PriceChartingEntry,
     ) => convertToPriceEntry(item));
 
-  vendorResults = await Promise.all(priceEntries.map(convertPCEntrytoSearchItem));
+  vendorResults = await Promise.all(
+    priceEntries.map(convertPCEntrytoSearchItem),
+  );
 
   return { raw, vendorResults };
 };

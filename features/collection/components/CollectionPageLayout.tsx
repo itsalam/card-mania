@@ -65,12 +65,21 @@ const HeaderSection = () => {
 const AnimatedFlatList = Animated.createAnimatedComponent(FlatList<CollectionListItem>)
 
 export const CollectionsPageLayout = () => {
-  const { currentPage, setCurrentPage, preferenceState, setIsExpanded, searchQuery, showEditView } =
-    useCollectionsPageStore()
+  const {
+    currentPage,
+    setCurrentPage,
+    preferenceState,
+    setIsExpanded,
+    setShowEditView,
+    showEditView,
+  } = useCollectionsPageStore()
   const isDefaultPage = currentPage === 'default'
 
-  const { data: collections, error } = useViewCollectionForUser()
-
+  const {
+    data: collections,
+    error,
+    isLoading: isLoadingCollections,
+  } = useViewCollectionForUser(true)
   const orderedPages = useMemo(() => {
     const customTabs = preferenceState.preferences.tabs ?? []
     const merged = [...defaultPages]
@@ -99,6 +108,10 @@ export const CollectionsPageLayout = () => {
     true
   )
 
+  console.log(collectionItemsQuery)
+
+  const { isLoading: isLoadingItems } = collectionItemsQuery
+
   const collectionItems = useMemo(() => {
     return collectionItemsQuery.data?.pages.flat() ?? []
   }, [collectionItemsQuery.data])
@@ -111,23 +124,28 @@ export const CollectionsPageLayout = () => {
     onContentSizeChange,
     headerContentRef,
     onHeaderLayout,
-  } = useCollaspableHeader(collectionItems.length > 0)
+  } = useCollaspableHeader(collectionItems.length > 0, [currentPage, collection?.id])
 
   useEffect(() => setIsExpanded(tabsExpanded), [tabsExpanded])
 
   const listData = useMemo<CollectionListItem[]>(() => {
     if (isDefaultPage) {
+      if (isLoadingCollections) return Array(7).fill({ kind: 'collection' })
       return (collections ?? []).map((collection) => ({
         kind: 'collection',
         collection,
       }))
     }
 
+    if (isLoadingItems) {
+      return Array(6).fill({ kind: 'item' })
+    }
+
     return collectionItems.map((item) => ({
       kind: 'item',
       item,
     }))
-  }, [isDefaultPage, collections, collectionItems])
+  }, [isDefaultPage, collections, collectionItems, isLoadingCollections, isLoadingItems])
 
   const renderItem = useCallback(
     ({ item }: { item: CollectionListItem }) => {
@@ -151,6 +169,7 @@ export const CollectionsPageLayout = () => {
               }
               setCurrentPage(defaultPage?.[0] ?? item.collection.id)
             }}
+            isLoading={isLoadingCollections}
           />
         )
       }
@@ -158,20 +177,34 @@ export const CollectionsPageLayout = () => {
       return (
         <CardListView
           card={item.item}
-          renderAccessories={() => (
-            //@ts-ignore
-            <CollectionCardItemEntries card={item.item} collection={collection!} isShown editable />
+          renderAccessories={({ isLoading }) => (
+            <CollectionCardItemEntries
+              isLoading={isLoading}
+              card={item.item}
+              //@ts-ignore
+              collection={collection!}
+              isShown
+              editable
+            />
           )}
-          // isWishlisted={wishlistedIds?.has(`${card.id}`) ?? false}
+          isLoading={isLoadingItems}
         />
       )
     },
-    [isDefaultPage, preferenceState, setCurrentPage]
+    [
+      isDefaultPage,
+      preferenceState,
+      setCurrentPage,
+      isLoadingCollections,
+      isLoadingItems,
+      isLoadingItems,
+    ]
   )
 
-  const keyExtractor = useCallback((item: CollectionListItem) => {
-    if (item.kind === 'collection') return `collection-${item.collection.id}`
-    return `item-${item.item.collection_item_id ?? item.item.id}`
+  const keyExtractor = useCallback((item: CollectionListItem, index: number) => {
+    if (item?.kind === 'collection')
+      return `collection-${item.collection?.id ?? `skeleton-${index}`}`
+    return `item-${item.item?.collection_item_id ?? item.item?.id ?? `skeleton-${index}`}`
   }, [])
 
   return (
@@ -235,7 +268,11 @@ export const CollectionsPageLayout = () => {
           <NewCollectionView />
         ) : (
           <Animated.View style={{ flex: 1, height: '100%' }}>
-            <ModifyCollectionView collection={collection} />
+            <ModifyCollectionView
+              //@ts-ignore
+              collection={collection}
+              onSubmit={() => setShowEditView(false)}
+            />
           </Animated.View>
         )}
       </Tabs>

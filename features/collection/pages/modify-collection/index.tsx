@@ -100,7 +100,9 @@ export const ModifyCollectionView = ({
         </View>
       </ScrollView>
       <BlurBackground className="w-full flex flex-row pt-2 gap-4 px-4 z-1">
-        <SubmitCollectionButton collectionId={collection?.id} onSubmit={onSubmit} />
+        <SubmitCollectionButton collectionId={collection?.id} onSubmit={(e) => {onSubmit?.(e); 
+        console.log(e)
+        }} />
       </BlurBackground>
     </ModifyCollectionProvider>
   )

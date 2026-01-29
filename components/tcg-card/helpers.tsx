@@ -27,8 +27,8 @@ export const getGradedPrice = (opts: {
   return [null]
 }
 
-export const getDefaultPrice = (card: TCard): GetDefaultPriceReturn => {
-  const gradePrices = (card.grades_prices ?? {}) as Record<string, number>
+export const getDefaultPrice = (card?: TCard): GetDefaultPriceReturn => {
+  const gradePrices = (card?.grades_prices ?? {}) as Record<string, number>
   const keys = Object.keys(gradePrices)
   if (!keys.length) return [null]
 

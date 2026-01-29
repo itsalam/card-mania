@@ -7,10 +7,12 @@ import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { LayoutChangeEvent, TouchableOpacity, View } from 'react-native'
 import { FlatList } from 'react-native-gesture-handler'
 
+import { Skeleton } from '@/components/ui/skeleton'
 import { Spinner } from '@/components/ui/spinner'
 import { LinearGradient } from 'expo-linear-gradient'
 import Animated from 'react-native-reanimated'
 import { BorderRadiuses, Colors } from 'react-native-ui-lib'
+import { getCollectionName } from '../helpers'
 import { useGetCollection } from '../hooks'
 import {
   DefaultPageTypes,
@@ -122,7 +124,7 @@ export const CollectionTabList = () => {
             scrollIndicatorInsets={{ bottom: -10 }}
             style={{ overflow: 'visible', zIndex: 0 }}
             data={tabs}
-            keyExtractor={(tab) => tab}
+            keyExtractor={(tab, i) => `${tab}-${i}`}
             renderItem={({ item: tab, index }) => (
               <CollectionTab
                 key={tab}
@@ -131,7 +133,6 @@ export const CollectionTabList = () => {
                   index === tabs.length - 1
                     ? (event) => {
                         const width = Math.round(event.nativeEvent.layout.width)
-                        console.log(width)
                         if (width && width !== lastTabWidth) setLastTabWidth(width)
                       }
                     : undefined
@@ -234,7 +235,7 @@ const CollectionTab = ({ collectionKey, onLayout }: CollectionTabProps) => {
   const isDefault = Boolean(collectionKey.collectionType)
   const isCurrent = currentPage === key
   const { data: collection } = useGetCollection(collectionKey)
-  const label = collection?.name
+  const label = getCollectionName({ collectionKey, collection })
 
   return (
     <View style={{ flexGrow: 0, flexShrink: 0 }} onLayout={onLayout}>
@@ -255,7 +256,7 @@ const CollectionTab = ({ collectionKey, onLayout }: CollectionTabProps) => {
               : { padding: 8 }),
           }}
           leftElement={(current: boolean) =>
-            collection ? (
+            label?.length ? (
               React.createElement(tabIcons[key as keyof typeof tabIcons] ?? tabIcons['default'], {
                 size: 20,
                 color: current ? Colors.$textPrimary : Colors.$textDefault,
@@ -282,6 +283,8 @@ const CollectionTab = ({ collectionKey, onLayout }: CollectionTabProps) => {
               >
                 <X size={16} color={current ? Colors.$textPrimary : Colors.$textDefault} />
               </TouchableOpacity>
+            ) : !label?.length ? (
+              <Skeleton style={{ borderRadius: 999, width: 48, height: 18 }} />
             ) : null
           }
         />

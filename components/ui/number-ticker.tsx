@@ -56,11 +56,14 @@ export const NumberTicker = ({
 
   return (
     <View
-      style={{
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-      }}
+      style={[
+        {
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+        },
+        containerStyle,
+      ]}
       className={className}
     >
       <Stepper
@@ -234,6 +237,7 @@ class Stepper extends PureComponent<StepperProps, StepperState> {
     const { type, disabled, testID } = this.props
     const { currentValue } = this.state
     return (
+      //@ts-ignore
       <RNView
         row
         centerV

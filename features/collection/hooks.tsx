@@ -1,7 +1,6 @@
-import { getDefaultCollectionPageQueryArgs } from '@/client/card/wishlist'
 import { DEFAULT_INF_Q_OPTIONS, useViewCollectionItems } from '@/client/collections/query'
 import { CollectionIdArgs, InfQueryOptions, InifiniteQueryParams } from '@/client/collections/types'
-import { supabase } from '@/lib/store/client'
+import { getSupabase } from '@/lib/store/client'
 import { qk, requireUser, unwrap } from '@/lib/store/functions/helpers'
 import { CollectionItemQueryView, CollectionItemRow } from '@/lib/store/functions/types'
 import { useUserStore } from '@/lib/store/useUserStore'
@@ -45,42 +44,48 @@ export function useCollectionUiPreferences() {
     ? `${COLLECTION_UI_PREFERENCES_KEY}-${userId}`
     : COLLECTION_UI_PREFERENCES_KEY
 
-  const loadPreferences = useCallback(async () => {
-    try {
-      setLoading(true)
-      setError(null)
+  const loadPreferences = useCallback(
+    async (force?: boolean) => {
+      try {
+        setLoading(true)
+        setError(null)
 
-      const stored = await AsyncStorage.getItem(storageKey)
-      let isDirty = false
-      let preferences: Partial<CollectionUiPreferences> = defaultCollectionUiPreferences
-      if (stored) {
-        const parsed = JSON.parse(stored)
-        preferences = { ...preferences, ...(parsed ?? {}) }
-      }
-      if (
-        !preferences.defaultIds ||
-        Object.values(preferences.defaultIds).filter(Boolean).length < defaultPages.length - 1
-      ) {
-        const defaultIds = {
-          wishlist: await getDefaultPageCollectionId('wishlist'),
-          selling: await getDefaultPageCollectionId('selling'),
-          vault: await getDefaultPageCollectionId('vault'),
+        const stored = await AsyncStorage.getItem(storageKey)
+        let preferences: Partial<CollectionUiPreferences> = defaultCollectionUiPreferences
+        if (stored) {
+          const parsed = JSON.parse(stored)
+          preferences = { ...preferences, ...(parsed ?? {}) }
         }
-        const ids = Object.values(defaultIds).filter(Boolean)
-        const tabs = preferences.tabs?.filter((t) => !ids.includes(t))
-        preferences = { ...preferences, tabs, defaultIds }
+        if (
+          force ||
+          !preferences.defaultIds ||
+          Object.values(preferences.defaultIds).filter(Boolean).length < defaultPages.length - 1
+        ) {
+          const defaultIds = {
+            wishlist: await getDefaultPageCollectionId('wishlist'),
+            selling: await getDefaultPageCollectionId('selling'),
+            vault: await getDefaultPageCollectionId('vault'),
+          }
+          const ids = Object.values(defaultIds).filter(Boolean)
+          const tabs = preferences.tabs?.filter(
+            (t) => !ids.includes(t) && !Object.keys(defaultIds).includes(t)
+          )
+          console.log(defaultIds)
+          preferences = { ...preferences, tabs, defaultIds }
+        }
+
+        AsyncStorage.setItem(storageKey, JSON.stringify(preferences))
+
+        setPreferences(preferences as CollectionUiPreferences)
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to load collection UI preferences')
+        setPreferences(defaultCollectionUiPreferences)
+      } finally {
+        setLoading(false)
       }
-
-      AsyncStorage.setItem(storageKey, JSON.stringify(preferences))
-
-      setPreferences(preferences as CollectionUiPreferences)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load collection UI preferences')
-      setPreferences(defaultCollectionUiPreferences)
-    } finally {
-      setLoading(false)
-    }
-  }, [storageKey])
+    },
+    [storageKey]
+  )
 
   useEffect(() => {
     setPreferences(defaultCollectionUiPreferences)
@@ -139,7 +144,7 @@ function getCollectionItemsArgs<T extends CollectionItemRow>(
       ...queryOpts,
       queryKey: [...qk.collectionItems(collectionId), 'infinite'],
       queryFn: async ({ pageParam }) => {
-        const { data, error } = await supabase.rpc('collection_item_query', {
+        const { data, error } = await getSupabase().rpc('collection_item_query', {
           p_collection_id: collectionId,
           p_page_param: pageParam as string,
           p_search: search,
@@ -155,9 +160,11 @@ function getCollectionItemsArgs<T extends CollectionItemRow>(
       initialPageParam: null as string | null,
     }
   } else if (collectionType) {
+    //@ts-ignore
     return {
       ...finalOpts,
       ...getDefaultCollectionPageQueryArgs(
+        collectionType,
         () => getDefaultPageCollectionId(collectionType),
         finalOpts
       ),
@@ -183,7 +190,7 @@ export function useGetCollection(args: CollectionIdArgs) {
     staleTime: 60_000, // tweak to taste
     queryFn: async () => {
       // 1) Check existence with a cheap HEAD+COUNT (RLS: returns only your row if any)
-      let req = supabase.from('collections').select('*')
+      let req = getSupabase().from('collections').select('*')
       if (collectionFlag) {
         const user = await requireUser()
         req = req.eq('user_id', user.id).eq(collectionFlag, true)
@@ -203,7 +210,7 @@ export function useGetCollectionCountInfo(args: CollectionIdArgs) {
     staleTime: 60_000, // tweak to taste
     queryFn: async () => {
       // Only need the count; use HEAD + count to avoid fetching rows.
-      const { count, error } = await supabase
+      const { count, error } = await getSupabase()
         .from('collection_items')
         .select('id', { count: 'exact', head: true })
         .eq('collection_id', args.collectionId!)
@@ -220,5 +227,39 @@ export function useGetCollectionItems<T extends CollectionItemQueryView>(
   group?: boolean
 ) {
   const queryArgs = getCollectionItemsArgs<T>(args, opts, group)
+  console.log({ queryArgs })
   return useViewCollectionItems<T>(queryArgs)
+}
+
+function getDefaultCollectionPageQueryArgs<T extends CollectionItemRow>(
+  collectionType: DefaultPageTypes,
+  collecitonIdPromise?: () => Promise<string | null | undefined>,
+  opts?: InfQueryOptions<T>
+) {
+  let { pageSize, search, kind } = { ...DEFAULT_INF_Q_OPTIONS, ...opts }
+  const queryKey = [[...qk.collectionItems(collectionType), 'infinite']]
+
+  const args = {
+    queryKey,
+    getNextPageParam: (lastPage) =>
+      lastPage?.length ? lastPage[lastPage.length - 1].created_at : null,
+    queryFn: async ({ pageParam }) => {
+      const collectionId = await collecitonIdPromise?.()
+      if (!collectionId) return []
+
+      const { data, error } = await getSupabase().rpc('collection_item_query', {
+        p_collection_id: collectionId,
+        p_page_param: pageParam as string,
+        p_search: search,
+        p_page_size: pageSize,
+      })
+
+      if (error) throw error
+      //@ts-ignore
+      return (data ?? []) as CollectionItemRow[]
+    },
+    initialPageParam: null as string | null,
+  } as InifiniteQueryParams<CollectionItemRow>
+
+  return args as any as InifiniteQueryParams
 }

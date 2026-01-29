@@ -1,4 +1,4 @@
-import { supabase } from "@/lib/store/client";
+import { getSupabase } from "@/lib/store/client";
 import { requireUser } from "@/lib/store/functions/helpers";
 import { DefaultPageTypes } from "./provider";
 
@@ -32,7 +32,7 @@ export async function getDefaultPageCollectionId(pageType: DefaultPageTypes) {
 
     const user = requireUser();
     const fetchPromise: Promise<string | null> = user.then((user) =>
-        supabase
+        getSupabase()
             .from("collections")
             .select("id")
             .eq("user_id", user.id)

@@ -97,7 +97,8 @@ function cdnUrl(
 
   if (variant === "raw" || (shape === "original" && !width && !height)) {
     const url =
-      supabase.storage.from(bucket).getPublicUrl(storagePath).data.publicUrl;
+      getSupabase().storage.from(bucket).getPublicUrl(storagePath).data
+        .publicUrl;
     console.debug("Generated raw URL:", url);
     return url;
   }
@@ -123,9 +124,9 @@ function cdnUrl(
 
   console.debug("Transform parameters:", transform);
 
-  const url =
-    supabase.storage.from(bucket).getPublicUrl(storagePath, { transform }).data
-      .publicUrl;
+  cogetSupabase()
+    .getSupabase().storage.from(bucket).getPublicUrl(storagePath, { transform }).data
+    .publicUrl;
   console.debug("Generated transformed URL:", url);
   return url;
 }
@@ -222,8 +223,8 @@ Deno.serve(async (req) => {
           width: width ?? null,
           height: height ?? null,
         };
-        EdgeRuntime.waitUntil(
-          supabase.functions.invoke("image-commit", {
+        EdgetSupabase()..waitUntil(
+          getSupabase().se().functions.invoke("image-commit", {
             method: "POST",
             body: { query_hash: queryHash, card_fields: cardFields },
           }).catch((e) => {

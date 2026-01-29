@@ -1,5 +1,5 @@
 import { TCollection, TTag } from "@/constants/types";
-import { supabase } from "@/lib/store/client";
+import { getSupabase } from "@/lib/store/client";
 import { qk, requireUser } from "@/lib/store/functions/helpers";
 import { CollectionRow } from "@/lib/store/functions/types";
 import { useUserStore } from "@/lib/store/useUserStore";
@@ -22,7 +22,6 @@ const mutateCollectionFn =
         // 1) Create or update the collection
         let collectionId = args.id || collectionData?.id;
         let collection: CollectionRow;
-
         if (!collectionData) {
             const user = await requireUser();
             const upsertData: InsertCollection = {
@@ -31,9 +30,10 @@ const mutateCollectionFn =
                 description: args.description ?? null,
                 visibility: args.visibility,
                 cover_image_url: args.cover_image_url ?? null,
+                is_storefront: args.is_storefront,
+                hide_sold_items: args.hide_sold_items,
             };
-
-            const { data, error } = await supabase
+            const { data, error } = await getSupabase()
                 .from("collections")
                 .upsert(upsertData)
                 .select()
@@ -50,9 +50,11 @@ const mutateCollectionFn =
                 description: args.description ?? null,
                 visibility: args.visibility,
                 cover_image_url: args.cover_image_url ?? null,
+                is_storefront: args.is_storefront,
+                hide_sold_items: args.hide_sold_items,
             };
 
-            const { data, error } = await supabase
+            const { data, error } = await getSupabase()
                 .from("collections")
                 .update(updateData)
                 .eq("id", collectionData.id)
@@ -73,10 +75,11 @@ const mutateCollectionFn =
 
         if (args.tags && collectionId) {
             // get current tags
-            const { data: existingRows, error: existingErr } = await supabase
-                .from("collection_tags")
-                .select("tag_id")
-                .eq("collection_id", collectionId);
+            const { data: existingRows, error: existingErr } =
+                await getSupabase()
+                    .from("collection_tags")
+                    .select("tag_id")
+                    .eq("collection_id", collectionId);
 
             if (existingErr) throw existingErr;
 
@@ -89,7 +92,7 @@ const mutateCollectionFn =
             addedTagIds = [...desired].filter((id) => !existing.has(id));
 
             if (deletedTagIds.length) {
-                const { error } = await supabase
+                const { error } = await getSupabase()
                     .from("collection_tags")
                     .delete()
                     .eq("collection_id", collectionId)
@@ -106,9 +109,10 @@ const mutateCollectionFn =
                     tag_id,
                     user_id: user.id,
                 }));
-                const { error } = await supabase.from("collection_tags").insert(
-                    insertData,
-                );
+                const { error } = await getSupabase().from("collection_tags")
+                    .insert(
+                        insertData,
+                    );
                 if (error) throw error;
             }
         }
@@ -126,14 +130,14 @@ export const useEditCollection = (
 ) => {
     const qc = useQueryClient();
     const collectionData = qc.getQueryData([
-        ...qk.userCollections,
+        ...qk.collections,
         collectionId,
     ]) as
         | TCollection
         | undefined;
 
     const collectionTagData = qc.getQueryData([
-        ...qk.userCollections,
+        ...qk.collections,
         collectionId,
         "tags",
     ]) as TTag["id"][] | undefined;
@@ -214,7 +218,7 @@ async (
         user_id: item.user_id ?? user.id,
     };
     if (fullArgs.id && (deleteRecord || fullArgs.quantity === 0)) {
-        const { data, error } = await supabase
+        const { data, error } = await getSupabase()
             .from("collection_items")
             .delete()
             .eq("id", fullArgs.id)
@@ -224,7 +228,7 @@ async (
         return data as CollectionItem;
     }
     if (!fullArgs.id) {
-        const { data, error } = await supabase
+        const { data, error } = await getSupabase()
             .from("collection_items")
             .upsert(fullArgs)
             .select()
@@ -233,7 +237,7 @@ async (
         return data as CollectionItem;
     } else {
         {
-            const { data, error } = await supabase
+            const { data, error } = await getSupabase()
                 .from("collection_items")
                 .update(fullArgs)
                 .eq("id", fullArgs.id)

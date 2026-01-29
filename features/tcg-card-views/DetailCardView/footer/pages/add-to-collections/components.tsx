@@ -34,18 +34,20 @@ export const CollectionCardItemEntries = ({
   card,
   style,
   editable,
+  isLoading: isLoadingOuter,
 }: {
   collection: CollectionLike
   isShown: boolean
   card: TCard
   style?: StyleProp<ViewStyle>
   editable?: boolean
+  isLoading?: boolean
 }) => {
   const {
     data: loadedEntries,
     isLoading,
     refetch,
-  } = useViewCollectionItemsForCard(collection.id!, card?.id!, isShown)
+  } = useViewCollectionItemsForCard(collection?.id, card?.id, isShown)
 
   const [newEntries, setNewEntries] = useState<Array<Partial<CollectionItemRow>>>(
     loadedEntries.length ? loadedEntries : [{}]
@@ -57,6 +59,14 @@ export const CollectionCardItemEntries = ({
   }, [refetch])
 
   useEffect(() => {
+    if (isLoadingOuter) {
+      setNewEntries([{}])
+    } else {
+      loadedEntries
+    }
+  }, [isLoadingOuter])
+
+  useEffect(() => {
     const hasUngradedItems = loadedEntries.some(
       (e) => e.grading_company === null && e.quantity >= 1
     )
@@ -65,7 +75,9 @@ export const CollectionCardItemEntries = ({
       : [{ grading_company: null, quantity: 0, grade_condition_id: null }, ...loadedEntries]
 
     const sortedEntries = [...baseEntries].sort((a, b) => {
+      //@ts-ignore
       const aHasCompany = Boolean(a.grading_company_id || a.grading_company)
+      //@ts-ignore
       const bHasCompany = Boolean(b.grading_company_id || b.grading_company)
       if (aHasCompany !== bHasCompany) return aHasCompany ? 1 : -1
 
@@ -73,11 +85,15 @@ export const CollectionCardItemEntries = ({
       const bCompany = (b.grading_company ?? '').toLowerCase()
       if (aCompany !== bCompany) return aCompany.localeCompare(bCompany)
 
+      //@ts-ignore
       const aGradeValue = a.grade_condition?.grade_value ?? Number.NEGATIVE_INFINITY
+      //@ts-ignore
       const bGradeValue = b.grade_condition?.grade_value ?? Number.NEGATIVE_INFINITY
       if (aGradeValue !== bGradeValue) return aGradeValue - bGradeValue
 
+      //@ts-ignore
       const aVariants = a.variants ?? []
+      //@ts-ignore
       const bVariants = b.variants ?? []
       const aVariantsEmpty = aVariants.length === 0
       const bVariantsEmpty = bVariants.length === 0
@@ -86,7 +102,9 @@ export const CollectionCardItemEntries = ({
       const bVariantsKey = bVariants.join(',').toLowerCase()
       if (aVariantsKey !== bVariantsKey) return aVariantsKey.localeCompare(bVariantsKey)
 
+      //@ts-ignore
       const aCreatedBy = a.updated_at ?? ''
+      //@ts-ignore
       const bCreatedBy = b.updated_at ?? ''
       return aCreatedBy.localeCompare(bCreatedBy)
     })
@@ -106,6 +124,7 @@ export const CollectionCardItemEntries = ({
               collectionItem={entry}
               collection={collection}
               editable={editable}
+              isLoading={isLoadingOuter}
             />
           )
         })
@@ -114,6 +133,7 @@ export const CollectionCardItemEntries = ({
       <Button
         highLighted
         size="xSmall"
+        disabled={isLoadingOuter}
         style={{
           flexGrow: 0,
           alignSelf: 'flex-end',
@@ -121,6 +141,7 @@ export const CollectionCardItemEntries = ({
           paddingHorizontal: 20,
           paddingVertical: 4,
           marginRight: 34 + (editable ? 24 : 0),
+          opacity: isLoadingOuter ? 0.5 : 1,
         }}
         onPress={() => {
           setShowModal(true)
@@ -180,8 +201,8 @@ const AddVariantModal = ({
   }, [initialDraft])
 
   const collectionItemsKey = useMemo(
-    () => [...qk.collectionItems(collection.id!), 'cardId', item.id],
-    [collection.id, item.id]
+    () => [...qk.collectionItems(collection?.id), 'cardId', item?.id],
+    [collection?.id, item?.id]
   )
 
   const company = useMemo(

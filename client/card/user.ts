@@ -1,5 +1,5 @@
 import { ItemKinds } from "@/constants/types";
-import { supabase } from "@/lib/store/client";
+import { getSupabase } from "@/lib/store/client";
 import { qk } from "@/lib/store/functions/helpers";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { ViewParams } from "./types";
@@ -24,7 +24,7 @@ export function useListingsForUser(opts?: {
         queryKey,
         initialPageParam: null as string | null, // cursor = created_at (ISO string)
         queryFn: async ({ pageParam }) => {
-            let qb = supabase
+            let qb = getSupabase()
                 .from("wishlist_cards_enriched")
                 .select("*")
                 .order("created_at", { ascending: false })

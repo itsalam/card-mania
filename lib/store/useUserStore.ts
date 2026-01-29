@@ -1,11 +1,10 @@
 // store/useUserStore.ts
-import { supabase } from "@/lib/store/client";
+import { getSupabase } from "@/lib/store/client";
 import type { AuthStatusType, Profile } from "@/lib/store/types";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import type { Session, User } from "@supabase/supabase-js";
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
-
 type State = {
   status: AuthStatusType;
   session: Session | null;
@@ -60,7 +59,7 @@ export const useUserStore = create<State & Actions>()(
         if (user) {
           await get().loadProfile(user.id);
           // Optionally subscribe to profile changes:
-          supabase
+          getSupabase()
             .channel(`public:profiles:id=eq.${user.id}`)
             .on(
               "postgres_changes",
@@ -81,7 +80,7 @@ export const useUserStore = create<State & Actions>()(
       },
 
       loadProfile: async (userId) => {
-        const { data, error } = await supabase
+        const { data, error } = await getSupabase()
           .from("profiles")
           .select("*")
           .eq("id", userId)
@@ -96,7 +95,7 @@ export const useUserStore = create<State & Actions>()(
 
       signOut: async () => {
         try {
-          await supabase.auth.signOut();
+          await getSupabase().auth.signOut();
         } catch (error) {
           console.error(error);
         } finally {
@@ -113,7 +112,7 @@ export const useUserStore = create<State & Actions>()(
         let user: User | null = null;
         let error: Error | null = null;
         if (process.env.NODE_ENV !== "production") {
-          const { data, error: demoError } = await supabase.auth
+          const { data, error: demoError } = await getSupabase().auth
             .signInWithPassword({
               email: "cardmania_demo@demo.com",
               password: "123456",
@@ -122,7 +121,7 @@ export const useUserStore = create<State & Actions>()(
           user = data.user;
           error = demoError;
         } else {
-          const { data, error: anonError } = await supabase.auth
+          const { data, error: anonError } = await getSupabase().auth
             .signInAnonymously();
           session = data.session;
           user = data.user;

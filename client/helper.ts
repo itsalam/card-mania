@@ -1,4 +1,4 @@
-import { supabase } from "@/lib/store/client";
+import { getSupabase } from "@/lib/store/client";
 import { FunctionInvokeOptions } from "@supabase/supabase-js";
 import * as crypto from "expo-crypto";
 import { z } from "zod";
@@ -36,12 +36,12 @@ export async function invokeFx<In extends FunctionInvokeOptions["body"], Out>(
     }
     url = `${name}?${queryParams.toString()}`;
   }
-  const { data, error, response } = await supabase.functions.invoke(url, {
+  const { data, error, response } = await getSupabase().functions.invoke(url, {
     body: useQueryParams ? undefined : payload,
     method: method ?? "GET",
     headers: { "Idempotency-Key": crypto.randomUUID(), ...(headers ?? {}) },
   });
-
+  console.log({ data, error, response });
   return {
     data: parseOut ? parseOut.parse(data) : (data as Out),
     response: response,

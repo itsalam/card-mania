@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { View } from 'react-native'
 import { Gesture, GestureType } from 'react-native-gesture-handler'
 import Animated, {
@@ -18,7 +18,7 @@ import { scheduleOnRN } from 'react-native-worklets'
 
 type AnimatedScrollRef = Animated.FlatList
 
-export function useCollaspableHeader(disable?: boolean) {
+export function useCollaspableHeader(disable?: boolean, resetKeys?: unknown[]) {
   const [tabsExpanded, setTabsExpanded] = useState(false)
   const expandProgress = useSharedValue(0)
   const gestureRef = useRef<GestureType>(undefined)
@@ -66,6 +66,22 @@ export function useCollaspableHeader(disable?: boolean) {
   )
 
   const nativeGesture = Gesture.Native()
+
+  useEffect(() => {
+    // Reset header measurement/state when the page key changes so each tab can re-measure
+    virtualOffset.value = 0
+    measuredHeaderHeight.value = 0
+    blockHeaderMeasurement.value = false
+    expandProgress.value = 0
+    scrollOffset.value = 0
+  }, [
+    ...(resetKeys ?? []),
+    virtualOffset,
+    measuredHeaderHeight,
+    blockHeaderMeasurement,
+    expandProgress,
+    scrollOffset,
+  ])
 
   const THRESHOLD = 0.7 // > 0.5 → snap closed, < 0.5 → snap open
   const VELOCITY_TRIGGER = 100 // px/s-ish after being flipped (tweak!)
@@ -158,7 +174,6 @@ export function useCollaspableHeader(disable?: boolean) {
     onHeaderLayout: React.useCallback(
       (e: any) => {
         // Only capture height when header is fully expanded
-        console.log('HEY', e.nativeEvent.layout.height)
         if (expandProgress.value === 0 && !blockHeaderMeasurement.value) {
           measuredHeaderHeight.value = e.nativeEvent.layout.height
         }

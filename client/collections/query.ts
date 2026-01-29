@@ -62,9 +62,9 @@ export function useViewCollectionsForCard(cardId = "", query?: string) {
 }
 
 export function useViewCollectionItemsForCard(
-    collectionId: string,
-    cardId: string,
-    enabled: boolean,
+    collectionId?: string,
+    cardId?: string,
+    enabled?: boolean,
 ) {
     return useQuery<
         CollectionItem[],
@@ -72,9 +72,11 @@ export function useViewCollectionItemsForCard(
         CollectionItem[]
     >({
         queryKey: [
+            //@ts-ignore
             ...qk.collectionItems(collectionId),
             ...(cardId ? ["cardId", cardId] : []),
         ],
+        //@ts-ignore
         queryFn: () => viewCollectionItemsForCard(collectionId, cardId),
         placeholderData: keepPreviousData,
         enabled: enabled && !!cardId && !!collectionId,
@@ -87,14 +89,17 @@ export const DEFAULT_INF_Q_OPTIONS: InfQueryOptions<CollectionItemRow> = {
     kind: "card",
 };
 
-export function useViewCollectionForUser() {
+export function useViewCollectionForUser(hideDefaults = false) {
     return useQuery<
         {},
         DefaultError,
         CollectionRow[]
     >({
-        queryKey: qk.userCollections,
-        queryFn: viewCollectionItemsForUser,
+        queryKey: [
+            ...qk.userCollections,
+            hideDefaults ? "hide-defaults" : "all",
+        ],
+        queryFn: viewCollectionItemsForUser(hideDefaults),
         placeholderData: keepPreviousData,
         initialData: [],
     });

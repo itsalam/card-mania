@@ -1,4 +1,4 @@
-import { supabase } from "@/lib/store/client";
+import { getSupabase } from "@/lib/store/client";
 import { useQuery } from "@tanstack/react-query";
 
 export function useCardId(cardId: string) {
@@ -7,7 +7,7 @@ export function useCardId(cardId: string) {
     queryKey: ["card-id", cardId],
     enabled: true,
     queryFn: async () => {
-      const { data, error } = await supabase.from("cards").select("*").eq(
+      const { data, error } = await getSupabase().from("cards").select("*").eq(
         "id",
         cardId,
       ).single();
@@ -27,7 +27,7 @@ const useCardVariants = (cardId: string) => {
     queryKey: ["card-variants", cardId],
     enabled: true,
     queryFn: async () => {
-      const { data, error } = await supabase.from("cards").select("*").eq(
+      const { data, error } = await getSupabase().from("cards").select("*").eq(
         "id",
         cardId,
       ).single();

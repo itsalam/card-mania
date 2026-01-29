@@ -1,4 +1,5 @@
-import { supabase } from "@/lib/store/client";
+import { getSupabase } from "@/lib/store/client";
+import { qk } from "@/lib/store/functions/helpers";
 import { Database } from "@/lib/store/supabase";
 import {
     keepPreviousData,
@@ -30,14 +31,10 @@ export type SuggestedTag = {
 export const suggestedTagsOptions = (
     args: { maxResults?: number; search?: string },
 ) => queryOptions({
-    queryKey: [
-        "suggested-suggest_tags",
-        args.maxResults ?? 8,
-        (args.search ?? "").trim(),
-    ],
+    queryKey: qk.suggested(args),
     // TanStack v5 will pass { signal } here if the adapter supports it
     queryFn: async (): Promise<SuggestedTag[]> => {
-        const { data, error } = await supabase.rpc("suggest_tags_v2", {
+        const { data, error } = await getSupabase().rpc("suggest_tags_v2", {
             max_results: args.maxResults ?? 8,
             q: (args.search ?? "").trim(),
         });
@@ -135,9 +132,12 @@ export function usePopulateTagCategory(tags: string[] = []) {
         enabled: missing.length > 0,
         queryKey: ["tag-categories", ...missing],
         queryFn: async (): Promise<TagCategoryEntry[]> => {
-            const { data, error } = await supabase.rpc("get_tag_categories", {
-                tags: missing, // text[]
-            });
+            const { data, error } = await getSupabase().rpc(
+                "get_tag_categories",
+                {
+                    tags: missing, // text[]
+                },
+            );
             if (error) throw error;
             return (data ?? []) as TagCategoryEntry[];
         },
