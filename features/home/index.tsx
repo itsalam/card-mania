@@ -74,7 +74,7 @@ export default function HomeScreen() {
                 value={'Recents'}
                 leftElement={(isCurrent) =>
                   React.createElement(History, {
-                    size: 16,
+                    size: 24,
                     color: isCurrent ? Colors.$textPrimary : Colors.$textDefault,
                   })
                 }

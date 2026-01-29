@@ -1,5 +1,5 @@
 'use client'
-import { useWishlistTotal } from '@/client/card/wishlist'
+import { useWishlistTotal } from '@/client/collections/query'
 // Modified by @vincentlam
 /**
  * @author: @kokonutui

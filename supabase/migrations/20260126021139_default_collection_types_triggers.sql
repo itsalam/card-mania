@@ -62,7 +62,7 @@ values
     'Wishlist',
     'private',
     true,
-    "All wishlisted items, prices are updated daily."
+    'All wishlisted items, prices are updated daily.'
   );
 
 end if;
@@ -82,7 +82,7 @@ values
     'Selling',
     'private',
     true,
-    "Items from all your storefronts."
+    'Items from all your storefronts.'
   );
 
 end if;
@@ -96,7 +96,7 @@ values
     'Vault',
     'private',
     true,
-    "Items that are closely monitored for prices and are hidden from the public"
+    'Items that are closely monitored for prices and are hidden from the public'
   );
 
 end if;

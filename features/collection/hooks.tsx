@@ -128,6 +128,7 @@ function getCollectionItemsArgs<T extends CollectionItemRow>(
   group?: boolean
 ): InifiniteQueryParams<T> {
   const finalOpts = { ...DEFAULT_INF_Q_OPTIONS, ...opts } as InfQueryOptions<T>
+  const shouldGroup = group ?? Boolean(collectionId)
   if (collectionType === 'default') {
     return {
       enabled: false,
@@ -141,14 +142,18 @@ function getCollectionItemsArgs<T extends CollectionItemRow>(
     const { pageSize, search, kind, ...queryOpts } = finalOpts
     return {
       ...queryOpts,
-      queryKey: [...qk.collectionItems(collectionId), 'infinite'],
+      queryKey: [
+        ...qk.collectionItems(collectionId),
+        'infinite',
+        shouldGroup ? 'grouped' : 'ungrouped',
+      ],
       queryFn: async ({ pageParam }) => {
         const { data, error } = await getSupabase().rpc('collection_item_query', {
           p_collection_id: collectionId,
           p_page_param: pageParam as string,
           p_search: search,
           p_page_size: pageSize,
-          p_group: true,
+          p_group: shouldGroup,
         })
         if (error) throw error
         return (data ?? []) as unknown as T[]
@@ -165,7 +170,8 @@ function getCollectionItemsArgs<T extends CollectionItemRow>(
       ...getDefaultCollectionPageQueryArgs(
         collectionType,
         () => getDefaultPageCollectionId(collectionType),
-        finalOpts
+        finalOpts,
+        shouldGroup
       ),
     }
   }
@@ -232,10 +238,13 @@ export function useGetCollectionItems<T extends CollectionItemQueryView>(
 function getDefaultCollectionPageQueryArgs<T extends CollectionItemRow>(
   collectionType: DefaultPageTypes,
   collecitonIdPromise?: () => Promise<string | null | undefined>,
-  opts?: InfQueryOptions<T>
+  opts?: InfQueryOptions<T>,
+  group?: boolean
 ) {
   let { pageSize, search, kind } = { ...DEFAULT_INF_Q_OPTIONS, ...opts }
-  const queryKey = [[...qk.collectionItems(collectionType), 'infinite']]
+  const queryKey = [
+    [...qk.collectionItems(collectionType), 'infinite', group ? 'grouped' : 'ungrouped'],
+  ]
 
   const args = {
     queryKey,
@@ -250,6 +259,7 @@ function getDefaultCollectionPageQueryArgs<T extends CollectionItemRow>(
         p_page_param: pageParam as string,
         p_search: search,
         p_page_size: pageSize,
+        p_group: group,
       })
 
       if (error) throw error

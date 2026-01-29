@@ -12,7 +12,7 @@ import {
 import React from "react";
 import { ViewParams } from "./types";
 
-const buildPrefixKey = (wishlistKey: WishlistKey, separator = "/") => {
+export const buildPrefixKey = (wishlistKey: WishlistKey, separator = "/") => {
     return [...wishlistKey.split(separator)];
 };
 
@@ -268,36 +268,6 @@ export function useToggleWishlist(kind: ItemKinds) {
             // If you have aggregates, invalidate them—NOT your card lists
             qc.invalidateQueries({ queryKey: ["wishlist", "totals"] });
             qc.invalidateQueries({ queryKey: ["wishlist", "view", kind] });
-        },
-    });
-}
-
-export function useWishlistTotal() {
-    return useQuery({
-        queryKey: buildPrefixKey(WishlistKey.Totals),
-        staleTime: 60_000, // tweak to taste
-        queryFn: async () => {
-            // 1) Check existence with a cheap HEAD+COUNT (RLS: returns only your row if any)
-            const { count, error: headErr } = await getSupabase()
-                .from("wishlist_totals")
-                .select("user_id", { count: "exact", head: true });
-
-            if (headErr) throw headErr;
-
-            // 2) If absent -> recompute (also upserts the row)
-            if (!count || count === 0) {
-                const { data, error } = await getSupabase().rpc(
-                    "wishlist_recompute_total",
-                );
-                if (error) throw error;
-                // data is the total in cents (int)
-                return data ?? 0;
-            }
-
-            // 3) If present -> fast path
-            const { data, error } = await getSupabase().rpc("wishlist_total");
-            if (error) throw error;
-            return data ?? 0;
         },
     });
 }

@@ -1,9 +1,10 @@
+import { getSupabase } from "@/lib/store/client";
 import {
     viewCollectionItemsForCard,
     viewCollectionItemsForUser,
     viewCollectionsForCard,
 } from "@/lib/store/functions/collections";
-import { qk } from "@/lib/store/functions/helpers";
+import { qk, WishlistKey } from "@/lib/store/functions/helpers";
 import { CollectionItemRow, CollectionRow } from "@/lib/store/functions/types";
 import {
     DefaultError,
@@ -13,7 +14,7 @@ import {
 } from "@tanstack/react-query";
 import React from "react";
 import { ViewParams } from "../card/types";
-import { useIsWishlisted } from "../card/wishlist";
+import { buildPrefixKey, useIsWishlisted } from "../card/wishlist";
 import {
     CollectionItem,
     CollectionLike,
@@ -123,4 +124,33 @@ export function useViewCollectionItems<T extends CollectionItemRow>(
     });
 
     return { query, viewParams: { key: queryKey } as ViewParams };
+}
+export function useWishlistTotal() {
+    return useQuery({
+        queryKey: buildPrefixKey(WishlistKey.Totals),
+        staleTime: 60000, // tweak to taste
+        queryFn: async () => {
+            // 1) Check existence with a cheap HEAD+COUNT (RLS: returns only your row if any)
+            const { count, error: headErr } = await getSupabase()
+                .from("wishlist_totals")
+                .select("user_id", { count: "exact", head: true });
+
+            if (headErr) throw headErr;
+
+            // 2) If absent -> recompute (also upserts the row)
+            if (!count || count === 0) {
+                const { data, error } = await getSupabase().rpc(
+                    "wishlist_recompute_total",
+                );
+                if (error) throw error;
+                // data is the total in cents (int)
+                return data ?? 0;
+            }
+
+            // 3) If present -> fast path
+            const { data, error } = await getSupabase().rpc("wishlist_total");
+            if (error) throw error;
+            return data ?? 0;
+        },
+    });
 }

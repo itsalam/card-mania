@@ -250,7 +250,7 @@ async (
 };
 
 export const useEditCollectionItem = (
-    collectionId: string,
+    collectionId?: string,
     cardId?: string,
     itemId?: string,
 ) => {

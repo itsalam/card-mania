@@ -113,6 +113,7 @@ export const CollectionsPageLayout = () => {
   const collectionItems = useMemo(() => {
     return collectionItemsQuery.data?.pages.flat() ?? []
   }, [collectionItemsQuery.data])
+
   const {
     tabsExpanded,
     headerAnimatedStyle,

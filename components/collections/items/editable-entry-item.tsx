@@ -101,8 +101,8 @@ export const CollectionItemEntry = ({
   const [priceModalVisible, setPriceModalVisible] = useState(false)
 
   const mutate = useEditCollectionItem(
-    collectionItem?.collection_id || collection.id!,
-    card?.id!,
+    collectionItem?.collection_id || collection?.id,
+    card?.id,
     collectionItem?.id
   )
 
@@ -283,11 +283,12 @@ export const CollectionItemEntry = ({
           </View>
         </View>
       </View>
-      {collectionItem.variants?.length && (
+      {collectionItem.variants?.length ? (
         <View style={{ flexDirection: 'row', paddingTop: 2 }}>
           {collectionItem.variants?.map((v) => (
             <Badge
-              label={v}
+              key={v}
+              label={String(v)}
               size={{ height: 10 }}
               leftElement={<AccessoryTag size={14} />}
               labelStyle={{
@@ -299,7 +300,7 @@ export const CollectionItemEntry = ({
             />
           ))}
         </View>
-      )}
+      ) : null}
       <Modal visible={priceModalVisible} onDismiss={() => setPriceModalVisible(false)}>
         <View className="pt-4" style={{ paddingRight: 1 }}>
           <Text
