@@ -240,13 +240,13 @@ const SearchInput = forwardRef<ComponentRef<typeof BaseSearchInput>, SearchInput
         {
           translateY: valueState.interpolate({
             inputRange: [0, 1],
-            outputRange: [50, 1],
+            outputRange: [10, 1],
           }),
         },
       ]
       const clearButtonStyle = !isDismissible() && isAnimatingClearButton && styles.clearButton
       const iconStyle = {
-        tintColor: invertColors ? INVERTED_ICON_COLOR : Colors.grey10,
+        tintColor: Colors.$iconDefault,
         width: 12,
         height: 12,
       }
@@ -255,6 +255,7 @@ const SearchInput = forwardRef<ComponentRef<typeof BaseSearchInput>, SearchInput
           style={[
             {
               transform,
+              opacity: valueState,
             },
             clearButtonStyle,
           ]}

@@ -2,7 +2,7 @@ import { Text } from '@/components/ui/text'
 
 import { SearchBar, SearchBarProps } from '@/components/ui/search'
 import { motify, MotiView } from 'moti'
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { View } from 'react-native'
 import { Colors } from 'react-native-ui-lib'
 import { useGetCollection } from '../hooks'
@@ -49,7 +49,7 @@ export const ExpandableSearchBar = (props: SearchBarProps & { expanded: boolean 
 }
 
 export const ScreenHeader = () => {
-  const { currentPage, expanded } = useCollectionsPageStore()
+  const { searchQuery, currentPage, expanded } = useCollectionsPageStore()
   const collectionKey = getCollectionIdArgs(currentPage)
   const isBasicPage = Boolean(collectionKey.collectionType)
   const isDefault = currentPage === 'default'
@@ -63,6 +63,12 @@ export const ScreenHeader = () => {
     wishlist: 'Wishlist',
     selling: 'Selling',
   }
+
+  useEffect(() => {
+    if (searchQuery?.length ?? 0 <= 0) {
+      setExpandSearch(false)
+    }
+  }, [searchQuery, currentPage, expanded])
 
   return (
     <MView
@@ -78,7 +84,10 @@ export const ScreenHeader = () => {
     >
       <MView
         key={!expanded ? 'Collections' : currentPage}
-        from={{ opacity: 0, translateY: (expanded ? 1 : -1) * 20 }}
+        from={{
+          opacity: isDefault && !expandSearch ? 1 : 0,
+          translateY: (isDefault ? 0 : expanded ? 1 : -1) * 20,
+        }}
         animate={{ opacity: expandSearch ? 0 : 1, translateY: 0 }}
         style={{
           marginVertical: 'auto',

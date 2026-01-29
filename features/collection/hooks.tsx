@@ -70,7 +70,6 @@ export function useCollectionUiPreferences() {
           const tabs = preferences.tabs?.filter(
             (t) => !ids.includes(t) && !Object.keys(defaultIds).includes(t)
           )
-          console.log(defaultIds)
           preferences = { ...preferences, tabs, defaultIds }
         }
 
@@ -227,7 +226,6 @@ export function useGetCollectionItems<T extends CollectionItemQueryView>(
   group?: boolean
 ) {
   const queryArgs = getCollectionItemsArgs<T>(args, opts, group)
-  console.log({ queryArgs })
   return useViewCollectionItems<T>(queryArgs)
 }
 

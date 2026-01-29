@@ -53,7 +53,7 @@ const HeaderSection = () => {
     <CollectionBreakdown
       style={{
         paddingTop: 12,
-        paddingBottom: 12,
+        marginBottom: 40,
         marginHorizontal: 12,
       }}
     />
@@ -108,8 +108,6 @@ export const CollectionsPageLayout = () => {
     true
   )
 
-  console.log(collectionItemsQuery)
-
   const { isLoading: isLoadingItems } = collectionItemsQuery
 
   const collectionItems = useMemo(() => {
@@ -138,7 +136,7 @@ export const CollectionsPageLayout = () => {
     }
 
     if (isLoadingItems) {
-      return Array(6).fill({ kind: 'item' })
+      return Array(4).fill({ kind: 'item' })
     }
 
     return collectionItems.map((item) => ({
@@ -208,7 +206,7 @@ export const CollectionsPageLayout = () => {
   }, [])
 
   return (
-    <SafeAreaView className="flex-1 w-full overflow-hidden h-full" style={{ paddingTop: 8 }}>
+    <SafeAreaView className="flex-1 w-full overflow-hidden h-full">
       <Tabs
         style={{ flex: 1, display: 'flex', height: '100%' }}
         value={currentPage}

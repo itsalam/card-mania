@@ -41,7 +41,6 @@ export async function invokeFx<In extends FunctionInvokeOptions["body"], Out>(
     method: method ?? "GET",
     headers: { "Idempotency-Key": crypto.randomUUID(), ...(headers ?? {}) },
   });
-  console.log({ data, error, response });
   return {
     data: parseOut ? parseOut.parse(data) : (data as Out),
     response: response,

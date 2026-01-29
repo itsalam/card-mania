@@ -11,10 +11,12 @@ import { Tabs, TabsContent, TabsLabel, TabsList, TabsTrigger } from '@/component
 import { Text } from '@/components/ui/text'
 import { MainSearchBar } from '@/features/mainSearchbar'
 import { useColorScheme } from '@/lib/hooks/useColorScheme'
-import { Compass, LucideIcon, Menu, Newspaper, Sheet } from 'lucide-react-native'
+import { Compass, History, LucideIcon, Menu, Newspaper, Sheet } from 'lucide-react-native'
 import React from 'react'
+import { View } from 'react-native'
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Colors } from 'react-native-ui-lib'
+import CollectionBreakdown from '../collection/components/CollectionBreakdown'
 import { ExplorePage, ExplorePageMenu } from './ExplorePage'
 import { FeedPage } from './FeedPage'
 import { TabValue, tabValues, useHomePageStore } from './provider'
@@ -37,26 +39,49 @@ export default function HomeScreen() {
   return (
     <SafeAreaView className="flex-1 w-full h-full overflow-visible" style={{ paddingTop: 8 }}>
       <MainSearchBar />
-
+      <CollectionBreakdown
+        style={{
+          paddingTop: 12,
+          marginTop: 48,
+          marginBottom: 40,
+          marginHorizontal: 12,
+        }}
+      />
       <Tabs className="flex-1 gap-0 py-2" value={currentPage} onValueChange={setCurrentPage}>
-        <TabsList className="ml-4">
-          {tabValues.map((tab) => (
-            <TabsTrigger key={tab} value={tab}>
+        <View style={{ flexDirection: 'row' }}>
+          <TabsList className="ml-4">
+            {tabValues.map((tab) => (
+              <TabsTrigger key={tab} value={tab}>
+                <TabsLabel
+                  label={tab}
+                  value={tab}
+                  leftElement={(isCurrent) =>
+                    React.createElement(tabIcons[tab], {
+                      size: 16,
+                      color: isCurrent ? Colors.$textPrimary : Colors.$textDefault,
+                    })
+                  }
+                />
+              </TabsTrigger>
+            ))}
+
+            {/* <TabOptions currentTab={currentPage} /> */}
+          </TabsList>
+
+          <TabsList>
+            <TabsTrigger key={'Recents'} value={'Recents'} style={{}}>
               <TabsLabel
-                label={tab}
-                value={tab}
+                value={'Recents'}
                 leftElement={(isCurrent) =>
-                  React.createElement(tabIcons[tab], {
+                  React.createElement(History, {
                     size: 16,
                     color: isCurrent ? Colors.$textPrimary : Colors.$textDefault,
                   })
                 }
               />
             </TabsTrigger>
-          ))}
-
-          {/* <TabOptions currentTab={currentPage} /> */}
-        </TabsList>
+          </TabsList>
+        </View>
 
         {tabValues.map((tab) => (
           <TabsContent key={tab} value={tab} className="flex-1">

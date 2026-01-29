@@ -43,7 +43,7 @@ const RING_WIDTH = 18
 
 const activities: ActivityData[] = [
   {
-    label: 'SEEKING',
+    label: 'WISHLIST',
     value: (479 / 800) * 100,
     colors: [Colors.red30, Colors.red40],
     current: 479,
@@ -59,7 +59,7 @@ const activities: ActivityData[] = [
     unit: '$',
   },
   {
-    label: 'HOLDING',
+    label: 'PORTFOLIO',
     value: 30,
     colors: [Colors.blue30, Colors.blue40],
     current: 6,

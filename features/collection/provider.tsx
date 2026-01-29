@@ -21,7 +21,7 @@ type CollectionsState = {
   setExploreLayout: (layout: string) => void
   setIsExpanded: (expanded: boolean) => void
   searchQuery?: string
-  setSearchQuery: (searchQuery: string) => void
+  setSearchQuery: (searchQuery?: string) => void
   resetSearchQuery: () => void
   showEditView: boolean
   setShowEditView: (showEditView: boolean) => void
