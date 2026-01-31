@@ -40,10 +40,6 @@ export const CollectionTabList = () => {
     return tabs
   }, [preferences, defaultPages, currentPage, newCollectionInfo?.name])
 
-  useEffect(() => {
-    setLastTabWidth(0)
-  }, [tabs])
-
   const scrollToIndex = (index: number) =>
     scrollViewRef.current?.scrollToIndex({
       index,

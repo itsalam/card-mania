@@ -61,6 +61,19 @@ export const formatPrice = (
   })}`
 }
 
+export const formatCompactPrice = (
+  price: number,
+  { currency = '$', maximumSignificantDigits = 4 }: { currency?: string; maximumSignificantDigits?: number } = {}
+) => {
+  const dollars = price / 100
+  const formatter = new Intl.NumberFormat('en-US', {
+    notation: 'compact',
+    compactDisplay: 'short',
+    maximumSignificantDigits,
+  })
+  return `${currency}${formatter.format(dollars)}`
+}
+
 export const formatLabel = (label: string): string => {
   return label
     .replace(/_/g, '.')

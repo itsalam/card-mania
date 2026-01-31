@@ -36,15 +36,20 @@ function bucketSizeForSpan(span: number) {
   return 30 // roughly monthly for long spans
 }
 
-function generateBaseSeries(seed: number, initial: number, variance: number, days = 365) {
+// Generate a backward random walk so the most recent price (today) is exactly finalTarget
+function generateBaseSeries(seed: number, finalTarget: number, variance: number, days = 365) {
   const rand = mulberry32(seed)
-  const prices = [initial]
+  const prices = [finalTarget] // start at "today"
+
+  // Walk backward in time: derive previous price from current by undoing a drift.
   for (let i = 1; i <= days; i++) {
     const drift = (rand() - 0.5) * 2 * variance // -variance..+variance
-    const next = Math.max(0.01, prices[i - 1] * (1 + drift))
-    prices.push(Number(next.toFixed(2)))
+    const prev = Math.max(0.01, prices[i - 1] / (1 + drift))
+    prices.push(Number(prev.toFixed(2)))
   }
-  return prices
+
+  // Reverse so index 0 = oldest date, last index = today (finalTarget)
+  return prices.reverse()
 }
 
 function getBucketedSeries(base: number[], spanDays: number) {
@@ -70,8 +75,8 @@ Deno.serve(async (req) => {
     const dateSpan = clamp(body.date_span ?? DEFAULTS.dateSpan, 1, 365)
 
     // Seed includes provided seed + params so same inputs always yield the same series.
-    const baseSeed =
-      Math.floor((body.seed ?? DEFAULTS.seed) + initialPrice * 100 + variance * 10_000) >>> 0
+  const baseSeed =
+    Math.floor((body.seed ?? DEFAULTS.seed) + initialPrice * 100 + variance * 10_000) >>> 0
 
     const baseSeries = generateBaseSeries(baseSeed, initialPrice, variance, 365)
     const bucketed = getBucketedSeries(baseSeries, dateSpan)

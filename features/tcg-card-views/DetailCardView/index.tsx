@@ -1,7 +1,7 @@
 import { useCardQuery } from '@/client/card'
 import { useImageProxy } from '@/client/image-proxy'
 import { BlurGradientBackground } from '@/components/Background'
-import PriceGraph from '@/components/graphs/PriceGraph'
+import FullPriceGraph from '@/components/graphs/PriceGraph'
 import { GraphInputKey } from '@/components/graphs/ui/types'
 import { LiquidGlassCard } from '@/components/tcg-card/GlassCard'
 import { useInvalidateOnFocus } from '@/components/tcg-card/helpers'
@@ -102,7 +102,7 @@ export default function FocusCardView({
             selectedGrades={selectedGrades}
           />
 
-          <PriceGraph<Record<string, string | number>>
+          <FullPriceGraph<Record<string, string | number>>
             xKey={'date' as GraphInputKey<typeof priceChartingData>}
             yKeys={selectedGrades}
             data={priceChartingData?.priceData}

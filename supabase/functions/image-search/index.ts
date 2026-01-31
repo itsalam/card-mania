@@ -115,12 +115,14 @@ Deno.serve(async (req) => {
       .eq("query_hash", qHash)
       .maybeSingle();
     if (cached) {
-      const fresh =
-        Date.now() - new Date(cached.updated_at).getTime() <
-          cached.ttl_seconds * 1000;
+      const fresh = Date.now() - new Date(cached.updated_at).getTime() <
+        cached.ttl_seconds * 1000;
       if (fresh) {
         return ok(
-          json({ query: qNorm, candidates: cached.candidates.slice(0, limit) }),
+          json({
+            query: qNorm,
+            candidates: String(cached.candidates).slice(0, limit),
+          }),
         );
       }
     }
@@ -156,7 +158,7 @@ Deno.serve(async (req) => {
     });
 
     // write-through query cache
-    await getSupabase().from("image_search_cache").upsert({
+    await supabase.from("image_search_cache").upsert({
       query_hash: qHash,
       query_norm: qNorm,
       candidates,

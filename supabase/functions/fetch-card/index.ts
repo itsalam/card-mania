@@ -36,7 +36,7 @@ Deno.serve(async (req) => {
 
   let fetchedCard;
   if (card_id) {
-    const fetchCardReq = await getSupabase().from("cards").select("*").eq(
+    const fetchCardReq = await supabase.from("cards").select("*").eq(
       "id",
       card_id,
     )
@@ -93,7 +93,7 @@ async function commitCard(
     // do not set images here; handled below
   } satisfies TablesInsert<"cards">;
 
-  const cardInsert = await getSupabase().from("cards").insert(cardInsertRecord)
+  const cardInsert = await supabase.from("cards").insert(cardInsertRecord)
     .select("*").single();
   if (cardInsert.error) {
     console.error("Error inserting card", cardInsert.error);
@@ -125,7 +125,7 @@ async function commitCard(
         console.error("No image cache found for query hash", image.query_hash);
       }).then((value) => {
         if (value) {
-          getSupabase().from("cards").update({
+          supabase.from("cards").update({
             front_image_id: value.id,
           }).eq("id", cardId);
         }
@@ -152,7 +152,7 @@ const insertCardImageFromCache = (
   ci: Partial<CardImageFields>,
   supabase: SupabaseClient<Database>,
 ) => {
-  return getSupabase().from("card_images").insert({
+  return supabase.from("card_images").insert({
     card_id: cardId,
     image_cache_id: ic.id,
     status: "READY",
@@ -181,7 +181,7 @@ const populateCardImages = async (
   const qNorm = normalize(backImage);
   const qHash = await sha256HexStr(qNorm);
 
-  const backImageCommit = await getSupabase().functions.invoke("image-commit", {
+  const backImageCommit = await supabase.functions.invoke("image-commit", {
     method: "POST",
     body: { query_hash: qHash, card_fields: card },
   }).catch((e) => {
@@ -193,7 +193,7 @@ const populateCardImages = async (
       try {
         if (commit.id) {
           insertCardImageFromCache(card.id, commit, { kind: "back" }, supabase);
-          getSupabase().from("cards").update({
+          supabase.from("cards").update({
             back_image_id: commit.id,
           }).eq("id", card.id);
         }

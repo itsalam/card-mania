@@ -413,14 +413,18 @@ async function isHot(
   queryNorm: string,
   queryHash: string,
 ) {
-  const bump = await getSupabase().rpc("bump_search_query", {
+  const bump = await supabase.rpc("bump_search_query", {
     p_query_raw: qRaw,
     p_query_norm: queryNorm,
     p_query_hash: queryHash,
     p_source: "app",
   });
 
-  const [row] = await bump.json() as Array<
+  if (bump.error) {
+    throw (bump.error);
+  }
+
+  const [row] = await bump.data as Array<
     { hits: number; last_seen: string; committed_at: string | null }
   >;
 

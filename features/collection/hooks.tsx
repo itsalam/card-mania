@@ -6,7 +6,7 @@ import { CollectionItemQueryView, CollectionItemRow } from '@/lib/store/function
 import { useUserStore } from '@/lib/store/useUserStore'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { useQuery } from '@tanstack/react-query'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { getDefaultPageCollectionId } from './cached-ids'
 import { defaultPages, DefaultPageTypes } from './provider'
 
@@ -33,6 +33,22 @@ const defaultCollectionUiPreferences: CollectionUiPreferences = {
   defaultIds: {},
 }
 
+export function useDefaultCollectionIds(enabled = true) {
+  return useQuery({
+    queryKey: [...qk.collections, 'default', 'ids'],
+    enabled,
+    staleTime: 60_000,
+    queryFn: async () => {
+      const [wishlist, selling, vault] = await Promise.all([
+        getDefaultPageCollectionId('wishlist'),
+        getDefaultPageCollectionId('selling'),
+        getDefaultPageCollectionId('vault'),
+      ])
+      return { wishlist, selling, vault }
+    },
+  })
+}
+
 export function useCollectionUiPreferences() {
   const userId = useUserStore((s) => s.user?.id)
   const [preferences, setPreferences] = useState<CollectionUiPreferences>(
@@ -40,9 +56,37 @@ export function useCollectionUiPreferences() {
   )
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const defaultIdsRef = useRef<{
+    wishlist: string | null
+    selling: string | null
+    vault: string | null
+  } | null>(null)
+  const [shouldFetchDefaultIds, setShouldFetchDefaultIds] = useState(true)
   const storageKey = userId
     ? `${COLLECTION_UI_PREFERENCES_KEY}-${userId}`
     : COLLECTION_UI_PREFERENCES_KEY
+  const defaultIdsQuery = useDefaultCollectionIds(Boolean(userId) && shouldFetchDefaultIds)
+
+  useEffect(() => {
+    defaultIdsRef.current = null
+    setShouldFetchDefaultIds(Boolean(userId))
+  }, [userId])
+
+  useEffect(() => {
+    if (!defaultIdsQuery.data || defaultIdsRef.current) return
+    defaultIdsRef.current = defaultIdsQuery.data
+    setShouldFetchDefaultIds(false)
+  }, [defaultIdsQuery.data])
+
+  const resolveDefaultIds = useCallback(async () => {
+    if (!userId) return { wishlist: null, selling: null, vault: null }
+    if (defaultIdsRef.current) return defaultIdsRef.current
+    const res = await defaultIdsQuery.refetch()
+    if (res.error) throw res.error
+    defaultIdsRef.current = res.data ?? { wishlist: null, selling: null, vault: null }
+    setShouldFetchDefaultIds(false)
+    return defaultIdsRef.current
+  }, [defaultIdsQuery.refetch, userId])
 
   const loadPreferences = useCallback(
     async (force?: boolean) => {
@@ -61,11 +105,7 @@ export function useCollectionUiPreferences() {
           !preferences.defaultIds ||
           Object.values(preferences.defaultIds).filter(Boolean).length < defaultPages.length - 1
         ) {
-          const defaultIds = {
-            wishlist: await getDefaultPageCollectionId('wishlist'),
-            selling: await getDefaultPageCollectionId('selling'),
-            vault: await getDefaultPageCollectionId('vault'),
-          }
+          const defaultIds = await resolveDefaultIds()
           const ids = Object.values(defaultIds).filter(Boolean)
           const tabs = preferences.tabs?.filter(
             (t) => !ids.includes(t) && !Object.keys(defaultIds).includes(t)
@@ -83,7 +123,7 @@ export function useCollectionUiPreferences() {
         setLoading(false)
       }
     },
-    [storageKey]
+    [resolveDefaultIds, storageKey]
   )
 
   useEffect(() => {
@@ -184,10 +224,10 @@ export function useGetCollection(args: CollectionIdArgs) {
     args.collectionType === 'wishlist'
       ? 'is_wishlist'
       : args.collectionType === 'selling'
-      ? 'is_selling'
-      : args.collectionType === 'vault'
-      ? 'is_vault'
-      : null
+        ? 'is_selling'
+        : args.collectionType === 'vault'
+          ? 'is_vault'
+          : null
 
   return useQuery({
     enabled: Object.values(args).some(Boolean),
@@ -233,6 +273,53 @@ export function useGetCollectionItems<T extends CollectionItemQueryView>(
 ) {
   const queryArgs = getCollectionItemsArgs<T>(args, opts, group)
   return useViewCollectionItems<T>(queryArgs)
+}
+
+type SpoofPricePoint = { day: string; price: number }
+type SpoofPriceResponse = {
+  seed_used: number
+  initial_price: number
+  variance: number
+  date_span: number
+  bucket_days: number
+  prices: SpoofPricePoint[]
+}
+
+export function useSpoofedCollectionPrices(
+  args: CollectionIdArgs,
+  totalCents?: number,
+  options?: { variance?: number; dateSpan?: number; seed?: number }
+) {
+  const { collectionId, collectionType } = args ?? {}
+  const { variance, dateSpan, seed } = options ?? {}
+  const initialPrice = typeof totalCents === 'number' ? Math.max(totalCents, 0) : undefined
+
+  return useQuery<SpoofPriceResponse>({
+    enabled: Boolean(initialPrice) && Boolean(collectionId || collectionType),
+    queryKey: [
+      ...qk.collections,
+      'spoof-price',
+      collectionId ?? collectionType ?? 'unknown',
+      initialPrice,
+      variance,
+      dateSpan,
+      seed,
+    ],
+    queryFn: async () => {
+      const { data, error } = await getSupabase().functions.invoke('spoof_price', {
+        body: {
+          initial_price: initialPrice,
+          variance,
+          date_span: dateSpan,
+          seed,
+        },
+        method: 'POST',
+      })
+      if (error) throw error
+      return data as SpoofPriceResponse
+    },
+    staleTime: 60_000,
+  })
 }
 
 function getDefaultCollectionPageQueryArgs<T extends CollectionItemRow>(

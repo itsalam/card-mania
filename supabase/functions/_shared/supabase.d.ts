@@ -190,6 +190,7 @@ export type Database = {
       collection_items: {
         Row: {
           collection_id: string
+          collection_ref: string | null
           created_at: string
           grade_condition_id: string | null
           grading_company: string | null
@@ -204,6 +205,7 @@ export type Database = {
         }
         Insert: {
           collection_id: string
+          collection_ref?: string | null
           created_at?: string
           grade_condition_id?: string | null
           grading_company?: string | null
@@ -218,6 +220,7 @@ export type Database = {
         }
         Update: {
           collection_id?: string
+          collection_ref?: string | null
           created_at?: string
           grade_condition_id?: string | null
           grading_company?: string | null
@@ -231,6 +234,13 @@ export type Database = {
           variants?: string[] | null
         }
         Relationships: [
+          {
+            foreignKeyName: "collection_items_collection_fk"
+            columns: ["collection_id"]
+            isOneToOne: false
+            referencedRelation: "collection_totals_with_flags"
+            referencedColumns: ["collection_id"]
+          },
           {
             foreignKeyName: "collection_items_collection_fk"
             columns: ["collection_id"]
@@ -249,12 +259,40 @@ export type Database = {
             foreignKeyName: "collection_items_collection_id_fkey"
             columns: ["collection_id"]
             isOneToOne: false
+            referencedRelation: "collection_totals_with_flags"
+            referencedColumns: ["collection_id"]
+          },
+          {
+            foreignKeyName: "collection_items_collection_id_fkey"
+            columns: ["collection_id"]
+            isOneToOne: false
             referencedRelation: "collections"
             referencedColumns: ["id"]
           },
           {
             foreignKeyName: "collection_items_collection_id_fkey"
             columns: ["collection_id"]
+            isOneToOne: false
+            referencedRelation: "collections_with_tags"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "collection_items_collection_ref_fkey"
+            columns: ["collection_ref"]
+            isOneToOne: false
+            referencedRelation: "collection_totals_with_flags"
+            referencedColumns: ["collection_id"]
+          },
+          {
+            foreignKeyName: "collection_items_collection_ref_fkey"
+            columns: ["collection_ref"]
+            isOneToOne: false
+            referencedRelation: "collections"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "collection_items_collection_ref_fkey"
+            columns: ["collection_ref"]
             isOneToOne: false
             referencedRelation: "collections_with_tags"
             referencedColumns: ["id"]
@@ -288,6 +326,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "collection_stats_collection_id_fkey"
+            columns: ["collection_id"]
+            isOneToOne: true
+            referencedRelation: "collection_totals_with_flags"
+            referencedColumns: ["collection_id"]
+          },
           {
             foreignKeyName: "collection_stats_collection_id_fkey"
             columns: ["collection_id"]
@@ -328,6 +373,13 @@ export type Database = {
             foreignKeyName: "collection_tags_collection_id_fkey"
             columns: ["collection_id"]
             isOneToOne: false
+            referencedRelation: "collection_totals_with_flags"
+            referencedColumns: ["collection_id"]
+          },
+          {
+            foreignKeyName: "collection_tags_collection_id_fkey"
+            columns: ["collection_id"]
+            isOneToOne: false
             referencedRelation: "collections"
             referencedColumns: ["id"]
           },
@@ -347,12 +399,59 @@ export type Database = {
           },
         ]
       }
+      collection_totals: {
+        Row: {
+          collection_id: string
+          computed_at: string
+          quantity_total: number
+          total_cents: number
+        }
+        Insert: {
+          collection_id: string
+          computed_at?: string
+          quantity_total?: number
+          total_cents?: number
+        }
+        Update: {
+          collection_id?: string
+          computed_at?: string
+          quantity_total?: number
+          total_cents?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "collection_totals_collection_id_fkey"
+            columns: ["collection_id"]
+            isOneToOne: true
+            referencedRelation: "collection_totals_with_flags"
+            referencedColumns: ["collection_id"]
+          },
+          {
+            foreignKeyName: "collection_totals_collection_id_fkey"
+            columns: ["collection_id"]
+            isOneToOne: true
+            referencedRelation: "collections"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "collection_totals_collection_id_fkey"
+            columns: ["collection_id"]
+            isOneToOne: true
+            referencedRelation: "collections_with_tags"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       collections: {
         Row: {
           cover_image_url: string | null
           created_at: string
           description: string | null
+          hide_sold_items: boolean | null
           id: string
+          is_selling: boolean | null
+          is_storefront: boolean | null
+          is_vault: boolean | null
           is_wishlist: boolean
           name: string
           updated_at: string
@@ -363,7 +462,11 @@ export type Database = {
           cover_image_url?: string | null
           created_at?: string
           description?: string | null
+          hide_sold_items?: boolean | null
           id?: string
+          is_selling?: boolean | null
+          is_storefront?: boolean | null
+          is_vault?: boolean | null
           is_wishlist?: boolean
           name: string
           updated_at?: string
@@ -374,7 +477,11 @@ export type Database = {
           cover_image_url?: string | null
           created_at?: string
           description?: string | null
+          hide_sold_items?: boolean | null
           id?: string
+          is_selling?: boolean | null
+          is_storefront?: boolean | null
+          is_vault?: boolean | null
           is_wishlist?: boolean
           name?: string
           updated_at?: string
@@ -914,6 +1021,13 @@ export type Database = {
             foreignKeyName: "public_snapshots_source_collection_id_fkey"
             columns: ["source_collection_id"]
             isOneToOne: false
+            referencedRelation: "collection_totals_with_flags"
+            referencedColumns: ["collection_id"]
+          },
+          {
+            foreignKeyName: "public_snapshots_source_collection_id_fkey"
+            columns: ["source_collection_id"]
+            isOneToOne: false
             referencedRelation: "collections"
             referencedColumns: ["id"]
           },
@@ -1295,6 +1409,13 @@ export type Database = {
             foreignKeyName: "wishlist_collection_id_fkey"
             columns: ["collection_id"]
             isOneToOne: false
+            referencedRelation: "collection_totals_with_flags"
+            referencedColumns: ["collection_id"]
+          },
+          {
+            foreignKeyName: "wishlist_collection_id_fkey"
+            columns: ["collection_id"]
+            isOneToOne: false
             referencedRelation: "collections"
             referencedColumns: ["id"]
           },
@@ -1372,6 +1493,19 @@ export type Database = {
         }
         Relationships: []
       }
+      collection_totals_with_flags: {
+        Row: {
+          collection_id: string | null
+          computed_at: string | null
+          is_selling: boolean | null
+          is_vault: boolean | null
+          is_wishlist: boolean | null
+          quantity_total: number | null
+          total_cents: number | null
+          user_id: string | null
+        }
+        Relationships: []
+      }
       collections_with_tags: {
         Row: {
           cover_image_url: string | null
@@ -1389,6 +1523,15 @@ export type Database = {
     }
     Functions: {
       _clamp_nonnegative: { Args: { val: number }; Returns: number }
+      _collection_item_value_cents: {
+        Args: {
+          p_grade_condition_id: string
+          p_item_kind: Database["public"]["Enums"]["item_kind"]
+          p_quantity?: number
+          p_ref_id: string
+        }
+        Returns: number
+      }
       _wishlist_row_cost_cents: {
         Args: { p_kind: string; p_metadata?: Json; p_ref_id: string }
         Returns: number
@@ -1470,6 +1613,7 @@ export type Database = {
         }
         Returns: {
           collection_id: string
+          collection_ref: string | null
           created_at: string
           grade_condition_id: string | null
           grading_company: string | null
@@ -1488,6 +1632,18 @@ export type Database = {
           isOneToOne: false
           isSetofReturn: true
         }
+      }
+      collection_totals_for_user: {
+        Args: { p_user_id?: string }
+        Returns: {
+          selling_quantity_total: number
+          selling_total_cents: number
+          user_id: string
+          vault_quantity_total: number
+          vault_total_cents: number
+          wishlist_quantity_total: number
+          wishlist_total_cents: number
+        }[]
       }
       collections_with_membership: {
         Args: { p_card: string; p_user: string }
@@ -1529,6 +1685,11 @@ export type Database = {
       }
       curated_tags_import: { Args: { payload: Json }; Returns: Json }
       effective_user_id: { Args: never; Returns: string }
+      ensure_default_collections: { Args: never; Returns: undefined }
+      ensure_default_collections_for_user: {
+        Args: { p_user_id: string }
+        Returns: undefined
+      }
       ensure_demo_mapping: {
         Args: { p_base_user_id: string }
         Returns: undefined

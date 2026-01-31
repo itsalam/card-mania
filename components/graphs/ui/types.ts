@@ -1,3 +1,4 @@
+import { StyleProp, ViewStyle } from "react-native";
 import { SharedValue } from "react-native-reanimated";
 import { MaybeNumber } from "victory-native";
 
@@ -13,13 +14,14 @@ export type SeriesPoint = {
     yValue: MaybeNumber;
 };
 
-export type InputFieldType = number | string | symbol;
+export type InputFieldType = number | string;
 
 export type GraphInputKey<T> = KeysOfType<RemoveIndex<T>, InputFieldType>;
 export type GraphInputFields<T> = {
     [
         K in keyof RemoveIndex<T> as RemoveIndex<T>[K] extends InputFieldType
-            ? K : never
+            ? K
+            : never
     ]: RemoveIndex<T>[K];
 };
 
@@ -39,6 +41,9 @@ export type PriceGraphProps<
     height?: number;
     xKey: InputKey;
     yKeys: YKeys[];
+    color?: string;
+    style?: StyleProp<ViewStyle>;
+    showTooltipLabel?: boolean;
 };
 
 // drop any index signatures from T

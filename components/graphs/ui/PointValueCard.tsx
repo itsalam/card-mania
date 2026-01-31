@@ -5,15 +5,12 @@ import {
   SharedValue,
   useAnimatedReaction,
   useDerivedValue,
-  withTiming
+  withTiming,
 } from 'react-native-reanimated'
 import { Colors } from 'react-native-ui-lib'
 import { scheduleOnRN } from 'react-native-worklets'
 import { getFontHeight, wrapContent } from '../utils'
 import { SeriesPoint } from './types'
-
-// small helper to clamp
-const clamp = (v: number, min: number, max: number) => Math.max(min, Math.min(max, v))
 
 type PointValueCardProps = {
   cx: SharedValue<number> // shared x (in pixels)
@@ -27,6 +24,8 @@ type PointValueCardProps = {
   canvasBottom: number
   isActive: boolean
   offset?: { x: number; y: number } // offset from the point
+  textColor?: string
+  valueOverride?: number
 }
 
 export function PointValueCard({
@@ -40,6 +39,8 @@ export function PointValueCard({
   canvasTop,
   canvasBottom,
   offset = { x: 8, y: 0 },
+  textColor = Colors.$textGeneral,
+  valueOverride,
   isActive,
 }: PointValueCardProps) {
   // 1) load a font (must be a real .ttf/.otf file in your bundle)
@@ -47,21 +48,30 @@ export function PointValueCard({
   const labelFont = useFont(require('../../../assets/fonts/SpaceMono-Regular.ttf'), 9)
   const setFormattedLabel = React.useCallback(
     (n: number) => {
-      setValueText(formatValue(isActive ? n : restPoint?.yValue ?? (0 as number))) // JS thread
+      const fallback = restPoint?.yValue ?? (0 as number)
+      setValueText(formatValue(isActive ? n : fallback)) // JS thread
     },
-    [formatValue, isActive]
+    [formatValue, isActive, restPoint?.yValue]
   )
 
   // 2) keep a React label string synced from the UI-thread SharedValue
   const [valueText, setValueText] = React.useState(formatValue(restPoint?.yValue ?? (0 as number)))
   useAnimatedReaction(
-    () => valueSV.value,
-    (v) => {
+    () => ({ v: valueSV.value, active: isActive }),
+    ({ v, active }) => {
       'worklet'
-      scheduleOnRN(setFormattedLabel, v)
+      const display = active ? v : (valueOverride ?? (restPoint?.yValue as number) ?? (restPoint?.y as number) ?? 0)
+      scheduleOnRN(setFormattedLabel, display)
     },
-    [isActive]
+    [isActive, valueOverride]
   )
+
+  React.useEffect(() => {
+    if (!isActive) {
+      const display = valueOverride ?? (restPoint?.yValue as number) ?? (restPoint?.y as number) ?? 0
+      setValueText(formatValue(display))
+    }
+  }, [isActive, valueOverride, restPoint?.yValue, restPoint?.y, formatValue])
 
   // 3) measure text (once font loaded); fall back widths if not ready
 
@@ -79,10 +89,13 @@ export function PointValueCard({
     () => withTiming(isActive ? cx.value : restPoint?.x, { duration: 20 }),
     [cx, isActive, restPoint]
   )
-  const y = useDerivedValue(
-    () => withTiming(isActive ? cy.value : restPoint?.y ?? 0, { duration: 20 }),
-    [cy, isActive, restPoint]
-  )
+  const y = useDerivedValue(() => {
+    const rawY = isActive ? cy.value : (restPoint?.y ?? 0)
+    const chartHeight = canvasBottom - canvasTop
+    const minAllowedY = canvasBottom - chartHeight * 0.7 // cap at top 20% buffer
+    const cappedY = Math.max(minAllowedY, Math.min(rawY, canvasBottom))
+    return withTiming(cappedY, { duration: 20 })
+  }, [cy, isActive, restPoint, canvasBottom, canvasTop])
 
   const cardX = useDerivedValue(
     () => withTiming(x.value + offset.x, { duration: 20 }),
@@ -134,18 +147,10 @@ export function PointValueCard({
         height={cardH}
         r={radius}
         color={Colors.$backgroundNeutral}
+        opacity={0.75}
       />
-      <RoundedRect
-        x={cardX} // left at cx + offset.x, but RoundedRect wants a number
-        y={cardY}
-        width={cardW}
-        height={cardH}
-        r={radius}
-        color={Colors.$backgroundNeutral}
-      />
-
-      <Text text={label} x={labelX} y={labelY} font={labelFont} color={Colors.$textGeneral} />
-      <Text text={valueText} x={textX} y={textY} font={priceFont} color={Colors.$textGeneral} />
+      <Text text={label} x={labelX} y={labelY} font={labelFont} color={textColor} />
+      <Text text={valueText} x={textX} y={textY} font={priceFont} color={textColor} />
     </Group>
   ) : null
 }

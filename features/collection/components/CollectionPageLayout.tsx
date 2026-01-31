@@ -121,7 +121,6 @@ export const CollectionsPageLayout = () => {
     scrollViewRef,
     onListLayout,
     onContentSizeChange,
-    headerContentRef,
     onHeaderLayout,
   } = useCollaspableHeader(collectionItems.length > 0, [currentPage, collection?.id])
 
@@ -220,7 +219,6 @@ export const CollectionsPageLayout = () => {
         {!showEditView ? (
           <>
             <Animated.View
-              ref={headerContentRef}
               key={`header-${currentPage}`}
               style={[headerAnimatedStyle, { overflow: 'hidden' }]}
             >
