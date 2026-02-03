@@ -298,7 +298,7 @@ const NewCollectionView = () => {
   )
 
   return (
-    <Animated.View style={{ flex: 1, height: '100%' }}>
+    <Animated.View style={{ flex: 1, height: '100%', paddingBottom: 16 }}>
       <ModifyCollectionView
         onChange={(ci) => handleChange(ci)}
         onSubmit={(res) => {

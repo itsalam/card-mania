@@ -151,13 +151,15 @@ export const CollectionCardItemEntries = ({
         label="Add"
         iconSource={(style) => <Plus style={style} color={Colors.$iconDefault} />}
       />
-      <AddVariantModal
-        entries={newEntries}
-        collection={collection}
-        item={card}
-        visible={showModal}
-        onDismiss={handleDismiss}
-      />
+      {collection && (
+        <AddVariantModal
+          entries={newEntries}
+          collection={collection}
+          item={card}
+          visible={showModal}
+          onDismiss={handleDismiss}
+        />
+      )}
     </View>
   )
 }
@@ -189,7 +191,7 @@ const AddVariantModal = ({
       quantity: 0,
       grading_company: null,
       grade_condition_id: null,
-      collection_id: collection.id!,
+      collection_id: collection?.id,
       item_kind: 'card',
     }
   }, [item?.id, gradeData])
@@ -253,11 +255,21 @@ const AddVariantModal = ({
     setDraft((prev) => ({ ...prev, ...patch }))
   }
 
+  const defaultGrader = gradeData?.find((grader) => grader.name.toLocaleLowerCase() === 'psa')
+
   return (
     <Modal visible={visible} onDismiss={onDismiss}>
       <View className="flex flex-col gap-4 flex-1 pt-4">
         <View className="flex flex-row gap-4 w-full">
           <Select
+            defaultValue={
+              defaultGrader
+                ? {
+                    value: defaultGrader?.id,
+                    label: defaultGrader?.slug.toLocaleLowerCase(),
+                  }
+                : undefined
+            }
             value={
               company
                 ? {

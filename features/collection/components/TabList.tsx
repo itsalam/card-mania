@@ -228,10 +228,34 @@ const CollectionTab = ({ collectionKey, onLayout }: CollectionTabProps) => {
 
   const key = [...Object.values(collectionKey)][0]
 
+  const handledMissingRef = useRef(false)
   const isDefault = Boolean(collectionKey.collectionType)
   const isCurrent = currentPage === key
-  const { data: collection } = useGetCollection(collectionKey)
+  const { data: collection, ...other } = useGetCollection(collectionKey)
   const label = getCollectionName({ collectionKey, collection })
+
+  useEffect(() => {
+    if (handledMissingRef.current) return
+    const fetchError = other.error as { code?: string; message?: string } | null
+    const missingCollection =
+      fetchError &&
+      (!fetchError.code ||
+        fetchError.code === 'PGRST116' ||
+        fetchError.message?.toLowerCase?.().includes('not found'))
+
+    if (!isDefault && missingCollection) {
+      handledMissingRef.current = true
+      const nextTabs = (preferenceState.preferences.tabs ?? []).filter((t) => t !== key)
+      preferenceState
+        .updatePreferences({ tabs: nextTabs })
+        .then(() => {
+          if (currentPage === key) setCurrentPage('default')
+        })
+        .catch(() => {
+          // ignore; preference state handles errors internally
+        })
+    }
+  }, [currentPage, isDefault, key, other.error, preferenceState, setCurrentPage])
 
   return (
     <View style={{ flexGrow: 0, flexShrink: 0 }} onLayout={onLayout}>

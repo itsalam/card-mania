@@ -50,9 +50,8 @@ export type CollectionItem =
     Database["public"]["Tables"]["collection_items"]["Row"];
 
 export type EditCollectionArgsItem =
-    & Omit<
-        Database["public"]["Tables"]["collection_items"]["Insert"],
-        "id" | "user_id"
+    & Partial<
+        Database["public"]["Tables"]["collection_items"]["Insert"]
     >
     & {
         id?: string;

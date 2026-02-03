@@ -56,12 +56,12 @@ Colors.setScheme(colorScheme === 'dark' ? 'dark' : 'light')
 
 Colors.loadSchemes({
   light: {
-    $backgroundPrimaryHeavy: Colors.blue50,
-    $backgroundPrimaryMedium: Colors.blue70,
+    $backgroundPrimaryHeavy: Colors.blue30,
+    $backgroundPrimaryMedium: Colors.blue50,
     $backgroundPrimaryLight: Colors.blue80,
     $textPrimary: Colors.blue30,
     $iconPrimary: Colors.blue30,
-    $iconPrimaryLight: Colors.blue50,
+    $iconPrimaryLight: Colors.blue30,
     $outlinePrimary: Colors.blue30,
   },
   dark: {

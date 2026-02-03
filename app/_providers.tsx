@@ -16,6 +16,7 @@ import * as SplashScreen from 'expo-splash-screen'
 import { GluestackUIProvider } from '@/components/ui/gluestack-ui-provider'
 import { useColorScheme } from '@/lib/hooks/useColorScheme'
 
+import { ToastProvider } from '@/components/Toast'
 import { NAV_THEME } from '@/lib/constants'
 import { StoreProvider } from '@/lib/store/provider'
 import { AuthStatus, useUserStore } from '@/lib/store/useUserStore'
@@ -138,7 +139,9 @@ export default function Providers({ children }: { children: React.ReactNode }) {
         <GluestackUIProvider>
           <ThemeProvider value={isDarkColorScheme ? DARK_THEME : LIGHT_THEME}>
             <StoreProvider>
-              <GestureHandlerRootView>{children}</GestureHandlerRootView>
+              <GestureHandlerRootView>
+                <ToastProvider>{children}</ToastProvider>
+              </GestureHandlerRootView>
             </StoreProvider>
             {/* <StatusBar style={isDarkColorScheme ? 'light' : 'dark'} /> */}
           </ThemeProvider>

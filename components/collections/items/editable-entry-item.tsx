@@ -90,8 +90,8 @@ export const CollectionItemEntry = ({
   editable,
   isLoading,
 }: {
-  collection: CollectionLike
-  collectionItem: Partial<CollectionItemRow>
+  collection?: CollectionLike
+  collectionItem?: Partial<CollectionItemRow>
   onDelete?: () => void
   card: TCard | null
   editable?: boolean
@@ -109,32 +109,32 @@ export const CollectionItemEntry = ({
   const { data: cardData } = useCardQuery(card?.id)
 
   const initialDraft = useMemo(() => {
-    const gradeFormat = gradeData?.find((c) => c.slug === collectionItem.grading_company)
+    const gradeFormat = gradeData?.find((c) => c.slug === collectionItem?.grading_company)
     const grade =
-      currentGrade ?? gradeFormat?.grades.find((g) => g.id === collectionItem.grade_condition_id)
+      currentGrade ?? gradeFormat?.grades.find((g) => g.id === collectionItem?.grade_condition_id)
 
     return {
-      collection_id: collection.id!,
-      ref_id: card?.id!,
-      quantity: collectionItem.quantity ?? 0,
+      collection_id: collection?.id,
+      ref_id: card?.id,
+      quantity: collectionItem?.quantity ?? 0,
       grading_company: gradeFormat?.slug ?? null,
-      grade_condition_id: collectionItem.grade_condition?.id ?? grade?.id ?? null,
+      grade_condition_id: collectionItem?.grade_condition?.id ?? grade?.id ?? null,
     }
-  }, [collection.id, card?.id, collectionItem, gradeData])
+  }, [collection?.id, card?.id, collectionItem, gradeData])
 
   const [draft, setDraft] = useState<EditCollectionArgsItem>(initialDraft)
 
   const currentGrader = useMemo(() => {
-    if (!gradeData || !collectionItem.grade_condition_id) return undefined
+    if (!gradeData || !collectionItem?.grade_condition_id) return undefined
     const gradingCompany = gradeData.find((gd) =>
       gd.grades.some((grade) => grade.id === collectionItem.grade_condition_id)
     )
 
     return gradingCompany
-  }, [gradeData, collectionItem.grade_condition_id])
+  }, [gradeData, collectionItem?.grade_condition_id])
 
   const currentGrade = useMemo(() => {
-    return currentGrader?.grades.find((grade) => grade.id === collectionItem.grade_condition_id)
+    return currentGrader?.grades.find((grade) => grade.id === collectionItem?.grade_condition_id)
   }, [currentGrader])
 
   useEffect(() => {
@@ -252,7 +252,7 @@ export const CollectionItemEntry = ({
             stepperProps={{ small: true }}
             min={0}
             max={999}
-            initialNumber={isLoading ? undefined : draft.quantity ?? 0}
+            initialNumber={isLoading ? undefined : (draft.quantity ?? 0)}
             onChangeNumber={(n) => updateDraft({ quantity: n })}
           />
 
@@ -283,7 +283,7 @@ export const CollectionItemEntry = ({
           </View>
         </View>
       </View>
-      {collectionItem.variants?.length ? (
+      {collectionItem?.variants?.length ? (
         <View style={{ flexDirection: 'row', paddingTop: 2 }}>
           {collectionItem.variants?.map((v) => (
             <Badge

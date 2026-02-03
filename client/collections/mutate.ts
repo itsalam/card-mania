@@ -309,3 +309,47 @@ export const useEditCollectionItem = (
         },
     });
 };
+
+// Delete a collection and clean related cache
+export const useDeleteCollection = () => {
+    const qc = useQueryClient();
+
+    return useMutation({
+        mutationFn: async (collectionId: string) => {
+            await requireUser();
+            const { data, error } = await getSupabase()
+                .from("collections")
+                .delete()
+                .eq("id", collectionId)
+                .select()
+                .single();
+            if (error) throw error;
+            return data as CollectionRow;
+        },
+        onMutate: async (collectionId) => {
+            await qc.cancelQueries({ queryKey: [...qk.userCollections] });
+            const prevList = qc.getQueryData<CollectionRow[]>([
+                ...qk.userCollections,
+            ]);
+
+            if (prevList) {
+                qc.setQueryData(
+                    [...qk.userCollections],
+                    prevList.filter((c) => c.id !== collectionId),
+                );
+            }
+
+            return { prevList };
+        },
+        onError: (_err, _collectionId, ctx) => {
+            if (ctx?.prevList) {
+                qc.setQueryData([...qk.userCollections], ctx.prevList);
+            }
+        },
+        onSettled: (_data, _err, collectionId) => {
+            qc.invalidateQueries({ queryKey: [...qk.userCollections] });
+            qc.removeQueries({ queryKey: [...qk.collectionItems(collectionId)] });
+            qc.removeQueries({ queryKey: [...qk.collections, collectionId] });
+        },
+    });
+};

@@ -1,7 +1,6 @@
 import { ScrollView, View } from 'react-native'
 
 import { CollectionLike, EditCollectionResult } from '@/client/collections/types'
-import { BlurBackground } from '@/components/Background'
 import { Separator } from '@/components/ui/separator'
 import { ModifyCollectionProvider } from '@/features/tcg-card-views/DetailCardView/provider'
 import { ChevronLeft } from 'lucide-react-native'
@@ -38,7 +37,7 @@ export const ModifyCollectionView = ({
         }}
         contentContainerStyle={{
           flexDirection: 'column',
-          paddingTop: 8,
+          paddingVertical: 8,
         }}
       >
         <View
@@ -99,11 +98,14 @@ export const ModifyCollectionView = ({
           </View>
         </View>
       </ScrollView>
-      <BlurBackground className="w-full flex flex-row pt-2 gap-4 px-4 z-1">
-        <SubmitCollectionButton collectionId={collection?.id} onSubmit={(e) => {onSubmit?.(e); 
-        console.log(e)
-        }} />
-      </BlurBackground>
+      <View className="w-full flex flex-row pt-2 gap-4 px-4 z-1 mb-4">
+        <SubmitCollectionButton
+          collectionId={collection?.id}
+          onSubmit={(e) => {
+            onSubmit?.(e)
+          }}
+        />
+      </View>
     </ModifyCollectionProvider>
   )
 }

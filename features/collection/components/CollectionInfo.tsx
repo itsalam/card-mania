@@ -15,6 +15,7 @@ import {
   Plus,
   SeparatorHorizontal,
   Store,
+  Trash,
 } from 'lucide-react-native'
 import { MotiView } from 'moti'
 import { useState } from 'react'
@@ -23,12 +24,14 @@ import { Colors } from 'react-native-ui-lib'
 import { isDefaultCollection } from '../helpers'
 import { useGetCollection, useGetCollectionCountInfo } from '../hooks'
 import { DefaultPageTypes, useCollectionsPageStore } from '../provider'
+import { DeleteModal } from './DeleteModal'
 
 type Option = {
   label: string
   icon: LucideIcon
   onClick?: () => void
   iconColor?: string
+  backgroundColor?: string
 }
 
 const SortOptions = ['name', 'added_on', 'custom', 'set_name']
@@ -41,6 +44,7 @@ export const CollectionInfo = () => {
 
   const [showSortModal, setShowSortModal] = useState(false)
   const [showDisplayModal, setShowDisplayModal] = useState(false)
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
 
   const collectionId =
     preferenceState.preferences.defaultIds[currentPage as DefaultPageTypes] ?? currentPage
@@ -129,16 +133,25 @@ export const CollectionInfo = () => {
       onClick() {
         setShowSortModal(true)
       },
+      backgroundColor: Colors.$backgroundDark,
       //TODO
     },
     display: {
       label: 'Display',
       icon: LayoutList,
       //TODO
-
       onClick() {
         setShowDisplayModal(true)
       },
+      backgroundColor: Colors.$backgroundDark,
+    },
+    delete: {
+      label: 'Delete',
+      icon: Trash,
+      onClick() {
+        setShowDeleteModal(true)
+      },
+      backgroundColor: Colors.$backgroundDangerHeavy,
     },
   }
 
@@ -222,9 +235,12 @@ export const CollectionInfo = () => {
                   <ToggleBadge
                     label={item[1].label}
                     checked
+                    {...(item[1].backgroundColor
+                      ? { backgroundColor: item[1].backgroundColor }
+                      : {})}
                     leftElement={
                       <Icon
-                        color={Colors.$iconDefaultLight}
+                        color={item[1].iconColor ?? Colors.$iconDefaultLight}
                         size={18}
                         strokeWidth={2.5}
                         style={{ marginLeft: 4 }}
@@ -247,6 +263,11 @@ export const CollectionInfo = () => {
             <Button>{option}</Button>
           ))}
         </Modal>
+        <DeleteModal
+          showDeleteModal={showDeleteModal}
+          setShowDeleteModal={setShowDeleteModal}
+          collectionId={collectionId}
+        />
       </MotiView>
     </>
   )

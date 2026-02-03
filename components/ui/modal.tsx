@@ -84,7 +84,7 @@ export function Modal({
   return (
     <BaseModal transparent visible={visible} animationType="fade" onRequestClose={dismiss}>
       <KeyboardAvoidingView
-        style={{ flex: 1, backgroundColor: Colors.rgba(Colors.$backgroundDefault, 0.5) }}
+        style={{ flex: 1, backgroundColor: Colors.rgba(Colors.$backgroundNeutralIdle, 0.5) }}
         behavior={'translate-with-padding'}
       >
         <Pressable style={{ flex: 1 }} onPress={dismiss} />
@@ -109,7 +109,7 @@ export function Modal({
               sheetStyle,
             ]}
           >
-            <View style={[thumbStyles.thumb, { marginHorizontal: 'auto' }]} />
+            <View style={[thumbStyles.thumb, { marginHorizontal: 'auto', marginBottom: 12 }]} />
             {children}
           </Animated.View>
         </GestureDetector>
