@@ -28,7 +28,10 @@ export function MainSearchBar({ placeholder = 'Search...' }: { placeholder?: str
 
   return (
     <Animated.View className="w-full flex flex-col">
-      <View className="flex flex-col items-center justify-center px-4 pb-2">
+      <View
+        className="flex flex-col items-center justify-center px-4"
+        style={{ paddingVertical: 4 }}
+      >
         <SearchBar
           id="searchInput"
           placeholder={placeholder}

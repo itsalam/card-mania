@@ -1,3 +1,4 @@
+import Logo from '@/assets/images/logo.svg'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -11,9 +12,17 @@ import { Tabs, TabsContent, TabsLabel, TabsList, TabsTrigger } from '@/component
 import { Text } from '@/components/ui/text'
 import { MainSearchBar } from '@/features/mainSearchbar'
 import { useColorScheme } from '@/lib/hooks/useColorScheme'
-import { Compass, History, LucideIcon, Menu, Newspaper, Sheet } from 'lucide-react-native'
+import {
+  Compass,
+  History,
+  LucideIcon,
+  Menu,
+  Newspaper,
+  SettingsIcon,
+  Sheet,
+} from 'lucide-react-native'
 import React from 'react'
-import { ScrollView, View } from 'react-native'
+import { ScrollView, TouchableOpacity, View } from 'react-native'
 import { GestureDetector } from 'react-native-gesture-handler'
 import Animated from 'react-native-reanimated'
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -55,11 +64,17 @@ export default function HomeScreen() {
 
   return (
     <SafeAreaView className="flex-1 w-full h-full overflow-visible" style={{ paddingTop: 8 }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, gap: 12 }}>
+        <Logo width={48} height={48} />
+        <Text variant={'large'}>Welcome back, TODO: BUILD USER</Text>
+        <TouchableOpacity style={{ marginLeft: 'auto' }}>
+          <SettingsIcon size={32} />
+        </TouchableOpacity>
+      </View>
       <MainSearchBar />
       <CollectionBreakdown
         style={{
           paddingTop: 12,
-          marginTop: 48,
           marginBottom: 20,
           marginHorizontal: 12,
         }}
