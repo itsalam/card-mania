@@ -1,3 +1,4 @@
+import { useEffectiveColorScheme } from '@/features/settings/hooks/effective-color-scheme'
 import { Image } from 'expo-image'
 import { FolderHeart, LucideIcon } from 'lucide-react-native'
 import React from 'react'
@@ -11,8 +12,10 @@ export const CollectionsAvatar = ({
   icon?: LucideIcon
   iconImageSrc?: string
 }) => {
+  const scheme = useEffectiveColorScheme()
   return (
     <View
+      key={scheme}
       className="h-14 w-14 rounded-xl flex items-center justify-center"
       style={{
         borderColor: Colors.$outlinePrimary,

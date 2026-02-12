@@ -21,6 +21,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Text } from '@/components/ui/text'
 import { formatPrice } from '@/components/utils'
 import { TCard } from '@/constants/types'
+import { useEffectiveColorScheme } from '@/features/settings/hooks/effective-color-scheme'
 import { CollectionItemRow } from '@/lib/store/functions/types'
 import { useQueryClient } from '@tanstack/react-query'
 import { debounce } from 'lodash'
@@ -188,11 +189,12 @@ export const CollectionItemEntry = ({
       return getGradedPrice({ card: cardData, graders: gradeData, gradeId: currentGrade.id })
     } else return getDefaultPrice(card ?? undefined)
   }, [collectionItem, gradeData, currentGrade])
-
+  const scheme = useEffectiveColorScheme() // 'light' | 'dark' | null
   //TODO: Implement modal overriwte/selling options
 
   return (
     <View
+      key={scheme}
       style={{
         position: 'relative',
         width: '100%',

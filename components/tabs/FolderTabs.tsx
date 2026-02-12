@@ -1,3 +1,4 @@
+import { useEffectiveColorScheme } from '@/features/settings/hooks/effective-color-scheme'
 import { cn } from '@/lib/utils/cn'
 import * as TabsPrimitive from '@rn-primitives/tabs'
 import { Pressable, View } from 'react-native'
@@ -23,6 +24,7 @@ export function FolderTabTrigger({
   className,
   ...props
 }: React.ComponentProps<typeof TabsTrigger>) {
+  const scheme = useEffectiveColorScheme()
   const { value: currentValue } = TabsPrimitive.useRootContext()
   return (
     <TabsTrigger
@@ -33,6 +35,7 @@ export function FolderTabTrigger({
         value === currentValue ? 'border-b-0' : 'border-b ',
         className
       )}
+      key={scheme}
       style={
         value === currentValue
           ? {

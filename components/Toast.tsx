@@ -1,3 +1,4 @@
+import { useEffectiveColorScheme } from '@/features/settings/hooks/effective-color-scheme'
 import { X } from 'lucide-react-native'
 import React, {
   ComponentProps,
@@ -39,6 +40,7 @@ type ToastContextValue = {
 const ToastContext = createContext<ToastContextValue | undefined>(undefined)
 
 export const ToastProvider = ({ children }: { children: ReactNode }) => {
+  const theme = useEffectiveColorScheme()
   const [visible, setVisible] = useState(true)
   const [toastProps, setToastProps] = useState<Partial<ShowToastArgs>>({
     title: 'nah',
@@ -110,6 +112,7 @@ export const ToastProvider = ({ children }: { children: ReactNode }) => {
           >
             <Alert
               {...alertProps}
+              key={theme}
               style={{
                 backgroundColor: backgroundColor ?? Colors.$backgroundElevated,
               }}

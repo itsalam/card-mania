@@ -1228,6 +1228,48 @@ export type Database = {
           },
         ]
       }
+      storefronts: {
+        Row: {
+          collection_ids: string[]
+          created_at: string
+          description: string | null
+          id: string
+          is_listed: boolean
+          listed_at: string | null
+          tags: string[]
+          title: string | null
+          updated_at: string
+          user_id: string
+          whitelist_user_ids: string[]
+        }
+        Insert: {
+          collection_ids?: string[]
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_listed?: boolean
+          listed_at?: string | null
+          tags?: string[]
+          title?: string | null
+          updated_at?: string
+          user_id: string
+          whitelist_user_ids?: string[]
+        }
+        Update: {
+          collection_ids?: string[]
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_listed?: boolean
+          listed_at?: string | null
+          tags?: string[]
+          title?: string | null
+          updated_at?: string
+          user_id?: string
+          whitelist_user_ids?: string[]
+        }
+        Relationships: []
+      }
       tag_aliases: {
         Row: {
           alias_slug: string
@@ -1332,6 +1374,54 @@ export type Database = {
           popularity?: number
           slug?: string
           source?: string
+        }
+        Relationships: []
+      }
+      user_profile: {
+        Row: {
+          avatar_url: string | null
+          bio: string | null
+          created_at: string
+          display_name: string | null
+          is_hobbyiest: boolean
+          is_seller: boolean
+          last_seen_at: string | null
+          location: string | null
+          preferences: Json
+          timezone: string | null
+          updated_at: string
+          user_id: string
+          username: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          bio?: string | null
+          created_at?: string
+          display_name?: string | null
+          is_hobbyiest?: boolean
+          is_seller?: boolean
+          last_seen_at?: string | null
+          location?: string | null
+          preferences?: Json
+          timezone?: string | null
+          updated_at?: string
+          user_id: string
+          username?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          bio?: string | null
+          created_at?: string
+          display_name?: string | null
+          is_hobbyiest?: boolean
+          is_seller?: boolean
+          last_seen_at?: string | null
+          location?: string | null
+          preferences?: Json
+          timezone?: string | null
+          updated_at?: string
+          user_id?: string
+          username?: string | null
         }
         Relationships: []
       }

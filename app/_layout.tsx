@@ -12,9 +12,8 @@ import { isRunningInExpoGo } from 'expo'
 import Constants from 'expo-constants'
 import { useNavigationContainerRef } from 'expo-router'
 import React from 'react'
-import { Appearance, Platform } from 'react-native'
+import { Platform } from 'react-native'
 import { configureReanimatedLogger, ReanimatedLogLevel } from 'react-native-reanimated'
-import { Colors } from 'react-native-ui-lib'
 import Providers from './_providers'
 
 const navigationIntegration = Sentry.reactNavigationIntegration({
@@ -50,31 +49,6 @@ SplashScreen.setOptions({
 
 SplashScreen.preventAutoHideAsync()
 
-const colorScheme = Appearance.getColorScheme()
-
-Colors.setScheme(colorScheme === 'dark' ? 'dark' : 'light')
-
-Colors.loadSchemes({
-  light: {
-    $backgroundPrimaryHeavy: Colors.blue30,
-    $backgroundPrimaryMedium: Colors.blue50,
-    $backgroundPrimaryLight: Colors.blue80,
-    $textPrimary: Colors.blue30,
-    $iconPrimary: Colors.blue30,
-    $iconPrimaryLight: Colors.blue30,
-    $outlinePrimary: Colors.blue30,
-  },
-  dark: {
-    $backgroundPrimaryHeavy: Colors.blue30,
-    $backgroundPrimaryMedium: Colors.blue5,
-    $backgroundPrimaryLight: Colors.blue1,
-    $textPrimary: Colors.blue50,
-    $iconPrimary: Colors.blue50,
-    $iconPrimaryLight: Colors.blue30,
-    $outlinePrimary: Colors.blue50,
-  },
-})
-
 export default Sentry.wrap(function RootLayout() {
   const ref = useNavigationContainerRef()
   React.useEffect(() => {
@@ -82,6 +56,7 @@ export default Sentry.wrap(function RootLayout() {
       navigationIntegration.registerNavigationContainer(ref)
     }
   }, [ref])
+
   return (
     <Providers>
       <Stack

@@ -1,23 +1,25 @@
-import { PropsWithChildren, useState } from 'react';
-import { StyleSheet, TouchableOpacity } from 'react-native';
+import { PropsWithChildren, useState } from 'react'
+import { StyleSheet, TouchableOpacity } from 'react-native'
 
-import { ThemedText } from '@/components/ThemedText';
-import { ThemedView } from '@/components/ThemedView';
-import { IconSymbol } from '@/components/ui/IconSymbol';
-import { Colors } from '@/constants/Colors';
-import { useColorScheme } from '@/lib/hooks/useColorScheme';
+import { ThemedText } from '@/components/ThemedText'
+import { ThemedView } from '@/components/ThemedView'
+import { IconSymbol } from '@/components/ui/IconSymbol'
+import { Colors } from '@/constants/Colors'
+import { useEffectiveColorScheme } from '@/features/settings/hooks/effective-color-scheme'
 
 export function Collapsible({ children, title }: PropsWithChildren & { title: string }) {
-  const [isOpen, setIsOpen] = useState(false);
-  const {colorScheme} = useColorScheme() ?? 'light';
+  const [isOpen, setIsOpen] = useState(false)
+  const { colorScheme } = useEffectiveColorScheme()
 
   return (
     <ThemedView>
       <TouchableOpacity
         style={styles.heading}
         onPress={() => setIsOpen((value) => !value)}
-        activeOpacity={0.8}>
+        activeOpacity={0.8}
+      >
         <IconSymbol
+          key={colorScheme}
           name="chevron.right"
           size={18}
           weight="medium"
@@ -29,7 +31,7 @@ export function Collapsible({ children, title }: PropsWithChildren & { title: st
       </TouchableOpacity>
       {isOpen && <ThemedView style={styles.content}>{children}</ThemedView>}
     </ThemedView>
-  );
+  )
 }
 
 const styles = StyleSheet.create({
@@ -42,4 +44,4 @@ const styles = StyleSheet.create({
     marginTop: 6,
     marginLeft: 24,
   },
-});
+})

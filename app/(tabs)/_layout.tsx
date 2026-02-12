@@ -11,19 +11,21 @@ import { HapticTab } from '@/components/tabs/HapticTab'
 //   yarn add lucide-react-native
 //   npx expo install react-native-svg
 import { AppNavHeader } from '@/components/ui/headers'
+import { useEffectiveColorScheme } from '@/features/settings/hooks/effective-color-scheme'
 import { AuthGate } from '@/features/splash'
 import { PortalHost } from '@rn-primitives/portal'
 import { Compass, Home, Layers, Scan, Store, User } from 'lucide-react-native'
 import { Colors } from 'react-native-ui-lib'
 
 export default function TabLayout() {
+  const scheme = useEffectiveColorScheme() // 'light' | 'dark' | null
+  console.log({ scheme })
+  console.log(Colors.$backgroundElevated)
   return (
     <AuthGate>
       <Tabs
+        key={scheme ?? 'default'}
         screenOptions={{
-          tabBarActiveTintColor: Colors.$iconGeneral,
-          tabBarInactiveBackgroundColor: Colors.$backgroundElevated,
-          tabBarActiveBackgroundColor: Colors.$backgroundElevatedLight,
           header: (props) => <AppNavHeader {...props} />,
           headerShown: false,
           tabBarButton: HapticTab,

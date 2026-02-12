@@ -1,4 +1,5 @@
-import { useColorScheme } from '@/lib/hooks/useColorScheme'
+import { useEffectiveColorScheme } from '@/features/settings/hooks/effective-color-scheme'
+import { useMemo } from 'react'
 import { ColorValue, View } from 'react-native'
 import { useAnimatedReaction } from 'react-native-reanimated'
 import { Colors } from 'react-native-ui-lib'
@@ -9,7 +10,7 @@ export type ColorValueArray = [ColorValue, ColorValue, ...ColorValue[]]
 export type OptionalColorValueArray = [
   OptionalColorValue,
   OptionalColorValue,
-  ...OptionalColorValue[]
+  ...OptionalColorValue[],
 ]
 
 export function hexToRgba(hex: string, opacity: number): string {
@@ -38,12 +39,12 @@ export function hexToRgba(hex: string, opacity: number): string {
 // export const getBackgroundColors = (colorScheme: ColorSchemeName): ColorValueArray => colorScheme === 'dark' ? ['#1C1C1C', '#0C0C0C'] : ['#E0E0E0', '#F5F5F5'];
 
 export const useBackgroundColors = (): ColorValueArray => {
-  const { colorScheme } = useColorScheme()
+  const colorScheme = useEffectiveColorScheme()
   // const defaultColors: ColorValueArray = getBackgroundColors(colorScheme);
-  const defaultColors: ColorValueArray = [
-    Colors.$backgroundNeutralMedium,
-    Colors.$backgroundNeutralLight,
-  ]
+  const defaultColors: ColorValueArray = useMemo(
+    () => [Colors.$backgroundNeutralMedium, Colors.$backgroundNeutralLight],
+    [colorScheme, Colors]
+  )
   return defaultColors
 }
 
@@ -63,7 +64,10 @@ export const formatPrice = (
 
 export const formatCompactPrice = (
   price: number,
-  { currency = '$', maximumSignificantDigits = 4 }: { currency?: string; maximumSignificantDigits?: number } = {}
+  {
+    currency = '$',
+    maximumSignificantDigits = 4,
+  }: { currency?: string; maximumSignificantDigits?: number } = {}
 ) => {
   const dollars = price / 100
   const formatter = new Intl.NumberFormat('en-US', {

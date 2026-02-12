@@ -1,3 +1,4 @@
+import { useEffectiveColorScheme } from '@/features/settings/hooks/effective-color-scheme'
 import {
   Blur,
   Color,
@@ -226,6 +227,7 @@ export function PriceGraph<
     style,
     showTooltipLabel = true,
   } = props
+  const scheme = useEffectiveColorScheme() // 'light' | 'dark' | null
   const { timePeriod } = useTimeRange()
   const isInactive = !Boolean(data)
   const initialY = useMemo(
@@ -332,7 +334,7 @@ export function PriceGraph<
   }, [splitX])
 
   return (
-    <Animated.View className="w-full" style={[style, { height }]}>
+    <Animated.View key={scheme} className="w-full" style={[style, { height }]}>
       {isInactive ? (
         <LoadingState
           height={height / 2}

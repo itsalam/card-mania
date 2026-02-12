@@ -1,5 +1,5 @@
 import { TextClassContext } from '@/components/ui/text';
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/utils/index';
 import { VariantProps } from "@gluestack-ui/nativewind-utils";
 import { tva } from "@gluestack-ui/nativewind-utils/tva";
 import * as TogglePrimitive from '@rn-primitives/toggle';

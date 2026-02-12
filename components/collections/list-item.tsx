@@ -1,4 +1,5 @@
 import { Text } from '@/components/ui/text'
+import { useEffectiveColorScheme } from '@/features/settings/hooks/effective-color-scheme'
 import { CollectionRow } from '@/lib/store/functions/types'
 import { LucideIcon } from 'lucide-react-native'
 import React, { ReactNode } from 'react'
@@ -20,6 +21,7 @@ export const CollectionListView = ({
   rightElement?: ReactNode
   isLoading?: boolean
 }) => {
+  const scheme = useEffectiveColorScheme()
   const loadingView = (
     <>
       <Skeleton className="h-14 w-14 rounded-xl flex items-center justify-center" />
@@ -49,7 +51,7 @@ export const CollectionListView = ({
           paddingRight: Spacings.s2,
           paddingLeft: Spacings.s1,
         }}
-        key={collection.id}
+        key={`${collection.id}-${scheme}`}
       >
         {isLoading ? (
           loadingView

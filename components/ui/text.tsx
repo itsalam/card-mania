@@ -1,3 +1,4 @@
+import { useEffectiveColorScheme } from '@/features/settings/hooks/effective-color-scheme'
 import { cn } from '@/lib/utils/index'
 import * as Slot from '@rn-primitives/slot'
 import { cva, type VariantProps } from 'class-variance-authority'
@@ -75,6 +76,7 @@ function Text({
   asChild = false,
   variant = 'default',
   style,
+  key,
   ...props
 }: React.ComponentProps<typeof RNText> &
   TextVariantProps &
@@ -84,8 +86,11 @@ function Text({
   const textClass = React.useContext(TextClassContext)
   const Component = asChild ? Slot.Text : RNText
 
+  const scheme = useEffectiveColorScheme()
+
   return (
     <Component
+      key={`${String(key)}-${scheme}`}
       className={cn('text-foreground text-base', textClass, textVariants({ variant }), className)}
       role={variant ? ROLE[variant] : undefined}
       aria-level={variant ? ARIA_LEVEL[variant] : undefined}
