@@ -15,12 +15,10 @@ import { useEffectiveColorScheme } from '@/features/settings/hooks/effective-col
 import { AuthGate } from '@/features/splash'
 import { PortalHost } from '@rn-primitives/portal'
 import { Compass, Home, Layers, Scan, Store, User } from 'lucide-react-native'
-import { Colors } from 'react-native-ui-lib'
 
 export default function TabLayout() {
   const scheme = useEffectiveColorScheme() // 'light' | 'dark' | null
-  console.log({ scheme })
-  console.log(Colors.$backgroundElevated)
+
   return (
     <AuthGate>
       <Tabs

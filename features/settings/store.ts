@@ -33,7 +33,7 @@ export type SettingsStoreState = {
         key: string,
         tier: Extract<SettingTier, "local" | "remote">,
         value: unknown,
-    ) => Promise<void>;
+    ) => Promise<boolean>;
 };
 
 export function createSettingsStore(runtime: SettingsRuntime) {
@@ -77,22 +77,32 @@ export function createSettingsStore(runtime: SettingsRuntime) {
 
         async setTier(key, tier, value) {
             const d = runtime.registry[key];
-            if (!d) return;
+            if (!d) {
+                console.debug(`missing registry for ${key}`);
+                return false;
+            }
 
-            if (d.validate && value !== undefined && !d.validate(value)) return;
+            if (d.validate && value !== undefined && !d.validate(value)) {
+                console.debug(`Invalid value failed for for ${key}`);
+                return false;
+            }
 
             if (tier === "local") {
                 if (value === undefined) await runtime.localAdapter.remove(key);
                 else await runtime.localAdapter.set(key, value);
 
                 get().setLocalRaw(key, value);
-                return;
+                return true;
             }
 
             // remote
+            const prevRemoteValue = get().tier.remote[key];
             get().setRemoteRaw(key, value); // optimistic cache update
 
-            if (!runtime.remoteEnabled || !runtime.remoteAdapter) return;
+            if (!runtime.remoteEnabled || !runtime.remoteAdapter) {
+                console.log("Remote writes are disabled");
+                return false;
+            }
 
             const debounceMs = d.remote?.debounceMs ?? 0;
             if (remoteTimers[key]) clearTimeout(remoteTimers[key]);
@@ -101,13 +111,11 @@ export function createSettingsStore(runtime: SettingsRuntime) {
                 try {
                     await runtime.remoteAdapter!.patch({ [key]: value });
                 } catch {
-                    // TODO:
-                    // choose a strategy:
-                    // - keep optimistic
-                    // - refetch
-                    // - rollback
+                    get().setRemoteRaw(key, prevRemoteValue);
                 }
             }, debounceMs);
+
+            return true;
         },
     }));
 

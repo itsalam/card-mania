@@ -1,109 +1,68 @@
-// import { useToast } from '@/components/Toast'
-// import { Text } from '@/components/ui/text'
-// import { ToggleGroup, ToggleGroupIcon, ToggleGroupItem } from '@/components/ui/toggle-group'
-// import { ChevronRight } from 'lucide-react-native'
-// import { ReactNode, useEffect, useRef, useState } from 'react'
-// import { View } from 'react-native'
-// import { Colors } from 'react-native-ui-lib'
-// import { useProfileSettings } from '../provider'
-// import { SettingsItemData } from '../types'
+import { Text } from '@/components/ui/text'
+import { ReactNode } from 'react'
+import { View } from 'react-native'
+import { Colors } from 'react-native-ui-lib'
+import { SettingKey } from '../registry'
+import { SettingsDisplay } from '../types'
+import { CustomAccessory } from './custom-registry'
+import { ToggleAccessory } from './toggle-accessory'
 
-// export function SettingsItem({
-//   itemKey,
-//   data,
-//   path,
-// }: {
-//   itemKey: string
-//   data: SettingsItemData
-//   children?: ReactNode
-//   path: string[]
-// }) {
-//   const themeMode = useSetting("themeMode");
-//   const systemScheme = useTierValue("systemColorScheme", "system");
-//   const toast = useToast()
-//   const { type, label, Icon, value, ...rest } = data
+export function SettingsItem({
+  settingKey,
+  display,
+  children,
+}: {
+  display: SettingsDisplay
+  settingKey: SettingKey
+  children?: ReactNode
+}) {
+  const { type, Icon, label } = display
 
-//   const safeValue = useRef(value)
-//   const [immediateSetting, setImmediateSetting] = useState(value)
-
-//   useEffect(() => {
-//     setImmediateSetting(value)
-//   }, [value])
-
-//   const onSettingsChange = (v?: string) => {
-//     setImmediateSetting(v)
-//     updateSettings([...path, itemKey], v ?? null, type)
-//       .catch((e) => {
-//         toast.showToast({ message: e })
-//         setImmediateSetting(safeValue.current)
-//       })
-//       .then(() => {
-//         safeValue.current = v
-//       })
-//   }
-
-//   const RightElement = () => {
-//     switch (type) {
-//       case 'page':
-//         return (
-//           <ChevronRight
-//             style={{
-//               marginLeft: 'auto',
-//               marginRight: 12,
-//               alignSelf: 'flex-end',
-//             }}
-//           />
-//         )
-//       case 'toggle':
-//         const { values } = data
-//         return (
-//           <ToggleGroup
-//             value={String(immediateSetting)}
-//             onValueChange={onSettingsChange}
-//             variant="outline"
-//             type="single"
-//           >
-//             {values.map(({ Icon, value }) => {
-//               return (
-//                 <ToggleGroupItem
-//                   value={value}
-//                   aria-label="Toggle bold"
-//                   style={{ flexDirection: 'row' }}
-//                 >
-//                   <ToggleGroupIcon icon={Icon} size={20} />
-//                   {/* <Text>{value[0].toLocaleLowerCase() + value.slice(1)}</Text> */}
-//                 </ToggleGroupItem>
-//               )
-//             })}
-//           </ToggleGroup>
-//         )
-//       default:
-//         return <></>
-//     }
-//   }
-//   return (
-//     <View
-//       style={{
-//         alignItems: 'center',
-//         display: 'flex',
-//         flexDirection: 'row',
-//         gap: 4,
-//         paddingVertical: 10,
-//       }}
-//     >
-//       <Icon size={26} color={Colors.$iconDefault} />
-//       <Text variant={'large'} style={{ fontSize: 18 }}>
-//         {label}
-//       </Text>
-//       <View
-//         style={{
-//           marginLeft: 'auto',
-//           marginRight: 12,
-//           alignSelf: 'flex-end',
-//         }}
-//       >
-//         <RightElement />
-//       </View>
-//     </View>
-//   )
-// }
+  const Layout = ({ children }: { children: ReactNode }) => {
+    switch (type) {
+      case 'toggle':
+        return (
+          <ToggleAccessory display={display} settingKey={settingKey}>
+            {children}
+          </ToggleAccessory>
+        )
+      case 'custom':
+        return (
+          <CustomAccessory display={display} settingKey={settingKey}>
+            {children}
+          </CustomAccessory>
+        )
+      default:
+        return (
+          <View
+            style={{
+              alignItems: 'center',
+              display: 'flex',
+              flexDirection: 'row',
+              gap: 4,
+              paddingVertical: 10,
+            }}
+          >
+            {children}
+          </View>
+        )
+    }
+  }
+  return (
+    <Layout>
+      <View
+        style={{
+          alignItems: 'center',
+          display: 'flex',
+          flexDirection: 'row',
+          gap: 4,
+        }}
+      >
+        <Icon size={26} color={Colors.$iconDefault} />
+        <Text variant={'large'} style={{ fontSize: 18 }}>
+          {label}
+        </Text>
+      </View>
+    </Layout>
+  )
+}

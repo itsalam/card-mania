@@ -1,5 +1,6 @@
 export const settingKeys = {
     themeMode: "themeMode",
+    location: "location",
     systemColorScheme: "systemColorScheme",
     reduceMotion: "reduceMotion",
     hapticsEnabled: "hapticsEnabled",

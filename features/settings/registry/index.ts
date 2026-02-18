@@ -1,3 +1,4 @@
+import { CitySuggestion } from "../client";
 import { settingKeys } from "../keys";
 import { SettingDescriptor } from "../types";
 import { defineSettings } from "./helpers";
@@ -9,7 +10,11 @@ const isBool = (v: unknown): v is boolean => typeof v === "boolean";
 const isCurrency = (v: unknown): v is Currency =>
     v === "CAD" || v === "USD" || v === "TWD";
 
-export const settingsRegistry = defineSettings({
+export type SettingKey = keyof DefaultSettings;
+
+export type DefaultSettings = typeof settingsRegistry;
+
+const SETTINGS = {
     // This is a *preference* stored locally (and optionally remote):
     themeMode: {
         key: settingKeys.themeMode,
@@ -20,7 +25,18 @@ export const settingsRegistry = defineSettings({
         // Debounce remote writes if user toggles quickly
         remote: { debounceMs: 250 },
     } satisfies SettingDescriptor<ThemeMode>,
-
+    location: {
+        key: settingKeys.location,
+        defaultValue: null,
+        tiers: ["local", "remote"],
+        validate: (v: unknown): v is CitySuggestion => {
+            const value = v as CitySuggestion;
+            return Boolean(value?.city) && Boolean(value?.latitude) &&
+                Boolean(value?.longitude);
+        },
+        // Debounce remote writes if user toggles quickly
+        remote: { debounceMs: 250 },
+    } satisfies SettingDescriptor<CitySuggestion | null>,
     // This is a SYSTEM state key (no persistence; systemAdapter provides it):
     systemColorScheme: {
         key: settingKeys.systemColorScheme,
@@ -59,4 +75,6 @@ export const settingsRegistry = defineSettings({
         tiers: ["remote"],
         validate: isBool,
     } satisfies SettingDescriptor<boolean>,
-});
+};
+
+export const settingsRegistry = defineSettings(SETTINGS);

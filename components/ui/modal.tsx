@@ -4,9 +4,11 @@ import {
   Dimensions,
   Platform,
   Pressable,
+  StyleProp,
   StyleSheet,
   useWindowDimensions,
   View,
+  ViewStyle,
 } from 'react-native'
 import { Gesture, GestureDetector } from 'react-native-gesture-handler'
 import Animated, {
@@ -20,7 +22,7 @@ import { Colors } from 'react-native-ui-lib'
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller'
 import { EdgeInsets, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { scheduleOnRN } from 'react-native-worklets'
-import { THUMB_PADDING, THUMB_SIZE } from '../../features/tcg-card-views/DetailCardView/ui'
+import { THUMB_SIZE } from '../../features/tcg-card-views/DetailCardView/ui'
 
 export const getContentInsets = (insets: EdgeInsets) => ({
   top: insets.top,
@@ -33,10 +35,14 @@ export function Modal({
   visible,
   onDismiss,
   children,
+  absoluteThumb,
+  style,
 }: {
   visible: boolean
   onDismiss: () => void
   children?: ReactNode
+  absoluteThumb?: boolean
+  style?: StyleProp<ViewStyle>
 }) {
   const { height: screenHeight } = useWindowDimensions()
   const translateY = useSharedValue(screenHeight)
@@ -91,25 +97,26 @@ export function Modal({
         <GestureDetector gesture={panGesture}>
           <Animated.View
             style={[
-              thumbStyles.thumbContainer,
+              thumbStyles.modalContainer,
               {
-                position: 'absolute',
-                left: 0,
-                right: 0,
-                bottom: 0,
-                padding: 16,
                 paddingBottom: contentInsets.bottom,
-                backgroundColor: Colors.$backgroundDefault,
-                borderTopLeftRadius: 24,
-                borderTopRightRadius: 24,
-                justifyContent: 'center',
-                width: '100%',
-                alignItems: 'stretch',
+                overflow: 'hidden',
               },
               sheetStyle,
+              style,
             ]}
           >
-            <View style={[thumbStyles.thumb, { marginHorizontal: 'auto', marginBottom: 12 }]} />
+            <View
+              style={[
+                absoluteThumb ? thumbStyles.absoluteThumbContainer : null,
+                thumbStyles.thumbContainer,
+                {
+                  paddingTop: 0,
+                },
+              ]}
+            >
+              <View style={[thumbStyles.thumb, { marginHorizontal: 'auto', zIndex: 2 }]} />
+            </View>
             {children}
           </Animated.View>
         </GestureDetector>
@@ -120,14 +127,22 @@ export function Modal({
 
 const { width: W, height: H } = Dimensions.get('window')
 export const thumbStyles = StyleSheet.create({
-  thumbContainer: {
+  modalContainer: {
     width: '100%',
     justifyContent: 'center',
     alignItems: 'center',
-    paddingTop: THUMB_PADDING,
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+
+    paddingHorizontal: 16,
+    backgroundColor: Colors.$backgroundDefault,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
   },
   thumb: {
-    backgroundColor: Colors.rgba(Colors.$backgroundNeutralIdle, 0.3),
+    backgroundColor: Colors.rgba(Colors.$backgroundNeutralIdle, 0.8),
     height: THUMB_SIZE,
     width: '15%',
     borderRadius: 10,
@@ -151,7 +166,14 @@ export const thumbStyles = StyleSheet.create({
     borderColor: Colors.$outlineNeutral,
     borderWidth: 2,
   },
-
+  absoluteThumbContainer: {
+    position: 'absolute',
+    top: 0,
+  },
+  thumbContainer: {
+    marginTop: 8,
+    width: '100%',
+  },
   sheetInner: {
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,

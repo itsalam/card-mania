@@ -1,6 +1,6 @@
-import { Json } from "@/lib/store/supabase";
 import { LucideIcon } from "lucide-react-native";
 import { ReactNode } from "react";
+import { SettingKey } from "./registry";
 import { SettingsStoreState } from "./store";
 
 export type ProfilePageStat = {
@@ -10,19 +10,7 @@ export type ProfilePageStat = {
     element?: ReactNode;
 };
 
-export type ProfileSettings = Record<string, SettingsLayoutSection> & {
-    // general: {
-    //     location: string;
-    //     darkMode: "light" | "dark" | "system";
-    //     account: {};
-    //     profile: {};
-    // };
-    // social: {
-    //     messages: {};
-    //     notifications: {};
-    //     blocked: {};
-    // };
-};
+export type ProfileSettings = Record<string, SettingsLayoutSection>;
 
 export type SettingsType =
     | "string"
@@ -35,43 +23,28 @@ export type SettingsType =
 
 type NonBasicSettingType = Exclude<SettingsType, "toggle" | "select" | "page">;
 
-type SelectItemValue = {
+type SelectDisplayValue = {
     Icon: LucideIcon;
     value: string;
 };
 
-type SettingsItem =
+export type SettingsDisplay =
     & {
-        key?: string;
+        key: SettingKey;
         label: string;
         Icon: LucideIcon;
         element?: ReactNode;
     }
     & (
-        | { type: "toggle"; values: SelectItemValue[] }
-        | { type: "select"; values: SelectItemValue[] }
+        | { type: "toggle"; values: SelectDisplayValue[] }
+        | { type: "select"; values: SelectDisplayValue[] }
         | { type: "page"; page: SettingsLayoutSection }
         | { type: NonBasicSettingType }
     );
 
-export type SettingsItemData = SettingsItem & SettingsItemValue;
-
-export type SettingsItemValue = {
-    key?: string;
-    value?:
-        | Json
-        | SettingsItemValue[]
-        | { [key: string]: SettingsItemValue };
-};
-
 export type SettingsLayoutSection = {
     label: string;
-    items: Record<string, SettingsItemData>;
-};
-
-export type Settings = {
-    label: string;
-    items: SettingsItemValue[];
+    items: Record<string, SettingsDisplay>;
 };
 
 // src/settings/types.ts
@@ -108,6 +81,7 @@ export type SettingDescriptor<T> = {
      * If you use Zod, put Zod parse here.
      */
     validate?: (value: unknown) => value is T;
+    serialize?: (value: string) => T;
 
     /** If remote writes should be debounced, etc. */
     remote?: {

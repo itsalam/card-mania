@@ -1,17 +1,9 @@
 import { FiltersKeys } from "@/features/mainSearchbar/components/filters/providers";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
+import { useDebounced } from "../card/helpers";
 import { invokeFx } from "../helper";
 import { SearchRequest, SearchResponse, TSearchRes } from "./types";
-
-function useDebounced<T>(value: T, delay = 250) {
-  const [v, setV] = useState(value);
-  useEffect(() => {
-    const id = setTimeout(() => setV(value), delay);
-    return () => clearTimeout(id);
-  }, [value, delay]);
-  return v;
-}
 
 type FilterQuery = Partial<Record<FiltersKeys, string>> & {
   itemTypes: string[];

@@ -445,3 +445,48 @@ export const getImageCacheFromQueryHash = async (
   }
   return { ic, isc };
 };
+
+export const DEBUG =
+  (Deno.env.get("DEBUG") ?? "false").toLowerCase() === "true";
+
+export function rid() {
+  // short request id for correlating logs
+  return crypto.randomUUID().slice(0, 8);
+}
+
+export function msSince(startMs: number) {
+  return Date.now() - startMs;
+}
+
+export function safeLen(v: unknown) {
+  return typeof v === "string" ? v.length : undefined;
+}
+
+export function maskPlaceId(placeId: string | undefined | null) {
+  if (!placeId) return undefined;
+  if (placeId.length <= 10) return placeId;
+  return `${placeId.slice(0, 6)}…${placeId.slice(-4)}`;
+}
+
+export function logInfo(
+  rid: string,
+  msg: string,
+  extra?: Record<string, unknown>,
+) {
+  console.info(`[${rid}]:${msg}`, JSON.stringify({ ...extra }, null, 2));
+}
+export function logWarn(
+  rid: string,
+  msg: string,
+  extra?: Record<string, unknown>,
+) {
+  console.warn(`[${rid}]:${msg}`, JSON.stringify({ ...extra }, null, 2));
+}
+
+export function logErr(
+  rid: string,
+  msg: string,
+  extra?: Record<string, unknown>,
+) {
+  console.error(`[${rid}]:${msg}`, JSON.stringify({ ...extra }, null, 2));
+}

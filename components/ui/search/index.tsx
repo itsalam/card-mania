@@ -33,7 +33,7 @@ import {
   View,
 } from 'react-native-ui-lib'
 import { ImageSourceType } from 'react-native-ui-lib/src/components/image'
-import { inputStyle, InputVariantProps } from '../input'
+import { inputStyle, inputStyleSheet, InputVariantProps } from '../input'
 
 const ICON_SIZE = 24
 const INPUT_HEIGHT = 60
@@ -118,6 +118,7 @@ export const SearchBar = forwardRef<SearchBarRef, SearchBarProps>(
             position: 'relative',
             padding: 0,
           },
+          inputStyleSheet({ variant, size }).containerStyle,
           style,
         ]}
         className={inputStyle({ variant, size, class: className })}
@@ -157,33 +158,29 @@ const SearchInput = forwardRef<ComponentRef<typeof BaseSearchInput>, SearchInput
     const [value, setValue] = useState(controlledValue)
     const [valueState] = useState(new Animated.Value(!!controlledValue?.length ? 0 : 1))
     const [isAnimatingClearButton, setIsAnimatingClearButton] = useState(!!controlledValue?.length)
-    useImperativeHandle(
-      ref,
-      () => {
-        const input = searchInputRef.current
-        if (!input) {
-          return null as unknown as SearchBarRef
-        }
+    useImperativeHandle(ref, () => {
+      const input = searchInputRef.current
+      if (!input) {
+        return null as unknown as SearchBarRef
+      }
 
-        // Capture the original methods so we don't recursively call the overridden ones.
-        const focus = input.focus?.bind(input)
-        const blur = input.blur?.bind(input)
-        const clear = input.clear?.bind(input)
-        const isFocused = input.isFocused?.bind(input)
+      // Capture the original methods so we don't recursively call the overridden ones.
+      const focus = input.focus?.bind(input)
+      const blur = input.blur?.bind(input)
+      const clear = input.clear?.bind(input)
+      const isFocused = input.isFocused?.bind(input)
 
-        return Object.assign(input, {
-          focus: () => focus?.(),
-          blur: () => blur?.(),
-          clear: () => {
-            clear?.()
-            onChangeText?.('')
-            onClear?.()
-          },
-          isFocused: () => isFocused?.(),
-        })
-      },
-      [onChangeText, onClear]
-    )
+      return Object.assign(input, {
+        focus: () => focus?.(),
+        blur: () => blur?.(),
+        clear: () => {
+          clear?.()
+          onChangeText?.('')
+          onClear?.()
+        },
+        isFocused: () => isFocused?.(),
+      })
+    }, [onChangeText, onClear])
     useEffect(() => {
       if (controlledValue !== value) {
         setValue(controlledValue)

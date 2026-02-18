@@ -16,7 +16,7 @@ import { Colors, Toast, ToastProps } from 'react-native-ui-lib'
 import { Alert, AlertDescription, AlertTitle } from './ui/alert'
 import { Icon } from './ui/icon'
 
-type ShowToastArgs = {
+export type ShowToastArgs = {
   title?: string
   message: string
   preset?: ToastProps['preset']

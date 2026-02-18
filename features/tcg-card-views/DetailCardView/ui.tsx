@@ -268,7 +268,7 @@ export default function DraggableThumbContent({
               ref={mainContentRef}
               onLayout={onMainContentLayout}
             >
-              <Animated.View style={thumbStyles.thumbContainer}>
+              <Animated.View style={thumbStyles.modalContainer}>
                 <Animated.View style={[thumbStyles.thumb, thumbStyle]} />
               </Animated.View>
 

@@ -1,6 +1,7 @@
 import { getSupabase } from "@/lib/store/client";
 import { FunctionInvokeOptions } from "@supabase/supabase-js";
 import * as crypto from "expo-crypto";
+import { useEffect, useState } from "react";
 import { z } from "zod";
 
 export async function invokeFx<In extends FunctionInvokeOptions["body"], Out>(
@@ -13,8 +14,8 @@ export async function invokeFx<In extends FunctionInvokeOptions["body"], Out>(
     useQueryParams?: boolean;
   },
 ): Promise<{ data: Out; response?: Response; error?: Error }> {
-  const { parseOut, headers, useQueryParams, method } = options;
-
+  const { parseOut, headers, useQueryParams, method = "GET" } = options;
+  let body = undefined;
   let url = name;
   let queryParams;
   if (useQueryParams) {
@@ -35,15 +36,49 @@ export async function invokeFx<In extends FunctionInvokeOptions["body"], Out>(
       queryParams = new URLSearchParams();
     }
     url = `${name}?${queryParams.toString()}`;
+  } else {
+    body = payload;
   }
+
+  let invokeBody: any = undefined;
+  let invokeHeaders: Record<string, string> = {
+    "Idempotency-Key": crypto.randomUUID(),
+    ...(headers ?? {}),
+  };
+
+  if (method === "POST") {
+    invokeHeaders["Content-Type"] ??= "application/json";
+    invokeBody = typeof body === "string" || body instanceof URLSearchParams ||
+        body instanceof FormData
+      ? body
+      : JSON.stringify(body); // <— key change
+  }
+
+  console.log("[invokeFx:wire]", {
+    method,
+    url,
+    bodyType: typeof invokeBody,
+    bodyLen: typeof invokeBody === "string" ? invokeBody.length : undefined,
+    contentType: invokeHeaders["Content-Type"],
+  });
+
   const { data, error, response } = await getSupabase().functions.invoke(url, {
-    body: useQueryParams ? undefined : payload,
-    method: method ?? "GET",
-    headers: { "Idempotency-Key": crypto.randomUUID(), ...(headers ?? {}) },
+    body: invokeBody,
+    method,
+    headers: invokeHeaders,
   });
   return {
     data: parseOut ? parseOut.parse(data) : (data as Out),
     response: response,
     error: error,
   };
+}
+
+export function useDebounced<T>(value: T, delay = 250) {
+  const [v, setV] = useState(value);
+  useEffect(() => {
+    const id = setTimeout(() => setV(value), delay);
+    return () => clearTimeout(id);
+  }, [value, delay]);
+  return v;
 }
