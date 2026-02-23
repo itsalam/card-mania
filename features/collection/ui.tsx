@@ -22,7 +22,7 @@ export function useCollaspableHeader(
   resetKeys?: unknown[],
   defaultHeight?: number
 ) {
-  const [tabsExpanded, setTabsExpanded] = useState(false)
+  const [headerExpanded, setHeaderExpanded] = useState(false)
   const expandProgress = useSharedValue(0)
   const gestureRef = useRef<GestureType>(undefined)
   const scrollViewRef = useAnimatedRef<AnimatedScrollRef>()
@@ -34,7 +34,7 @@ export function useCollaspableHeader(
   const blockHeaderMeasurement = useSharedValue(false)
 
   const toggleHeader = (toggle: boolean) => {
-    !disable && setTabsExpanded(toggle)
+    !disable && setHeaderExpanded(toggle)
   }
 
   const updateOffsets = () => {
@@ -157,7 +157,7 @@ export function useCollaspableHeader(
   )
 
   return {
-    tabsExpanded,
+    tabsExpanded: headerExpanded,
     composedGestures,
     headerAnimatedStyle,
     onListLayout: React.useCallback(

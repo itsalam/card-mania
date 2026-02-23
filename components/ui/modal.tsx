@@ -108,16 +108,13 @@ export function Modal({
           >
             <View
               style={[
-                absoluteThumb ? thumbStyles.absoluteThumbContainer : null,
                 thumbStyles.thumbContainer,
-                {
-                  paddingTop: 0,
-                },
+                absoluteThumb ? thumbStyles.absoluteThumbContainer : null,
               ]}
             >
               <View style={[thumbStyles.thumb, { marginHorizontal: 'auto', zIndex: 2 }]} />
             </View>
-            {children}
+            <View style={{ flex: 1 }}>{children}</View>
           </Animated.View>
         </GestureDetector>
       </KeyboardAvoidingView>
@@ -171,7 +168,7 @@ export const thumbStyles = StyleSheet.create({
     top: 0,
   },
   thumbContainer: {
-    marginTop: 8,
+    marginVertical: 8,
     width: '100%',
   },
   sheetInner: {

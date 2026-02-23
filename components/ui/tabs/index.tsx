@@ -1,6 +1,7 @@
 import { Text, TextClassContext } from '@/components/ui/text'
 import { cn } from '@/lib/utils'
 import * as TabsPrimitive from '@rn-primitives/tabs'
+import { LucideIcon } from 'lucide-react-native'
 import { ReactNode } from 'react'
 import { Platform, StyleProp, TextProps, View, ViewStyle } from 'react-native'
 import { Colors } from 'react-native-ui-lib'
@@ -90,6 +91,8 @@ function TabsLabel({
   label,
   value,
   style,
+  iconRight: IconRight,
+  iconLeft: IconLeft,
   leftElement,
   rightElement,
   containerStyle,
@@ -99,32 +102,58 @@ function TabsLabel({
   rightElement?: (current: boolean) => ReactNode | ReactNode
   label?: string
   value: string
+  iconRight?: LucideIcon
+  iconLeft?: LucideIcon
   containerStyle?: StyleProp<ViewStyle>
 }) {
+  const TAB_ICON_HEIGHT = 20
   const { value: currentValue } = TabsPrimitive.useRootContext()
   const isCurrent = currentValue === value
   return (
     <View className="flex flex-row items-center justify-center gap-2" style={containerStyle}>
-      {leftElement instanceof Function ? leftElement(isCurrent) : leftElement}
+      {IconLeft ? (
+        <IconLeft
+          size={TAB_ICON_HEIGHT}
+          color={Colors.$textDefault}
+          strokeWidth={2.5}
+          style={{ marginLeft: 4 }}
+        />
+      ) : leftElement instanceof Function ? (
+        leftElement(isCurrent)
+      ) : (
+        leftElement
+      )}
       {label?.length && (
         <Text
           variant={'h4'}
           style={[
-            style,
-            isCurrent ? { color: Colors.$textPrimary } : { color: Colors.$textDefault },
             {
               display: 'flex',
               flexDirection: 'row',
               alignItems: 'center',
               justifyContent: 'center',
+              fontSize: 20,
             },
+            style,
+            isCurrent ? { color: Colors.$textPrimary } : { color: Colors.$textDefault },
           ]}
           {...props}
         >
           {label.charAt(0).toUpperCase() + label.slice(1)}
         </Text>
       )}
-      {rightElement instanceof Function ? rightElement(isCurrent) : rightElement}
+      {IconRight ? (
+        <IconRight
+          size={TAB_ICON_HEIGHT}
+          color={Colors.$textDefault}
+          strokeWidth={2.5}
+          style={{ marginLeft: 4 }}
+        />
+      ) : rightElement instanceof Function ? (
+        rightElement(isCurrent)
+      ) : (
+        rightElement
+      )}
     </View>
   )
 }

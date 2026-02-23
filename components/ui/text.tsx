@@ -3,7 +3,15 @@ import { cn } from '@/lib/utils/index'
 import * as Slot from '@rn-primitives/slot'
 import { cva, type VariantProps } from 'class-variance-authority'
 import * as React from 'react'
-import { Platform, Text as RNText, type Role } from 'react-native'
+import {
+  Platform,
+  Text as RNText,
+  StyleProp,
+  TouchableOpacity,
+  View,
+  ViewStyle,
+  type Role,
+} from 'react-native'
 import { Colors } from 'react-native-ui-lib'
 
 const textVariants = cva(
@@ -71,6 +79,12 @@ const ARIA_LEVEL: Partial<Record<TextVariant, string>> = {
 
 const TextClassContext = React.createContext<string | undefined>(undefined)
 
+type TextProps = React.ComponentProps<typeof RNText> &
+  TextVariantProps &
+  React.RefAttributes<RNText> & {
+    asChild?: boolean
+  }
+
 function Text({
   className,
   asChild = false,
@@ -78,11 +92,7 @@ function Text({
   style,
   key,
   ...props
-}: React.ComponentProps<typeof RNText> &
-  TextVariantProps &
-  React.RefAttributes<RNText> & {
-    asChild?: boolean
-  }) {
+}: TextProps) {
   const textClass = React.useContext(TextClassContext)
   const Component = asChild ? Slot.Text : RNText
 
@@ -102,6 +112,37 @@ function Text({
       ]}
       {...props}
     />
+  )
+}
+
+export const ExpandableText = ({
+  minNumLines,
+  containerStyle,
+  numberOfLines,
+  expandText = 'See More',
+  compressText = 'See Less',
+  ...props
+}: TextProps & {
+  expandText?: string
+  compressText?: string
+  containerStyle?: StyleProp<ViewStyle>
+  minNumLines: number
+}) => {
+  const [expanded, setExpanded] = React.useState(false)
+
+  return (
+    <View style={containerStyle}>
+      <Text
+        ellipsizeMode="tail"
+        {...props}
+        numberOfLines={!expanded ? minNumLines : numberOfLines}
+      />
+      <TouchableOpacity onPress={() => setExpanded(!expanded)}>
+        <Text {...props} style={{ color: Colors.$textGeneral }}>
+          {expanded ? compressText : expandText}
+        </Text>
+      </TouchableOpacity>
+    </View>
   )
 }
 

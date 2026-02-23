@@ -435,6 +435,8 @@ const styles = StyleSheet.create({
   },
 })
 
+SearchInput.displayName = 'SearchInput'
+
 cssInterop(SearchInput, {
   className: {
     target: 'style',

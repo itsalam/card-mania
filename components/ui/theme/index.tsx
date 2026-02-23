@@ -12,7 +12,7 @@ import {
 } from '@expo-google-fonts/montserrat'
 import { useFonts } from 'expo-font'
 import * as SplashScreen from 'expo-splash-screen'
-import { ReactNode } from 'react'
+import React, { ReactNode, useEffect } from 'react'
 
 import { useEffectiveColorScheme } from '@/features/settings/hooks/effective-color-scheme'
 import { NAV_THEME } from '@/lib/constants'
@@ -22,7 +22,6 @@ import {
   ThemeProvider as RNThemeProvider,
   Theme,
 } from '@react-navigation/native'
-import React, { useEffect } from 'react'
 import { Platform } from 'react-native'
 import { Colors } from 'react-native-ui-lib'
 

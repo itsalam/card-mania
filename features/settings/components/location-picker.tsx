@@ -63,7 +63,6 @@ const LocationPicker = ({
   } = useCitySuggestions(text, sessionToken)
 
   const onFocus = () => {
-    console.log('FOCUS!')
     setSessionToken((t) => t ?? newSessionToken())
   }
 
@@ -149,6 +148,7 @@ const LocationPicker = ({
               {`${setting.value?.city?.toLocaleUpperCase()[0]}${setting.value?.city?.slice(1)}`}
             </Text>
             <ChevronRight
+              color={Colors.$iconDefault}
               style={{
                 marginLeft: 'auto',
                 marginRight: 12,

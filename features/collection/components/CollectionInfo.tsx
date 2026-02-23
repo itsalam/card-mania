@@ -4,7 +4,7 @@ import { Modal } from '@/components/ui/modal'
 import { Spinner } from '@/components/ui/spinner'
 import { Text } from '@/components/ui/text'
 import { VISIBILITY_OPTIONS } from '@/features/tcg-card-views/DetailCardView/ui'
-import { UserAvatar } from '@/features/users/components/UserAvatars'
+import { UserContact } from '@/features/users/components/UserAvatars'
 import { DUMMY_USERS } from '@/features/users/helpers'
 import { useRouter } from 'expo-router'
 import {
@@ -160,7 +160,7 @@ export const CollectionInfo = () => {
   }
 
   //@ts-ignore
-  const tabs = [...Object.entries(options)].filter(
+  const visibleOptions = [...Object.entries(options)].filter(
     (option) => !collection || !isDefaultCollection(collection) || option[0] !== 'edit'
   )
 
@@ -193,7 +193,7 @@ export const CollectionInfo = () => {
 
         <View style={{ display: 'flex', gap: 8 }}>
           <View style={{ display: 'flex', gap: 4 }}>
-            <UserAvatar user={DUMMY_USERS[0]} size="sm" />
+            <UserContact user={DUMMY_USERS[0]} size="sm" />
 
             <FlatList
               horizontal
@@ -219,7 +219,7 @@ export const CollectionInfo = () => {
             />
           </View>
           <FlatList
-            data={tabs}
+            data={visibleOptions}
             horizontal
             contentContainerStyle={{
               display: 'flex',
@@ -238,14 +238,15 @@ export const CollectionInfo = () => {
                     {...(item[1].backgroundColor
                       ? { backgroundColor: item[1].backgroundColor }
                       : {})}
-                    leftElement={
-                      <Icon
-                        color={item[1].iconColor ?? Colors.$iconDefaultLight}
-                        size={18}
-                        strokeWidth={2.5}
-                        style={{ marginLeft: 4 }}
-                      />
-                    }
+                    icon={Icon}
+                    // leftElement={
+                    //   <Icon
+                    //     color={item[1].iconColor ?? Colors.$iconDefaultLight}
+                    //     size={18}
+                    //     strokeWidth={2.5}
+                    //     style={{ marginLeft: 4 }}
+                    //   />
+                    //   iconS
                   />
                 </TouchableOpacity>
               )
@@ -254,13 +255,15 @@ export const CollectionInfo = () => {
         </View>
         <Modal visible={showSortModal} onDismiss={() => setShowSortModal(false)}>
           {SortOptions.map((option) => (
-            <Button>{option}</Button>
+            <Button key={option}>
+              <Text>{option}</Text>
+            </Button>
           ))}
         </Modal>
 
         <Modal visible={showDisplayModal} onDismiss={() => setShowDisplayModal(false)}>
           {DisplayOptions.map((option) => (
-            <Button>{option}</Button>
+            <Text key={option}>{option}</Text>
           ))}
         </Modal>
         <DeleteModal

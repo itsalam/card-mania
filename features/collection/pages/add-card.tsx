@@ -7,16 +7,20 @@ import { ItemListViewProps } from '@/features/tcg-card-views/ListCard'
 import { router } from 'expo-router'
 import { useGetCollection } from '../hooks'
 
-const renderAccessories = (collection: CollectionLike) => (props: ItemListViewProps) => {
+const AddCardToCollectionAccessories = ({
+  collection,
+  ...props
+}: ItemListViewProps & { collection: CollectionLike }) => {
   return <CollectionCardItemEntries card={props.item as TCard} collection={collection} isShown />
 }
 
 export default function AddCardToCollection({ collectionId }: { collectionId: string }) {
   const { data: collection } = useGetCollection({ collectionId })
-  const AddCardToCollectionAccessories = renderAccessories(collection!)
   return (
     <SearchScreen
-      itemAccessories={(props) => <AddCardToCollectionAccessories {...props} />}
+      itemAccessories={(props) => (
+        <AddCardToCollectionAccessories collection={collection!} {...props} />
+      )}
       hide={() => {
         router.back()
       }}

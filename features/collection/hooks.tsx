@@ -1,5 +1,6 @@
 import { DEFAULT_INF_Q_OPTIONS, useViewCollectionItems } from '@/client/collections/query'
 import { CollectionIdArgs, InfQueryOptions, InifiniteQueryParams } from '@/client/collections/types'
+import { TCard } from '@/constants/types'
 import { getSupabase } from '@/lib/store/client'
 import { qk, requireUser, unwrap } from '@/lib/store/functions/helpers'
 import { CollectionItemQueryView, CollectionItemRow } from '@/lib/store/functions/types'
@@ -266,11 +267,9 @@ export function useGetCollectionCountInfo(args: CollectionIdArgs) {
   })
 }
 
-export function useGetCollectionItems<T extends CollectionItemQueryView>(
-  args: CollectionIdArgs,
-  opts?: InfQueryOptions<T>,
-  group?: boolean
-) {
+export function useGetCollectionItems<
+  T extends CollectionItemQueryView = CollectionItemQueryView & TCard,
+>(args: CollectionIdArgs, opts?: InfQueryOptions<T>, group?: boolean) {
   const queryArgs = getCollectionItemsArgs<T>(args, opts, group)
   return useViewCollectionItems<T>(queryArgs)
 }

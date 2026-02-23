@@ -1,6 +1,7 @@
 import { Text } from '@/components/ui/text'
 import { ChevronRight } from 'lucide-react-native'
 import { View } from 'react-native'
+import { Colors } from 'react-native-ui-lib'
 import { SettingsDisplay } from '../types'
 
 export function SettingsPageItem({ display }: { display: SettingsDisplay }) {
@@ -32,6 +33,7 @@ export function SettingsPageItem({ display }: { display: SettingsDisplay }) {
             marginRight: 12,
             alignSelf: 'flex-end',
           }}
+          color={Colors.$iconDefault}
         />
       </View>
     </View>

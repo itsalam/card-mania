@@ -7,12 +7,13 @@ import {
 import { Spinner } from '@/components/ui/spinner'
 import { TCard } from '@/constants/types'
 import { CollectionItemRow } from '@/lib/store/functions/types'
-import { Plus, TriangleAlert } from 'lucide-react-native'
+import { Plus, TriangleAlert, Undo2 } from 'lucide-react-native'
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
-import { StyleProp, Text, View, ViewStyle } from 'react-native'
-import { Button, Colors } from 'react-native-ui-lib'
+import { StyleProp, View, ViewStyle } from 'react-native'
+import { Colors } from 'react-native-ui-lib'
 
 import { useGradingConditions } from '@/client/card/grading'
+import { Button } from '@/components/ui/button'
 import { getContentInsets, Modal } from '@/components/ui/modal'
 import {
   NativeSelectScrollView,
@@ -23,6 +24,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { Text } from '@/components/ui/text'
 import { qk } from '@/lib/store/functions/helpers'
 import { useQueryClient } from '@tanstack/react-query'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -49,7 +51,7 @@ export const CollectionCardItemEntries = ({
     refetch,
   } = useViewCollectionItemsForCard(collection?.id, card?.id, isShown)
 
-  const [newEntries, setNewEntries] = useState<Array<Partial<CollectionItemRow>>>(
+  const [newEntries, setNewEntries] = useState<Partial<CollectionItemRow>[]>(
     loadedEntries.length ? loadedEntries : [{}]
   )
 
@@ -62,7 +64,7 @@ export const CollectionCardItemEntries = ({
     if (isLoadingOuter) {
       setNewEntries([{}])
     } else {
-      loadedEntries
+      setNewEntries(loadedEntries)
     }
   }, [isLoadingOuter])
 
@@ -120,7 +122,7 @@ export const CollectionCardItemEntries = ({
           return (
             <CollectionItemEntry
               card={card}
-              key={`${index}-new`}
+              key={entry.id ?? entry.grade_condition?.label ?? `${index}-new`}
               collectionItem={entry}
               collection={collection}
               editable={editable}
@@ -131,26 +133,28 @@ export const CollectionCardItemEntries = ({
       )}
 
       <Button
-        highLighted
-        size="xSmall"
+        variant={'primary'}
         disabled={isLoadingOuter}
         style={{
           flexGrow: 0,
           alignSelf: 'flex-end',
           marginTop: 8,
-          paddingHorizontal: 20,
-          paddingVertical: 4,
-          marginRight: 34 + (editable ? 24 : 0),
+          width: 94,
+          height: 34,
+          marginRight: 36 + (editable ? 24 : 0),
           opacity: isLoadingOuter ? 0.5 : 1,
+          borderRadius: 9999,
         }}
         onPress={() => {
           setShowModal(true)
           // setNewEntries((prev) => [...prev, {}])
         }}
-        color={Colors.$iconDefault}
-        label="Add"
-        iconSource={(style) => <Plus style={style} color={Colors.$iconDefault} />}
-      />
+      >
+        <Plus color={Colors.$iconDefault} />
+        <Text variant="large" style={{ color: Colors.$iconDefault, lineHeight: 0 }}>
+          Add
+        </Text>
+      </Button>
       {collection && (
         <AddVariantModal
           entries={newEntries}
@@ -171,7 +175,7 @@ const AddVariantModal = ({
   onDismiss,
   entries,
 }: {
-  entries: Array<Partial<CollectionItemRow>>
+  entries: Partial<CollectionItemRow>[]
   collection: CollectionLike
   item: TCard
   visible: boolean
@@ -259,7 +263,7 @@ const AddVariantModal = ({
 
   return (
     <Modal visible={visible} onDismiss={onDismiss}>
-      <View className="flex flex-col gap-4 flex-1 pt-4">
+      <View className="flex flex-col gap-4 py-4 w-full">
         <View className="flex flex-row gap-4 w-full">
           <Select
             defaultValue={
@@ -359,8 +363,7 @@ const AddVariantModal = ({
           </Select>
         </View>
 
-        <View className="flex flex-col">
-          {/* {alreadyExists && <Text></Text>} */}
+        <View className="flex-col grow-0 shrink">
           <VariantsSelect
             card={item}
             inputProps={{
@@ -372,38 +375,75 @@ const AddVariantModal = ({
             }}
           />
         </View>
-        {alreadyExists(draft) && (
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 }}>
+        {alreadyExists(draft) && draft.grade_condition_id && (
+          <View
+            style={{
+              width: '100%',
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 4,
+              marginTop: 4,
+            }}
+          >
             <TriangleAlert size={20} color={Colors.$textDanger} />
             <Text style={{ color: Colors.$textDanger }}>{'Collection type already exists.'}</Text>
           </View>
         )}
-
-        <Button
-          label="Add"
-          disabled={!enableSave}
-          onPress={() => {
-            setSaving(true)
-            if (collection.id) {
-              qc.setQueryData<Partial<CollectionItem>[]>(collectionItemsKey, (prev) => {
-                const current = prev ?? []
-                const exists = current.some(
-                  (e) =>
-                    e.grade_condition_id === draft.grade_condition_id &&
-                    variantsEqual(
-                      e.variants as string[] | undefined,
-                      draft.variants as string[] | undefined
-                    )
-                )
-                if (exists) return current
-                return [...current, draft]
-              })
-            }
-            setSaving(false)
-            onDismiss()
+        <View
+          style={{
+            flexDirection: 'row',
+            gap: 12,
           }}
-          iconSource={() => (saving ? <Spinner color={Colors.$textDefaultLight} /> : null)}
-        ></Button>
+        >
+          <Button
+            size="lg"
+            style={{
+              flex: 1,
+            }}
+            variant="default"
+            onPress={() => {
+              onDismiss()
+            }}
+          >
+            <Undo2 size={24} color={Colors.$iconDefault} />
+            <Text variant={'large'}>Back</Text>
+          </Button>
+          <Button
+            style={{
+              flex: 1,
+            }}
+            disabled={!enableSave}
+            size="lg"
+            variant="primary"
+            onPress={() => {
+              setSaving(true)
+              if (collection.id) {
+                qc.setQueryData<Partial<CollectionItem>[]>(collectionItemsKey, (prev) => {
+                  const current = prev ?? []
+                  const exists = current.some(
+                    (e) =>
+                      e.grade_condition_id === draft.grade_condition_id &&
+                      variantsEqual(
+                        e.variants as string[] | undefined,
+                        draft.variants as string[] | undefined
+                      )
+                  )
+                  if (exists) return current
+                  return [...current, { id: `temp-${draft.grade_condition_id}`, ...draft }]
+                })
+              }
+              setSaving(false)
+              onDismiss()
+            }}
+          >
+            {saving ? (
+              <Spinner color={Colors.$textDefaultLight} />
+            ) : (
+              <Plus size={24} color={Colors.$iconDefault} />
+            )}
+            <Text variant={'large'}>Add</Text>
+          </Button>
+        </View>
       </View>
     </Modal>
   )

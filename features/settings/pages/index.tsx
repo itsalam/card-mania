@@ -1,17 +1,17 @@
 import { Text } from '@/components/ui/text'
 import { useUserStore } from '@/lib/store/useUserStore'
-import { Star, TrendingUp } from 'lucide-react-native'
+import { LucideIcon, Star, TrendingUp } from 'lucide-react-native'
 import React, { ReactNode } from 'react'
 import { FlatList, useWindowDimensions, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
-import { Avatar } from '@/components/ui/avatar'
 import { Separator } from '@rn-primitives/dropdown-menu'
 import { Colors } from 'react-native-ui-lib'
+import { ProfileHeader } from '../components/profile-header'
 import { SettingsItem } from '../components/settings-item'
 import { SettingsPageItem } from '../components/settings-page'
 import { useEffectiveColorScheme } from '../hooks/effective-color-scheme'
-import { ProfilePageStat } from '../types'
+
 import { SETTINGS_SECTIONS } from './consts'
 
 export default function ProfilePageLayout() {
@@ -20,17 +20,9 @@ export default function ProfilePageLayout() {
   const { user } = useUserStore()
   const scheme = useEffectiveColorScheme()
 
-  const DUMMY_STATS: ProfilePageStat[] = [
-    {
-      label: 'Followers',
-      value: 0,
-    },
-    {
-      label: 'Following',
-      value: 0,
-    },
-    { label: 'Hobbyist', icon: Star, value: true },
-    { label: 'Trader', icon: TrendingUp, value: false },
+  const DUMMY_TAGS: { icon: LucideIcon; label: string; color?: string; disabled?: boolean }[] = [
+    { label: 'Hobbyist', icon: Star },
+    { label: 'Trader', icon: TrendingUp, disabled: false },
   ]
 
   return (
@@ -47,13 +39,14 @@ export default function ProfilePageLayout() {
       }}
       data={Object.entries(SETTINGS_SECTIONS)}
       keyExtractor={([key]) => key}
+      key={scheme}
       renderItem={({ item: [path, section] }) => (
         <SettingsContainer label={section.label}>
           {Object.entries(section?.items).map(([key, setting]) =>
             setting.type === 'page' ? (
-              <SettingsPageItem display={setting} />
+              <SettingsPageItem key={key} display={setting} />
             ) : (
-              <SettingsItem settingKey={setting.key} display={setting} />
+              <SettingsItem key={key} settingKey={setting.key} display={setting} />
             )
           )}
         </SettingsContainer>
@@ -69,84 +62,7 @@ export default function ProfilePageLayout() {
           }}
         />
       )}
-      ListHeaderComponent={
-        <View
-          style={{
-            paddingTop: Math.round(height * 0.15),
-            justifyContent: 'center',
-            alignItems: 'center',
-            paddingBottom: 20,
-          }}
-        >
-          <Avatar size="2xl" />
-          <View
-            style={{
-              paddingTop: 20,
-              justifyContent: 'center',
-              alignItems: 'center',
-            }}
-          >
-            <Text variant={'h4'}>PROFILE NAME</Text>
-            <Text variant={'large'}>@{user?.email ?? 'profile.handle'}</Text>
-          </View>
-          <FlatList
-            contentContainerStyle={{
-              flexDirection: 'row',
-              justifyContent: 'center',
-              alignItems: 'stretch',
-            }}
-            horizontal
-            data={DUMMY_STATS}
-            renderItem={({ item }) => {
-              const { label, element, icon: Icon, value } = item
-              return (
-                <View
-                  style={{
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                    paddingHorizontal: 12,
-                    paddingVertical: 8,
-                  }}
-                >
-                  <Text
-                    style={{
-                      ...(!Icon
-                        ? { color: Colors.$iconDefault }
-                        : Boolean(value)
-                          ? { color: Colors.$iconPrimary }
-                          : { color: Colors.rgba(Colors.$iconDefault, 0.4) }),
-                    }}
-                  >
-                    {label}
-                  </Text>
-                  {element ? (
-                    element
-                  ) : Icon ? (
-                    <Icon
-                      size={20}
-                      style={{ marginTop: 3 }}
-                      {...(Boolean(value)
-                        ? { color: Colors.$iconPrimary }
-                        : { color: Colors.rgba(Colors.$iconDefault, 0.4) })}
-                    />
-                  ) : value !== undefined ? (
-                    <Text variant={'large'}>{String(value)}</Text>
-                  ) : null}
-                </View>
-              )
-            }}
-            ItemSeparatorComponent={(props) => <Separator orientation="vertical" {...props} />}
-          />
-          <Separator
-            style={{
-              marginTop: 12,
-              paddingVertical: 4,
-              width: '100%',
-              backgroundColor: Colors.$backgroundNeutral,
-            }}
-          />
-        </View>
-      }
+      ListHeaderComponent={<ProfileHeader />}
     />
   )
 }

@@ -2,7 +2,7 @@ import { Box } from '@/components/ui/box'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Text } from '@/components/ui/text'
-import { UserAvatar } from '@/features/users/components/UserAvatars'
+import { UserContact } from '@/features/users/components/UserAvatars'
 import { DUMMY_USERS } from '@/features/users/helpers'
 import React, { ComponentProps } from 'react'
 import { View } from 'react-native'
@@ -21,7 +21,7 @@ export function SuggestedSellers(props: ExpandableCardProps) {
             key={user.handle}
             className="flex flex-row items-center justify-between gap-4 p-4 py-2"
           >
-            <UserAvatar user={user} />
+            <UserContact user={user} />
             <Button className="rounded-full border" variant="outline">
               <Text>Follow</Text>
             </Button>

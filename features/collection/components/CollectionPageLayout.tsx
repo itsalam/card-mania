@@ -171,7 +171,6 @@ export const CollectionsPageLayout = () => {
           />
         )
       }
-
       return (
         <CardListView
           card={item.item}
@@ -331,7 +330,7 @@ const EmptyColelctionList = () => {
     >
       <X size={32} color={Colors.$iconDisabled} />
       <Text style={{ color: Colors.$iconDisabled, textAlign: 'center' }}>
-        No items currently in this collection. Start adding some with the "Add +" button.
+        {'No items currently in this collection. Start adding some with the "Add +" button.'}
       </Text>
     </View>
   )

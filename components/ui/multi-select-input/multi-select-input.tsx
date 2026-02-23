@@ -1,7 +1,7 @@
 import { Text } from '@/components/ui/text'
 
 import { TagCategoryToIcon } from '@/components/icons'
-import { BADGE_HEIGHT, ToggleBadge } from '@/components/ui/badge'
+import { BASE_BADGE_HEIGHT, ToggleBadge } from '@/components/ui/badge'
 import { splitToNChunks } from '@/components/utils'
 import { once, uniqueId } from 'lodash'
 import {
@@ -56,9 +56,8 @@ type BaseTagObject = {
   category?: string
 }
 
-const defaultIconRender =
-  <T,>(extractCat: (item: T) => string) =>
-  (reqTag?: T) => {
+const defaultIconRender = <T,>(extractCat: (item: T) => string) => {
+  const IconRenderer = (reqTag?: T) => {
     const IconComp =
       TagCategoryToIcon[
         (reqTag ? extractCat(reqTag) : 'general') as keyof typeof TagCategoryToIcon
@@ -72,6 +71,9 @@ const defaultIconRender =
       />
     )
   }
+  IconRenderer.displayName = 'IconRenderer'
+  return IconRenderer
+}
 
 export const createChipsContext = once(<T extends BaseTagObject>() =>
   createContext<ChipsContextValue<T> | null>(null)
@@ -144,13 +146,13 @@ const Provider = <T extends BaseTagObject>(
         {typeof children === 'function'
           ? children(props)
           : children
-          ? children
-          : (_, ref) => (
-              <View>
-                <Input<T> {...props} ref={ref} onChange={onChange} />
-                <Suggestions<T> compare={compare} />
-              </View>
-            )}
+            ? children
+            : (_, ref) => (
+                <View>
+                  <Input<T> {...props} ref={ref} onChange={onChange} />
+                  <Suggestions<T> compare={compare} />
+                </View>
+              )}
       </TextField>
     </ChipsContext.Provider>
   )
@@ -232,7 +234,7 @@ const Suggestions = <T extends BaseTagObject>(props: Pick<MultiChipInputProps<T>
   const suggestionContainerStyle = useAnimatedStyle(() => {
     const hasAnyResults = (Array.isArray(suggestions) && suggestions.length > 0) || hasResults.value
     const targetHeight =
-      isFocused && hasAnyResults ? BADGE_HEIGHT * NUM_ROWS + (NUM_ROWS - 1) * 4 + 44 : 0
+      isFocused && hasAnyResults ? BASE_BADGE_HEIGHT * NUM_ROWS + (NUM_ROWS - 1) * 4 + 44 : 0
     return {
       height: withTiming(targetHeight),
     }
@@ -324,7 +326,7 @@ const Suggestions = <T extends BaseTagObject>(props: Pick<MultiChipInputProps<T>
               flex: 1,
               justifyContent: 'center',
               alignItems: 'center',
-              height: BADGE_HEIGHT,
+              height: BASE_BADGE_HEIGHT,
             }}
           >
             {/* <Text>No Results</Text> */}

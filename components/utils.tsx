@@ -78,10 +78,10 @@ export const formatCompactPrice = (
   return `${currency}${formatter.format(dollars)}`
 }
 
-export const formatLabel = (label: string): string => {
+export const formatLabel = (label: string, separator: string = ' '): string => {
   return label
     .replace(/_/g, '.')
-    .replace(/([a-zA-Z])(\d)/g, '$1 $2')
+    .replace(/([a-zA-Z])(\d)/g, `$1${separator}$2`)
     .toLocaleUpperCase()
 }
 

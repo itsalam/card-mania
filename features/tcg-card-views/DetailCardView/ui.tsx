@@ -1,8 +1,8 @@
 import { BlurBackground, BlurGradientBackground } from '@/components/Background'
 import { MeasuredLayout, useMeasure } from '@/components/hooks/useMeasure'
 import { Text } from '@/components/ui/text'
-import { useEffect } from 'react'
-import { StyleProp, View, ViewStyle } from 'react-native'
+import React, { useEffect, useMemo } from 'react'
+import { ScrollView, StyleProp, View, ViewStyle } from 'react-native'
 import { Gesture, GestureDetector } from 'react-native-gesture-handler'
 import { useReanimatedKeyboardAnimation } from 'react-native-keyboard-controller'
 import Animated, {
@@ -23,8 +23,6 @@ import { LiquidGlassCard } from '@/components/tcg-card/GlassCard'
 import { thumbStyles } from '@/components/ui/modal'
 import { formatLabel, formatPrice, splitToNChunks } from '@/components/utils'
 import { Eye, EyeOff, Plus, SearchX } from 'lucide-react-native'
-import React, { useMemo } from 'react'
-import { ScrollView } from 'react-native'
 import { scheduleOnRN } from 'react-native-worklets'
 
 export const Attribute = ({ label, value }: { label: string; value: string }) => {

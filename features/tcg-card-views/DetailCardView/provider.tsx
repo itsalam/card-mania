@@ -7,11 +7,11 @@ import { VISIBILITY_OPTIONS } from './ui'
 
 export type CardDetailsStore = {
   card: TCard | null
-  footerPages: Array<{ title: string; page: () => React.ReactNode }>
+  footerPages: { title: string; page: () => React.ReactNode }[]
   currentPage?: number
   setPage: (pageIdx: number) => void
   setCard: (card: TCard | null) => void
-  setFooterPages: (pages: Array<{ title: string; page: () => React.ReactNode }>) => void
+  setFooterPages: (pages: { title: string; page: () => React.ReactNode }[]) => void
   footerFullView: boolean
   setFooterFullView: (value: boolean) => void
 }
@@ -22,7 +22,7 @@ export const createCardDetailsStore = ({
   currentPage = 0,
 }: {
   card?: TCard | null
-  footerPages?: Array<{ title: string; page: () => React.ReactNode }>
+  footerPages?: { title: string; page: () => React.ReactNode }[]
   currentPage?: number
 }) =>
   createStore<CardDetailsStore>((set, get) => ({
@@ -49,7 +49,7 @@ export const CardDetailsProvider = ({
 }: {
   card?: TCard | null
   children: React.ReactNode
-  footerPages: Array<{ title: string; page: () => React.ReactNode }>
+  footerPages: { title: string; page: () => React.ReactNode }[]
 }) => {
   // create one store instance for this provider
   const storeRef = useRef<StoreApi<CardDetailsStore> | null>(null)

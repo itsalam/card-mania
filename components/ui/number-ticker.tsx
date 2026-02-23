@@ -1,6 +1,6 @@
 import { cssInterop } from 'nativewind'
-import { useEffect, useState } from 'react'
-import { AccessibilityActionEvent, View } from 'react-native'
+import React, { useEffect, useState, PureComponent } from 'react'
+import { AccessibilityActionEvent, View, AccessibilityInfo, StyleSheet } from 'react-native'
 import {
   asBaseComponent,
   Assets,
@@ -16,6 +16,8 @@ import {
   TextFieldProps,
   Typography,
 } from 'react-native-ui-lib'
+
+import _isUndefined from 'lodash/isUndefined'
 
 cssInterop(NumberInput, {
   className: {
@@ -83,10 +85,6 @@ export const NumberTicker = ({
 type StepperState = {
   currentValue: number
 }
-
-import _isUndefined from 'lodash/isUndefined'
-import React, { PureComponent } from 'react'
-import { AccessibilityInfo, StyleSheet } from 'react-native'
 
 enum ActionType {
   MINUS = 'minus',
@@ -215,13 +213,13 @@ class Stepper extends PureComponent<StepperProps, StepperState> {
     const minusButton = isFloatingStepper
       ? Assets.internal.icons.minusSmall
       : small
-      ? Assets.internal.icons.minusOutlineSmall
-      : Assets.internal.icons.minusOutline
+        ? Assets.internal.icons.minusOutlineSmall
+        : Assets.internal.icons.minusOutline
     const plusButton = isFloatingStepper
       ? Assets.internal.icons.plusSmall
       : small
-      ? Assets.internal.icons.plusOutlineSmall
-      : Assets.internal.icons.plusOutline
+        ? Assets.internal.icons.plusOutlineSmall
+        : Assets.internal.icons.plusOutline
     return (
       <RNButton
         link

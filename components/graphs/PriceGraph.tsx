@@ -447,7 +447,7 @@ export function PriceGraph<
                   })}
                 </Group>
                 {/* </Mask> */}
-                {lastPoints && (
+                {lastPoints && Object.keys(state.y).length && (
                   <ToolTip
                     xValue={crosshairXValue}
                     restPoints={lastPoints}
@@ -516,7 +516,6 @@ export function ToolTip({
 }) {
   const font = useFont(require('../../assets/fonts/Inter.ttf'), 12)
   const seriesKeys = useMemo(() => Object.keys(yKeys ?? {}), [yKeys])
-  if (!seriesKeys.length) return null
   const seriesIsActive = seriesActive ?? isActive
 
   const [xValueText, setXValueText] = useState('')

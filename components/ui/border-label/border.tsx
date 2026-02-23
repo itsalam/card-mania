@@ -66,7 +66,6 @@ export const DynamicBorderBox = forwardRef<View, DynamicBorderBoxProps>(
         duration: DURATION,
         easing: Easing.out(Easing.cubic),
       })
-      // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [shouldFloat, targetGap])
     const rw = useDerivedValue(() => Math.max(0, size.value.width - strokeWidth), [size])
     const rh = useDerivedValue(() => Math.max(0, size.value.height - strokeWidth), [size, fontSize])
@@ -174,6 +173,8 @@ export const DynamicBorderBox = forwardRef<View, DynamicBorderBoxProps>(
     )
   }
 )
+
+DynamicBorderBox.displayName = 'DynamicBorderBox'
 
 const ExtraStyles = StyleSheet.create({
   text: {

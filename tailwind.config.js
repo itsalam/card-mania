@@ -1,6 +1,5 @@
-
-import gluestackPlugin from '@gluestack-ui/nativewind-utils/tailwind-plugin';
-const { hairlineWidth } = require('nativewind/theme');
+import gluestackPlugin from '@gluestack-ui/nativewind-utils/tailwind-plugin'
+const { hairlineWidth } = require('nativewind/theme')
 
 /** @type {import('tailwindcss').Config} */
 module.exports = {
@@ -34,7 +33,6 @@ module.exports = {
         border: 'hsl(var(--border))',
         input: 'hsl(var(--input))',
         ring: 'hsl(var(--ring))',
-        background: 'hsl(var(--background))',
         foreground: 'hsl(var(--foreground))',
         primary: {
           DEFAULT: 'hsl(var(--primary))',
@@ -215,18 +213,17 @@ module.exports = {
           foreground: 'hsl(var(--card-foreground))',
         },
       },
-            borderWidth: {
+      borderWidth: {
         hairline: hairlineWidth(),
       },
       fontFamily: {
         body: undefined,
         mono: undefined,
         sans: ['Montserrat_400Regular', 'sans-serif'],
-        heading: ["Montserrat_700Bold", "sans-serif"],
+        heading: ['Montserrat_700Bold', 'sans-serif'],
         roboto: ['Roboto', 'sans-serif'],
         spaceMono: ['SpaceMono', 'monospace'],
         bitcountGrid: ['BitcountGrid', 'monospace'],
-
       },
       fontWeight: {
         extrablack: '950',
@@ -245,7 +242,7 @@ module.exports = {
         'soft-3': '0px 0px 30px rgba(38, 38, 38, 0.1)',
         'soft-4': '0px 0px 40px rgba(38, 38, 38, 0.1)',
       },
-            keyframes: {
+      keyframes: {
         'accordion-down': {
           from: { height: '0' },
           to: { height: 'var(--radix-accordion-content-height)' },
@@ -255,16 +252,14 @@ module.exports = {
           to: { height: '0' },
         },
       },
-            animation: {
+      animation: {
         'accordion-down': 'accordion-down 0.2s ease-out',
         'accordion-up': 'accordion-up 0.2s ease-out',
       },
     },
   },
-    future: {
+  future: {
     hoverOnlyWhenSupported: true,
   },
   plugins: [gluestackPlugin, require('tailwindcss-animate')],
-};
-
- 
+}

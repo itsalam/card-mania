@@ -4,7 +4,6 @@ import * as SplashScreen from 'expo-splash-screen'
 import '@/components/icons'
 import '@/components/nativewind-svg'
 import '../global.css'
-require('react-native-ui-lib/config').setConfig({ appScheme: 'default' })
 
 import { PortalHost } from '@rn-primitives/portal'
 import * as Sentry from '@sentry/react-native'
@@ -15,6 +14,7 @@ import React from 'react'
 import { Platform } from 'react-native'
 import { configureReanimatedLogger, ReanimatedLogLevel } from 'react-native-reanimated'
 import Providers from './_providers'
+require('react-native-ui-lib/config').setConfig({ appScheme: 'default' })
 
 const navigationIntegration = Sentry.reactNavigationIntegration({
   enableTimeToInitialDisplay: !isRunningInExpoGo(),

@@ -5,6 +5,7 @@ import { Header, HeaderBackButton } from '@react-navigation/elements'
 import { ChevronLeft } from 'lucide-react-native'
 import React, { ComponentProps } from 'react'
 import { Pressable, StyleProp, View, ViewStyle } from 'react-native'
+import { Colors } from 'react-native-ui-lib'
 
 /** Use this for screens that live inside a React Navigation Stack */
 export function AppNavHeader(props: BottomTabHeaderProps) {
@@ -39,7 +40,7 @@ export function AppStandaloneHeader({
   style,
   variant = 'h2',
 }: {
-  title: React.ReactNode
+  title?: React.ReactNode
   onBack?: () => void
   right?: React.ReactNode
   background?: React.ReactNode
@@ -59,7 +60,7 @@ export function AppStandaloneHeader({
         <View style={{ width: 64, alignItems: 'flex-start' }}>
           {onBack && (
             <Pressable onPress={onBack} hitSlop={12}>
-              <ChevronLeft size={24} />
+              <ChevronLeft size={24} color={Colors.$iconDefault} />
             </Pressable>
           )}
         </View>

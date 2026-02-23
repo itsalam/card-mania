@@ -1,22 +1,23 @@
 import * as Haptics from 'expo-haptics'
+import { LucideIcon } from 'lucide-react-native'
 import { ComponentProps } from 'react'
 import { View } from 'react-native'
 import { Gesture, GestureDetector } from 'react-native-gesture-handler'
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated'
-import { Chip, Colors } from 'react-native-ui-lib'
+import { BorderRadiuses, Chip, Colors } from 'react-native-ui-lib'
 import { scheduleOnRN } from 'react-native-worklets'
 require('@/assets/rn-ui')
 const AnimatedView = Animated.createAnimatedComponent(View)
 
-export const BADGE_HEIGHT = 36
-export const ICON_SIZE = 28
+export const BASE_BADGE_HEIGHT = 36
+export const BASE_ICON_SIZE = 20
 
 export const BaseBadgeProps: Partial<ComponentProps<typeof Chip>> = {
   iconStyle: {
-    width: ICON_SIZE,
-    height: ICON_SIZE,
+    width: BASE_ICON_SIZE,
+    height: BASE_ICON_SIZE,
   },
-  size: BADGE_HEIGHT,
+  size: BASE_BADGE_HEIGHT,
   backgroundColor: Colors.$backgroundPrimaryHeavy,
   containerStyle: {
     borderWidth: 0,
@@ -24,10 +25,33 @@ export const BaseBadgeProps: Partial<ComponentProps<typeof Chip>> = {
     paddingLeft: 4,
   },
   labelStyle: {
-    color: Colors.$textDefaultLight,
+    color: Colors.$textDefault,
     fontSize: 16,
     lineHeight: 18,
   },
+}
+
+export const SQUARE_BADGE_HEIGHT = 32
+export const SQUARE_ICON_SIZE = 18
+
+export const SquareBadgeProps: Partial<ComponentProps<typeof Chip>> = {
+  iconStyle: {
+    width: SQUARE_ICON_SIZE,
+    height: SQUARE_ICON_SIZE,
+  },
+  size: SQUARE_BADGE_HEIGHT,
+  backgroundColor: Colors.$backgroundPrimaryHeavy,
+  containerStyle: {
+    borderWidth: 0,
+    padding: 6,
+    paddingLeft: 10,
+  },
+  labelStyle: {
+    color: Colors.$textDefault,
+    fontSize: 14,
+    lineHeight: 16,
+  },
+  borderRadius: BorderRadiuses.br20,
 }
 
 export function ToggleBadge({
@@ -75,12 +99,37 @@ export function ToggleBadge({
     <GestureDetector gesture={tap}>
       <AnimatedView style={animatedStyle}>
         {/* Important: avoid inner Pressables here so RNGH owns the touch */}
-        <Badge {...BaseBadgeProps} {...props} />
+        <Badge {...props} />
       </AnimatedView>
     </GestureDetector>
   )
 }
 
-export function Badge({ ...props }: ComponentProps<typeof Chip>) {
-  return <Chip {...BaseBadgeProps} {...props} />
+export function Badge({
+  variant = 'default',
+  icon: Icon,
+  leftElement,
+  style,
+  ...props
+}: ComponentProps<typeof Chip> & { variant?: 'default' | 'square'; icon?: LucideIcon }) {
+  const variantProps = variant === 'default' ? BaseBadgeProps : SquareBadgeProps
+
+  return (
+    <Chip
+      leftElement={
+        Icon ? (
+          <Icon
+            size={(variantProps.iconStyle?.height! as number) || BASE_BADGE_HEIGHT}
+            color={Colors.$textDefault}
+            strokeWidth={2.5}
+            style={{ marginLeft: 4 }}
+          />
+        ) : (
+          leftElement
+        )
+      }
+      {...variantProps}
+      {...props}
+    />
+  )
 }

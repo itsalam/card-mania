@@ -99,6 +99,7 @@ export function ToggleAccessory({
             return (
               <ToggleGroupItem
                 value={value}
+                key={i}
                 aria-label="Toggle bold"
                 variant="outline"
                 group={i === 0 ? 'first' : i === values.length - 1 ? 'last' : undefined}

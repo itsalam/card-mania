@@ -19,7 +19,7 @@ import Animated, {
 import { useBackgroundColors } from './utils'
 
 type ColorValueArray = readonly [ColorValue, ColorValue, ...ColorValue[]]
-type OptionalColorValueArray = Array<string | undefined>
+type OptionalColorValueArray = (string | undefined)[]
 
 const ABlur = Animated.createAnimatedComponent(BlurView)
 

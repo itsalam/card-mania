@@ -15,8 +15,8 @@ export function VisibilitySelector() {
 
   const HintMessage = (
     <View style={styles.HintMessageContainer}>
-      {VISIBILITY_OPTIONS.map(({ icon: Icon, label, description }) => (
-        <View style={styles.HintMessageEntry}>
+      {VISIBILITY_OPTIONS.map(({ icon: Icon, label, description }, i) => (
+        <View style={styles.HintMessageEntry} key={`${label}-${i}`}>
           <Icon color={Colors.$iconDefaultLight} />
           <Text style={styles.HintIcon}>
             {label}: {description}
