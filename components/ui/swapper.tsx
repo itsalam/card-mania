@@ -57,15 +57,15 @@ export function Swapper<T extends KeyLike>({
     dir === 1
       ? SlideInRight.duration(duration)
       : dir === -1
-      ? SlideInLeft.duration(duration)
-      : undefined
+        ? SlideInLeft.duration(duration)
+        : undefined
 
   const exiting =
     dir === 1
       ? SlideOutRight.duration(duration)
       : dir === -1
-      ? SlideOutLeft.duration(duration)
-      : undefined
+        ? SlideOutLeft.duration(duration)
+        : undefined
 
   return (
     <Animated.View

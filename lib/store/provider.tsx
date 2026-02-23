@@ -33,11 +33,8 @@ export function useStores() {
   return context
 }
 
-export function useCardStore<T>(
-  selector: (s: CardStoreState) => T
-): T {
+export function useCardStore<T>(selector: (s: CardStoreState) => T): T {
   const ctx = useContext(StoreContexts)
   if (!ctx) throw new Error('StoreProvider is missing')
   return useStore(ctx.cardStore, useShallow(selector))
 }
-

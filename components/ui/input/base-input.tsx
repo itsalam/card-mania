@@ -131,21 +131,17 @@ export const Input = forwardRef<TextInput, InputProps>((props, ref) => {
   const context = useContext<FieldStore>(FieldContext)
   const combinedRefs = useCombinedRefs<TextInput>(ref, inputLayoutRef)
 
-  useImperativeHandle(
-    ref,
-    () => {
-      const node = combinedRefs.current
-      return Object.assign({}, node, {
-        validate: context.validateField,
-        clear: () => {
-          node?.clear?.()
-          context.onChangeText?.('')
-          onClear?.()
-        },
-      }) as TextFieldHandle
-    },
-    [combinedRefs, context.validateField, context.onChangeText, onClear]
-  )
+  useImperativeHandle(ref, () => {
+    const node = combinedRefs.current
+    return Object.assign({}, node, {
+      validate: context.validateField,
+      clear: () => {
+        node?.clear?.()
+        context.onChangeText?.('')
+        onClear?.()
+      },
+    }) as TextFieldHandle
+  }, [combinedRefs, context.validateField, context.onChangeText, onClear])
 
   const leadingAccessoryClone = useMemo(() => {
     const el = propsLeadingAccessory

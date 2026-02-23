@@ -35,9 +35,9 @@ type FilterDisplayState = {
 }
 
 export const DisplayFilterLabels = {
-    cards: 'Cards',
-    sets: 'Sets',
-    collections: 'Collections',
+  cards: 'Cards',
+  sets: 'Sets',
+  collections: 'Collections',
   priceRange: 'Price Range',
   sealed: 'Sealed',
   owned: 'Owned',
@@ -96,15 +96,21 @@ const FiltersContext = createContext<(FilterState & FilterDisplayState & Keyboar
   null
 )
 
-export function FiltersProvider({ children, filters }: PropsWithChildren & { filters: FilterState }) {
+export function FiltersProvider({
+  children,
+  filters,
+}: PropsWithChildren & { filters: FilterState }) {
   const { min, max } = filters.priceRange
   const displayFilters = useMemo(() => {
     const { itemTypes, priceRange, sealed, owned, wishlisted, unowned } = filters
 
-    const itemLabels = itemTypes.reduce((acc, type) => {
-      acc[type] = DisplayFilterLabels[type]
-      return acc
-    }, {} as Record<ItemType, string>)
+    const itemLabels = itemTypes.reduce(
+      (acc, type) => {
+        acc[type] = DisplayFilterLabels[type]
+        return acc
+      },
+      {} as Record<ItemType, string>
+    )
 
     const hasMin = priceRange.min != null // treat 0 as valid
     const hasMax = priceRange.max != null
@@ -112,10 +118,10 @@ export function FiltersProvider({ children, filters }: PropsWithChildren & { fil
       hasMin && hasMax
         ? `${priceRange.min} - ${priceRange.max}`
         : hasMin
-        ? `Over ${priceRange.min}`
-        : hasMax
-        ? `Under ${priceRange.max}`
-        : undefined
+          ? `Over ${priceRange.min}`
+          : hasMax
+            ? `Under ${priceRange.max}`
+            : undefined
 
     return {
       ...itemLabels,

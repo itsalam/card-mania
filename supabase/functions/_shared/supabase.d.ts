@@ -1,16 +1,10 @@
-export type Json =
-  | string
-  | number
-  | boolean
-  | null
-  | { [key: string]: Json | undefined }
-  | Json[]
+export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[]
 
 export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "13.0.4"
+    PostgrestVersion: '13.0.4'
   }
   public: {
     Tables: {
@@ -77,18 +71,18 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "card_images_card_id_fkey"
-            columns: ["card_id"]
+            foreignKeyName: 'card_images_card_id_fkey'
+            columns: ['card_id']
             isOneToOne: false
-            referencedRelation: "cards"
-            referencedColumns: ["id"]
+            referencedRelation: 'cards'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "card_images_image_cache_id_fkey"
-            columns: ["image_cache_id"]
+            foreignKeyName: 'card_images_image_cache_id_fkey'
+            columns: ['image_cache_id']
             isOneToOne: false
-            referencedRelation: "image_cache"
-            referencedColumns: ["id"]
+            referencedRelation: 'image_cache'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -113,11 +107,11 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "card_variants_card_id_fkey"
-            columns: ["card_id"]
+            foreignKeyName: 'card_variants_card_id_fkey'
+            columns: ['card_id']
             isOneToOne: false
-            referencedRelation: "cards"
-            referencedColumns: ["id"]
+            referencedRelation: 'cards'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -172,18 +166,18 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "cards_back_image_id_fkey"
-            columns: ["back_image_id"]
+            foreignKeyName: 'cards_back_image_id_fkey'
+            columns: ['back_image_id']
             isOneToOne: false
-            referencedRelation: "card_images"
-            referencedColumns: ["id"]
+            referencedRelation: 'card_images'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "cards_front_image_id_fkey"
-            columns: ["front_image_id"]
+            foreignKeyName: 'cards_front_image_id_fkey'
+            columns: ['front_image_id']
             isOneToOne: false
-            referencedRelation: "card_images"
-            referencedColumns: ["id"]
+            referencedRelation: 'card_images'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -195,7 +189,7 @@ export type Database = {
           grade_condition_id: string | null
           grading_company: string | null
           id: string
-          item_kind: Database["public"]["Enums"]["item_kind"]
+          item_kind: Database['public']['Enums']['item_kind']
           position: number
           quantity: number
           ref_id: string
@@ -210,7 +204,7 @@ export type Database = {
           grade_condition_id?: string | null
           grading_company?: string | null
           id?: string
-          item_kind?: Database["public"]["Enums"]["item_kind"]
+          item_kind?: Database['public']['Enums']['item_kind']
           position?: number
           quantity: number
           ref_id: string
@@ -225,7 +219,7 @@ export type Database = {
           grade_condition_id?: string | null
           grading_company?: string | null
           id?: string
-          item_kind?: Database["public"]["Enums"]["item_kind"]
+          item_kind?: Database['public']['Enums']['item_kind']
           position?: number
           quantity?: number
           ref_id?: string
@@ -235,74 +229,74 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "collection_items_collection_fk"
-            columns: ["collection_id"]
+            foreignKeyName: 'collection_items_collection_fk'
+            columns: ['collection_id']
             isOneToOne: false
-            referencedRelation: "collection_totals_with_flags"
-            referencedColumns: ["collection_id"]
+            referencedRelation: 'collection_totals_with_flags'
+            referencedColumns: ['collection_id']
           },
           {
-            foreignKeyName: "collection_items_collection_fk"
-            columns: ["collection_id"]
+            foreignKeyName: 'collection_items_collection_fk'
+            columns: ['collection_id']
             isOneToOne: false
-            referencedRelation: "collections"
-            referencedColumns: ["id"]
+            referencedRelation: 'collections'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "collection_items_collection_fk"
-            columns: ["collection_id"]
+            foreignKeyName: 'collection_items_collection_fk'
+            columns: ['collection_id']
             isOneToOne: false
-            referencedRelation: "collections_with_tags"
-            referencedColumns: ["id"]
+            referencedRelation: 'collections_with_tags'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "collection_items_collection_id_fkey"
-            columns: ["collection_id"]
+            foreignKeyName: 'collection_items_collection_id_fkey'
+            columns: ['collection_id']
             isOneToOne: false
-            referencedRelation: "collection_totals_with_flags"
-            referencedColumns: ["collection_id"]
+            referencedRelation: 'collection_totals_with_flags'
+            referencedColumns: ['collection_id']
           },
           {
-            foreignKeyName: "collection_items_collection_id_fkey"
-            columns: ["collection_id"]
+            foreignKeyName: 'collection_items_collection_id_fkey'
+            columns: ['collection_id']
             isOneToOne: false
-            referencedRelation: "collections"
-            referencedColumns: ["id"]
+            referencedRelation: 'collections'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "collection_items_collection_id_fkey"
-            columns: ["collection_id"]
+            foreignKeyName: 'collection_items_collection_id_fkey'
+            columns: ['collection_id']
             isOneToOne: false
-            referencedRelation: "collections_with_tags"
-            referencedColumns: ["id"]
+            referencedRelation: 'collections_with_tags'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "collection_items_collection_ref_fkey"
-            columns: ["collection_ref"]
+            foreignKeyName: 'collection_items_collection_ref_fkey'
+            columns: ['collection_ref']
             isOneToOne: false
-            referencedRelation: "collection_totals_with_flags"
-            referencedColumns: ["collection_id"]
+            referencedRelation: 'collection_totals_with_flags'
+            referencedColumns: ['collection_id']
           },
           {
-            foreignKeyName: "collection_items_collection_ref_fkey"
-            columns: ["collection_ref"]
+            foreignKeyName: 'collection_items_collection_ref_fkey'
+            columns: ['collection_ref']
             isOneToOne: false
-            referencedRelation: "collections"
-            referencedColumns: ["id"]
+            referencedRelation: 'collections'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "collection_items_collection_ref_fkey"
-            columns: ["collection_ref"]
+            foreignKeyName: 'collection_items_collection_ref_fkey'
+            columns: ['collection_ref']
             isOneToOne: false
-            referencedRelation: "collections_with_tags"
-            referencedColumns: ["id"]
+            referencedRelation: 'collections_with_tags'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "collection_items_grade_condition_id_fkey"
-            columns: ["grade_condition_id"]
+            foreignKeyName: 'collection_items_grade_condition_id_fkey'
+            columns: ['grade_condition_id']
             isOneToOne: false
-            referencedRelation: "grade_conditions"
-            referencedColumns: ["id"]
+            referencedRelation: 'grade_conditions'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -327,25 +321,25 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "collection_stats_collection_id_fkey"
-            columns: ["collection_id"]
+            foreignKeyName: 'collection_stats_collection_id_fkey'
+            columns: ['collection_id']
             isOneToOne: true
-            referencedRelation: "collection_totals_with_flags"
-            referencedColumns: ["collection_id"]
+            referencedRelation: 'collection_totals_with_flags'
+            referencedColumns: ['collection_id']
           },
           {
-            foreignKeyName: "collection_stats_collection_id_fkey"
-            columns: ["collection_id"]
+            foreignKeyName: 'collection_stats_collection_id_fkey'
+            columns: ['collection_id']
             isOneToOne: true
-            referencedRelation: "collections"
-            referencedColumns: ["id"]
+            referencedRelation: 'collections'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "collection_stats_collection_id_fkey"
-            columns: ["collection_id"]
+            foreignKeyName: 'collection_stats_collection_id_fkey'
+            columns: ['collection_id']
             isOneToOne: true
-            referencedRelation: "collections_with_tags"
-            referencedColumns: ["id"]
+            referencedRelation: 'collections_with_tags'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -370,32 +364,32 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "collection_tags_collection_id_fkey"
-            columns: ["collection_id"]
+            foreignKeyName: 'collection_tags_collection_id_fkey'
+            columns: ['collection_id']
             isOneToOne: false
-            referencedRelation: "collection_totals_with_flags"
-            referencedColumns: ["collection_id"]
+            referencedRelation: 'collection_totals_with_flags'
+            referencedColumns: ['collection_id']
           },
           {
-            foreignKeyName: "collection_tags_collection_id_fkey"
-            columns: ["collection_id"]
+            foreignKeyName: 'collection_tags_collection_id_fkey'
+            columns: ['collection_id']
             isOneToOne: false
-            referencedRelation: "collections"
-            referencedColumns: ["id"]
+            referencedRelation: 'collections'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "collection_tags_collection_id_fkey"
-            columns: ["collection_id"]
+            foreignKeyName: 'collection_tags_collection_id_fkey'
+            columns: ['collection_id']
             isOneToOne: false
-            referencedRelation: "collections_with_tags"
-            referencedColumns: ["id"]
+            referencedRelation: 'collections_with_tags'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "collection_tags_tag_id_fkey"
-            columns: ["tag_id"]
+            foreignKeyName: 'collection_tags_tag_id_fkey'
+            columns: ['tag_id']
             isOneToOne: false
-            referencedRelation: "tags"
-            referencedColumns: ["id"]
+            referencedRelation: 'tags'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -420,25 +414,25 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "collection_totals_collection_id_fkey"
-            columns: ["collection_id"]
+            foreignKeyName: 'collection_totals_collection_id_fkey'
+            columns: ['collection_id']
             isOneToOne: true
-            referencedRelation: "collection_totals_with_flags"
-            referencedColumns: ["collection_id"]
+            referencedRelation: 'collection_totals_with_flags'
+            referencedColumns: ['collection_id']
           },
           {
-            foreignKeyName: "collection_totals_collection_id_fkey"
-            columns: ["collection_id"]
+            foreignKeyName: 'collection_totals_collection_id_fkey'
+            columns: ['collection_id']
             isOneToOne: true
-            referencedRelation: "collections"
-            referencedColumns: ["id"]
+            referencedRelation: 'collections'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "collection_totals_collection_id_fkey"
-            columns: ["collection_id"]
+            foreignKeyName: 'collection_totals_collection_id_fkey'
+            columns: ['collection_id']
             isOneToOne: true
-            referencedRelation: "collections_with_tags"
-            referencedColumns: ["id"]
+            referencedRelation: 'collections_with_tags'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -529,11 +523,11 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "external_refs_card_id_fkey"
-            columns: ["card_id"]
+            foreignKeyName: 'external_refs_card_id_fkey'
+            columns: ['card_id']
             isOneToOne: false
-            referencedRelation: "cards"
-            referencedColumns: ["id"]
+            referencedRelation: 'cards'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -558,11 +552,11 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "grade_conditions_company_id_fkey"
-            columns: ["company_id"]
+            foreignKeyName: 'grade_conditions_company_id_fkey'
+            columns: ['company_id']
             isOneToOne: false
-            referencedRelation: "grading_companies"
-            referencedColumns: ["id"]
+            referencedRelation: 'grading_companies'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -650,11 +644,11 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "image_cache_query_hash_fkey"
-            columns: ["query_hash"]
+            foreignKeyName: 'image_cache_query_hash_fkey'
+            columns: ['query_hash']
             isOneToOne: false
-            referencedRelation: "image_search_cache"
-            referencedColumns: ["query_hash"]
+            referencedRelation: 'image_search_cache'
+            referencedColumns: ['query_hash']
           },
         ]
       }
@@ -691,11 +685,11 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "image_search_cache_top_image_fk"
-            columns: ["top_image_id"]
+            foreignKeyName: 'image_search_cache_top_image_fk'
+            columns: ['top_image_id']
             isOneToOne: false
-            referencedRelation: "image_cache"
-            referencedColumns: ["id"]
+            referencedRelation: 'image_cache'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -705,7 +699,7 @@ export type Database = {
           condition: string | null
           condition_key: string
           grade: string
-          item_kind: Database["public"]["Enums"]["item_kind"]
+          item_kind: Database['public']['Enums']['item_kind']
           listing_id: string
           max_available: number
           ref_id: string
@@ -715,7 +709,7 @@ export type Database = {
           condition?: string | null
           condition_key?: string
           grade?: string
-          item_kind: Database["public"]["Enums"]["item_kind"]
+          item_kind: Database['public']['Enums']['item_kind']
           listing_id: string
           max_available: number
           ref_id: string
@@ -725,18 +719,18 @@ export type Database = {
           condition?: string | null
           condition_key?: string
           grade?: string
-          item_kind?: Database["public"]["Enums"]["item_kind"]
+          item_kind?: Database['public']['Enums']['item_kind']
           listing_id?: string
           max_available?: number
           ref_id?: string
         }
         Relationships: [
           {
-            foreignKeyName: "listing_items_listing_id_fkey"
-            columns: ["listing_id"]
+            foreignKeyName: 'listing_items_listing_id_fkey'
+            columns: ['listing_id']
             isOneToOne: false
-            referencedRelation: "listings"
-            referencedColumns: ["id"]
+            referencedRelation: 'listings'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -767,11 +761,11 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "listings_snapshot_id_fkey"
-            columns: ["snapshot_id"]
+            foreignKeyName: 'listings_snapshot_id_fkey'
+            columns: ['snapshot_id']
             isOneToOne: false
-            referencedRelation: "public_snapshots"
-            referencedColumns: ["id"]
+            referencedRelation: 'public_snapshots'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -780,7 +774,7 @@ export type Database = {
           condition: string | null
           condition_key: string
           grade: string
-          item_kind: Database["public"]["Enums"]["item_kind"]
+          item_kind: Database['public']['Enums']['item_kind']
           order_id: string
           quantity: number
           ref_id: string
@@ -790,7 +784,7 @@ export type Database = {
           condition?: string | null
           condition_key?: string
           grade?: string
-          item_kind: Database["public"]["Enums"]["item_kind"]
+          item_kind: Database['public']['Enums']['item_kind']
           order_id: string
           quantity: number
           ref_id: string
@@ -800,7 +794,7 @@ export type Database = {
           condition?: string | null
           condition_key?: string
           grade?: string
-          item_kind?: Database["public"]["Enums"]["item_kind"]
+          item_kind?: Database['public']['Enums']['item_kind']
           order_id?: string
           quantity?: number
           ref_id?: string
@@ -808,11 +802,11 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "order_items_order_id_fkey"
-            columns: ["order_id"]
+            foreignKeyName: 'order_items_order_id_fkey'
+            columns: ['order_id']
             isOneToOne: false
-            referencedRelation: "orders"
-            referencedColumns: ["id"]
+            referencedRelation: 'orders'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -840,11 +834,11 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "orders_listing_id_fkey"
-            columns: ["listing_id"]
+            foreignKeyName: 'orders_listing_id_fkey'
+            columns: ['listing_id']
             isOneToOne: false
-            referencedRelation: "listings"
-            referencedColumns: ["id"]
+            referencedRelation: 'listings'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -933,7 +927,7 @@ export type Database = {
           created_at: string
           display: Json | null
           grade: string
-          item_kind: Database["public"]["Enums"]["item_kind"]
+          item_kind: Database['public']['Enums']['item_kind']
           quantity: number
           ref_id: string
           snapshot_id: string
@@ -946,7 +940,7 @@ export type Database = {
           created_at?: string
           display?: Json | null
           grade?: string
-          item_kind: Database["public"]["Enums"]["item_kind"]
+          item_kind: Database['public']['Enums']['item_kind']
           quantity: number
           ref_id: string
           snapshot_id: string
@@ -959,7 +953,7 @@ export type Database = {
           created_at?: string
           display?: Json | null
           grade?: string
-          item_kind?: Database["public"]["Enums"]["item_kind"]
+          item_kind?: Database['public']['Enums']['item_kind']
           quantity?: number
           ref_id?: string
           snapshot_id?: string
@@ -968,11 +962,11 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "public_snapshot_items_snapshot_id_fkey"
-            columns: ["snapshot_id"]
+            foreignKeyName: 'public_snapshot_items_snapshot_id_fkey'
+            columns: ['snapshot_id']
             isOneToOne: false
-            referencedRelation: "public_snapshots"
-            referencedColumns: ["id"]
+            referencedRelation: 'public_snapshots'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -1018,25 +1012,25 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "public_snapshots_source_collection_id_fkey"
-            columns: ["source_collection_id"]
+            foreignKeyName: 'public_snapshots_source_collection_id_fkey'
+            columns: ['source_collection_id']
             isOneToOne: false
-            referencedRelation: "collection_totals_with_flags"
-            referencedColumns: ["collection_id"]
+            referencedRelation: 'collection_totals_with_flags'
+            referencedColumns: ['collection_id']
           },
           {
-            foreignKeyName: "public_snapshots_source_collection_id_fkey"
-            columns: ["source_collection_id"]
+            foreignKeyName: 'public_snapshots_source_collection_id_fkey'
+            columns: ['source_collection_id']
             isOneToOne: false
-            referencedRelation: "collections"
-            referencedColumns: ["id"]
+            referencedRelation: 'collections'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "public_snapshots_source_collection_id_fkey"
-            columns: ["source_collection_id"]
+            foreignKeyName: 'public_snapshots_source_collection_id_fkey'
+            columns: ['source_collection_id']
             isOneToOne: false
-            referencedRelation: "collections_with_tags"
-            referencedColumns: ["id"]
+            referencedRelation: 'collections_with_tags'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -1075,7 +1069,7 @@ export type Database = {
           expires_at: string
           grade: string | null
           id: string
-          item_kind: Database["public"]["Enums"]["item_kind"]
+          item_kind: Database['public']['Enums']['item_kind']
           listing_id: string
           quantity: number
           ref_id: string
@@ -1087,7 +1081,7 @@ export type Database = {
           expires_at: string
           grade?: string | null
           id?: string
-          item_kind: Database["public"]["Enums"]["item_kind"]
+          item_kind: Database['public']['Enums']['item_kind']
           listing_id: string
           quantity: number
           ref_id: string
@@ -1099,18 +1093,18 @@ export type Database = {
           expires_at?: string
           grade?: string | null
           id?: string
-          item_kind?: Database["public"]["Enums"]["item_kind"]
+          item_kind?: Database['public']['Enums']['item_kind']
           listing_id?: string
           quantity?: number
           ref_id?: string
         }
         Relationships: [
           {
-            foreignKeyName: "reservations_listing_id_fkey"
-            columns: ["listing_id"]
+            foreignKeyName: 'reservations_listing_id_fkey'
+            columns: ['listing_id']
             isOneToOne: false
-            referencedRelation: "listings"
-            referencedColumns: ["id"]
+            referencedRelation: 'listings'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -1213,18 +1207,18 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "search_results_card_id_fkey"
-            columns: ["card_id"]
+            foreignKeyName: 'search_results_card_id_fkey'
+            columns: ['card_id']
             isOneToOne: false
-            referencedRelation: "cards"
-            referencedColumns: ["id"]
+            referencedRelation: 'cards'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "search_results_search_query_id_fkey"
-            columns: ["search_query_id"]
+            foreignKeyName: 'search_results_search_query_id_fkey'
+            columns: ['search_query_id']
             isOneToOne: false
-            referencedRelation: "search_queries"
-            referencedColumns: ["id"]
+            referencedRelation: 'search_queries'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -1285,11 +1279,11 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "tag_aliases_tag_id_fkey"
-            columns: ["tag_id"]
+            foreignKeyName: 'tag_aliases_tag_id_fkey'
+            columns: ['tag_id']
             isOneToOne: false
-            referencedRelation: "tags"
-            referencedColumns: ["id"]
+            referencedRelation: 'tags'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -1326,18 +1320,18 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "tag_category_tags_category_id_fkey"
-            columns: ["category_id"]
+            foreignKeyName: 'tag_category_tags_category_id_fkey'
+            columns: ['category_id']
             isOneToOne: false
-            referencedRelation: "tag_categories"
-            referencedColumns: ["id"]
+            referencedRelation: 'tag_categories'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "tag_category_tags_tag_id_fkey"
-            columns: ["tag_id"]
+            foreignKeyName: 'tag_category_tags_tag_id_fkey'
+            columns: ['tag_id']
             isOneToOne: false
-            referencedRelation: "tags"
-            referencedColumns: ["id"]
+            referencedRelation: 'tags'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -1470,11 +1464,11 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "user_tag_stats_tag_id_fkey"
-            columns: ["tag_id"]
+            foreignKeyName: 'user_tag_stats_tag_id_fkey'
+            columns: ['tag_id']
             isOneToOne: false
-            referencedRelation: "tags"
-            referencedColumns: ["id"]
+            referencedRelation: 'tags'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -1496,25 +1490,25 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "wishlist_collection_id_fkey"
-            columns: ["collection_id"]
+            foreignKeyName: 'wishlist_collection_id_fkey'
+            columns: ['collection_id']
             isOneToOne: false
-            referencedRelation: "collection_totals_with_flags"
-            referencedColumns: ["collection_id"]
+            referencedRelation: 'collection_totals_with_flags'
+            referencedColumns: ['collection_id']
           },
           {
-            foreignKeyName: "wishlist_collection_id_fkey"
-            columns: ["collection_id"]
+            foreignKeyName: 'wishlist_collection_id_fkey'
+            columns: ['collection_id']
             isOneToOne: false
-            referencedRelation: "collections"
-            referencedColumns: ["id"]
+            referencedRelation: 'collections'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "wishlist_collection_id_fkey"
-            columns: ["collection_id"]
+            foreignKeyName: 'wishlist_collection_id_fkey'
+            columns: ['collection_id']
             isOneToOne: false
-            referencedRelation: "collections_with_tags"
-            referencedColumns: ["id"]
+            referencedRelation: 'collections_with_tags'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -1616,7 +1610,7 @@ export type Database = {
       _collection_item_value_cents: {
         Args: {
           p_grade_condition_id: string
-          p_item_kind: Database["public"]["Enums"]["item_kind"]
+          p_item_kind: Database['public']['Enums']['item_kind']
           p_quantity?: number
           p_ref_id: string
         }
@@ -1630,7 +1624,7 @@ export type Database = {
         Args: {
           p_grade_condition_id: string
           p_grading_company: string
-          p_item_kind: Database["public"]["Enums"]["item_kind"]
+          p_item_kind: Database['public']['Enums']['item_kind']
           p_ref_id: string
         }
         Returns: number
@@ -1640,7 +1634,7 @@ export type Database = {
           p_collection_id: string
           p_condition?: string
           p_grade?: string
-          p_item_kind: Database["public"]["Enums"]["item_kind"]
+          p_item_kind: Database['public']['Enums']['item_kind']
           p_quantity?: number
           p_ref_id: string
           p_user?: string
@@ -1681,7 +1675,7 @@ export type Database = {
           grades_prices: Json
           grading_company: string
           id: string
-          item_kind: Database["public"]["Enums"]["item_kind"]
+          item_kind: Database['public']['Enums']['item_kind']
           last_updated: string
           latest_price: number
           name: string
@@ -1698,7 +1692,7 @@ export type Database = {
       collection_items_by_ref: {
         Args: {
           p_collection_id: string
-          p_item_kind?: Database["public"]["Enums"]["item_kind"]
+          p_item_kind?: Database['public']['Enums']['item_kind']
           p_ref_id: string
         }
         Returns: {
@@ -1708,7 +1702,7 @@ export type Database = {
           grade_condition_id: string | null
           grading_company: string | null
           id: string
-          item_kind: Database["public"]["Enums"]["item_kind"]
+          item_kind: Database['public']['Enums']['item_kind']
           position: number
           quantity: number
           ref_id: string
@@ -1717,8 +1711,8 @@ export type Database = {
           variants: string[] | null
         }[]
         SetofOptions: {
-          from: "*"
-          to: "collection_items"
+          from: '*'
+          to: 'collection_items'
           isOneToOne: false
           isSetofReturn: true
         }
@@ -1835,7 +1829,7 @@ export type Database = {
         }[]
       }
       show_limit: { Args: never; Returns: number }
-      show_trgm: { Args: { "": string }; Returns: string[] }
+      show_trgm: { Args: { '': string }; Returns: string[] }
       suggest_tags: {
         Args: {
           category_ids?: string[]
@@ -1882,7 +1876,7 @@ export type Database = {
               p_ctx?: Json
               p_source?: string
               p_target_id: string
-              p_target_type: Database["public"]["Enums"]["view_target"]
+              p_target_type: Database['public']['Enums']['view_target']
             }
             Returns: undefined
           }
@@ -1935,8 +1929,8 @@ export type Database = {
       wishlist_total: { Args: never; Returns: number }
     }
     Enums: {
-      item_kind: "card"
-      view_target: "card" | "listing"
+      item_kind: 'card'
+      view_target: 'card' | 'listing'
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1944,33 +1938,31 @@ export type Database = {
   }
 }
 
-type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
+type DatabaseWithoutInternals = Omit<Database, '__InternalSupabase'>
 
-type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
+type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, 'public'>]
 
 export type Tables<
   DefaultSchemaTableNameOrOptions extends
-    | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
+    | keyof (DefaultSchema['Tables'] & DefaultSchema['Views'])
     | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
+    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables'] &
+        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Views'])
     : never = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
-  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
+  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables'] &
+      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Views'])[TableName] extends {
       Row: infer R
     }
     ? R
     : never
-  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] &
-        DefaultSchema["Views"])
-    ? (DefaultSchema["Tables"] &
-        DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
+  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema['Tables'] & DefaultSchema['Views'])
+    ? (DefaultSchema['Tables'] & DefaultSchema['Views'])[DefaultSchemaTableNameOrOptions] extends {
         Row: infer R
       }
       ? R
@@ -1979,23 +1971,23 @@ export type Tables<
 
 export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
-    | keyof DefaultSchema["Tables"]
+    | keyof DefaultSchema['Tables']
     | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables']
     : never = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
-  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables'][TableName] extends {
       Insert: infer I
     }
     ? I
     : never
-  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
-    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema['Tables']
+    ? DefaultSchema['Tables'][DefaultSchemaTableNameOrOptions] extends {
         Insert: infer I
       }
       ? I
@@ -2004,23 +1996,23 @@ export type TablesInsert<
 
 export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
-    | keyof DefaultSchema["Tables"]
+    | keyof DefaultSchema['Tables']
     | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables']
     : never = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
-  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables'][TableName] extends {
       Update: infer U
     }
     ? U
     : never
-  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
-    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema['Tables']
+    ? DefaultSchema['Tables'][DefaultSchemaTableNameOrOptions] extends {
         Update: infer U
       }
       ? U
@@ -2029,43 +2021,43 @@ export type TablesUpdate<
 
 export type Enums<
   DefaultSchemaEnumNameOrOptions extends
-    | keyof DefaultSchema["Enums"]
+    | keyof DefaultSchema['Enums']
     | { schema: keyof DatabaseWithoutInternals },
   EnumName extends DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
+    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions['schema']]['Enums']
     : never = never,
 > = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
-  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
-  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
-    ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
+  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions['schema']]['Enums'][EnumName]
+  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema['Enums']
+    ? DefaultSchema['Enums'][DefaultSchemaEnumNameOrOptions]
     : never
 
 export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
-    | keyof DefaultSchema["CompositeTypes"]
+    | keyof DefaultSchema['CompositeTypes']
     | { schema: keyof DatabaseWithoutInternals },
   CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
+    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions['schema']]['CompositeTypes']
     : never = never,
 > = PublicCompositeTypeNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
-  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
-  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
-    ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
+  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions['schema']]['CompositeTypes'][CompositeTypeName]
+  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema['CompositeTypes']
+    ? DefaultSchema['CompositeTypes'][PublicCompositeTypeNameOrOptions]
     : never
 
 export const Constants = {
   public: {
     Enums: {
-      item_kind: ["card"],
-      view_target: ["card", "listing"],
+      item_kind: ['card'],
+      view_target: ['card', 'listing'],
     },
   },
 } as const

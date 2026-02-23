@@ -108,8 +108,8 @@ function DropdownMenuContent({
                 overlayStyle as typeof StyleSheet.absoluteFill,
               ])
             : Platform.OS !== 'web'
-            ? StyleSheet.absoluteFill
-            : undefined
+              ? StyleSheet.absoluteFill
+              : undefined
         }
         className={overlayClassName}
       >

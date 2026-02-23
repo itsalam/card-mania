@@ -1,24 +1,24 @@
 // lib/cardSearch.types.ts
-import { Card } from "@/constants/types";
-import { QueryKey } from "@tanstack/react-query";
-import { z } from "zod";
+import { Card } from '@/constants/types'
+import { QueryKey } from '@tanstack/react-query'
+import { z } from 'zod'
 
 export const CardRequest = z.object({
   card_id: z.string(),
   card_hints: Card.optional(),
   populate: z.boolean().optional(),
-});
+})
 
 export const CardResponse = z.object({
   data: Card.optional(),
   message: z.string().optional(),
   error: z.string().optional(),
-});
+})
 
-export type TCardReq = z.infer<typeof CardRequest>;
-export type TCardRes = z.infer<typeof CardResponse>;
+export type TCardReq = z.infer<typeof CardRequest>
+export type TCardRes = z.infer<typeof CardResponse>
 
 export type ViewParams = {
-  key: QueryKey;
-  pageSize?: number;
-};
+  key: QueryKey
+  pageSize?: number
+}

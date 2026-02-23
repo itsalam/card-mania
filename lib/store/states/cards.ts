@@ -7,7 +7,7 @@ type FetchState<T> = {
   error?: string
   loading: boolean
   prefetchData?: Partial<T>
-  updatedAt?: number;  
+  updatedAt?: number
 }
 
 export type CardStoreState = {
@@ -23,8 +23,7 @@ export type CardStorePersist = Pick<CardStoreState, 'cards'>
 
 export type CardPersistStorageFactory = () => PersistStorage<CardStorePersist> | undefined
 
-export const makeCardStore = (createStorage: CardPersistStorageFactory | undefined) =>{
-
+export const makeCardStore = (createStorage: CardPersistStorageFactory | undefined) => {
   return create<CardStoreState>()(
     devtools(
       persist(
@@ -43,7 +42,7 @@ export const makeCardStore = (createStorage: CardPersistStorageFactory | undefin
                   updatedAt: Date.now(),
                 },
               },
-            }));
+            }))
           },
 
           setPrefetchData: (id, data) => {
@@ -65,11 +64,12 @@ export const makeCardStore = (createStorage: CardPersistStorageFactory | undefin
           name: 'cardmania-store',
           storage: createStorage?.(),
           onRehydrateStorage: () => (state, error) => {
-            state?._setHydrated(true);
+            state?._setHydrated(true)
             // Called before/after hydration; good place to fix migrations
           },
-          partialize: ({ isHydrated, cards }) => ({isHydrated, cards}), // don’t persist large caches
+          partialize: ({ isHydrated, cards }) => ({ isHydrated, cards }), // don’t persist large caches
         }
       )
     )
-  ) }
+  )
+}

@@ -86,15 +86,15 @@ export const Footer = ({ card }: { card?: TCard }) => {
                 page === undefined
                   ? FadeIn
                   : page > (prevPage.current ?? -Infinity)
-                  ? FadeInRight.delay(75)
-                  : FadeInLeft.delay(75)
+                    ? FadeInRight.delay(75)
+                    : FadeInLeft.delay(75)
               }
               exiting={
                 page === undefined
                   ? FadeOut
                   : page > (prevPage.current ?? -Infinity)
-                  ? FadeOutLeft
-                  : FadeOutRight
+                    ? FadeOutLeft
+                    : FadeOutRight
               }
             >
               <AppStandaloneHeader

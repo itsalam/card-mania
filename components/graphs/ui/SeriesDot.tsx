@@ -21,8 +21,8 @@ export function SeriesDot({
     const to = isActive
       ? posY.value
       : Number.isFinite(restY as number)
-      ? (restY as number)
-      : posY.value
+        ? (restY as number)
+        : posY.value
     return withTiming(to, { duration: 10 })
   }, [isActive, restY])
 

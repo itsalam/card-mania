@@ -110,7 +110,7 @@ export const ScreenHeader = () => {
         >
           {!expanded
             ? 'Collections'
-            : collection?.name ?? title[currentPage as DefaultPageTypes] ?? 'Collections'}
+            : (collection?.name ?? title[currentPage as DefaultPageTypes] ?? 'Collections')}
         </Text>
       </MView>
 

@@ -1,9 +1,5 @@
-
-import MarketplaceScreen from '@/features/marketplace';
+import MarketplaceScreen from '@/features/marketplace'
 
 export default function MarketplacePage() {
-  return (
-    <MarketplaceScreen/>
-  );
+  return <MarketplaceScreen />
 }
-
