@@ -78,7 +78,7 @@ export function FolderTabsContainer({
 }: React.ComponentProps<typeof TabsList>) {
   return (
     <View
-      className={cn('border-t z-tab', className)}
+      className={cn('z-tab', className)}
       style={[
         {
           borderColor: Colors.$outlineNeutral,

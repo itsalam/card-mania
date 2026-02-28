@@ -12,6 +12,7 @@ import Constants from 'expo-constants'
 import { useNavigationContainerRef } from 'expo-router'
 import React from 'react'
 import { Platform } from 'react-native'
+import 'react-native-get-random-values'
 import { configureReanimatedLogger, ReanimatedLogLevel } from 'react-native-reanimated'
 import Providers from './_providers'
 require('react-native-ui-lib/config').setConfig({ appScheme: 'default' })

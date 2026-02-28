@@ -170,7 +170,7 @@ export const useEditCollection = (collectionId?: string) => {
 }
 
 const mutateCollectionItemFn =
-  (itemData: Partial<CollectionItem>) =>
+  (itemData: CollectionItem) =>
   async (args: { delete?: boolean; item: EditCollectionArgsItem }) => {
     const { delete: deleteRecord, item } = args
     const user = await requireUser()
@@ -189,25 +189,15 @@ const mutateCollectionItemFn =
       if (error) throw error
       return data as CollectionItem
     }
-    if (!fullArgs.id) {
+    const { id, collection_id } = fullArgs
+    if (id && collection_id) {
       const { data, error } = await getSupabase()
         .from('collection_items')
-        .upsert(fullArgs)
+        .upsert({ ...fullArgs, id, collection_id })
         .select()
         .single()
       if (error) throw error
       return data as CollectionItem
-    } else {
-      {
-        const { data, error } = await getSupabase()
-          .from('collection_items')
-          .update(fullArgs)
-          .eq('id', fullArgs.id)
-          .select()
-          .single()
-        if (error) throw error
-        return data as CollectionItem
-      }
     }
   }
 
@@ -236,7 +226,7 @@ export const useEditCollectionItem = (collectionId?: string, cardId?: string, it
       user_id: user?.id,
       ...baseItem,
       id,
-    }),
+    } as CollectionItem),
     onMutate: async (vars) => {
       const { delete: deleteItem, item } = vars
       await qc.cancelQueries({ queryKey })

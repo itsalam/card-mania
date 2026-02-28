@@ -7,6 +7,7 @@ function Separator({
   className,
   orientation = 'horizontal',
   decorative = true,
+  style,
   ...props
 }: SeparatorPrimitive.RootProps & {
   ref?: React.RefObject<SeparatorPrimitive.RootRef>
@@ -20,7 +21,7 @@ function Separator({
         orientation === 'horizontal' ? 'h-[1px] w-full' : 'h-full w-[1px]',
         className
       )}
-      style={{ backgroundColor: Colors.$outlineNeutral }}
+      style={[{ backgroundColor: Colors.$outlineNeutral }, style]}
       {...props}
     />
   )

@@ -1,6 +1,6 @@
 import { Avatar, AvatarFallback, AvatarFallbackText, AvatarImage } from '@/components/ui/avatar'
 import { Text } from '@/components/ui/text'
-import React, { ComponentProps, useMemo, useState } from 'react'
+import React, { ComponentProps, ReactNode, useMemo, useState } from 'react'
 import { View } from 'react-native'
 import Animated, { FadeOut } from 'react-native-reanimated'
 import { Colors } from 'react-native-ui-lib'
@@ -8,9 +8,12 @@ import { UserDisplayInfo } from '../types'
 
 const AnimAvatarFallback = Animated.createAnimatedComponent(AvatarFallback)
 
-type UserContactProps = { user: UserDisplayInfo } & Pick<ComponentProps<typeof Avatar>, 'size'>
+type UserContactProps = { user: UserDisplayInfo; children?: ReactNode } & Pick<
+  ComponentProps<typeof Avatar>,
+  'size'
+>
 
-export const UserContact = ({ user, size = 'md' }: UserContactProps) => {
+export const UserContact = ({ user, size = 'md', children }: UserContactProps) => {
   const sizeToTextVar: Record<
     Exclude<typeof size, null>,
     ComponentProps<typeof Text>['variant']
@@ -51,6 +54,7 @@ export const UserContact = ({ user, size = 'md' }: UserContactProps) => {
         <Text variant={'large'} style={{ left: -2 }}>
           {user.handle}
         </Text>
+        {children}
       </View>
     </View>
   )

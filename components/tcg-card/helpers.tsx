@@ -67,13 +67,14 @@ export function measureInWindowAsync(
   })
 }
 
-export function useNavigateToItem(kind: ItemKinds, item: { id: string }) {
+export function useNavigateToItem(kind: ItemKinds, item?: { id: string }) {
   const itemElement = useRef<View>(null)
   const { setPrefetchData } = useStores().cardStore.getInitialState()
   const mutation = useTouchRecentView()
   const pathname = usePathname()
 
   const handlePress = () => {
+    if (!item) return
     const positionPromise = measureInWindowAsync(itemElement as unknown as React.RefObject<View>)
     setPrefetchData(item.id, item)
     positionPromise.then((position) => {

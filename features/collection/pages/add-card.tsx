@@ -19,7 +19,7 @@ export default function AddCardToCollection({ collectionId }: { collectionId: st
   return (
     <SearchScreen
       itemAccessories={(props) => (
-        <AddCardToCollectionAccessories collection={collection!} {...props} />
+        <AddCardToCollectionAccessories collection={collection} {...props} />
       )}
       hide={() => {
         router.back()

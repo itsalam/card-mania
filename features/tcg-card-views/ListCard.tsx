@@ -8,7 +8,7 @@ import { ItemKinds, TCard } from '@/constants/types'
 import { CollectionItemQueryView } from '@/lib/store/functions/types'
 import { cn } from '@/lib/utils/cn'
 import { ReactNode } from 'react'
-import { Pressable, StyleProp, StyleSheet, View, ViewStyle } from 'react-native'
+import { StyleProp, StyleSheet, View, ViewStyle } from 'react-native'
 import { Assets, Button, Colors } from 'react-native-ui-lib'
 import { THUMBNAIL_HEIGHT, THUMBNAIL_WIDTH } from '../../components/tcg-card/consts'
 import { LiquidGlassCard } from '../../components/tcg-card/GlassCard'
@@ -16,7 +16,7 @@ import { getDefaultPrice, useNavigateToItem } from '../../components/tcg-card/he
 import { LoadingImagePlaceholder } from '../../components/tcg-card/placeholders'
 
 type ItemListingProps = {
-  item: { id: string }
+  item?: { id: string }
   kind?: ItemKinds
   displayData: {
     title: string
@@ -83,10 +83,11 @@ const DefaultAccessories = ({ kind, item, displayData }: ItemListViewProps) => {
         <Button
           outline={!isWishlisted}
           onPress={() => {
-            toggleWishList.mutate({
-              kind: kind ?? 'card',
-              id: item.id,
-            })
+            item &&
+              toggleWishList.mutate({
+                kind: kind ?? 'card',
+                id: item.id,
+              })
           }}
           iconStyle={styles.buttonIcon}
           style={styles.button}
@@ -128,27 +129,29 @@ const getPriceFix = (card: Partial<CollectionItemQueryView> & TCard) => {
 export function CardListView({
   card,
   ...props
-}: { card: TCard & Partial<CollectionItemQueryView> } & Omit<
+}: { card?: TCard & Partial<CollectionItemQueryView> } & Omit<
   ItemListViewProps,
   'item' | 'displayData'
 >) {
-  const displayPriceFix = props.isLoading ? null : getPriceFix(card)
-  const [, displayPrice] = props.isLoading ? [null, null] : getDefaultPrice(card)
-  const displayData = props.isLoading
-    ? null
-    : {
-        title: card.name,
-        subHeading: card.set_name,
-        imageProxyArgs: {
-          variant: 'tiny',
-          shape: 'card',
-          cardId: card?.id ?? undefined,
-          imageType: 'front',
-          queryHash: card?.image?.query_hash ?? undefined,
-        } as ImageProxyOpts,
-        displayPrice: displayPriceFix ?? displayPrice,
-        metadata: card.price_key,
-      }
+  const isIncomplete = Boolean(card) && props.isLoading
+  const displayPriceFix = card === undefined ? null : getPriceFix(card)
+  const [, displayPrice] = isIncomplete ? [null, null] : getDefaultPrice(card)
+  const displayData =
+    card === undefined && isIncomplete
+      ? null
+      : {
+          title: card?.name,
+          subHeading: card?.set_name,
+          imageProxyArgs: {
+            variant: 'tiny',
+            shape: 'card',
+            cardId: card?.id ?? undefined,
+            imageType: 'front',
+            queryHash: card?.image?.query_hash ?? undefined,
+          } as ImageProxyOpts,
+          displayPrice: displayPriceFix ?? displayPrice,
+          metadata: card?.price_key,
+        }
   //@ts-ignore
   return <ItemListView item={card} displayData={displayData} {...props} />
 }
@@ -175,38 +178,37 @@ export function ItemListView({ renderAccessories, ...props }: ItemListViewProps)
   const { cardElement, handlePress } = useNavigateToItem(kind, item)
 
   return (
-    <Pressable onPress={() => navigateOnPress && handlePress()}>
-      <View
-        className={cn('flex items-start w-full', vertical ? '' : 'flex-row', className)}
-        style={style}
-      >
-        <View style={cardContainerStyle}>
-          <LiquidGlassCard
-            onPress={() => handlePress()}
-            ref={cardElement}
-            variant="primary"
-            className="p-0 aspect-[5/7] flex items-center justify-center overflow-hidden"
-            style={{ width: THUMBNAIL_WIDTH, aspectRatio: CARD_ASPECT_RATIO }}
-          >
-            <LoadingImagePlaceholder
-              source={{
-                uri: thumbnailImg,
-                cacheKey: `${item?.id}-thumb`,
-                width: THUMBNAIL_WIDTH,
-                height: THUMBNAIL_HEIGHT,
-              }}
-              isLoading={isLoading || isImageLoading}
-            />
-          </LiquidGlassCard>
-        </View>
-
-        {expanded && !Boolean(vertical) ? (
-          <HorizontalAccessory renderAccessories={renderAccessories} {...props} />
-        ) : (
-          renderAccessories?.(props)
-        )}
+    // <Pressable {...(navigateOnPress ? { onPress: () => handlePress() } : {})}>
+    <View
+      className={cn('flex items-start w-full', vertical ? '' : 'flex-row', className)}
+      style={style}
+    >
+      <View style={cardContainerStyle}>
+        <LiquidGlassCard
+          onPress={() => handlePress()}
+          ref={cardElement}
+          variant="primary"
+          className="p-0 aspect-[5/7] flex items-center justify-center overflow-hidden"
+          style={{ width: THUMBNAIL_WIDTH, aspectRatio: CARD_ASPECT_RATIO }}
+        >
+          <LoadingImagePlaceholder
+            source={{
+              uri: thumbnailImg,
+              cacheKey: `${item?.id}-thumb`,
+              width: THUMBNAIL_WIDTH,
+              height: THUMBNAIL_HEIGHT,
+            }}
+            isLoading={isLoading || isImageLoading}
+          />
+        </LiquidGlassCard>
       </View>
-    </Pressable>
+
+      {expanded && !Boolean(vertical) ? (
+        <HorizontalAccessory renderAccessories={renderAccessories} {...props} />
+      ) : (
+        renderAccessories?.(props)
+      )}
+    </View>
   )
 }
 

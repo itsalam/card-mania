@@ -27,7 +27,9 @@ import {
 import { Text } from '@/components/ui/text'
 import { qk } from '@/lib/store/functions/helpers'
 import { useQueryClient } from '@tanstack/react-query'
+import Animated, { LinearTransition } from 'react-native-reanimated'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { v4 as uuidv4 } from 'uuid'
 // import { Label } from '@react-navigation/elements'
 
 export const CollectionCardItemEntries = ({
@@ -51,30 +53,21 @@ export const CollectionCardItemEntries = ({
     refetch,
   } = useViewCollectionItemsForCard(collection?.id, card?.id, isShown)
 
-  const [newEntries, setNewEntries] = useState<Partial<CollectionItemRow>[]>(
-    loadedEntries.length ? loadedEntries : [{}]
-  )
-
   const [showModal, setShowModal] = useState(false)
   const handleDismiss = useCallback(() => {
     setShowModal(false)
   }, [refetch])
 
-  useEffect(() => {
-    if (isLoadingOuter) {
-      setNewEntries([{}])
-    } else {
-      setNewEntries(loadedEntries)
-    }
-  }, [isLoadingOuter])
-
-  useEffect(() => {
+  const sortedEntries = useMemo(() => {
     const hasUngradedItems = loadedEntries.some(
       (e) => e.grading_company === null && e.quantity >= 1
     )
     const baseEntries = hasUngradedItems
       ? loadedEntries
-      : [{ grading_company: null, quantity: 0, grade_condition_id: null }, ...loadedEntries]
+      : [
+          { grading_company: null, quantity: 0, grade_condition_id: null, id: undefined },
+          ...loadedEntries,
+        ]
 
     const sortedEntries = [...baseEntries].sort((a, b) => {
       //@ts-ignore
@@ -110,26 +103,40 @@ export const CollectionCardItemEntries = ({
       const bCreatedBy = b.updated_at ?? ''
       return aCreatedBy.localeCompare(bCreatedBy)
     })
-    setNewEntries(sortedEntries)
+    return sortedEntries
   }, [loadedEntries])
 
   return (
-    <View style={[style, { paddingRight: editable ? 0 : 12 }]}>
+    <View
+      style={[
+        style,
+        {
+          paddingRight: editable ? 0 : 12,
+          display: 'flex',
+          flexDirection: 'column',
+          alignSelf: 'stretch',
+        },
+      ]}
+    >
       {isLoading || card === null ? (
         <Spinner />
       ) : (
-        newEntries.map((entry, index) => {
-          return (
+        <Animated.FlatList
+          style={{ width: '100%' }}
+          contentContainerStyle={{ width: '100%' }}
+          data={sortedEntries}
+          renderItem={({ item: entry, index }) => (
             <CollectionItemEntry
               card={card}
-              key={entry.id ?? entry.grade_condition?.label ?? `${index}-new`}
+              key={entry.id ?? entry.grade_condition_id ?? `${index}-new`}
               collectionItem={entry}
               collection={collection}
               editable={editable}
               isLoading={isLoadingOuter}
             />
-          )
-        })
+          )}
+          itemLayoutAnimation={LinearTransition}
+        />
       )}
 
       <Button
@@ -157,7 +164,7 @@ export const CollectionCardItemEntries = ({
       </Button>
       {collection && (
         <AddVariantModal
-          entries={newEntries}
+          entries={sortedEntries}
           collection={collection}
           item={card}
           visible={showModal}
@@ -191,7 +198,7 @@ const AddVariantModal = ({
 
   const initialDraft = useMemo<EditCollectionArgsItem>(() => {
     return {
-      ref_id: item?.id!,
+      ref_id: item?.id,
       quantity: 0,
       grading_company: null,
       grade_condition_id: null,
@@ -429,7 +436,7 @@ const AddVariantModal = ({
                       )
                   )
                   if (exists) return current
-                  return [...current, { id: `temp-${draft.grade_condition_id}`, ...draft }]
+                  return [...current, { id: uuidv4(), ...draft }]
                 })
               }
               setSaving(false)

@@ -32,12 +32,12 @@ export const Card = z.object({
   id: z.string(),
   name: z.string(),
   set_name: z.string().optional(),
-  latest_price: z.number().nullable(),
+  latest_price: z.number().optional(),
 
   image: z
     .object({
       kind: z.enum(['bound', 'candidate']),
-      url: z.string().nullable(),
+      url: z.string().optional(),
       query_hash: z.string().optional(),
     })
     .optional(),

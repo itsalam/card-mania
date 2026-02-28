@@ -36,7 +36,7 @@ import {
 } from 'lucide-react-native'
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { View } from 'react-native'
-import Animated from 'react-native-reanimated'
+import Animated, { FadeOutRight } from 'react-native-reanimated'
 import { Button, Colors, TouchableOpacity, Typography } from 'react-native-ui-lib'
 
 const ATag = Animated.createAnimatedComponent(Tag)
@@ -100,6 +100,7 @@ export const CollectionItemEntry = ({
 }) => {
   const { data: gradeData, error } = useGradingConditions()
   const [priceModalVisible, setPriceModalVisible] = useState(false)
+  const [hide, setHide] = useState(false)
 
   const mutate = useEditCollectionItem(
     collectionItem?.collection_id || collection?.id,
@@ -150,7 +151,6 @@ export const CollectionItemEntry = ({
   const mutateEntry = useCallback(
     (draft: EditCollectionArgsItem, patch: Partial<EditCollectionArgsItem>) => {
       if (isEqualToInitial(draft)) return // don’t re-save same data
-
       mutate.mutate(
         { item: { ...draft, ...patch } },
         {
@@ -160,6 +160,7 @@ export const CollectionItemEntry = ({
           },
           onError: (...e) => {
             console.error({ e })
+            setHide(false)
             setDraft(draft)
           },
         }
@@ -172,6 +173,7 @@ export const CollectionItemEntry = ({
     (draft: EditCollectionArgsItem) => {
       mutate.mutate({ item: { ...draft, quantity: 0 } })
 
+      setHide(true)
       onDelete?.()
     },
     [mutate]
@@ -192,9 +194,10 @@ export const CollectionItemEntry = ({
   const scheme = useEffectiveColorScheme() // 'light' | 'dark' | null
   //TODO: Implement modal overriwte/selling options
 
-  return (
-    <View
-      key={scheme}
+  return !hide ? (
+    <Animated.View
+      exiting={FadeOutRight}
+      key={scheme + (!hide ? 'show' : '')}
       style={{
         position: 'relative',
         width: '100%',
@@ -271,7 +274,7 @@ export const CollectionItemEntry = ({
               disabled={isLoading}
               style={{ opacity: isLoading ? 0.4 : 1 }}
             >
-              <XCircle />
+              <XCircle color={Colors.$iconDefault} />
             </TouchableOpacity>
             {editable && (
               <TouchableOpacity
@@ -279,7 +282,7 @@ export const CollectionItemEntry = ({
                 disabled={isLoading}
                 style={{ opacity: isLoading ? 0.4 : 1 }}
               >
-                <EllipsisVertical />
+                <EllipsisVertical color={Colors.$iconDefault} />
               </TouchableOpacity>
             )}
           </View>
@@ -455,6 +458,6 @@ export const CollectionItemEntry = ({
           </View>
         </View>
       </Modal>
-    </View>
-  )
+    </Animated.View>
+  ) : null
 }

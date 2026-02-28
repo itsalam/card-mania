@@ -10,9 +10,10 @@ import { Tabs } from '@/components/ui/tabs'
 import { Text } from '@/components/ui/text'
 import { CollectionCardItemEntries } from '@/features/tcg-card-views/DetailCardView/footer/pages/add-to-collections/components'
 import { CardListView } from '@/features/tcg-card-views/ListCard'
+import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs'
 import { X } from 'lucide-react-native'
-import React, { useCallback, useEffect, useMemo, useRef } from 'react'
-import { SafeAreaView, View } from 'react-native'
+import React, { useCallback, useMemo, useRef } from 'react'
+import { View } from 'react-native'
 import { FlatList, GestureDetector } from 'react-native-gesture-handler'
 import Animated, {
   FadeInLeft,
@@ -20,6 +21,7 @@ import Animated, {
   FadeOutLeft,
   FadeOutRight,
 } from 'react-native-reanimated'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Colors } from 'react-native-ui-lib'
 import { shallow } from 'zustand/shallow'
 import { useGetCollection, useGetCollectionItems } from '../hooks'
@@ -30,10 +32,6 @@ import CollectionBreakdown from './CollectionBreakdown'
 import { CollectionInfo } from './CollectionInfo'
 import { ScreenHeader } from './Header'
 import { CollectionTabList } from './TabList'
-
-type CollectionListItem =
-  | { kind: 'collection'; collection: CollectionRow }
-  | { kind: 'item'; item: CollectionItemQueryView & TCard }
 
 export function WishlistDebug({ ids }: { ids: string[] }) {
   const { data, isFetching, fetchStatus, ...rest } = useIsWishlisted('card', ids)
@@ -47,39 +45,14 @@ export function WishlistDebug({ ids }: { ids: string[] }) {
   )
 }
 
-const HeaderSection = () => {
-  const { currentPage, showEditView } = useCollectionsPageStore()
-  return currentPage === 'default' && !showEditView ? (
-    <CollectionBreakdown
-      style={{
-        paddingTop: 12,
-        marginBottom: 40,
-        marginHorizontal: 12,
-      }}
-    />
-  ) : (
-    <CollectionInfo />
-  )
-}
-
 const AnimatedFlatList = Animated.createAnimatedComponent(FlatList<CollectionListItem>)
 
 export const CollectionsPageLayout = () => {
-  const {
-    currentPage,
-    setCurrentPage,
-    preferenceState,
-    setIsExpanded,
-    setShowEditView,
-    showEditView,
-  } = useCollectionsPageStore()
-  const isDefaultPage = currentPage === 'default'
+  const insets = useSafeAreaInsets()
+  const tabBarHeight = useBottomTabBarHeight()
+  const { currentPage, setCurrentPage, preferenceState, setShowEditView, showEditView } =
+    useCollectionsPageStore()
 
-  const {
-    data: collections,
-    error,
-    isLoading: isLoadingCollections,
-  } = useViewCollectionForUser(true)
   const orderedPages = useMemo(() => {
     const customTabs = preferenceState.preferences.tabs ?? []
     const merged = [...defaultPages]
@@ -101,111 +74,8 @@ export const CollectionsPageLayout = () => {
     return 'forward'
   }, [currentPage, orderedPages])
 
-  const { data: collection } = useGetCollection(getCollectionIdArgs(currentPage))
-  const { query: collectionItemsQuery } = useGetCollectionItems<CollectionItemQueryView & TCard>(
-    getCollectionIdArgs(currentPage),
-    { enabled: !isDefaultPage, pageSize: 20 },
-    true
-  )
-
-  const { isLoading: isLoadingItems } = collectionItemsQuery
-
-  const collectionItems = useMemo(() => {
-    return collectionItemsQuery.data?.pages.flat() ?? []
-  }, [collectionItemsQuery.data])
-
-  const {
-    tabsExpanded,
-    headerAnimatedStyle,
-    composedGestures,
-    scrollViewRef,
-    onListLayout,
-    onContentSizeChange,
-    onHeaderLayout,
-  } = useCollaspableHeader(collectionItems.length > 0, [currentPage, collection?.id])
-
-  useEffect(() => setIsExpanded(tabsExpanded), [tabsExpanded])
-
-  const listData = useMemo<CollectionListItem[]>(() => {
-    if (isDefaultPage) {
-      if (isLoadingCollections) return Array(7).fill({ kind: 'collection' })
-      return (collections ?? []).map((collection) => ({
-        kind: 'collection',
-        collection,
-      }))
-    }
-
-    if (isLoadingItems) {
-      return Array(4).fill({ kind: 'item' })
-    }
-
-    return collectionItems.map((item) => ({
-      kind: 'item',
-      item,
-    }))
-  }, [isDefaultPage, collections, collectionItems, isLoadingCollections, isLoadingItems])
-
-  const renderItem = useCallback(
-    ({ item }: { item: CollectionListItem }) => {
-      if (item.kind === 'collection') {
-        return (
-          <CollectionListView
-            collection={item.collection}
-            onPress={() => {
-              const collection = item.collection
-              const isDefaultPage =
-                collection?.is_selling || collection?.is_vault || collection?.is_wishlist
-              const defaultValues = Object.entries(preferenceState.preferences.defaultIds)
-              const defaultPage = defaultValues.find(([key, id]) => id && id === item.collection.id)
-
-              if (!isDefaultPage) {
-                preferenceState.updatePreferences({
-                  tabs: Array.from(
-                    new Set([...(preferenceState.preferences.tabs ?? []), item.collection.id])
-                  ),
-                })
-              }
-              setCurrentPage(defaultPage?.[0] ?? item.collection.id)
-            }}
-            isLoading={isLoadingCollections}
-          />
-        )
-      }
-      return (
-        <CardListView
-          card={item.item}
-          renderAccessories={({ isLoading }) => (
-            <CollectionCardItemEntries
-              isLoading={isLoading}
-              card={item.item}
-              //@ts-ignore
-              collection={collection!}
-              isShown
-              editable
-            />
-          )}
-          isLoading={isLoadingItems}
-        />
-      )
-    },
-    [
-      isDefaultPage,
-      preferenceState,
-      setCurrentPage,
-      isLoadingCollections,
-      isLoadingItems,
-      isLoadingItems,
-    ]
-  )
-
-  const keyExtractor = useCallback((item: CollectionListItem, index: number) => {
-    if (item?.kind === 'collection')
-      return `collection-${item.collection?.id ?? `skeleton-${index}`}`
-    return `item-${item.item?.collection_item_id ?? item.item?.id ?? `skeleton-${index}`}`
-  }, [])
-
   return (
-    <SafeAreaView className="flex-1 w-full overflow-hidden h-full">
+    <View style={{ paddingTop: insets.top }} className="flex-1 w-full overflow-hidden">
       <Tabs
         style={{ flex: 1, display: 'flex', height: '100%' }}
         value={currentPage}
@@ -215,51 +85,10 @@ export const CollectionsPageLayout = () => {
 
         <CollectionTabList />
 
-        {!showEditView ? (
-          <>
-            <Animated.View
-              key={`header-${currentPage}`}
-              style={[headerAnimatedStyle, { overflow: 'hidden' }]}
-            >
-              <View onLayout={onHeaderLayout}>
-                <HeaderSection />
-              </View>
-            </Animated.View>
-            <Animated.View
-              key={currentPage}
-              entering={
-                direction === 'forward' ? FadeInRight.duration(200) : FadeInLeft.duration(200)
-              }
-              exiting={
-                direction === 'forward' ? FadeOutLeft.duration(180) : FadeOutRight.duration(180)
-              }
-            >
-              <FolderTabsContainer>
-                <GestureDetector gesture={composedGestures}>
-                  <AnimatedFlatList
-                    initialNumToRender={10}
-                    //@ts-ignore
-                    ref={scrollViewRef}
-                    scrollEnabled={false}
-                    style={{ flex: 1 }}
-                    onLayout={onListLayout}
-                    onContentSizeChange={onContentSizeChange}
-                    bounces={false}
-                    data={listData}
-                    contentContainerStyle={{
-                      display: 'flex',
-                      gap: 18,
-                      paddingLeft: 12,
-                      paddingTop: 18,
-                    }}
-                    ListEmptyComponent={EmptyColelctionList}
-                    keyExtractor={keyExtractor}
-                    renderItem={renderItem}
-                  />
-                </GestureDetector>
-              </FolderTabsContainer>
-            </Animated.View>
-          </>
+        {currentPage === 'default' ? (
+          <DefaultCollectionView direction={direction} />
+        ) : !showEditView ? (
+          <DetailCollectionView direction={direction} />
         ) : currentPage === 'new' ? (
           <NewCollectionView />
         ) : (
@@ -272,7 +101,231 @@ export const CollectionsPageLayout = () => {
           </Animated.View>
         )}
       </Tabs>
-    </SafeAreaView>
+    </View>
+  )
+}
+
+const DefaultCollectionView = ({ direction }: { direction: 'forward' | 'backward' }) => {
+  const { currentPage, setCurrentPage, preferenceState } = useCollectionsPageStore()
+
+  const {
+    headerAnimatedStyle,
+    composedGestures,
+    scrollViewRef,
+    onListLayout,
+    onContentSizeChange,
+    onHeaderLayout,
+  } = useCollaspableHeader()
+
+  const {
+    data: collections,
+    error,
+    isLoading: isLoadingCollections,
+  } = useViewCollectionForUser(true)
+
+  const listData = useMemo<CollectionRow[]>(() => {
+    if (isLoadingCollections) return Array(7).fill({ kind: 'collection' })
+    return collections ?? []
+  }, [collections, isLoadingCollections])
+
+  const renderItem = useCallback(
+    ({ item }: { item: CollectionRow }) => {
+      return (
+        <CollectionListView
+          collection={item}
+          onPress={() => {
+            const isDefaultPage = item?.is_selling || item?.is_vault || item?.is_wishlist
+            const defaultValues = Object.entries(preferenceState.preferences.defaultIds)
+            const defaultPage = defaultValues.find(([key, id]) => id && id === item.id)
+
+            if (!isDefaultPage) {
+              preferenceState.updatePreferences({
+                tabs: Array.from(new Set([...(preferenceState.preferences.tabs ?? []), item.id])),
+              })
+            }
+            setCurrentPage(defaultPage?.[0] ?? item.id)
+          }}
+          isLoading={isLoadingCollections}
+        />
+      )
+    },
+    [preferenceState, setCurrentPage, isLoadingCollections]
+  )
+
+  const keyExtractor = useCallback((item: CollectionRow, index: number) => {
+    return `collection-${item?.id ?? `skeleton-${index}`}`
+  }, [])
+
+  return (
+    <GestureDetector gesture={composedGestures}>
+      <Animated.View
+        key={currentPage}
+        entering={direction === 'forward' ? FadeInRight.duration(200) : FadeInLeft.duration(200)}
+        exiting={direction === 'forward' ? FadeOutLeft.duration(180) : FadeOutRight.duration(180)}
+      >
+        <Animated.View
+          key={`header-${currentPage}`}
+          style={[headerAnimatedStyle, { overflow: 'hidden' }]}
+        >
+          <View onLayout={onHeaderLayout}>
+            <CollectionBreakdown
+              style={{
+                paddingTop: 12,
+                marginBottom: 40,
+                marginHorizontal: 12,
+              }}
+            />
+          </View>
+        </Animated.View>
+        <Animated.View>
+          <FolderTabsContainer>
+            <AnimatedFlatList
+              initialNumToRender={10}
+              //@ts-ignore
+              ref={scrollViewRef}
+              onLayout={onListLayout}
+              onContentSizeChange={onContentSizeChange}
+              scrollEnabled={false}
+              style={{ flex: 1 }}
+              bounces={false}
+              data={listData}
+              contentContainerStyle={{
+                display: 'flex',
+                gap: 18,
+                paddingLeft: 12,
+                paddingTop: 18,
+              }}
+              ListEmptyComponent={EmptyColelctionList}
+              keyExtractor={keyExtractor}
+              renderItem={renderItem}
+            />
+          </FolderTabsContainer>
+        </Animated.View>
+      </Animated.View>
+    </GestureDetector>
+  )
+}
+
+const DetailCollectionView = ({ direction }: { direction: 'forward' | 'backward' }) => {
+  const {
+    currentPage,
+    setCurrentPage,
+    preferenceState,
+    setIsExpanded,
+    setShowEditView,
+    showEditView,
+  } = useCollectionsPageStore()
+
+  const { data: collection } = useGetCollection(getCollectionIdArgs(currentPage))
+  const { query: collectionItemsQuery } = useGetCollectionItems<CollectionItemQueryView & TCard>(
+    getCollectionIdArgs(currentPage),
+    { pageSize: 20 },
+    true
+  )
+  const { isLoading: isLoadingItems } = collectionItemsQuery
+  const collectionItems = useMemo(() => {
+    return collectionItemsQuery.data?.pages.flat() ?? []
+  }, [collectionItemsQuery.data])
+
+  const listData = useMemo<(CollectionItemQueryView & TCard)[]>(() => {
+    if (isLoadingItems) {
+      return Array(4).fill({ kind: 'skeleton' })
+    }
+
+    return collectionItems
+  }, [, , collectionItems, , isLoadingItems])
+
+  const {
+    tabsExpanded,
+    headerAnimatedStyle,
+    composedGestures,
+    scrollViewRef,
+    onListLayout,
+    onContentSizeChange,
+    onHeaderLayout,
+  } = useCollaspableHeader(collectionItems.length > 0, [currentPage, collection?.id])
+
+  const renderItem = useCallback(
+    ({ item }: { item: CollectionItemQueryView & TCard }) => {
+      return (
+        <CardListView
+          card={item}
+          renderAccessories={({ isLoading }) => (
+            <CollectionCardItemEntries
+              isLoading={isLoading}
+              card={item}
+              //@ts-ignore
+              collection={collection!}
+              isShown
+              editable
+            />
+          )}
+          isLoading={isLoadingItems}
+        />
+      )
+    },
+    [preferenceState, setCurrentPage, isLoadingItems]
+  )
+
+  const keyExtractor = useCallback((item: CollectionItemQueryView & TCard, index: number) => {
+    return `item-${item?.collection_item_id ?? item?.id ?? `skeleton-${index}`}`
+  }, [])
+
+  return (
+    <GestureDetector gesture={composedGestures}>
+      <Animated.ScrollView
+        key={currentPage}
+        ref={scrollViewRef}
+        onLayout={onListLayout}
+        onContentSizeChange={onContentSizeChange}
+        entering={direction === 'forward' ? FadeInRight.duration(200) : FadeInLeft.duration(200)}
+        exiting={direction === 'forward' ? FadeOutLeft.duration(180) : FadeOutRight.duration(180)}
+        style={{
+          paddingVertical: 16,
+        }}
+      >
+        <Animated.View
+          key={`header-${currentPage}`}
+          style={[
+            headerAnimatedStyle,
+            {
+              overflowY: 'hidden',
+            },
+          ]}
+        >
+          <View onLayout={onHeaderLayout}>
+            <CollectionInfo />
+          </View>
+        </Animated.View>
+        <Animated.View
+          style={{
+            borderTopWidth: 2,
+            borderColor: Colors.$outlineNeutral,
+          }}
+        >
+          <FolderTabsContainer>
+            <AnimatedFlatList
+              initialNumToRender={10}
+              //@ts-ignore
+
+              scrollEnabled={false}
+              style={{ flex: 1 }}
+              bounces={false}
+              data={listData}
+              contentContainerStyle={{
+                display: 'flex',
+                gap: 18,
+                paddingLeft: 12,
+                paddingTop: 18,
+              }}
+              ListEmptyComponent={EmptyColelctionList}
+              keyExtractor={keyExtractor}
+              renderItem={renderItem}
+            />
+          </FolderTabsContainer>
+        </Animated.View>
+      </Animated.ScrollView>
+    </GestureDetector>
   )
 }
 

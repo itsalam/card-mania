@@ -173,7 +173,7 @@ export const CollectionInfo = () => {
         from={{ flex: 0 }}
         animate={{ flex: 1 }}
         style={{
-          padding: 16,
+          paddingBottom: 16,
           paddingHorizontal: 20,
           display: 'flex',
           gap: 4,
