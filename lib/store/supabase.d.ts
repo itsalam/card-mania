@@ -1689,6 +1689,28 @@ export type Database = {
           variants: string[]
         }[]
       }
+      collection_item_query_grouped: {
+        Args: {
+          p_collection_id: string
+          p_page_param?: string
+          p_page_size?: number
+          p_search?: string
+        }
+        Returns: {
+          items: Json
+          ref_id: string
+          ref_latest_created_at: string
+        }[]
+      }
+      collection_item_query_grouped_slim: {
+        Args: {
+          p_collection_id: string
+          p_page_param?: string
+          p_page_size?: number
+          p_search?: string
+        }
+        Returns: Json
+      }
       collection_items_by_ref: {
         Args: {
           p_collection_id: string

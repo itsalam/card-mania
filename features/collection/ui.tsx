@@ -1,6 +1,7 @@
 import React, {
   createContext,
   PropsWithChildren,
+  useCallback,
   useContext,
   useEffect,
   useMemo,
@@ -8,6 +9,7 @@ import React, {
   useState,
 } from 'react'
 import { Gesture, GestureType } from 'react-native-gesture-handler'
+import { BaseGesture } from 'react-native-gesture-handler/lib/typescript/handlers/gestures/gesture'
 import Animated, {
   clamp,
   interpolate,
@@ -151,20 +153,20 @@ export function useCollaspableHeader(
     []
   )
 
-  const nativeGesture = useMemo(() => Gesture.Native(), [])
+  const nativeGesture = Gesture.Native()
 
   // ✅ Pull blockers (empty if no provider)
   const blockers = useGestureBlockers()
 
   const composedGestures = useMemo(() => {
     let g = panGesture
-
     for (const b of blockers) {
-      g = g.requireExternalGestureToFail(b)
+      // b.blocksExternalGesture(g)
+      // b.blocksExternalGesture(g)
     }
 
+    const blockerGesture = Gesture.Simultaneous(...blockers)
     return Gesture.Simultaneous(nativeGesture, g)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [blockers, nativeGesture, panGesture])
 
   const headerAnimatedStyle = useAnimatedStyle(
@@ -174,7 +176,7 @@ export function useCollaspableHeader(
         measuredHeaderHeight.value > 0
           ? interpolate(expandProgress.value, [0, 1], [measuredHeaderHeight.value, 0])
           : undefined,
-      transform: [{ translateY: interpolate(expandProgress.value, [0, 1], [0, -24]) }],
+      transform: [{ translateY: interpolate(expandProgress.value, [0, 1], [0, -12]) }],
       pointerEvents: expandProgress.value >= 0.99 ? 'none' : ('auto' as any),
     }),
     [measuredHeaderHeight]
@@ -216,29 +218,50 @@ export function useCollaspableHeader(
   }
 }
 
-type AnyGesture = ReturnType<typeof Gesture.Native> | ReturnType<typeof Gesture.Pan> | any
+type AnyGesture = BaseGesture<any>
 
 type BlockerAPI = {
   register: (g: AnyGesture) => () => void
   list: () => AnyGesture[]
+  blockers: AnyGesture[]
 }
 
 const BlockerContext = createContext<BlockerAPI | null>(null)
 
 export function GestureBlockerProvider({ children }: PropsWithChildren) {
-  const setRef = useRef(new Set<AnyGesture>())
+  const [blockers, setBlockers] = useState<AnyGesture[]>([])
 
-  const api = useMemo<BlockerAPI>(
+  const register = useCallback(
+    (g: AnyGesture) => {
+      if (!blockers.includes(g))
+        setBlockers((prev) => {
+          const regIdx = prev.findIndex(
+            (gesture) => gesture.handlers.gestureId === g.handlers.gestureId
+          )
+          if (regIdx >= 0) {
+            console.log('SLICING')
+            prev.splice(regIdx, 1).push(g)
+            return prev // Avoid duplicate registrations
+          }
+          return [...prev, g]
+        })
+
+      return () => {
+        // setBlockers((prev) => prev.filter((item) => item !== g))
+      }
+    },
+    [blockers]
+  )
+
+  // 2. The API object now only changes if 'blockers' changes,
+  // but 'register' itself is now a stable function reference.
+  const api = useMemo(
     () => ({
-      register(g) {
-        setRef.current.add(g)
-        return () => setRef.current.delete(g)
-      },
-      list() {
-        return Array.from(setRef.current)
-      },
+      register,
+      list: () => blockers, // This will always return the current state
+      blockers,
     }),
-    []
+    [register, blockers]
   )
 
   return <BlockerContext.Provider value={api}>{children}</BlockerContext.Provider>
@@ -249,10 +272,10 @@ export function useRegisterGestureBlocker(g: AnyGesture | null) {
   React.useEffect(() => {
     if (!ctx || !g) return
     return ctx.register(g)
-  }, [ctx, g])
+  }, [])
 }
 
 export function useGestureBlockers() {
   const ctx = useContext(BlockerContext)
-  return ctx?.list() ?? []
+  return ctx?.blockers ?? []
 }

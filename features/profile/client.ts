@@ -1,3 +1,4 @@
+import { CollectionLike } from '@/client/collections/types'
 import { getSupabase } from '@/lib/store/client'
 import { qk } from '@/lib/store/functions/helpers'
 import { useQuery } from '@tanstack/react-query'
@@ -11,7 +12,7 @@ export const getUserStoreFront = async (userId?: string) => {
   const { data, error } = await q
 
   if (error) throw error
-  return data
+  return data as CollectionLike[]
 }
 
 export const useUserStorefront = (userId?: string) => {

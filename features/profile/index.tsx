@@ -1,24 +1,33 @@
-import React from 'react'
+import React, { ReactNode } from 'react'
 import { ScrollView, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
-import { Spinner } from '@/components/ui/spinner'
+import { TabsContent } from '@/components/ui/tabs'
 import { GestureDetector } from 'react-native-gesture-handler'
 import Animated from 'react-native-reanimated'
-import { useCollaspableHeader } from '../collection/ui'
+import { GestureBlockerProvider, useCollaspableHeader } from '../collection/ui'
 import { Body } from './components/body'
 import { ProfileHeader, SubHeader } from './components/profile-header'
+import { ProfileTabList } from './components/tab-list'
 import { StorefrontPage } from './pages/storefront'
-import { UserProfilePageStoreProvider } from './providers'
+import { tabsRecords, TabType, UserProfilePageStoreProvider } from './providers'
 
 const AnimatedScrollView = Animated.createAnimatedComponent(ScrollView)
 
 export default function ProfilePageLayout({ userId }: { userId?: string }) {
+  return (
+    <UserProfilePageStoreProvider userId={userId}>
+      <GestureBlockerProvider>
+        <ProfilePageLayoutInner />
+      </GestureBlockerProvider>
+    </UserProfilePageStoreProvider>
+  )
+}
+
+function ProfilePageLayoutInner({ userId }: { userId?: string }) {
   const insets = useSafeAreaInsets()
-  const loadingUser = !Boolean(userId)
 
   const {
-    tabsExpanded,
     headerAnimatedStyle,
     composedGestures,
     scrollViewRef,
@@ -27,41 +36,36 @@ export default function ProfilePageLayout({ userId }: { userId?: string }) {
     onHeaderLayout,
   } = useCollaspableHeader(false, [])
 
-  const body = userId ? (
-    <UserProfilePageStoreProvider userId={userId}>
-      <AnimatedScrollView
-        className="flex-grow"
-        style={{ paddingBottom: insets.bottom }}
-        contentContainerStyle={{
-          flexGrow: 1,
-        }}
-        ref={scrollViewRef}
-        onLayout={onListLayout}
-        onContentSizeChange={onContentSizeChange}
-      >
-        <Body
-          tabContent={{
-            storefront: <StorefrontPage />,
-          }}
-        />
-      </AnimatedScrollView>
-    </UserProfilePageStoreProvider>
-  ) : (
-    <Spinner />
-  )
+  const tabContent: Partial<Record<TabType, ReactNode>> = {
+    storefront: <StorefrontPage />,
+  }
 
   return (
     <View style={{ paddingTop: insets.top, paddingBottom: insets.bottom }}>
       <ProfileHeader />
 
-      <GestureDetector gesture={composedGestures}>
-        <View>
-          <Animated.View onLayout={onHeaderLayout} style={[headerAnimatedStyle]}>
+      <Body>
+        <Animated.View style={[headerAnimatedStyle]}>
+          <View onLayout={onHeaderLayout}>
             <SubHeader />
-          </Animated.View>
-          {body}
-        </View>
-      </GestureDetector>
+          </View>
+        </Animated.View>
+
+        <ProfileTabList />
+        <GestureDetector gesture={composedGestures}>
+          <AnimatedScrollView
+            ref={scrollViewRef}
+            onLayout={onListLayout}
+            onContentSizeChange={onContentSizeChange}
+          >
+            {Object.keys(tabsRecords).map((tab) => (
+              <TabsContent key={tab} value={tab} className="flex-1">
+                {tabContent[tab as TabType]}
+              </TabsContent>
+            ))}
+          </AnimatedScrollView>
+        </GestureDetector>
+      </Body>
     </View>
   )
 }

@@ -5,11 +5,11 @@ import { ExpandableText, Text } from '@/components/ui/text'
 import { ProfilePageStat } from '@/features/profile/types'
 import { UserContact } from '@/features/users/components/UserAvatars'
 import { DUMMY_USERS } from '@/features/users/helpers'
-import { useUserStore } from '@/lib/store/useUserStore'
 import { Ellipsis, LucideIcon, Share, Star, TrendingUp } from 'lucide-react-native'
-import React, { ReactNode } from 'react'
+import React, { ReactNode, useMemo } from 'react'
 import { FlatList, TouchableOpacity, View } from 'react-native'
 import { Colors } from 'react-native-ui-lib'
+import { useUserProfilePage } from '../providers'
 
 const DUMMY_STATS: ProfilePageStat[] = [
   {
@@ -36,8 +36,6 @@ const DUMMY_TAGS: Tag[] = [
 ]
 
 export function ProfileHeader() {
-  const { user } = useUserStore()
-
   return (
     <View
       style={{
@@ -48,7 +46,6 @@ export function ProfileHeader() {
     >
       <View
         style={{
-          height: 72,
           width: '100%',
         }}
       >
@@ -69,18 +66,28 @@ export function ProfileHeader() {
           }
         />
       </View>
-      <UserContact size="xl" user={DUMMY_USERS[0]} />
+      <UserContact size="lg" user={DUMMY_USERS[0]}></UserContact>
     </View>
   )
 }
 
 export function SubHeader() {
+  const user = useUserProfilePage((s) => s.user)
+  const tags = useMemo(() => {
+    const tags: Tag[] = [
+      { label: 'Hobbyist', icon: Star, disabled: Boolean(user?.is_hobbyiest) },
+      { label: 'Trader', icon: TrendingUp, disabled: Boolean(user?.is_seller) },
+    ]
+    return tags
+  }, [user])
   return (
     <View
       style={{
         justifyContent: 'center',
         alignItems: 'flex-start',
         padding: 20,
+        paddingTop: 28,
+        paddingBottom: 0,
       }}
     >
       {
@@ -95,7 +102,7 @@ export function SubHeader() {
           gap: 12,
         }}
         horizontal
-        data={DUMMY_TAGS}
+        data={tags}
         renderItem={({ item }) => {
           const { label, element, icon, disabled } = item
           return (
@@ -117,7 +124,7 @@ export function SubHeader() {
       <ExpandableText
         minNumLines={2}
         containerStyle={{
-          marginVertical: 16,
+          marginVertical: 8,
         }}
         style={{
           color: Colors.$textNeutralHeavy,
@@ -141,7 +148,7 @@ export function SubHeader() {
               style={{
                 justifyContent: 'center',
                 alignItems: 'flex-start',
-                paddingVertical: 8,
+                paddingVertical: 4,
                 gap: 4,
               }}
               key={label}
