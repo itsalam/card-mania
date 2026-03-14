@@ -1,5 +1,5 @@
 import { Separator } from '@/components/ui/separator'
-import { Text } from '@/components/ui/text'
+import { Text } from '@/components/ui/text/base-text'
 import React from 'react'
 import { ScrollView, View } from 'react-native'
 import { FilterBadge } from './FilterBadge'

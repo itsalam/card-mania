@@ -1,4 +1,4 @@
-import { TextClassContext } from '@/components/ui/text'
+import { TextClassContext } from '@/components/ui/text/base-text'
 import { cn } from '@/lib/utils/index'
 import { VariantProps } from '@gluestack-ui/nativewind-utils'
 import { tva } from '@gluestack-ui/nativewind-utils/tva'

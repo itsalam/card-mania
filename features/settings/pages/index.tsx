@@ -1,4 +1,4 @@
-import { Text } from '@/components/ui/text'
+import { Text } from '@/components/ui/text/base-text'
 import { useUserStore } from '@/lib/store/useUserStore'
 import { LucideIcon, Star, TrendingUp } from 'lucide-react-native'
 import React, { ReactNode } from 'react'

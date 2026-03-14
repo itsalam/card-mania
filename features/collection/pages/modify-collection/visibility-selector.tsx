@@ -1,11 +1,11 @@
-import { Text } from '@/components/ui/text'
+import { Text } from '@/components/ui/text/base-text'
 
+import { VISIBILITY_OPTIONS } from '@/features/tcg-card-views/DetailCardView/components/ui'
 import { Eye } from 'lucide-react-native'
 import { useState } from 'react'
 import { StyleSheet, View } from 'react-native'
 import { Colors, SegmentedControl } from 'react-native-ui-lib'
 import { useCreateNewCollections } from '../../../tcg-card-views/DetailCardView/provider'
-import { VISIBILITY_OPTIONS } from '../../../tcg-card-views/DetailCardView/ui'
 import { OptionLabel } from './components'
 
 export function VisibilitySelector() {

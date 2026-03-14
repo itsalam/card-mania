@@ -1,14 +1,9 @@
-import { BlurBackground, BlurGradientBackground } from '@/components/Background'
-import { MeasuredLayout, useMeasure } from '@/components/hooks/useMeasure'
-import { Text } from '@/components/ui/text'
-import React, { useEffect, useMemo } from 'react'
-import { ScrollView, StyleProp, View, ViewStyle } from 'react-native'
+import { ThumbProps, snapPoint } from '@/features/tcg-card-views/DetailCardView/components/ui'
+import React, { useEffect } from 'react'
 import { Gesture, GestureDetector } from 'react-native-gesture-handler'
 import { useReanimatedKeyboardAnimation } from 'react-native-keyboard-controller'
 import Animated, {
-  AnimatedStyle,
   interpolate,
-  SharedValue,
   useAnimatedReaction,
   useAnimatedStyle,
   useDerivedValue,
@@ -17,73 +12,12 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { Assets, Colors } from 'react-native-ui-lib'
-
-import { LiquidGlassCard } from '@/components/tcg-card/GlassCard'
-import { thumbStyles } from '@/components/ui/modal'
-import { formatLabel, formatPrice, splitToNChunks } from '@/components/utils'
-import { Eye, EyeOff, Plus, SearchX } from 'lucide-react-native'
 import { scheduleOnRN } from 'react-native-worklets'
+import { BlurBackground, BlurGradientBackground } from './Background'
+import { useMeasure } from './hooks/useMeasure'
+import { thumbStyles } from './ui/modal'
 
-export const Attribute = ({ label, value }: { label: string; value: string }) => {
-  return (
-    <View className="flex flex-col items-start justify-start">
-      <Text className="text-muted-foreground text-left font-spaceMono text-sm">{label}</Text>
-      <Text className="text-lg font-bold text-nowrap text-right">{value}</Text>
-    </View>
-  )
-}
-
-export const CardScreenHeader = (props: { title: string; backgroundColor?: string }) => {
-  const { title, backgroundColor = Colors.rgba(Colors.$textPrimary, 0.8) } = props
-  return (
-    <View className="w-full py-1 flex flex-row items-center justify-center gap-3">
-      <View style={{ backgroundColor, height: 1.5, width: 32 }} />
-      <Text style={{ color: backgroundColor }} variant="large" className="font-spaceMono">
-        {title}
-      </Text>
-      <View style={{ backgroundColor, height: 2, flex: 1, marginLeft: 6 }} />
-    </View>
-  )
-}
-
-// helper: pick nearest snap, biased by release velocity
-function snapPoint(y: number, velocityY: number, snapPoints: number[]) {
-  'worklet'
-  // project the end position a bit in the velocity direction
-  const projected = y + 0.2 * velocityY // 200ms of momentum
-  let closest = snapPoints[0]
-  let dist = Math.abs(projected - closest)
-  for (let i = 1; i < snapPoints.length; i++) {
-    const d = Math.abs(projected - snapPoints[i])
-    if (d < dist) {
-      dist = d
-      closest = snapPoints[i]
-    }
-  }
-  return closest
-}
-
-type ThumbProps = {
-  /** Y (in px) where the card should lock (lower is higher on screen). Ex: 120 */
-  lockY?: number
-  /** bottom (rest) position of the card */
-  restY?: number
-  /** optional: additional snap points, e.g., half step */
-  extraSnapPoints?: number[]
-  /** called when we snap into/out of the lock */
-  onLockedChange?: (locked: boolean) => void
-  toggleLocked?: boolean
-  children: React.ReactNode
-  style?: StyleProp<AnimatedStyle<StyleProp<ViewStyle>>>
-  mainContentBreakpoint?: SharedValue<number>
-  mainContent?: React.ReactNode
-  onMainContentMeasure?: (ml?: MeasuredLayout) => void
-  isKeyboardAccessory?: boolean
-  containerStyle?: StyleProp<AnimatedStyle<StyleProp<ViewStyle>>>
-}
-
-export default function DraggableThumbContent({
+export default function DraggableFooter({
   onLockedChange,
   children,
   style,
@@ -92,6 +26,7 @@ export default function DraggableThumbContent({
   isKeyboardAccessory,
   containerStyle,
   onMainContentMeasure,
+  absoluteThumb = false,
 }: ThumbProps) {
   const { progress: keyboardProgress, height: keyboardHeight } = useReanimatedKeyboardAnimation()
   const insets = useSafeAreaInsets()
@@ -140,7 +75,6 @@ export default function DraggableThumbContent({
   }, [toggleLocked])
 
   // assume SNAP is a derived shared value: const SNAP = useDerivedValue<number[]>(...)
-
   // Optional: keep a derived "targetY" so you can observe a single number change
   const targetY = useDerivedValue<number>(() => {
     const arr = SNAP.value
@@ -254,11 +188,13 @@ export default function DraggableThumbContent({
       >
         <GestureDetector gesture={composed}>
           <BlurBackground
-            style={{
-              zIndex: 2,
-              display: 'flex',
-              minHeight: 80,
-            }}
+            style={[
+              {
+                zIndex: 2,
+                display: 'flex',
+                minHeight: 52,
+              },
+            ]}
             opacity={mainContentBlurOpacity}
           >
             <Animated.View
@@ -266,7 +202,12 @@ export default function DraggableThumbContent({
               ref={mainContentRef}
               onLayout={onMainContentLayout}
             >
-              <Animated.View style={thumbStyles.modalContainer}>
+              <Animated.View
+                style={[
+                  thumbStyles.thumbContainer,
+                  absoluteThumb ? thumbStyles.absoluteThumbContainer : null,
+                ]}
+              >
                 <Animated.View style={[thumbStyles.thumb, thumbStyle]} />
               </Animated.View>
 
@@ -294,110 +235,3 @@ export default function DraggableThumbContent({
     </Animated.View>
   )
 }
-
-export const Prices = ({
-  prices,
-  visibleGrades,
-  setSelectedGrades,
-  selectedGrades,
-  setShowMoreGrades,
-}: {
-  prices: [string, any][]
-  visibleGrades: string[]
-  setSelectedGrades: React.Dispatch<React.SetStateAction<string[]>>
-  selectedGrades: string[]
-  setShowMoreGrades: React.Dispatch<React.SetStateAction<boolean>>
-}) => {
-  const NUM_PRICE_ROWS = 2
-  const rows = useMemo(
-    () =>
-      splitToNChunks(
-        prices.filter(([key]) => visibleGrades.includes(key)),
-        NUM_PRICE_ROWS
-      ).filter((r) => r.length > 0),
-    [prices, visibleGrades]
-  )
-
-  return (
-    <ScrollView
-      horizontal
-      bounces={false}
-      showsHorizontalScrollIndicator={true}
-      alwaysBounceVertical={true}
-      className="overflow-visible p-4"
-      style={{ alignSelf: 'stretch', maxHeight: 200, flexGrow: 0, flexShrink: 0 }}
-      contentContainerClassName="flex gap-2 flex-col"
-    >
-      {rows.map((row, i) => (
-        <View key={`row-${i}`} className={'flex flex-row gap-2 overflow-visible pr-4'}>
-          {row.map(([key, value]) => {
-            return (
-              <LiquidGlassCard
-                className="flex items-center justify-center"
-                style={{ opacity: value ? 1 : 0.5, minWidth: 100 }}
-                size="sm"
-                key={`${key}-${value}-${i}`}
-                onPress={() => {
-                  setSelectedGrades((prev) =>
-                    prev.includes(key) ? prev.filter((grade) => grade !== key) : [...prev, key]
-                  )
-                }}
-              >
-                <View className="flex flex-row gap-2 items-center justify-end">
-                  {selectedGrades.includes(key) ? (
-                    <Eye size={16} color={Colors.$iconDefault} />
-                  ) : (
-                    <EyeOff size={16} color={Colors.$iconDefault} />
-                  )}
-                  <Text className="text-lg font-bold text-muted-foreground text-nowrap text-right font-spaceMono">
-                    {formatLabel(key)}
-                  </Text>
-                </View>
-                <Text className="text-3xl capitalize text-nowrap text-right">
-                  {value ? formatPrice(value) : '--'}
-                </Text>
-              </LiquidGlassCard>
-            )
-          })}
-          {rows.length === i + 1 && (
-            <LiquidGlassCard
-              className="flex items-center justify-center"
-              style={{ aspectRatio: 1 }}
-              size="sm"
-              onPress={() => setShowMoreGrades((prev) => !prev)}
-            >
-              <Plus size={28} />
-            </LiquidGlassCard>
-          )}
-        </View>
-      ))}
-    </ScrollView>
-  )
-}
-
-export const THUMB_SIZE = 5
-export const THUMB_PADDING = 8
-
-export const VISIBILITY_OPTIONS = [
-  {
-    key: 'private' as const,
-    icon: EyeOff,
-    label: 'Private',
-    description: 'Only you can see this collection.',
-    iconSource: Assets.lucide['eye-off'],
-  },
-  {
-    key: 'public' as const,
-    icon: Eye,
-    label: 'Public',
-    description: 'Anyone can see this collection.',
-    iconSource: Assets.lucide.eye,
-  },
-  {
-    key: 'unlisted' as const,
-    icon: SearchX,
-    label: 'Unlisted',
-    description: 'Only people with the link can see this collection.',
-    iconSource: Assets.lucide['search-x'],
-  },
-] as const

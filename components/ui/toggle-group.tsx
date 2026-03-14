@@ -1,4 +1,4 @@
-import { TextClassContext } from '@/components/ui/text'
+import { TextClassContext } from '@/components/ui/text/base-text'
 import { ToggleStyleOptions, toggleTextVariants, toggleVariants } from '@/components/ui/toggle'
 import { useEffectiveColorScheme } from '@/features/settings/hooks/effective-color-scheme'
 import { cn } from '@/lib/utils/index'

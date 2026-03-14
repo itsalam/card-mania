@@ -1,4 +1,5 @@
 import { useIsWishlisted, useToggleWishlist } from '@/client/card/wishlist'
+import DraggableFooter from '@/components/DraggableFooter'
 import { getDefaultPrice } from '@/components/tcg-card/helpers'
 import { AppStandaloneHeader } from '@/components/ui/headers'
 import { Swapper } from '@/components/ui/swapper'
@@ -15,7 +16,6 @@ import Animated, {
   FadeOutRight,
 } from 'react-native-reanimated'
 import { useCardDetails } from '../provider'
-import DraggableThumbContent from '../ui'
 import { FooterButton } from './components/button'
 
 const { height: H } = Dimensions.get('window')
@@ -41,7 +41,7 @@ export const Footer = ({ card }: { card?: TCard }) => {
   }, [page])
 
   return (
-    <DraggableThumbContent
+    <DraggableFooter
       toggleLocked={footerFullView}
       onLockedChange={setFooterFullView}
       mainContent={
@@ -49,7 +49,7 @@ export const Footer = ({ card }: { card?: TCard }) => {
           {!footerFullView ? (
             <Animated.View
               key="footer-buttons"
-              className="w-full flex flex-row gap-2 p-4 flex-1"
+              className="w-full flex flex-row gap-2 p-4 py-0 pt-1 flex-1 "
               entering={FadeIn}
               exiting={FadeOut}
             >
@@ -118,7 +118,7 @@ export const Footer = ({ card }: { card?: TCard }) => {
       }}
     >
       <FooterDetails card={card} />
-    </DraggableThumbContent>
+    </DraggableFooter>
   )
 }
 
@@ -127,6 +127,7 @@ const FooterDetails = ({ card }: { card?: TCard }) => {
 
   return (
     <Swapper
+      style={{ padding: 12 }}
       currentKey={page ?? 0}
       render={(key) => {
         if (!pages[key].page) return null

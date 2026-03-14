@@ -1,5 +1,5 @@
 import { useEditCollection } from '@/client/collections/mutate'
-import { Text } from '@/components/ui/text'
+import { Text } from '@/components/ui/text/base-text'
 import {
   CircleQuestionMark,
   CopyX,

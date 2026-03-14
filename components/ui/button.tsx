@@ -1,4 +1,4 @@
-import { TextClassContext } from '@/components/ui/text'
+import { TextClassContext } from '@/components/ui/text/base-text'
 import { cn } from '@/lib/utils/index'
 import { cva, type VariantProps } from 'class-variance-authority'
 import {

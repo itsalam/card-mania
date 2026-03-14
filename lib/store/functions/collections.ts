@@ -23,7 +23,10 @@ export async function viewCollectionsForCard(cardId: string, query = null as str
           p_card: cardId,
           p_query: query as string,
         })
-      : getSupabase().rpc('collections_with_membership', { p_user: user.id, p_card: cardId })
+      : getSupabase().rpc('collections_with_membership', {
+          p_user: user.id,
+          p_card: cardId,
+        })
   )
     .select('*')
     .order('updated_at', { ascending: false })
@@ -32,7 +35,10 @@ export async function viewCollectionsForCard(cardId: string, query = null as str
 
 export async function viewCollectionItemsForCard(collectionId: string, cardId: string) {
   const { data, error } = await getSupabase()
-    .rpc('collection_items_by_ref', { p_ref_id: cardId, p_collection_id: collectionId })
+    .rpc('collection_items_by_ref', {
+      p_ref_id: cardId,
+      p_collection_id: collectionId,
+    })
     .select('*, grade_condition:grade_condition_id(id, company_id, grade_value, label)')
 
   const formattedData = unwrap(data, error)
@@ -45,6 +51,17 @@ export async function viewCollectionItemsForCard(collectionId: string, cardId: s
       : null,
   }))
   return result
+}
+
+export async function viewSingleCollectionItem(collectionItemId: string) {
+  const { data, error } = await getSupabase()
+    .from('collection_items')
+    .select('*, grade_condition:grade_condition_id(id, company_id, grade_value, label)')
+    .eq('id', collectionItemId)
+    .single()
+
+  const formattedData = unwrap(data, error)
+  return formattedData
 }
 
 export const viewCollectionItemsForUser =

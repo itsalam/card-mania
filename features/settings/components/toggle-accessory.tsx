@@ -1,5 +1,5 @@
 import { useToast } from '@/components/Toast'
-import { Text } from '@/components/ui/text'
+import { Text } from '@/components/ui/text/base-text'
 import { ToggleGroup, ToggleGroupIcon, ToggleGroupItem } from '@/components/ui/toggle-group'
 import { useSetting } from '@/features/settings'
 import { ReactNode, useEffect, useMemo, useRef, useState } from 'react'

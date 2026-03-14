@@ -11,7 +11,7 @@ import { useCollectionTotal, useWishlistTotal } from '@/client/collections/query
  * @github: https://github.com/kokonut-labs/kokonutui
  */
 
-import { Text } from '@/components/ui/text'
+import { Text } from '@/components/ui/text/base-text'
 import { formatCompactPrice } from '@/components/utils'
 import { cn } from '@/lib/utils'
 import { AnimatePresence, motify, MotiView } from 'moti'

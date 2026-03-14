@@ -25,13 +25,14 @@ import Animated, {
 
 import { scheduleOnRN } from 'react-native-worklets'
 
-export type AnimatedScrollRef = Animated.FlatList
+export type AnimatedScrollRef = Animated.ScrollView
 
-export function useCollaspableHeader(
-  disable?: boolean,
-  resetKeys?: unknown[],
+export function useCollaspableHeader(opts?: {
+  disable?: boolean
+  resetKeys?: unknown[]
   defaultHeight?: number
-) {
+}) {
+  const { disable = false, resetKeys, defaultHeight } = opts ?? {}
   const [headerExpanded, setHeaderExpanded] = useState(false)
   const expandProgress = useSharedValue(0)
   const gestureRef = useRef<GestureType>(undefined)
@@ -83,14 +84,7 @@ export function useCollaspableHeader(
     blockHeaderMeasurement.value = false
     expandProgress.value = 0
     scrollOffset.value = 0
-  }, [
-    ...(resetKeys ?? []),
-    virtualOffset,
-    measuredHeaderHeight,
-    blockHeaderMeasurement,
-    expandProgress,
-    scrollOffset,
-  ])
+  }, [...(resetKeys ?? [])])
 
   const THRESHOLD = 0.7 // > 0.5 → snap closed, < 0.5 → snap open
   const VELOCITY_TRIGGER = 100 // px/s-ish after being flipped (tweak!)
@@ -215,6 +209,7 @@ export function useCollaspableHeader(
     scrollViewRef,
     blockHeaderMeasurement,
     measuredHeaderHeight,
+    expandProgress,
   }
 }
 
@@ -239,7 +234,6 @@ export function GestureBlockerProvider({ children }: PropsWithChildren) {
             (gesture) => gesture.handlers.gestureId === g.handlers.gestureId
           )
           if (regIdx >= 0) {
-            console.log('SLICING')
             prev.splice(regIdx, 1).push(g)
             return prev // Avoid duplicate registrations
           }

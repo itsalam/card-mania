@@ -3,15 +3,7 @@ import { cn } from '@/lib/utils/index'
 import * as Slot from '@rn-primitives/slot'
 import { cva, type VariantProps } from 'class-variance-authority'
 import * as React from 'react'
-import {
-  Platform,
-  Text as RNText,
-  StyleProp,
-  TouchableOpacity,
-  View,
-  ViewStyle,
-  type Role,
-} from 'react-native'
+import { Platform, Text as RNText, type Role } from 'react-native'
 import { Colors } from 'react-native-ui-lib'
 
 const textVariants = cva(
@@ -46,9 +38,10 @@ const textVariants = cva(
           'bg-muted relative rounded px-[0.3rem] py-[0.2rem] font-mono text-sm font-semibold'
         ),
         lead: 'text-muted-foreground text-xl',
-        large: 'text-lg font-semibold',
+        large: 'text-lg font-bold text-wrap leading-none',
         small: 'text-sm font-medium leading-none',
-        muted: 'text-muted-foreground text-sm',
+        muted: 'text-muted-foreground text-base',
+        info: 'text-base uppercase font-spaceMono',
       },
     },
     defaultVariants: {
@@ -79,7 +72,7 @@ const ARIA_LEVEL: Partial<Record<TextVariant, string>> = {
 
 const TextClassContext = React.createContext<string | undefined>(undefined)
 
-type TextProps = React.ComponentProps<typeof RNText> &
+export type TextProps = React.ComponentProps<typeof RNText> &
   TextVariantProps &
   React.RefAttributes<RNText> & {
     asChild?: boolean
@@ -112,37 +105,6 @@ function Text({
       ]}
       {...props}
     />
-  )
-}
-
-export const ExpandableText = ({
-  minNumLines,
-  containerStyle,
-  numberOfLines,
-  expandText = 'See More',
-  compressText = 'See Less',
-  ...props
-}: TextProps & {
-  expandText?: string
-  compressText?: string
-  containerStyle?: StyleProp<ViewStyle>
-  minNumLines: number
-}) => {
-  const [expanded, setExpanded] = React.useState(false)
-
-  return (
-    <View style={containerStyle}>
-      <Text
-        ellipsizeMode="tail"
-        {...props}
-        numberOfLines={!expanded ? minNumLines : numberOfLines}
-      />
-      <TouchableOpacity onPress={() => setExpanded(!expanded)}>
-        <Text {...props} style={{ color: Colors.$textGeneral }}>
-          {expanded ? compressText : expandText}
-        </Text>
-      </TouchableOpacity>
-    </View>
   )
 }
 

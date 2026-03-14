@@ -1,18 +1,18 @@
 import { useCardQuery } from '@/client/card'
 import { useImageProxy } from '@/client/image-proxy'
-import { BlurGradientBackground } from '@/components/Background'
+import { BlurBackground, BlurGradientBackground, GradientBackground } from '@/components/Background'
 import FullPriceGraph from '@/components/graphs/PriceGraph'
 import { GraphInputKey } from '@/components/graphs/ui/types'
 import { LiquidGlassCard } from '@/components/tcg-card/GlassCard'
 import { useInvalidateOnFocus } from '@/components/tcg-card/helpers'
-import { Text } from '@/components/ui/text'
+import { Text } from '@/components/ui/text/base-text'
 import { chunk, formatLabel, formatPrice } from '@/components/utils'
 import { TCard } from '@/constants/types'
 import { qk } from '@/lib/store/functions/helpers'
 import { Image } from 'expo-image'
 import { Href } from 'expo-router'
 import { Eye, EyeOff, Undo2, X } from 'lucide-react-native'
-import React, { ReactNode, useCallback, useEffect, useMemo, useState } from 'react'
+import React, { ReactNode, useCallback, useMemo, useState } from 'react'
 import {
   Dimensions,
   FlatList,
@@ -24,29 +24,41 @@ import {
 import Animated, {
   Extrapolation,
   interpolate,
+  useAnimatedReaction,
   useAnimatedStyle,
   useDerivedValue,
   useSharedValue,
+  withDelay,
   withTiming,
 } from 'react-native-reanimated'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Button, Colors, Dialog, PanningProvider } from 'react-native-ui-lib'
 
+import { useMeasure } from '@/components/hooks/useMeasure'
+import { useCollaspableHeader } from '@/features/collection/ui'
+import MaskedView from '@react-native-masked-view/masked-view'
+import { LinearGradient } from 'expo-linear-gradient'
+import { GestureDetector } from 'react-native-gesture-handler'
+import { CardScreenHeader } from './components/CardScreenHeader'
+import { CollectionInfoCard } from './components/CollectionInfoCard'
+import { Prices } from './components/Prices'
 import { Footer } from './footer/footer'
 import { AddToCollectionsView } from './footer/pages/add-to-collections'
 import { CreateCollectionView } from './footer/pages/create-collection'
 import { Coordinates, useSelectedGrades, useTransitionAnimation } from './helpers'
-import { CardDetailsProvider, useCardDetails } from './provider'
-import { CardScreenHeader, Prices } from './ui'
+import { CardDetailsProvider } from './provider'
 
+const CARD_WIDTH_RATIO = 0.65
 const { width: W, height: H } = Dimensions.get('window')
 
 export default function FocusCardView({
   cardId,
+  collectionIdArgs,
   animateFrom,
   returnTo,
 }: {
   cardId: string
+  collectionIdArgs?: { collectionId: string; itemId: string }
   animateFrom: { x: number; y: number; width: number; height: number }
   returnTo?: Href
 }) {
@@ -84,11 +96,25 @@ export default function FocusCardView({
         cardId={cardId}
         cardData={cardData}
         title={
-          <View className="p-8 flex flex-col items-start justify-stretch gap-1 w-full pt-0">
-            <Text variant="h1">{cardData?.name}</Text>
-            <Text className="font-spaceMono font-bold" variant="h2">
-              {cardData?.set_name}
-            </Text>
+          <View className="p-4 flex flex-col items-start justify-stretch gap-1 w-full pb-8">
+            <View className="p-4 flex flex-col items-start justify-stretch gap-1 w-full pb-0">
+              <Text variant="h1" style={{ textAlign: 'left' }}>
+                {cardData?.name}
+              </Text>
+              <Text
+                className="font-spaceMono font-bold text-left"
+                variant="h3"
+                style={{
+                  textAlign: 'left',
+                  color: Colors.$textNeutral,
+                }}
+              >
+                {cardData?.set_name}
+              </Text>
+            </View>
+            {collectionIdArgs && (
+              <CollectionInfoCard collectionItemId={collectionIdArgs.itemId} cardId={cardId} />
+            )}
           </View>
         }
       >
@@ -181,6 +207,8 @@ export default function FocusCardView({
   )
 }
 
+const AMaskedView = Animated.createAnimatedComponent(MaskedView)
+
 const CardDetailContainer = ({
   children,
   cardData,
@@ -197,25 +225,40 @@ const CardDetailContainer = ({
   returnTo?: Href
 }) => {
   const {
+    ref: imageContainerLayoutRef,
+    layout: imageContainerLayout,
+    onLayout: onImageContainerLayout,
+  } = useMeasure<View>()
+
+  const adjustedAnimateFrom = useMemo(
+    () =>
+      imageContainerLayout
+        ? {
+            ...animateFrom,
+            x: animateFrom.x - imageContainerLayout.x,
+            y: animateFrom.y - imageContainerLayout.y,
+          }
+        : animateFrom,
+    [animateFrom, imageContainerLayout]
+  )
+
+  const {
+    progress,
     cardStyle: cardTransition,
     scrimStyle,
     close,
-  } = useTransitionAnimation(animateFrom, {
+  } = useTransitionAnimation(adjustedAnimateFrom, {
     fallbackHref: returnTo,
+    animateTo: {
+      width: W * CARD_WIDTH_RATIO,
+      height: (W * CARD_WIDTH_RATIO) / (5 / 7),
+      x: 0,
+      y: 0,
+    },
+    ready: !!imageContainerLayout,
   })
   const insets = useSafeAreaInsets()
-  const TITLE_SPACING = 72 + insets.top
   const CARD_TITLE_POSITION = 1.0
-  const { footerFullView, setFooterFullView } = useCardDetails()
-  const container = useAnimatedStyle(() => ({
-    opacity: withTiming(footerFullView ? 0.3 : 1.0),
-  }))
-  const footerFullViewSV = useSharedValue(footerFullView)
-
-  // 2. Keep it in sync when React state changes
-  useEffect(() => {
-    footerFullViewSV.value = footerFullView
-  }, [footerFullView, footerFullViewSV])
 
   const y = useSharedValue(0)
 
@@ -223,31 +266,32 @@ const CardDetailContainer = ({
     const offsetY = e.nativeEvent.contentOffset.y
     y.set(offsetY)
   }, [])
-  const travelDistance = CARD_TITLE_POSITION * ((W * 7) / 5) - TITLE_SPACING
+  const travelDistance = CARD_TITLE_POSITION * ((W * 7) / 5)
   const scrollProgress = useDerivedValue(() => Math.max(0, y.value / travelDistance))
-  const mainBlur = useDerivedValue(
-    () => interpolate(scrollProgress.value, [0, 1], [0, 1], Extrapolation.CLAMP),
-    [scrollProgress]
+  const mainBlur = useDerivedValue(() =>
+    interpolate(scrollProgress.value, [0, 1], [0, 1], Extrapolation.CLAMP)
   )
 
-  const titleBlur = useDerivedValue(
-    () => interpolate(scrollProgress.value, [1.0, 1.2], [0, 0.8], Extrapolation.CLAMP),
-    [scrollProgress]
+  const backgroundOpacity = useSharedValue([1, 0])
+  useAnimatedReaction(
+    () => interpolate(scrollProgress.value, [0, 1], [0, 0.8], Extrapolation.CLAMP),
+    (next) => {
+      backgroundOpacity.value = [1, withDelay(500, withTiming(next, { duration: 300 }))]
+    }
   )
 
-  const backgroundOpacity = useDerivedValue(
-    () => [1, interpolate(scrollProgress.value, [0, 1], [0, 0.8], Extrapolation.CLAMP)],
-    [scrollProgress]
-  )
-
-  const titleOpacity = useDerivedValue(
-    () => [interpolate(scrollProgress.value, [0.8, 1.0], [0, 0.8], Extrapolation.CLAMP), 1, 0.9, 0],
-    [scrollProgress]
+  const titleOpacity = useSharedValue([0, 1, 0.9, 0])
+  useAnimatedReaction(
+    () => interpolate(scrollProgress.value, [0.8, 1.0], [0, 0.8], Extrapolation.CLAMP),
+    (next) => {
+      titleOpacity.value = [withDelay(500, withTiming(next, { duration: 300 })), 1, 0.9, 0]
+    }
   )
 
   const { data: image } = useImageProxy({
     variant: 'detail',
     shape: 'card',
+
     cardId: cardId,
     imageType: 'front',
     quality: 100,
@@ -262,173 +306,229 @@ const CardDetailContainer = ({
     queryHash: cardData?.image?.query_hash ?? undefined,
   })
 
-  const placeHolderBlur = useSharedValue(0)
+  const {
+    expandProgress,
+    composedGestures,
+    scrollViewRef,
+    onListLayout,
+    onContentSizeChange,
+    onHeaderLayout,
+    measuredHeaderHeight,
+  } = useCollaspableHeader()
 
-  useEffect(() => {
-    placeHolderBlur.value = interpolate(
-      Number(Boolean(image)) * 500,
+  const headerAStyle = useAnimatedStyle(() => ({
+    height:
+      measuredHeaderHeight.value > 0
+        ? interpolate(
+            expandProgress.value,
+            [0, 1],
+            [measuredHeaderHeight.value, measuredHeaderHeight.value * 0.4]
+          )
+        : undefined,
+  }))
+
+  const cardImageAnimStyle = useAnimatedStyle(() => ({
+    width: interpolate(
+      expandProgress.value,
       [0, 1],
-      [0, 1],
+      [W * CARD_WIDTH_RATIO, W],
       Extrapolation.CLAMP
-    )
-  }, [cardId, image])
-
-  const handleImageLoadStart = useCallback(() => {
-    if (image) {
-      placeHolderBlur.value = withTiming(500, { duration: 200 })
-    }
-  }, [image])
-
-  const handleImageLoad = useCallback(() => {
-    placeHolderBlur.value = withTiming(0, { duration: 200 })
-  }, [])
-
-  const cardScrollTransition = useAnimatedStyle(
-    () => ({
-      transformStyle: 'top center',
-      transform: [
-        {
-          translateY: 44,
-        },
-        {
-          scale: withTiming(
-            interpolate(scrollProgress.value, [0, 0.15], [1, 5 / 6], Extrapolation.CLAMP),
-            { duration: 200 }
-          ),
-        },
-      ],
-    }),
-    [scrollProgress]
-  )
+    ),
+    top: interpolate(expandProgress.value, [0, 1], [insets.top + 68, 0], Extrapolation.CLAMP),
+    opacity: interpolate(expandProgress.value, [0, 0.1], [1, 0.4], Extrapolation.CLAMP),
+    borderRadius: interpolate(expandProgress.value, [0, 0.1], [10, 0], Extrapolation.CLAMP),
+  }))
 
   return (
-    <Animated.View
-      style={[
-        {
-          width: W,
-          height: H,
-          backgroundColor: Colors.rgba(Colors.$backgroundNeutralLight, 1.0),
-        },
-      ]}
-    >
-      {thumbnailImage && (
-        <Image
-          style={[StyleSheet.absoluteFillObject, { opacity: 0.2 }]}
-          source={{
-            uri: thumbnailImage,
-            cacheKey: `${cardId}-thumb-bg`,
+    <GestureDetector gesture={composedGestures}>
+      <Animated.View
+        style={[
+          {
             width: W,
             height: H,
-          }}
-          blurRadius={2}
-          contentFit="cover"
-          transition={200}
-          pointerEvents="none"
-        />
-      )}
-
-      <BlurGradientBackground
-        backgroundOpacity={backgroundOpacity}
-        start={{ x: 0.5, y: 1.0 }}
-        end={{ x: 0.5, y: 0.0 }}
-        colors={[Colors.$backgroundNeutralLight, Colors.$backgroundNeutralMedium]}
-        positions={[0.2, 0.6]}
-        opacity={mainBlur}
+          },
+        ]}
       >
-        <Animated.View
-          onStartShouldSetResponderCapture={() => {
-            // When footer is full view, capture touches so children don't see them
-            return footerFullViewSV.value
-          }}
-          // Handle the "pointer up" equivalent
-          onResponderRelease={(e) => {
-            if (footerFullViewSV.value) {
-              setFooterFullView(false)
-            }
-          }}
-          style={[
-            container,
-            scrimStyle,
-            {
-              width: W,
-              height: H,
-            },
-          ]}
-        >
-          <Button
-            onPress={close}
-            style={{ position: 'absolute', left: 16, top: insets.top + 16, zIndex: 20 }}
-          >
-            <X size={20} />
-          </Button>
-          <Animated.ScrollView
-            onScroll={onScroll}
-            scrollEventThrottle={16} // ~60fps updates
-            style={[{ paddingBottom: insets.bottom + 20 }]}
-            contentContainerStyle={[{ paddingTop: travelDistance, paddingBottom: travelDistance }]}
-            stickyHeaderIndices={[1]}
-          >
-            <Animated.View style={[{ aspectRatio: 5 / 7 }, cardTransition, cardScrollTransition]}>
-              <Image
-                style={[
-                  {
-                    width: W * 0.8,
-                    top: (W * 0.1) / (5 / 7),
-                    aspectRatio: 5 / 7,
-                    alignSelf: 'center',
-                  },
-                ]}
-                source={[
-                  { uri: image, cacheKey: cardId, width: W * 0.8, height: (W * 0.8) / (5 / 7) },
-                ]}
-                placeholder={
-                  thumbnailImage
-                    ? {
-                        uri: thumbnailImage,
-                        cacheKey: `${cardId}-thumb`,
-                        width: W,
-                        height: W / (5 / 7),
-                      }
-                    : undefined
-                }
-                placeholderContentFit="cover"
-                cachePolicy="memory-disk"
-                transition={200}
-                contentFit="cover"
-                onLoadStart={handleImageLoadStart}
-                onLoad={handleImageLoad}
+        <View style={{ paddingBottom: 200 }}>
+          <AMaskedView
+            style={[
+              {
+                overflow: 'visible',
+                position: 'relative',
+                width: '100%',
+                // backgroundColor: 'red',
+              },
+              // headerAnimatedStyle,
+              headerAStyle,
+            ]}
+            maskElement={
+              <LinearGradient
+                // MaskedView uses the alpha channel: solid shows content, transparent hides it.
+                colors={['#FFFFFFA5', 'black', 'black', '#FFFFFF35']}
+                start={{ y: 0.0, x: 0.5 }}
+                end={{ y: 1, x: 0.5 }}
+                locations={[0, 0.15, 0.85, 1]}
+                style={{
+                  position: 'absolute',
+                  height: '100%',
+                  width: '100%',
+                  // top: '-2.5%',
+                  left: '-0%',
+                }}
               />
-            </Animated.View>
-            <BlurGradientBackground
-              start={{ x: 0.5, y: 0 }}
-              end={{ x: 0.5, y: 1 }}
-              colors={[
-                Colors.$backgroundNeutralLight,
-                Colors.$backgroundNeutralLight,
-                Colors.$backgroundNeutralLight,
-                Colors.$backgroundNeutralLight,
+            }
+          >
+            <View
+              onLayout={onHeaderLayout}
+              style={[
+                {
+                  width: '100%',
+                  aspectRatio: 5 / 6,
+                },
               ]}
-              backgroundOpacity={titleOpacity}
-              positions={[0.2, 0.5, 0.9, 1]}
-              opacity={titleBlur}
-              blurStyle={{
-                marginBottom: 32,
-              }}
             >
               <View
                 style={{
-                  paddingTop: TITLE_SPACING,
-                  paddingBottom: 12,
+                  alignSelf: 'center',
                 }}
               >
-                {title}
+                <Animated.View
+                  style={[
+                    cardImageAnimStyle,
+                    {
+                      aspectRatio: 5 / 7,
+                      alignSelf: 'center',
+                    },
+                  ]}
+                  ref={imageContainerLayoutRef}
+                  onLayout={onImageContainerLayout}
+                >
+                  <View
+                    style={{
+                      width: '106.3%',
+                      height: '106.8%',
+                      position: 'absolute',
+                      top: '-3.15%',
+                      left: '-3.4%',
+                      borderColor: 'rgba(80,80,80,1)',
+                      borderWidth: 1,
+                    }}
+                  >
+                    <LinearGradient
+                      colors={[
+                        'rgba(80,80,80,0.7)',
+                        'transparent',
+                        'transparent',
+                        'rgba(80,80,80,0.7)',
+                      ]}
+                      start={{ x: 0, y: 0.5 }}
+                      end={{ x: 1, y: 0.5 }}
+                      locations={[0, 0.1, 0.9, 1]}
+                      style={{ position: 'absolute', width: '100%', height: '100%' }}
+                    />
+                    <LinearGradient
+                      colors={[
+                        'rgba(80,80,80,0.7)',
+                        'transparent',
+                        'transparent',
+                        'rgba(80,80,80,0.7)',
+                      ]}
+                      start={{ x: 0.5, y: 0 }}
+                      end={{ x: 0.5, y: 1 }}
+                      locations={[0, 0.1, 0.9, 1]}
+                      style={{ position: 'absolute', width: '100%', height: '100%' }}
+                    />
+                  </View>
+                  <Image
+                    style={[
+                      {
+                        width: '100%',
+                        height: '100%',
+                        borderRadius: 6,
+                      },
+                    ]}
+                    source={[
+                      {
+                        uri: image,
+                        cacheKey: cardId,
+                        width: W * CARD_WIDTH_RATIO,
+                        height: (W * CARD_WIDTH_RATIO) / (5 / 7),
+                      },
+                    ]}
+                    placeholder={
+                      thumbnailImage
+                        ? {
+                            uri: thumbnailImage,
+                            cacheKey: `${cardId}-thumb`,
+                            width: W,
+                            height: W / (5 / 7),
+                          }
+                        : undefined
+                    }
+                    placeholderContentFit="cover"
+                    cachePolicy="memory-disk"
+                    transition={0}
+                    contentFit="cover"
+                  />
+                </Animated.View>
               </View>
-            </BlurGradientBackground>
+            </View>
+          </AMaskedView>
+          <GradientBackground
+            start={{ x: 0.5, y: 0.5 }}
+            end={{ x: 0.5, y: 0.0 }}
+            colors={[Colors.$backgroundDefault, 'transparent']}
+            positions={[0.0, 0.8]}
+            opacity={[1, 0]}
+            style={{
+              position: 'absolute',
+              bottom: 0,
+              zIndex: 2,
+              flex: 0,
+            }}
+          >
+            <View style={{}}>{title}</View>
+          </GradientBackground>
+        </View>
+        <Button
+          onPress={close}
+          style={{ position: 'absolute', left: 16, top: insets.top + 16, zIndex: 20 }}
+        >
+          <X size={20} />
+        </Button>
+        <BlurBackground />
+        <BlurGradientBackground
+          backgroundOpacity={backgroundOpacity}
+          start={{ x: 0.5, y: 1.0 }}
+          end={{ x: 0.5, y: 0.0 }}
+          colors={[Colors.$backgroundDefault, Colors.$backgroundDefault]}
+          positions={[0.2, 0.6]}
+          opacity={progress}
+          style={[
+            StyleSheet.absoluteFill,
+            { zIndex: -1, backgroundColor: Colors.rgba(Colors.$backgroundDefault, 0.95) },
+          ]}
+        />
 
-            <Animated.View style={[{ position: 'relative' }]}>{children}</Animated.View>
-          </Animated.ScrollView>
-        </Animated.View>
-      </BlurGradientBackground>
-    </Animated.View>
+        <Animated.ScrollView
+          onScroll={onScroll}
+          scrollEventThrottle={16} // ~60fps updates
+          // style={[{ paddingBottom: insets.bottom + 20, transform: [{ translateY: '-50%' }] }]}
+          // contentContainerStyle={[{ paddingTop: travelDistance, paddingBottom: travelDistance }]}
+          stickyHeaderIndices={[1]}
+          ref={scrollViewRef}
+          onLayout={onListLayout}
+          onContentSizeChange={onContentSizeChange}
+          style={{
+            width: W,
+            flex: 1,
+          }}
+        >
+          <Animated.View style={[{ position: 'relative' }, scrimStyle]}>
+            <View>{children}</View>
+          </Animated.View>
+        </Animated.ScrollView>
+      </Animated.View>
+    </GestureDetector>
   )
 }

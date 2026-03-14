@@ -1,4 +1,4 @@
-import { Text } from '@/components/ui/text'
+import { Text } from '@/components/ui/text/base-text'
 import { ReactNode } from 'react'
 import { View } from 'react-native'
 import { Colors } from 'react-native-ui-lib'

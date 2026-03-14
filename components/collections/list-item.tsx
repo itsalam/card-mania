@@ -1,4 +1,4 @@
-import { Text } from '@/components/ui/text'
+import { Text } from '@/components/ui/text/base-text'
 import { useEffectiveColorScheme } from '@/features/settings/hooks/effective-color-scheme'
 import { CollectionRow } from '@/lib/store/functions/types'
 import { LucideIcon } from 'lucide-react-native'

@@ -1,5 +1,5 @@
 import { NativeOnlyAnimatedView } from '@/components/ui/native-only-animated-view'
-import { TextClassContext } from '@/components/ui/text'
+import { TextClassContext } from '@/components/ui/text/base-text'
 import { cn } from '@/lib/utils/index'
 import * as PopoverPrimitive from '@rn-primitives/popover'
 import * as React from 'react'

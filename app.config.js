@@ -24,7 +24,7 @@ const config = {
     },
     android: {
       adaptiveIcon: {
-        foregroundImage: './assets/images/adaptive-icon.png',
+        foregroundImage: './assets/images/CM_LOGO.png',
         backgroundColor: '#ffffff',
       },
       edgeToEdgeEnabled: true,
@@ -40,7 +40,7 @@ const config = {
       [
         'expo-splash-screen',
         {
-          image: './assets/images/splash-icon.png',
+          image: './assets/images/CM_LOGO.png',
           imageWidth: 200,
           resizeMode: 'contain',
           backgroundColor: '#0C0C0C',

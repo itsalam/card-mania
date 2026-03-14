@@ -7,7 +7,7 @@ import { CollectionItemQueryView, CollectionRow } from '@/lib/store/functions/ty
 import { useIsWishlisted } from '@/client/card/wishlist'
 import { CollectionLike } from '@/client/collections/types'
 import { Tabs } from '@/components/ui/tabs'
-import { Text } from '@/components/ui/text'
+import { Text } from '@/components/ui/text/base-text'
 import { CollectionCardItemEntries } from '@/features/tcg-card-views/DetailCardView/footer/pages/add-to-collections/components'
 import { CardListView } from '@/features/tcg-card-views/ListCard'
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs'
@@ -243,7 +243,10 @@ const DetailCollectionView = ({ direction }: { direction: 'forward' | 'backward'
     onListLayout,
     onContentSizeChange,
     onHeaderLayout,
-  } = useCollaspableHeader(collectionItems.length > 0, [currentPage, collection?.id])
+  } = useCollaspableHeader({
+    disable: collectionItems.length > 0,
+    resetKeys: [currentPage, collection?.id],
+  })
 
   const renderItem = useCallback(
     ({ item }: { item: CollectionItemQueryView & TCard }) => {

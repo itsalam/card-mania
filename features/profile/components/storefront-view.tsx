@@ -1,7 +1,8 @@
-import { Text } from '@/components/ui/text'
-import { formatLabel, formatPrice } from '@/components/utils'
+import { CollectionLike } from '@/client/collections/types'
+import { TCard } from '@/constants/types'
 import { useGetCollection, useGetCollectionItems } from '@/features/collection/hooks'
 import { CardListView } from '@/features/tcg-card-views/ListCard'
+import { CollectionItemQueryView } from '@/lib/store/functions/types'
 import { View } from 'react-native'
 import { FlatList } from 'react-native-gesture-handler'
 import { BorderRadiuses, Colors } from 'react-native-ui-lib'
@@ -16,29 +17,30 @@ export function StorefrontView({ collectionId }: CollectionPreviewProps) {
       style={{
         borderRadius: BorderRadiuses.br40,
         backgroundColor: Colors.$backgroundElevated,
-        padding: 20,
       }}
     >
-      {collectionId && <StorefrontPreviewItems collectionId={collectionId} />}
+      {collection && <StorefrontPreviewItems collection={collection} />}
     </View>
   )
 }
 
-type CollectionPreviewItemProps = { collectionId: string }
+type CollectionPreviewItemProps = { collection: CollectionLike }
 
-function StorefrontPreviewItems({ collectionId }: CollectionPreviewItemProps) {
-  const { query } = useGetCollectionItems({ collectionId }, undefined, true)
+function StorefrontPreviewItems({ collection }: CollectionPreviewItemProps) {
+  const { query } = useGetCollectionItems({ collectionId: collection?.id }, undefined, false)
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = query
   const flatData = data?.pages.flat() ?? []
 
   return (
     <FlatList
-      horizontal
       data={flatData}
+      keyExtractor={(item) => item.collection_item_id}
       renderItem={({ item: collectionItem }) => {
         const graded = collectionItem?.price_key !== 'ungraded'
+
         return (
           <CardListView
+            collectionItem={{ ...collectionItem, id: collectionItem.collection_item_id }}
             cardContainerStyle={
               graded
                 ? {
@@ -54,32 +56,34 @@ function StorefrontPreviewItems({ collectionId }: CollectionPreviewItemProps) {
             style={{ padding: 8 }}
             card={collectionItem}
             expanded={true}
-            vertical
-            renderAccessories={(props) => (
-              <View
-                style={{
-                  flexDirection: 'column',
-                  justifyContent: 'center',
-                  alignItems: 'center',
-                  width: '100%',
-                  padding: 4,
-                }}
-              >
-                <Text variant={'large'} style={{ textAlign: 'center' }}>
-                  {formatPrice(props.displayData?.displayPrice)}
-                </Text>
-
-                <Text
-                  className="text-base uppercase font-spaceMono"
-                  style={{ textAlign: 'center', color: Colors.$textNeutral, fontSize: 12 }}
-                >
-                  {formatLabel(props.displayData?.metadata, '-')}
-                </Text>
-              </View>
-            )}
+            navigateTo="/profile/[shop-item]"
           />
         )
       }}
+    />
+  )
+}
+
+export function StorefrontCardItem({ item }: { item: CollectionItemQueryView & TCard }) {
+  const graded = item?.price_key !== 'ungraded'
+  return (
+    <CardListView
+      cardContainerStyle={
+        graded
+          ? {
+              paddingVertical: 8,
+              paddingHorizontal: 2,
+              backgroundColor: Colors.$backgroundElevatedLight,
+            }
+          : {
+              paddingVertical: 8,
+              paddingHorizontal: 2,
+            }
+      }
+      style={{ padding: 8 }}
+      card={item}
+      expanded={true}
+      navigateTo="/profile/[shop-item]"
     />
   )
 }

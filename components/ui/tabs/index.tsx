@@ -1,4 +1,4 @@
-import { Text, TextClassContext } from '@/components/ui/text'
+import { Text, TextClassContext } from '@/components/ui/text/base-text'
 import { cn } from '@/lib/utils'
 import * as TabsPrimitive from '@rn-primitives/tabs'
 import { LucideIcon } from 'lucide-react-native'

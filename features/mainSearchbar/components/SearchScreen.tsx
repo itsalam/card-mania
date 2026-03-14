@@ -1,9 +1,8 @@
 import { useCardSearch, useSuggestionsFixed } from '@/client/price-charting'
 import { BlurGradientBackground } from '@/components/Background'
+import DraggableFooter from '@/components/DraggableFooter'
 import { AppStandaloneHeader } from '@/components/ui/headers'
 import { SearchBar } from '@/components/ui/search'
-import { Spinner } from '@/components/ui/spinner'
-import DraggableThumbContent from '@/features/tcg-card-views/DetailCardView/ui'
 import { ItemListViewProps } from '@/features/tcg-card-views/ListCard'
 import React, { RefObject, useEffect, useMemo, useState } from 'react'
 import { StyleProp, StyleSheet, View, ViewStyle } from 'react-native'
@@ -171,7 +170,7 @@ export function SearchScreen({
           </Animated.View>
         </BlurGradientBackground>
 
-        <DraggableThumbContent
+        <DraggableFooter
           onMainContentMeasure={(layout) => {
             if (layout) setBottomPadding(layout.height)
           }}
@@ -217,7 +216,7 @@ export function SearchScreen({
           // className="flex flex-col px-4 py-2 bg-white border-2 border-b-0 border-black/20"
         >
           <SearchFiltersOptions />
-        </DraggableThumbContent>
+        </DraggableFooter>
       </KeyboardAvoidingView>
     </FiltersProvider>
   )

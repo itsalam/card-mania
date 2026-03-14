@@ -170,15 +170,6 @@ function getCollectionItemsArgs<T extends CollectionItemRow>(
 ): InifiniteQueryParams<T> {
   const finalOpts = { ...DEFAULT_INF_Q_OPTIONS, ...opts } as InfQueryOptions<T>
   const shouldGroup = group ?? Boolean(collectionId)
-  if (collectionType === 'default') {
-    return {
-      enabled: false,
-      queryKey: [qk.userCollections, 'default', 'items'],
-      queryFn: async () => [] as T[],
-      getNextPageParam: () => null,
-      initialPageParam: null,
-    }
-  }
   if (collectionId) {
     const { pageSize, search, kind, ...queryOpts } = finalOpts
     return {
@@ -273,6 +264,8 @@ export function useGetCollectionItems<
   const queryArgs = getCollectionItemsArgs<T>(args, opts, group)
   return useViewCollectionItems<T>(queryArgs)
 }
+
+export function useGetSingleCollectionItem() {}
 
 type SpoofPricePoint = { day: string; price: number }
 type SpoofPriceResponse = {

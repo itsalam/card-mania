@@ -1,5 +1,5 @@
 import { Icon } from '@/components/ui/icon'
-import { Text, TextClassContext } from '@/components/ui/text'
+import { Text, TextClassContext } from '@/components/ui/text/base-text'
 import { cn } from '@/lib/utils/index'
 import type { LucideIcon } from 'lucide-react-native'
 import * as React from 'react'

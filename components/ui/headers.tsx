@@ -1,5 +1,5 @@
 // components/AppHeader.tsx
-import { Text } from '@/components/ui/text'
+import { Text } from '@/components/ui/text/base-text'
 import { BottomTabHeaderProps } from '@react-navigation/bottom-tabs'
 import { Header, HeaderBackButton } from '@react-navigation/elements'
 import { ChevronLeft } from 'lucide-react-native'

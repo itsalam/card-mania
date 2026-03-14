@@ -4,6 +4,7 @@ import {
   viewCollectionItemsForCard,
   viewCollectionItemsForUser,
   viewCollectionsForCard,
+  viewSingleCollectionItem,
 } from '@/lib/store/functions/collections'
 import { qk } from '@/lib/store/functions/helpers'
 import { CollectionItemRow, CollectionRow } from '@/lib/store/functions/types'
@@ -61,7 +62,25 @@ export function useViewCollectionItemsForCard(
   cardId?: string,
   enabled?: boolean
 ) {
-  return useQuery<CollectionItem[], DefaultError, CollectionItem[]>({
+  return useQuery<
+    (CollectionItem & {
+      grade_condition: {
+        company_id: string
+        grade_value: number
+        id: string
+        label: string
+      }
+    })[],
+    DefaultError,
+    (CollectionItem & {
+      grade_condition: {
+        company_id: string
+        grade_value: number
+        id: string
+        label: string
+      }
+    })[]
+  >({
     queryKey: [
       //@ts-ignore
       ...qk.collectionItems(collectionId),
@@ -72,6 +91,18 @@ export function useViewCollectionItemsForCard(
     placeholderData: keepPreviousData,
     enabled: enabled && !!cardId && !!collectionId,
     initialData: [],
+  })
+}
+
+export function useViewSingleCollectionItem(
+  itemId: string,
+  placeHolderData?: Partial<CollectionItem>
+) {
+  return useQuery<{}, DefaultError, CollectionItem>({
+    queryKey: [...qk.collectionItemSingle(itemId)],
+    queryFn: () => viewSingleCollectionItem(itemId),
+    placeholderData: keepPreviousData,
+    initialData: placeHolderData,
   })
 }
 

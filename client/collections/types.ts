@@ -37,7 +37,14 @@ export type CollectionLike = Partial<
 > &
   Partial<CollectionRow>
 
-export type CollectionItem = Database['public']['Tables']['collection_items']['Row']
+export type CollectionItem = Database['public']['Tables']['collection_items']['Row'] & {
+  grade_condition?: {
+    company_id?: string
+    grade_value?: number
+    label?: string
+    id?: string
+  }
+}
 
 export type EditCollectionArgsItem = Partial<
   Database['public']['Tables']['collection_items']['Insert']

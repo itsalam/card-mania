@@ -1,46 +1,23 @@
 import { useIsWishlisted, useToggleWishlist } from '@/client/card/wishlist'
-import { ImageProxyOpts, useImageProxy } from '@/client/image-proxy'
-import { CARD_ASPECT_RATIO } from '@/components/consts'
 import { Skeleton } from '@/components/ui/skeleton'
-import { Text } from '@/components/ui/text'
+import { Text } from '@/components/ui/text/base-text'
 import { formatLabel, formatPrice } from '@/components/utils'
-import { ItemKinds, TCard } from '@/constants/types'
+import { TCard } from '@/constants/types'
 import { CollectionItemQueryView } from '@/lib/store/functions/types'
 import { cn } from '@/lib/utils/cn'
-import { ReactNode } from 'react'
-import { StyleProp, StyleSheet, View, ViewStyle } from 'react-native'
+import { forwardRef, ReactNode } from 'react'
+import { StyleSheet, View } from 'react-native'
 import { Assets, Button, Colors } from 'react-native-ui-lib'
-import { THUMBNAIL_HEIGHT, THUMBNAIL_WIDTH } from '../../components/tcg-card/consts'
-import { LiquidGlassCard } from '../../components/tcg-card/GlassCard'
-import { getDefaultPrice, useNavigateToItem } from '../../components/tcg-card/helpers'
-import { LoadingImagePlaceholder } from '../../components/tcg-card/placeholders'
+import { useNavigateToItem } from '../../components/tcg-card/helpers'
+import { CardImage } from './card-image'
+import { getCardDisplayData } from './helpers'
+import { ItemListViewProps } from './types'
 
-type ItemListingProps = {
-  item?: { id: string }
-  kind?: ItemKinds
-  displayData: {
-    title: string
-    subHeading?: string
-    metadata?: string
-    displayPrice?: number
-    imageProxyArgs: ImageProxyOpts
-  } | null
-  expanded?: boolean
-  vertical?: boolean
-  isLoading?: boolean
-  className?: string
-  style?: StyleProp<ViewStyle>
-  cardContainerStyle?: StyleProp<ViewStyle>
-  navigateOnPress?: boolean
-}
-
-export type ItemListViewProps = ItemListingProps & {
-  renderAccessories?: (props: ItemListViewProps) => ReactNode
-}
-
-export type CardItemListProps = Omit<ItemListViewProps, 'item' | 'displayData'>
-
-const DefaultAccessories = ({ kind, item, displayData }: ItemListViewProps) => {
+export const DefaultAccessories = ({
+  renderButtons,
+  ...props
+}: ItemListViewProps & { renderButtons?: (props: ItemListViewProps) => ReactNode }) => {
+  const { kind, item, displayData } = props
   const toggleWishList = useToggleWishlist('card')
 
   const { data: wishlistedIds } = useIsWishlisted('card', item ? [item.id] : [])
@@ -59,149 +36,138 @@ const DefaultAccessories = ({ kind, item, displayData }: ItemListViewProps) => {
             {formatLabel(displayData?.metadata)}
           </Text>
         )}
-        {displayData?.displayPrice ? (
-          <Text
-            className="text-3xl font-bold"
-            style={{
-              color: Colors.$textDefault,
-            }}
-          >
-            {formatPrice(displayData.displayPrice)}
-          </Text>
-        ) : (
-          <Text
-            className="text-3xl font-medium opacity-70"
-            style={{
-              color: Colors.$textDefault,
-            }}
-          >
-            $0.00-
-          </Text>
-        )}
+        <Text>
+          {displayData?.displayPrice ? (
+            <Text
+              className="text-3xl font-bold"
+              style={{
+                color: Colors.$textDefault,
+              }}
+            >
+              {formatPrice(displayData.displayPrice)}
+            </Text>
+          ) : (
+            <Text
+              className="text-3xl font-medium opacity-70"
+              style={{
+                color: Colors.$textDefault,
+              }}
+            >
+              $-.--
+            </Text>
+          )}
+          {displayData?.quantity && (
+            <Text
+              variant={'small'}
+              className="font-medium opacity-70"
+              style={{
+                color: Colors.$textNeutralHeavy,
+              }}
+            >
+              {` x Qty: ${displayData?.quantity}`}
+            </Text>
+          )}
+        </Text>
       </View>
-      <View className="flex flex-row gap-1 items-end justify-end">
-        <Button
-          outline={!isWishlisted}
-          onPress={() => {
-            item &&
-              toggleWishList.mutate({
-                kind: kind ?? 'card',
-                id: item.id,
-              })
-          }}
-          iconStyle={styles.buttonIcon}
-          style={styles.button}
-          size="small"
-          round
-          outlineWidth={1.5}
-          iconSource={Assets.icons.BookmarkHeart}
-        />
-        <Button
-          size="small"
-          round
-          outlineWidth={1.5}
-          iconStyle={styles.buttonIcon}
-          style={styles.button}
-          iconSource={Assets.icons.Folder}
-          outline={true}
-        />
-      </View>
+      {renderButtons ? (
+        renderButtons(props)
+      ) : (
+        <View className="flex flex-row gap-1 items-end justify-end">
+          <Button
+            outline={!isWishlisted}
+            onPress={() => {
+              item &&
+                toggleWishList.mutate({
+                  kind: kind ?? 'card',
+                  id: item.id,
+                })
+            }}
+            iconStyle={styles.buttonIcon}
+            style={styles.button}
+            size="small"
+            round
+            outlineWidth={1.5}
+            iconSource={Assets.icons.BookmarkHeart}
+          />
+          <Button
+            size="small"
+            round
+            outlineWidth={1.5}
+            iconStyle={styles.buttonIcon}
+            style={styles.button}
+            iconSource={Assets.icons.Folder}
+            outline={true}
+          />
+        </View>
+      )}
     </View>
   )
 }
 
-const getPriceFix = (card: Partial<CollectionItemQueryView> & TCard) => {
-  let price = card.collection_item_value
-  if (price) return price
-
-  if (!card.price_key) return undefined
-
-  const priceKey = card.price_key.replace(/(\d+)(?:\.(\d))?/g, (_match, intPart, fracPart) =>
-    !fracPart || fracPart === '0' ? intPart : `${intPart}_${fracPart}`
-  )
-
-  const gradePrice = card.grades_prices as Record<string, number>
-
-  if (priceKey in gradePrice) return gradePrice[priceKey]
-  return undefined
-}
-
 export function CardListView({
   card,
+  collectionItem,
   ...props
 }: { card?: TCard & Partial<CollectionItemQueryView> } & Omit<
   ItemListViewProps,
   'item' | 'displayData'
 >) {
-  const isIncomplete = Boolean(card) && props.isLoading
-  const displayPriceFix = card === undefined ? null : getPriceFix(card)
-  const [, displayPrice] = isIncomplete ? [null, null] : getDefaultPrice(card)
-  const displayData =
-    card === undefined && isIncomplete
-      ? null
-      : {
-          title: card?.name,
-          subHeading: card?.set_name,
-          imageProxyArgs: {
-            variant: 'tiny',
-            shape: 'card',
-            cardId: card?.id ?? undefined,
-            imageType: 'front',
-            queryHash: card?.image?.query_hash ?? undefined,
-          } as ImageProxyOpts,
-          displayPrice: displayPriceFix ?? displayPrice,
-          metadata: card?.price_key,
-        }
+  const displayData = getCardDisplayData({
+    card,
+    collectionItem,
+    metadata: card?.price_key ? { price_key: card?.price_key } : undefined,
+    isLoading: props.isLoading,
+  })
   //@ts-ignore
-  return <ItemListView item={card} displayData={displayData} {...props} />
+  return (
+    <ItemListView
+      item={card}
+      collectionItem={collectionItem}
+      displayData={displayData}
+      {...props}
+    />
+  )
 }
 
-export function ItemListView({ renderAccessories, ...props }: ItemListViewProps) {
+export const ItemListView = forwardRef<View, ItemListViewProps>(function ItemListView(
+  { renderAccessories, navigateTo, ...props },
+  ref
+) {
   const {
     item,
     kind = 'card',
+    collectionItem,
     displayData,
     expanded = true,
-    isLoading = false,
     className,
     vertical = false,
     style,
-    cardContainerStyle,
-    navigateOnPress = !Boolean(renderAccessories),
+    onPress,
   } = props
 
-  const { data: thumbnailImg, isLoading: isImageLoading } = useImageProxy({
-    variant: 'tiny',
-    ...displayData?.imageProxyArgs,
+  const { cardElement, handlePress } = useNavigateToItem({
+    kind,
+    item: collectionItem ? collectionItem : item,
+    path: navigateTo,
+    paramName: navigateTo?.match(/\[([^\]]+)\]/)?.[1],
+    params: collectionItem
+      ? {
+          cardId: collectionItem.ref_id,
+          collectionId: collectionItem.collection_id,
+        }
+      : undefined,
   })
 
-  const { cardElement, handlePress } = useNavigateToItem(kind, item)
-
   return (
-    // <Pressable {...(navigateOnPress ? { onPress: () => handlePress() } : {})}>
     <View
-      className={cn('flex items-start w-full', vertical ? '' : 'flex-row', className)}
+      ref={ref}
+      className={cn('items-start flex', vertical ? '' : 'flex-row w-full', className)}
       style={style}
     >
-      <View style={cardContainerStyle}>
-        <LiquidGlassCard
-          onPress={() => handlePress()}
-          ref={cardElement}
-          variant="primary"
-          className="p-0 aspect-[5/7] flex items-center justify-center overflow-hidden"
-          style={{ width: THUMBNAIL_WIDTH, aspectRatio: CARD_ASPECT_RATIO }}
-        >
-          <LoadingImagePlaceholder
-            source={{
-              uri: thumbnailImg,
-              cacheKey: `${item?.id}-thumb`,
-              width: THUMBNAIL_WIDTH,
-              height: THUMBNAIL_HEIGHT,
-            }}
-            isLoading={isLoading || isImageLoading}
-          />
-        </LiquidGlassCard>
-      </View>
+      <CardImage
+        displayData={displayData}
+        imageProps={{ onPress: onPress ?? handlePress, ref: cardElement }}
+      />
 
       {expanded && !Boolean(vertical) ? (
         <HorizontalAccessory renderAccessories={renderAccessories} {...props} />
@@ -210,7 +176,7 @@ export function ItemListView({ renderAccessories, ...props }: ItemListViewProps)
       )}
     </View>
   )
-}
+})
 
 function HorizontalAccessory(props: ItemListViewProps) {
   const { isLoading, displayData, renderAccessories } = props
@@ -226,7 +192,6 @@ function HorizontalAccessory(props: ItemListViewProps) {
           <>
             <Text
               variant={'large'}
-              className="font-bold text-wrap leading-none"
               style={{
                 color: Colors.$textDefault,
               }}
@@ -235,7 +200,7 @@ function HorizontalAccessory(props: ItemListViewProps) {
             </Text>
             <Text
               variant={'muted'}
-              className="text-base capitalize"
+              className="capitalize"
               style={{
                 color: Colors.$textNeutral,
               }}

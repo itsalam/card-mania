@@ -34,7 +34,7 @@ export function useImageProxy(cdnOpts: ImageProxyOpts) {
   // build query string for the proxy in JSON mode
   const payload = {
     ...(imageId ? { image_id: imageId } : {}),
-    ...(cardId && kind ? { card_id: cardId, imageType: kind } : {}),
+    ...(cardId && kind ? { card_id: cardId, kind } : {}),
     ...(queryHash ? { query_hash: queryHash } : {}),
     ...(xform.variant ? { variant: xform.variant } : {}),
     ...(xform.shape ? { shape: xform.shape } : {}),

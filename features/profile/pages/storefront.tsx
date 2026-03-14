@@ -1,7 +1,7 @@
 import { CollectionLike } from '@/client/collections/types'
 import { useCloneMeasure } from '@/components/hooks/useCloneMeasure'
 import { Separator } from '@/components/ui/separator'
-import { Text } from '@/components/ui/text'
+import { Text } from '@/components/ui/text/base-text'
 import { useRegisterGestureBlocker } from '@/features/collection/ui'
 import { ChevronDown } from 'lucide-react-native'
 import { ComponentProps, useEffect, useState } from 'react'

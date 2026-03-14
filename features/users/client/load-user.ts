@@ -3,11 +3,7 @@ import { qk } from '@/lib/store/functions/helpers'
 import { useQuery } from '@tanstack/react-query'
 
 const getUserProfile = async (userId: string) => {
-  let q = await getSupabase()
-    .from('user_profile')
-    .select('display_name, avatar_url, bio, location, is_seller, is_hobbyiest, last_seen_at')
-    .eq('user_id', userId)
-    .maybeSingle()
+  let q = await getSupabase().rpc('get_public_profile', { target_user_id: userId }).maybeSingle()
   const { data, error } = await q
   if (error) throw error
   return data

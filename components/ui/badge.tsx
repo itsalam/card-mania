@@ -119,7 +119,7 @@ export function Badge({
       leftElement={
         Icon ? (
           <Icon
-            size={(variantProps.iconStyle?.height! as number) || BASE_BADGE_HEIGHT}
+            size={(variantProps.iconStyle?.height as number) || BASE_BADGE_HEIGHT}
             color={Colors.$textDefault}
             strokeWidth={2.5}
             style={{ marginLeft: 4 }}

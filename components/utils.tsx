@@ -49,13 +49,14 @@ export const useBackgroundColors = (): ColorValueArray => {
 }
 
 export const formatPrice = (
-  price: number,
+  price?: number,
   {
     currency = '$',
     minimumFractionDigits = 2,
     maximumFractionDigits = 2,
   }: { currency?: string; minimumFractionDigits?: number; maximumFractionDigits?: number } = {}
 ): string => {
+  if (!Boolean(price)) return '--.--'
   return `${currency}${(price / 100).toLocaleString('en-US', {
     minimumFractionDigits,
     maximumFractionDigits,

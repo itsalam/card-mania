@@ -3,7 +3,7 @@ import * as AvatarPrimitive from '@rn-primitives/avatar'
 import { cva, VariantProps } from 'class-variance-authority'
 import { ComponentProps, createContext, useContext } from 'react'
 import { Colors } from 'react-native-ui-lib'
-import { Text } from './text'
+import { Text } from './text/base-text'
 
 const avatarStyle = cva(
   'rounded-full justify-center items-center relative bg-primary-600 group-[.avatar-group]/avatar-group:-ml-2.5',

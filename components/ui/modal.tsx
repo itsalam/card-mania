@@ -19,10 +19,10 @@ import Animated, {
 } from 'react-native-reanimated'
 import { Colors } from 'react-native-ui-lib'
 
+import { THUMB_SIZE } from '@/features/tcg-card-views/DetailCardView/components/ui'
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller'
 import { EdgeInsets, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { scheduleOnRN } from 'react-native-worklets'
-import { THUMB_SIZE } from '../../features/tcg-card-views/DetailCardView/ui'
 
 export const getContentInsets = (insets: EdgeInsets) => ({
   top: insets.top,
@@ -143,6 +143,7 @@ export const thumbStyles = StyleSheet.create({
     height: THUMB_SIZE,
     width: '15%',
     borderRadius: 10,
+    alignSelf: 'center',
   },
   mainContent: {
     width: '100%',
@@ -170,6 +171,8 @@ export const thumbStyles = StyleSheet.create({
   thumbContainer: {
     marginVertical: 8,
     width: '100%',
+    alignContent: 'center',
+    justifyContent: 'center',
   },
   sheetInner: {
     borderTopLeftRadius: 24,

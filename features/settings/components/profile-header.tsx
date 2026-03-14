@@ -1,7 +1,7 @@
 import { Avatar } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
-import { Text } from '@/components/ui/text'
+import { Text } from '@/components/ui/text/base-text'
 import { ProfilePageStat } from '@/features/profile/types'
 import { useUserStore } from '@/lib/store/useUserStore'
 import { LucideIcon, Star, TrendingUp } from 'lucide-react-native'

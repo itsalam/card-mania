@@ -7,7 +7,9 @@ import { Dimensions } from 'react-native'
 import {
   cancelAnimation,
   Easing,
+  interpolate,
   useAnimatedStyle,
+  useDerivedValue,
   useSharedValue,
   withDelay,
   withTiming,
@@ -29,23 +31,34 @@ export const useSelectedGrades = (card?: Partial<TCard>, preSelectedGrades?: str
   }
 }
 
-export type Coordinates = { x: number; y: number; width: number; height: number }
+export type Coordinates = {
+  x: number
+  y: number
+  width: number
+  height: number
+}
 
 type TransitionOpts = {
   fallbackHref?: Href
   duration?: number
   onClose?: () => void
   onOpen?: () => void
+  animateTo?: Coordinates
+  ready?: boolean
 }
 
-export const useTransitionAnimation = (animateFrom: Coordinates, opts?: TransitionOpts) => {
+export const useTransitionAnimation = (animateFrom: Coordinates, opts: TransitionOpts = {}) => {
   const { width: W } = Dimensions.get('window')
-  const { cardStyle, scrimStyle, close } = useAnimateFromPosition(
+  const { animateTo = { x: 0, y: 0, width: W, height: W / (5 / 7) }, ready, ...otherOps } = opts
+
+  const { animation, cardStyle, scrimStyle, close } = useAnimateFromPosition(
     animateFrom,
-    { x: 0, y: 0, width: W, height: W / (5 / 7) },
-    opts
+    animateTo,
+    { ...otherOps, ready }
   )
-  return { cardStyle, scrimStyle, close }
+
+  const progress = useDerivedValue(() => animation.value.progress)
+  return { progress, cardStyle, scrimStyle, close }
 }
 
 function safeBack(fallback = '/' as Href) {
@@ -75,26 +88,37 @@ function useSafeOnClose(onClose?: () => void, fallback?: Href) {
 export const useAnimateFromPosition = (
   from: Coordinates,
   to: Coordinates,
-  opts?: { duration?: number; onClose?: () => void; onOpen?: () => void; fallbackHref?: Href }
+  opts?: {
+    duration?: number
+    onClose?: () => void
+    onOpen?: () => void
+    fallbackHref?: Href
+    ready?: boolean
+  }
 ) => {
-  const { duration = 350, onClose, onOpen, fallbackHref } = opts || {}
+  const { duration = 200, onClose, onOpen, fallbackHref, ready = true } = opts || {}
   // shared values
   const animation = useSharedValue({ ...from, progress: 0 })
   const scrim = useSharedValue(0)
   const isFocused = useIsFocused()
+  const isFocusedSV = useSharedValue(isFocused)
+  useEffect(() => {
+    isFocusedSV.value = isFocused
+  }, [isFocused])
 
-  const easeOutEmphasized = Easing.bezier(0.05, 0.7, 0.1, 1)
+  useEffect(() => {
+    animation.value = { ...from, progress: 0 }
+  }, [from])
+
+  const easeOutEmphasized = Easing.bezier(0.2, 1, 0.05, 0.94)
   const easeInEmphasized = Easing.bezier(0.3, 0, 0.8, 0.15)
 
   const ZOOM_IN_DELAY = 0 // ms before main anim starts
-  const ZOOM_BACK_DELAY = 50 // ms after main anim ends
-  const SCRIM_IN_LEAD = duration / 2 // ms before main anim starts
+  const SCRIM_IN_LEAD = duration + 100 // ms before main anim starts
   const SCRIM_OUT_LAG = 0 // ms after main anim ends
 
   const D_IN = duration + 40
-  const D_OUT = duration
   const SCRIM_IN_DUR = Math.round(D_IN * 1.33)
-  const SCRIM_OUT_DUR = Math.round(D_OUT * 0.55)
 
   const closeSafely = useSafeOnClose(onClose, fallbackHref)
 
@@ -104,7 +128,6 @@ export const useAnimateFromPosition = (
     // cancel any ongoing to avoid cross-fades stacking
     cancelAnimation(animation)
     cancelAnimation(scrim)
-
     // scrim starts a bit BEFORE
     scrim.value = withDelay(
       Math.max(0, SCRIM_IN_LEAD - 40), // tiny pre-roll
@@ -125,7 +148,7 @@ export const useAnimateFromPosition = (
         },
         (finished) => {
           'worklet'
-          if (!isFocused) {
+          if (!isFocusedSV.value) {
             scheduleOnRN(requestAnimationFrame, () => onOpen?.())
             return
           }
@@ -140,17 +163,20 @@ export const useAnimateFromPosition = (
   }
 
   useEffect(() => {
+    if (!ready) return
     playOpen()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [ready])
 
   const cardStyle = useAnimatedStyle(() => ({
     position: 'absolute',
+    overflow: 'hidden',
     left: animation.value.x,
     top: animation.value.y,
     width: animation.value.width,
     height: animation.value.height,
-    overflow: 'hidden',
+    // opacity: animation.value.progress,
+    borderRadius: interpolate(animation.value.progress, [0, 1], [2, 8]),
   }))
 
   const scrimStyle = useAnimatedStyle(() => ({

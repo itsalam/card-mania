@@ -1,4 +1,4 @@
-import { TextClassContext } from '@/components/ui/text'
+import { TextClassContext } from '@/components/ui/text/base-text'
 import { Check } from '@/lib/icons/Check'
 import { ChevronDown } from '@/lib/icons/ChevronDown'
 import { ChevronRight } from '@/lib/icons/ChevronRight'

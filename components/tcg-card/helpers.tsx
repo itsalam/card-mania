@@ -1,10 +1,11 @@
 import { Graders } from '@/client/card/grading'
 import { ItemKinds, TCard } from '@/constants/types'
+import { AppPathname } from '@/features/tcg-card-views/types'
 import { useTouchRecentView } from '@/lib/store/functions/hooks'
 import { useStores } from '@/lib/store/provider'
 import { useFocusEffect } from '@react-navigation/native' // or from 'expo-router'
 import { useQueryClient } from '@tanstack/react-query'
-import { router, usePathname } from 'expo-router'
+import { router, usePathname, type Href } from 'expo-router'
 import { useCallback, useRef } from 'react'
 import { View } from 'react-native'
 
@@ -32,9 +33,7 @@ export const getDefaultPrice = (card?: TCard): GetDefaultPriceReturn => {
   const keys = Object.keys(gradePrices)
   if (!keys.length) return [null]
 
-  const key = 'ungraded' in gradePrices ? 'ungraded' : keys[0]
-  const value = Number(gradePrices[key])
-  return key ? [key, value] : [null]
+  return [null]
 }
 
 export function useInvalidateOnFocus(queryKey: readonly unknown[]) {
@@ -67,7 +66,19 @@ export function measureInWindowAsync(
   })
 }
 
-export function useNavigateToItem(kind: ItemKinds, item?: { id: string }) {
+export function useNavigateToItem({
+  kind,
+  item,
+  path = '/cards/[card]',
+  paramName = 'card',
+  params,
+}: {
+  kind: ItemKinds
+  item?: { id: string }
+  path?: AppPathname
+  paramName?: string
+  params?: Record<string, string>
+}) {
   const itemElement = useRef<View>(null)
   const { setPrefetchData } = useStores().cardStore.getInitialState()
   const mutation = useTouchRecentView()
@@ -84,14 +95,15 @@ export function useNavigateToItem(kind: ItemKinds, item?: { id: string }) {
         source: 'app',
       })
       router.push({
-        pathname: `/cards/[card]`,
+        pathname: path,
         params: {
           from: JSON.stringify(position),
-          card: item.id,
+          [paramName]: item.id,
           kind: kind,
           returnTo: pathname ?? '/',
+          ...params,
         },
-      })
+      } as Href)
     })
   }
 

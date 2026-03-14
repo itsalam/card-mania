@@ -17,8 +17,8 @@ import {
 } from '@/components/ui/multi-select-input/multi-select-input'
 import { NumberTicker } from '@/components/ui/number-ticker'
 import { Separator } from '@/components/ui/separator'
-import { Skeleton } from '@/components/ui/skeleton'
-import { Text } from '@/components/ui/text'
+import { SkeletonText } from '@/components/ui/text'
+import { Text } from '@/components/ui/text/base-text'
 import { formatPrice } from '@/components/utils'
 import { TCard } from '@/constants/types'
 import { useEffectiveColorScheme } from '@/features/settings/hooks/effective-color-scheme'
@@ -218,21 +218,19 @@ export const CollectionItemEntry = ({
         }}
       >
         <View style={{ flex: 1, justifyContent: 'flex-end' }}>
-          <Text
+          <SkeletonText
             className="text-base uppercase font-spaceMono"
+            defaultDimensions={{ height: 12, width: 50 }}
             style={{
               color: Colors.$textNeutral,
               fontSize: 12,
             }}
+            loading={isLoading}
           >
-            {isLoading ? (
-              <Skeleton style={{ height: 12, width: 50 }} />
-            ) : (
-              `${(currentGrader ? `${currentGrader.slug} ` : 'ungraded').toLocaleUpperCase()}${
-                currentGrade?.grade_value.toPrecision(2) ?? ''
-              }`
-            )}
-          </Text>
+            {`${(currentGrader ? `${currentGrader.slug} ` : 'ungraded').toLocaleUpperCase()}${
+              currentGrade?.grade_value.toPrecision(2) ?? ''
+            }`}
+          </SkeletonText>
         </View>
         <View
           style={{
@@ -242,15 +240,22 @@ export const CollectionItemEntry = ({
             gap: 10,
           }}
         >
-          {isLoading ? (
-            <Skeleton style={{ height: 15, width: 66 }} />
-          ) : price?.[1] ? (
-            <Text>{formatPrice(price[1])}</Text>
-          ) : (
-            <Text style={{ color: Colors.$textNeutralLight }}>{'--.--'}</Text>
-          )}
+          <SkeletonText
+            className="text-base uppercase font-spaceMono"
+            defaultDimensions={{ height: 15, width: 66 }}
+            style={
+              price?.[1]
+                ? null
+                : {
+                    color: Colors.$textNeutralLight,
+                  }
+            }
+            loading={isLoading}
+          >
+            {price?.[1] ? formatPrice(price[1]) : '--.--'}
+          </SkeletonText>
 
-          <X size={8} />
+          <X size={8} color={Colors.$iconDefault} />
           <NumberTicker
             disabled={isLoading}
             containerStyle={{ opacity: isLoading ? 0.6 : 1 }}

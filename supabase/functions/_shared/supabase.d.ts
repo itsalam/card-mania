@@ -1800,6 +1800,18 @@ export type Database = {
         Args: { p_base_user_id: string }
         Returns: undefined
       }
+      get_public_profile: {
+        Args: { target_user_id: string }
+        Returns: {
+          avatar_url: string
+          bio: string
+          display_name: string
+          is_seller: boolean
+          location: string
+          user_id: string
+          username: string
+        }[]
+      }
       get_tag_categories: {
         Args: { tags: string[] }
         Returns: {

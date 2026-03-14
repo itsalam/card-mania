@@ -1,5 +1,6 @@
 import { Avatar, AvatarFallback, AvatarFallbackText, AvatarImage } from '@/components/ui/avatar'
-import { Text } from '@/components/ui/text'
+import { SkeletonText } from '@/components/ui/text'
+import { Text } from '@/components/ui/text/base-text'
 import React, { ComponentProps, ReactNode, useMemo, useState } from 'react'
 import { View } from 'react-native'
 import Animated, { FadeOut } from 'react-native-reanimated'
@@ -8,7 +9,7 @@ import { UserDisplayInfo } from '../types'
 
 const AnimAvatarFallback = Animated.createAnimatedComponent(AvatarFallback)
 
-type UserContactProps = { user: UserDisplayInfo; children?: ReactNode } & Pick<
+type UserContactProps = { user?: UserDisplayInfo; children?: ReactNode } & Pick<
   ComponentProps<typeof Avatar>,
   'size'
 >
@@ -21,23 +22,23 @@ export const UserContact = ({ user, size = 'md', children }: UserContactProps) =
     xl: 'h4',
     '2xl': 'h3',
     lg: 'large',
-    md: 'default',
-    sm: 'small',
-    xs: 'small',
+    md: 'large',
+    sm: 'default',
+    xs: 'default',
   }
 
   const gapSizes: Record<Exclude<typeof size, null>, number> = {
     '2xl': 16,
     xl: 16,
     lg: 16,
-    md: 16,
+    md: 8,
     sm: 8,
     xs: 8,
   }
 
   return (
     <View
-      key={user.handle}
+      key={user?.handle ?? 'loading-user'}
       className="flex flex-row items-center"
       style={{
         gap: size ? gapSizes[size] : 0,
@@ -45,15 +46,15 @@ export const UserContact = ({ user, size = 'md', children }: UserContactProps) =
     >
       <UserAvatar user={user} size={size} />
       <View style={{ display: 'flex', gap: 0 }}>
-        <Text
+        <SkeletonText
           variant={size ? sizeToTextVar[size] : 'default'}
           style={{ color: Colors.$textDefault }}
         >
-          {user.name}
-        </Text>
-        <Text variant={'large'} style={{ left: -2 }}>
-          {user.handle}
-        </Text>
+          {user?.name}
+        </SkeletonText>
+        <SkeletonText variant={'muted'} style={{ left: -2 }}>
+          {`@${user?.handle}`}
+        </SkeletonText>
         {children}
       </View>
     </View>
@@ -64,10 +65,10 @@ export const UserAvatar = ({ user, size = 'md' }: UserContactProps) => {
   const uri = useMemo(() => `https://picsum.photos/seed/${Math.random()}/200/200`, [])
   const [imageLoaded, setImageLoaded] = useState(false)
   return (
-    <Avatar size={size} alt={user.name[0]}>
+    <Avatar size={size} alt={user?.name[0] ?? 'loading-avatar'}>
       {!imageLoaded && (
         <AnimAvatarFallback exiting={FadeOut}>
-          <AvatarFallbackText>{user.name[0]}</AvatarFallbackText>
+          <AvatarFallbackText>{user?.name[0]}</AvatarFallbackText>
         </AnimAvatarFallback>
       )}
       <AvatarImage

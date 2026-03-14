@@ -1,7 +1,7 @@
 import { Box } from '@/components/ui/box'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
-import { Text } from '@/components/ui/text'
+import { Text } from '@/components/ui/text/base-text'
 import { UserContact } from '@/features/users/components/UserAvatars'
 import { DUMMY_USERS } from '@/features/users/helpers'
 import React, { ComponentProps } from 'react'

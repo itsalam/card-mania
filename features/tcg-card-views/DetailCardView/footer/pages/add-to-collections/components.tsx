@@ -24,7 +24,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Text } from '@/components/ui/text'
+import { Text } from '@/components/ui/text/base-text'
+import { sortCollectionItem } from '@/features/tcg-card-views/helpers'
 import { qk } from '@/lib/store/functions/helpers'
 import { useQueryClient } from '@tanstack/react-query'
 import Animated, { LinearTransition } from 'react-native-reanimated'
@@ -62,47 +63,9 @@ export const CollectionCardItemEntries = ({
     const hasUngradedItems = loadedEntries.some(
       (e) => e.grading_company === null && e.quantity >= 1
     )
-    const baseEntries = hasUngradedItems
-      ? loadedEntries
-      : [
-          { grading_company: null, quantity: 0, grade_condition_id: null, id: undefined },
-          ...loadedEntries,
-        ]
+    const baseEntries = hasUngradedItems ? loadedEntries : [{ quantity: 0 }, ...loadedEntries]
 
-    const sortedEntries = [...baseEntries].sort((a, b) => {
-      //@ts-ignore
-      const aHasCompany = Boolean(a.grading_company_id || a.grading_company)
-      //@ts-ignore
-      const bHasCompany = Boolean(b.grading_company_id || b.grading_company)
-      if (aHasCompany !== bHasCompany) return aHasCompany ? 1 : -1
-
-      const aCompany = (a.grading_company ?? '').toLowerCase()
-      const bCompany = (b.grading_company ?? '').toLowerCase()
-      if (aCompany !== bCompany) return aCompany.localeCompare(bCompany)
-
-      //@ts-ignore
-      const aGradeValue = a.grade_condition?.grade_value ?? Number.NEGATIVE_INFINITY
-      //@ts-ignore
-      const bGradeValue = b.grade_condition?.grade_value ?? Number.NEGATIVE_INFINITY
-      if (aGradeValue !== bGradeValue) return aGradeValue - bGradeValue
-
-      //@ts-ignore
-      const aVariants = a.variants ?? []
-      //@ts-ignore
-      const bVariants = b.variants ?? []
-      const aVariantsEmpty = aVariants.length === 0
-      const bVariantsEmpty = bVariants.length === 0
-      if (aVariantsEmpty !== bVariantsEmpty) return aVariantsEmpty ? -1 : 1
-      const aVariantsKey = aVariants.join(',').toLowerCase()
-      const bVariantsKey = bVariants.join(',').toLowerCase()
-      if (aVariantsKey !== bVariantsKey) return aVariantsKey.localeCompare(bVariantsKey)
-
-      //@ts-ignore
-      const aCreatedBy = a.updated_at ?? ''
-      //@ts-ignore
-      const bCreatedBy = b.updated_at ?? ''
-      return aCreatedBy.localeCompare(bCreatedBy)
-    })
+    const sortedEntries = [...baseEntries].sort(sortCollectionItem)
     return sortedEntries
   }, [loadedEntries])
 

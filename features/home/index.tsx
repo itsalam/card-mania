@@ -1,6 +1,6 @@
 import Logo from '@/assets/images/logo.svg'
 import { Tabs, TabsContent, TabsLabel, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Text } from '@/components/ui/text'
+import { Text } from '@/components/ui/text/base-text'
 import { MainSearchBar } from '@/features/mainSearchbar'
 import { Compass, History, LucideIcon, Newspaper, SettingsIcon, Sheet } from 'lucide-react-native'
 import React from 'react'
@@ -42,7 +42,7 @@ export default function HomeScreen() {
     onListLayout,
     onContentSizeChange,
     onHeaderLayout,
-  } = useCollaspableHeader(false, [], GRAPH_SECTION_HEIGHT)
+  } = useCollaspableHeader({ disable: false, defaultHeight: GRAPH_SECTION_HEIGHT })
 
   return (
     <SafeAreaView className="flex-1 w-full h-full overflow-visible" style={{ paddingTop: 8 }}>

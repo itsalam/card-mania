@@ -34,7 +34,7 @@ function ProfilePageLayoutInner({ userId }: { userId?: string }) {
     onListLayout,
     onContentSizeChange,
     onHeaderLayout,
-  } = useCollaspableHeader(false, [])
+  } = useCollaspableHeader()
 
   const tabContent: Partial<Record<TabType, ReactNode>> = {
     storefront: <StorefrontPage />,

@@ -2,7 +2,7 @@ import { useToast } from '@/components/Toast'
 import { Modal } from '@/components/ui/modal'
 import { SearchBar } from '@/components/ui/search'
 import { Spinner } from '@/components/ui/spinner'
-import { Text } from '@/components/ui/text'
+import { Text } from '@/components/ui/text/base-text'
 import {
   Check,
   ChevronLeft,

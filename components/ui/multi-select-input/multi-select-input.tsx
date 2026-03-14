@@ -1,4 +1,4 @@
-import { Text } from '@/components/ui/text'
+import { Text } from '@/components/ui/text/base-text'
 
 import { TagCategoryToIcon } from '@/components/icons'
 import { BASE_BADGE_HEIGHT, ToggleBadge } from '@/components/ui/badge'

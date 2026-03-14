@@ -1,4 +1,4 @@
-import { Text } from '@/components/ui/text'
+import { Text } from '@/components/ui/text/base-text'
 import { ArrowRight } from 'lucide-react-native'
 import { View } from 'react-native'
 import { LiquidGlassCard } from '../../components/tcg-card/GlassCard'
