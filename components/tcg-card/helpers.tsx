@@ -9,31 +9,24 @@ import { router, usePathname, type Href } from 'expo-router'
 import { useCallback, useRef } from 'react'
 import { View } from 'react-native'
 
-type GetDefaultPriceReturn = [string, number] | [null]
+export type GetDefaultPriceReturn = number | null
 
 export const getGradedPrice = (opts: {
   card: TCard
   graders: Graders[]
-  gradeId: string
+  gradeId?: string
 }): GetDefaultPriceReturn => {
   const { card, graders, gradeId } = opts
   const grader = graders.find((gd) => gd.grades.some((grade) => grade.id === gradeId))
   const currentGrade = grader?.grades.find((grade) => grade.id === gradeId)
   const gradePrices = (card.grades_prices ?? {}) as Record<string, number>
+  let key = 'ungraded'
   if (grader && currentGrade) {
-    let key = `${grader.slug}${currentGrade.grade_value}`.replace('.', '_')
-    const value = Number(gradePrices[key])
-    if (value) return [key, value]
+    key = `${grader.slug}${currentGrade.grade_value}`.replace('.', '_')
   }
-  return [null]
-}
-
-export const getDefaultPrice = (card?: TCard): GetDefaultPriceReturn => {
-  const gradePrices = (card?.grades_prices ?? {}) as Record<string, number>
-  const keys = Object.keys(gradePrices)
-  if (!keys.length) return [null]
-
-  return [null]
+  const value = Number(gradePrices[key])
+  if (value) return value
+  return null
 }
 
 export function useInvalidateOnFocus(queryKey: readonly unknown[]) {

@@ -30,9 +30,15 @@ const buttonVariants = cva(
         link: '',
       },
       size: {
-        default: cn('h-10 px-4 py-2 sm:h-9', Platform.select({ web: 'has-[>svg]:px-3' })),
-        sm: cn('h-9 gap-1.5 rounded-md px-3 sm:h-8', Platform.select({ web: 'has-[>svg]:px-2.5' })),
-        lg: cn('h-11 rounded-md px-6 sm:h-10', Platform.select({ web: 'has-[>svg]:px-4' })),
+        default: cn('min-h-10 px-4 py-2 sm:h-9', Platform.select({ web: 'has-[>svg]:px-3' })),
+        sm: cn(
+          'min-h-9 gap-1.5 rounded-md px-3 sm:h-8',
+          Platform.select({ web: 'has-[>svg]:px-2.5' })
+        ),
+        lg: cn(
+          'min-h-11 rounded-md px-6 py-3 sm:h-10',
+          Platform.select({ web: 'has-[>svg]:px-4' })
+        ),
         icon: 'h-11 w-11 sm:h-9 sm:w-9 rounded-full',
       },
     },
@@ -61,8 +67,8 @@ const buttonTextVariants = cva(
       },
       size: {
         default: '',
-        sm: '',
-        lg: '',
+        lg: 'text-lg text-wrap leading-none',
+        sm: 'text-sm font-medium leading-none',
         icon: '',
       },
     },

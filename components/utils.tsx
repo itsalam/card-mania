@@ -48,35 +48,61 @@ export const useBackgroundColors = (): ColorValueArray => {
   return defaultColors
 }
 
+import {
+  CURRENCY_CONFIG,
+  type Currency as CurrencyCode,
+} from '@/features/settings/hooks/useCurrency'
+
 export const formatPrice = (
   price?: number,
   {
-    currency = '$',
-    minimumFractionDigits = 2,
-    maximumFractionDigits = 2,
-  }: { currency?: string; minimumFractionDigits?: number; maximumFractionDigits?: number } = {}
-): string => {
-  if (!Boolean(price)) return '--.--'
-  return `${currency}${(price / 100).toLocaleString('en-US', {
+    currencyCode,
+    currency,
     minimumFractionDigits,
     maximumFractionDigits,
+  }: {
+    currencyCode?: CurrencyCode
+    /** @deprecated pass currencyCode instead */
+    currency?: string
+    minimumFractionDigits?: number
+    maximumFractionDigits?: number
+  } = {}
+): string => {
+  if (!Boolean(price)) return '--.--'
+  const config = currencyCode ? CURRENCY_CONFIG[currencyCode] : null
+  const symbol = config?.symbol ?? currency ?? '$'
+  const locale = config?.locale ?? 'en-US'
+  const decimals = config?.decimals ?? 2
+  const multiplier = 10 ** decimals
+  return `${symbol}${(price / multiplier).toLocaleString(locale, {
+    minimumFractionDigits: minimumFractionDigits ?? decimals,
+    maximumFractionDigits: maximumFractionDigits ?? decimals,
   })}`
 }
 
 export const formatCompactPrice = (
   price: number,
   {
-    currency = '$',
+    currencyCode,
+    currency,
     maximumSignificantDigits = 4,
-  }: { currency?: string; maximumSignificantDigits?: number } = {}
+  }: {
+    currencyCode?: CurrencyCode
+    /** @deprecated pass currencyCode instead */
+    currency?: string
+    maximumSignificantDigits?: number
+  } = {}
 ) => {
-  const dollars = price / 100
-  const formatter = new Intl.NumberFormat('en-US', {
+  const config = currencyCode ? CURRENCY_CONFIG[currencyCode] : null
+  const symbol = config?.symbol ?? currency ?? '$'
+  const locale = config?.locale ?? 'en-US'
+  const multiplier = 10 ** (config?.decimals ?? 2)
+  const formatter = new Intl.NumberFormat(locale, {
     notation: 'compact',
     compactDisplay: 'short',
     maximumSignificantDigits,
   })
-  return `${currency}${formatter.format(dollars)}`
+  return `${symbol}${formatter.format(price / multiplier)}`
 }
 
 export const formatLabel = (label: string, separator: string = ' '): string => {

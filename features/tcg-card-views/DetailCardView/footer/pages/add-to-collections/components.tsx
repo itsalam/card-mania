@@ -2,6 +2,8 @@ import { useViewCollectionItemsForCard } from '@/client/collections/query'
 import { CollectionItem, CollectionLike, EditCollectionArgsItem } from '@/client/collections/types'
 import {
   CollectionItemEntry,
+  PriceChangeModal,
+  PriceModalPayload,
   VariantsSelect,
 } from '@/components/collections/items/editable-entry-item'
 import { Spinner } from '@/components/ui/spinner'
@@ -55,6 +57,7 @@ export const CollectionCardItemEntries = ({
   } = useViewCollectionItemsForCard(collection?.id, card?.id, isShown)
 
   const [showModal, setShowModal] = useState(false)
+  const [priceChangeEntry, setPriceChangeEntry] = useState<PriceModalPayload | null>(null)
   const handleDismiss = useCallback(() => {
     setShowModal(false)
   }, [refetch])
@@ -84,22 +87,23 @@ export const CollectionCardItemEntries = ({
       {isLoading || card === null ? (
         <Spinner />
       ) : (
-        <Animated.FlatList
-          style={{ width: '100%' }}
-          contentContainerStyle={{ width: '100%' }}
-          data={sortedEntries}
-          renderItem={({ item: entry, index }) => (
-            <CollectionItemEntry
-              card={card}
+        <View style={{ width: '100%' }}>
+          {sortedEntries.map((entry, index) => (
+            <Animated.View
               key={entry.id ?? entry.grade_condition_id ?? `${index}-new`}
-              collectionItem={entry}
-              collection={collection}
-              editable={editable}
-              isLoading={isLoadingOuter}
-            />
-          )}
-          itemLayoutAnimation={LinearTransition}
-        />
+              layout={LinearTransition}
+            >
+              <CollectionItemEntry
+                card={card}
+                collectionItem={entry}
+                collection={collection}
+                editable={editable}
+                isLoading={isLoadingOuter}
+                onPriceModalOpen={(data) => setPriceChangeEntry(data)}
+              />
+            </Animated.View>
+          ))}
+        </View>
       )}
 
       <Button
@@ -134,6 +138,11 @@ export const CollectionCardItemEntries = ({
           onDismiss={handleDismiss}
         />
       )}
+      <PriceChangeModal
+        visible={!!priceChangeEntry}
+        onDismiss={() => setPriceChangeEntry(null)}
+        data={priceChangeEntry}
+      />
     </View>
   )
 }

@@ -1,6 +1,7 @@
 import { cn } from '@/lib/utils/index'
 import * as LabelPrimitive from '@rn-primitives/label'
 import { Platform } from 'react-native'
+import { Colors } from 'react-native-ui-lib'
 
 function Label({
   className,
@@ -9,6 +10,7 @@ function Label({
   onPressIn,
   onPressOut,
   disabled,
+  style,
   ...props
 }: LabelPrimitive.TextProps & React.RefAttributes<LabelPrimitive.TextRef>) {
   return (
@@ -27,11 +29,8 @@ function Label({
       disabled={disabled}
     >
       <LabelPrimitive.Text
-        className={cn(
-          'text-foreground text-sm',
-          Platform.select({ web: 'leading-none' }),
-          className
-        )}
+        className={cn('text-sm', Platform.select({ web: 'leading-none' }), className)}
+        style={[{ color: Colors.$textDefault }, style]}
         {...props}
       />
     </LabelPrimitive.Root>

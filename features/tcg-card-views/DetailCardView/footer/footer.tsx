@@ -1,11 +1,10 @@
 import { useIsWishlisted, useToggleWishlist } from '@/client/card/wishlist'
 import DraggableFooter from '@/components/DraggableFooter'
-import { getDefaultPrice } from '@/components/tcg-card/helpers'
 import { AppStandaloneHeader } from '@/components/ui/headers'
 import { Swapper } from '@/components/ui/swapper'
 import { TCard } from '@/constants/types'
 import { FolderHeart, ShoppingCart, Star } from 'lucide-react-native'
-import { useEffect, useMemo, useRef } from 'react'
+import { useEffect, useRef } from 'react'
 import { Dimensions } from 'react-native'
 import Animated, {
   FadeIn,
@@ -30,10 +29,6 @@ export const Footer = ({ card }: { card?: TCard }) => {
   } = useCardDetails()
   const { data: wishlistSet } = useIsWishlisted('card', [card?.id].filter(Boolean) as string[])
   const toggleWishlist = useToggleWishlist('card')
-  const grades = useMemo(
-    () => (card ? ([getDefaultPrice(card).filter(Boolean)[0]] as string[]) : []),
-    [card]
-  )
   const prevPage = useRef<number>(page)
 
   useEffect(() => {
@@ -66,10 +61,7 @@ export const Footer = ({ card }: { card?: TCard }) => {
                 highLighted={card && wishlistSet?.has?.(card.id)}
                 icon={Star}
                 label="Wishlist"
-                onPress={() =>
-                  card &&
-                  toggleWishlist.mutate({ kind: 'card', id: card.id, p_metadata: { grades } })
-                }
+                onPress={() => card && toggleWishlist.mutate({ kind: 'card', id: card.id })}
               />
               <FooterButton
                 icon={ShoppingCart}

@@ -7,7 +7,6 @@ import { Dimensions } from 'react-native'
 import {
   cancelAnimation,
   Easing,
-  interpolate,
   useAnimatedStyle,
   useDerivedValue,
   useSharedValue,
@@ -96,7 +95,7 @@ export const useAnimateFromPosition = (
     ready?: boolean
   }
 ) => {
-  const { duration = 200, onClose, onOpen, fallbackHref, ready = true } = opts || {}
+  const { duration = 1250, onClose, onOpen, fallbackHref, ready = true } = opts || {}
   // shared values
   const animation = useSharedValue({ ...from, progress: 0 })
   const scrim = useSharedValue(0)
@@ -169,14 +168,8 @@ export const useAnimateFromPosition = (
   }, [ready])
 
   const cardStyle = useAnimatedStyle(() => ({
-    position: 'absolute',
-    overflow: 'hidden',
     left: animation.value.x,
     top: animation.value.y,
-    width: animation.value.width,
-    height: animation.value.height,
-    // opacity: animation.value.progress,
-    borderRadius: interpolate(animation.value.progress, [0, 1], [2, 8]),
   }))
 
   const scrimStyle = useAnimatedStyle(() => ({

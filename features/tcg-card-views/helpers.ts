@@ -1,6 +1,5 @@
 import { CollectionItem } from '@/client/collections/types'
 import { ImageProxyOpts } from '@/client/image-proxy'
-import { getDefaultPrice } from '@/components/tcg-card/helpers'
 import { TCard } from '@/constants/types'
 import { CollectionItemQueryView } from '@/lib/store/functions/types'
 import { DisplayData } from './types'
@@ -81,7 +80,6 @@ export const getCardDisplayData = ({
   const isIncomplete = Boolean(card) && isLoading
   const displayPriceFix =
     card === undefined ? null : getPriceFix({ card, collectionItem, metadata })
-  const [, displayPrice] = isIncomplete ? [null, null] : getDefaultPrice(card)
   const displayData: DisplayData | null =
     !Boolean(card) && isIncomplete
       ? null
@@ -96,7 +94,7 @@ export const getCardDisplayData = ({
             imageType: 'front',
             queryHash: card?.image?.query_hash ?? undefined,
           } as ImageProxyOpts,
-          displayPrice: displayPriceFix ?? displayPrice,
+          displayPrice: displayPriceFix ?? null,
           metadata: metadata?.price_key,
           quantity: collectionItem?.quantity,
         }

@@ -51,6 +51,8 @@ import { CardDetailsProvider } from './provider'
 const CARD_WIDTH_RATIO = 0.65
 const { width: W, height: H } = Dimensions.get('window')
 
+const AImage = Animated.createAnimatedComponent(Image)
+
 export default function FocusCardView({
   cardId,
   collectionIdArgs,
@@ -96,7 +98,13 @@ export default function FocusCardView({
         cardId={cardId}
         cardData={cardData}
         title={
-          <View className="p-4 flex flex-col items-start justify-stretch gap-1 w-full pb-8">
+          <View
+            className="p-4 flex flex-col gap-4 pb-8"
+            style={{
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
             <View className="p-4 flex flex-col items-start justify-stretch gap-1 w-full pb-0">
               <Text variant="h1" style={{ textAlign: 'left' }}>
                 {cardData?.name}
@@ -242,22 +250,22 @@ const CardDetailContainer = ({
     [animateFrom, imageContainerLayout]
   )
 
+  const insets = useSafeAreaInsets()
   const {
     progress,
     cardStyle: cardTransition,
     scrimStyle,
     close,
-  } = useTransitionAnimation(adjustedAnimateFrom, {
+  } = useTransitionAnimation(animateFrom, {
     fallbackHref: returnTo,
     animateTo: {
       width: W * CARD_WIDTH_RATIO,
       height: (W * CARD_WIDTH_RATIO) / (5 / 7),
-      x: 0,
-      y: 0,
+      x: (W * (1 - CARD_WIDTH_RATIO)) / 2,
+      y: insets.top + 68,
     },
     ready: !!imageContainerLayout,
   })
-  const insets = useSafeAreaInsets()
   const CARD_TITLE_POSITION = 1.0
 
   const y = useSharedValue(0)
@@ -324,7 +332,7 @@ const CardDetailContainer = ({
             [0, 1],
             [measuredHeaderHeight.value, measuredHeaderHeight.value * 0.4]
           )
-        : undefined,
+        : 'auto',
   }))
 
   const cardImageAnimStyle = useAnimatedStyle(() => ({
@@ -335,6 +343,12 @@ const CardDetailContainer = ({
       Extrapolation.CLAMP
     ),
     top: interpolate(expandProgress.value, [0, 1], [insets.top + 68, 0], Extrapolation.CLAMP),
+    left: interpolate(
+      expandProgress.value,
+      [0, 1],
+      [(W * (1 - CARD_WIDTH_RATIO)) / 2, 0],
+      Extrapolation.CLAMP
+    ),
     opacity: interpolate(expandProgress.value, [0, 0.1], [1, 0.4], Extrapolation.CLAMP),
     borderRadius: interpolate(expandProgress.value, [0, 0.1], [10, 0], Extrapolation.CLAMP),
   }))
@@ -349,7 +363,7 @@ const CardDetailContainer = ({
           },
         ]}
       >
-        <View style={{ paddingBottom: 200 }}>
+        <View>
           <AMaskedView
             style={[
               {
@@ -387,109 +401,105 @@ const CardDetailContainer = ({
                 },
               ]}
             >
-              <View
-                style={{
-                  alignSelf: 'center',
-                }}
+              <Animated.View
+                style={[
+                  cardTransition,
+                  cardImageAnimStyle,
+                  {
+                    aspectRatio: 5 / 7,
+                    backgroundColor: 'red',
+                    // alignSelf: 'center',
+                  },
+                ]}
+                ref={imageContainerLayoutRef}
+                onLayout={onImageContainerLayout}
               >
-                <Animated.View
+                <View
+                  style={{
+                    width: '106.3%',
+                    height: '106.8%',
+                    position: 'absolute',
+                    top: '-3.15%',
+                    left: '-3.4%',
+                    borderColor: 'rgba(80,80,80,1)',
+                    borderWidth: 1,
+                  }}
+                >
+                  <LinearGradient
+                    colors={[
+                      'rgba(80,80,80,0.7)',
+                      'transparent',
+                      'transparent',
+                      'rgba(80,80,80,0.7)',
+                    ]}
+                    start={{ x: 0, y: 0.5 }}
+                    end={{ x: 1, y: 0.5 }}
+                    locations={[0, 0.1, 0.9, 1]}
+                    style={{ position: 'absolute', width: '100%', height: '100%' }}
+                  />
+                  <LinearGradient
+                    colors={[
+                      'rgba(80,80,80,0.7)',
+                      'transparent',
+                      'transparent',
+                      'rgba(80,80,80,0.7)',
+                    ]}
+                    start={{ x: 0.5, y: 0 }}
+                    end={{ x: 0.5, y: 1 }}
+                    locations={[0, 0.1, 0.9, 1]}
+                    style={{ position: 'absolute', width: '100%', height: '100%' }}
+                  />
+                </View>
+                <AImage
                   style={[
-                    cardImageAnimStyle,
                     {
-                      aspectRatio: 5 / 7,
-                      alignSelf: 'center',
+                      width: '100%',
+                      height: '100%',
+                      borderRadius: 6,
                     },
                   ]}
-                  ref={imageContainerLayoutRef}
-                  onLayout={onImageContainerLayout}
-                >
-                  <View
-                    style={{
-                      width: '106.3%',
-                      height: '106.8%',
-                      position: 'absolute',
-                      top: '-3.15%',
-                      left: '-3.4%',
-                      borderColor: 'rgba(80,80,80,1)',
-                      borderWidth: 1,
-                    }}
-                  >
-                    <LinearGradient
-                      colors={[
-                        'rgba(80,80,80,0.7)',
-                        'transparent',
-                        'transparent',
-                        'rgba(80,80,80,0.7)',
-                      ]}
-                      start={{ x: 0, y: 0.5 }}
-                      end={{ x: 1, y: 0.5 }}
-                      locations={[0, 0.1, 0.9, 1]}
-                      style={{ position: 'absolute', width: '100%', height: '100%' }}
-                    />
-                    <LinearGradient
-                      colors={[
-                        'rgba(80,80,80,0.7)',
-                        'transparent',
-                        'transparent',
-                        'rgba(80,80,80,0.7)',
-                      ]}
-                      start={{ x: 0.5, y: 0 }}
-                      end={{ x: 0.5, y: 1 }}
-                      locations={[0, 0.1, 0.9, 1]}
-                      style={{ position: 'absolute', width: '100%', height: '100%' }}
-                    />
-                  </View>
-                  <Image
-                    style={[
-                      {
-                        width: '100%',
-                        height: '100%',
-                        borderRadius: 6,
-                      },
-                    ]}
-                    source={[
-                      {
-                        uri: image,
-                        cacheKey: cardId,
-                        width: W * CARD_WIDTH_RATIO,
-                        height: (W * CARD_WIDTH_RATIO) / (5 / 7),
-                      },
-                    ]}
-                    placeholder={
-                      thumbnailImage
-                        ? {
-                            uri: thumbnailImage,
-                            cacheKey: `${cardId}-thumb`,
-                            width: W,
-                            height: W / (5 / 7),
-                          }
-                        : undefined
-                    }
-                    placeholderContentFit="cover"
-                    cachePolicy="memory-disk"
-                    transition={0}
-                    contentFit="cover"
-                  />
-                </Animated.View>
-              </View>
+                  source={[
+                    {
+                      uri: image,
+                      cacheKey: cardId,
+                      width: W * CARD_WIDTH_RATIO,
+                      height: (W * CARD_WIDTH_RATIO) / (5 / 7),
+                    },
+                  ]}
+                  placeholder={
+                    thumbnailImage
+                      ? {
+                          uri: thumbnailImage,
+                          cacheKey: `${cardId}-thumb`,
+                          width: W,
+                          height: W / (5 / 7),
+                        }
+                      : undefined
+                  }
+                  placeholderContentFit="cover"
+                  cachePolicy="memory-disk"
+                  transition={0}
+                  contentFit="cover"
+                />
+              </Animated.View>
             </View>
           </AMaskedView>
-          <GradientBackground
-            start={{ x: 0.5, y: 0.5 }}
-            end={{ x: 0.5, y: 0.0 }}
-            colors={[Colors.$backgroundDefault, 'transparent']}
-            positions={[0.0, 0.8]}
-            opacity={[1, 0]}
-            style={{
-              position: 'absolute',
-              bottom: 0,
-              zIndex: 2,
-              flex: 0,
-            }}
-          >
-            <View style={{}}>{title}</View>
-          </GradientBackground>
         </View>
+        <GradientBackground
+          start={{ x: 0.5, y: 0.5 }}
+          end={{ x: 0.5, y: 0.0 }}
+          colors={[Colors.$backgroundDefault, 'transparent']}
+          positions={[0.5, 1.0]}
+          opacity={[1, 0]}
+          style={{
+            zIndex: 2,
+            flex: 0,
+            width: '100%',
+            marginTop: -100,
+          }}
+        >
+          {title}
+        </GradientBackground>
         <Button
           onPress={close}
           style={{ position: 'absolute', left: 16, top: insets.top + 16, zIndex: 20 }}

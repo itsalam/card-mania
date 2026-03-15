@@ -17,7 +17,6 @@ import Animated, {
   useAnimatedReaction,
   useAnimatedRef,
   useAnimatedStyle,
-  useScrollOffset,
   useSharedValue,
   withDecay,
   withTiming,
@@ -37,7 +36,8 @@ export function useCollaspableHeader(opts?: {
   const expandProgress = useSharedValue(0)
   const gestureRef = useRef<GestureType>(undefined)
   const scrollViewRef = useAnimatedRef<AnimatedScrollRef>()
-  const scrollOffset = useScrollOffset(scrollViewRef)
+  const scrollOffset = useSharedValue(0)
+  const isScrollViewMounted = useSharedValue(false)
   const measuredHeaderHeight = useSharedValue(defaultHeight ?? 0)
   const contentHeight = useSharedValue(0)
   const containerHeight = useSharedValue(0)
@@ -63,7 +63,9 @@ export function useCollaspableHeader(opts?: {
     const scroll = Math.max(0, v - H)
     scrollOffset.value = scroll
 
-    scrollTo(scrollViewRef, 0, scroll, false)
+    if (isScrollViewMounted.value) {
+      scrollTo(scrollViewRef, 0, scroll, false)
+    }
   }
 
   useAnimatedReaction(
@@ -84,6 +86,7 @@ export function useCollaspableHeader(opts?: {
     blockHeaderMeasurement.value = false
     expandProgress.value = 0
     scrollOffset.value = 0
+    isScrollViewMounted.value = false
   }, [...(resetKeys ?? [])])
 
   const THRESHOLD = 0.7 // > 0.5 → snap closed, < 0.5 → snap open
@@ -182,9 +185,10 @@ export function useCollaspableHeader(opts?: {
     headerAnimatedStyle,
     onListLayout: React.useCallback(
       (e: any) => {
+        isScrollViewMounted.value = true
         containerHeight.value = e.nativeEvent.layout.height
       },
-      [containerHeight]
+      [containerHeight, isScrollViewMounted]
     ),
     onContentSizeChange: React.useCallback(
       (_: number, height: number) => {

@@ -1,15 +1,13 @@
 import { cssInterop } from 'nativewind'
-import React, { useEffect, useState, PureComponent } from 'react'
-import { AccessibilityActionEvent, View, AccessibilityInfo, StyleSheet } from 'react-native'
+import React, { PureComponent, useEffect, useState } from 'react'
+import { AccessibilityActionEvent, AccessibilityInfo, StyleSheet, View } from 'react-native'
 import {
-  asBaseComponent,
   Assets,
   BorderRadiuses,
   Colors,
   NumberInput,
   Button as RNButton,
   View as RNView,
-  Shadows,
   Spacings,
   StepperProps,
   Text,
@@ -268,7 +266,6 @@ const styles = StyleSheet.create({
     borderColor: Colors.$outlineDefault,
     paddingHorizontal: Spacings.s3,
     paddingVertical: Spacings.s1,
-    ...Shadows.sh10.bottom,
   },
   textDefault: {
     marginHorizontal: Spacings.s5,
@@ -279,4 +276,3 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
 })
-export default asBaseComponent(Stepper)
