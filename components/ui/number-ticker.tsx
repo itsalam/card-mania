@@ -1,15 +1,22 @@
 import { cssInterop } from 'nativewind'
 import React, { Component, useEffect, useState } from 'react'
-import { AccessibilityActionEvent, AccessibilityInfo, StyleSheet, View } from 'react-native'
+import {
+  AccessibilityActionEvent,
+  AccessibilityInfo,
+  StyleProp,
+  StyleSheet,
+  View,
+  ViewStyle,
+} from 'react-native'
 import {
   Assets,
+  StepperProps as BaseStepperProps,
   BorderRadiuses,
   Colors,
   NumberInput,
   Button as RNButton,
   View as RNView,
   Spacings,
-  StepperProps,
   Text,
   TextFieldProps,
   Typography,
@@ -23,6 +30,10 @@ cssInterop(NumberInput, {
     target: 'style',
   },
 })
+
+type StepperProps = BaseStepperProps & {
+  style?: StyleProp<ViewStyle>
+}
 
 type NumberTickerProps = TextFieldProps & {
   disabled?: boolean
@@ -230,7 +241,7 @@ class Stepper extends Component<StepperProps, StepperState> {
     )
   }
   render() {
-    const { type, disabled, testID } = this.props
+    const { type, disabled, testID, style } = this.props
     const { currentValue } = this.state
     return (
       //@ts-ignore
@@ -238,12 +249,18 @@ class Stepper extends Component<StepperProps, StepperState> {
         row
         centerV
         {...this.getAccessibilityProps()}
-        style={
-          type === 'floating' && [
-            styles.containerFloating,
-            { backgroundColor: Colors.$backgroundElevated, borderColor: Colors.$outlineDefault },
-          ]
-        }
+        style={[
+          ...(type === 'floating'
+            ? [
+                styles.containerFloating,
+                {
+                  backgroundColor: Colors.$backgroundElevated,
+                  borderColor: Colors.$outlineDefault,
+                },
+              ]
+            : []),
+          style,
+        ]}
       >
         {this.renderButton(ActionType.MINUS)}
         <Text

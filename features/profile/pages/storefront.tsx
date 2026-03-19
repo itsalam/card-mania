@@ -221,7 +221,7 @@ function StoreFrontDropdown({
     >
       <Animated.View
         style={{
-          height: measuredButtonHeight.value,
+          height: measuredButtonHeight,
         }}
       />
       <DropdownContainer

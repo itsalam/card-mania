@@ -78,9 +78,17 @@ export default Sentry.wrap(function RootLayout() {
             contentStyle: { backgroundColor: 'transparent' },
           }}
         />
+        <Stack.Screen
+          name="cart"
+          options={{
+            presentation: 'transparentModal',
+            headerShown: false,
+            animation: 'none',
+            contentStyle: { backgroundColor: 'transparent' },
+          }}
+        />
         <Stack.Screen name="+not-found" />
       </Stack>
-
       <PortalHost />
     </Providers>
   )

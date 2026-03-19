@@ -21,6 +21,7 @@ import { Separator } from '@/components/ui/separator'
 import { SkeletonText, Text } from '@/components/ui/text'
 import { formatPrice } from '@/components/utils'
 import { TCard } from '@/constants/types'
+import { getGradingDisplayString } from '@/features/collection/helpers'
 import { useEffectiveColorScheme } from '@/features/settings/hooks/effective-color-scheme'
 import { CollectionItemRow } from '@/lib/store/functions/types'
 import { useQueryClient } from '@tanstack/react-query'
@@ -228,9 +229,10 @@ export const CollectionItemEntry = ({
             }}
             loading={isLoading}
           >
-            {`${(currentGrader ? `${currentGrader.slug} ` : 'ungraded').toLocaleUpperCase()}${
-              currentGrade?.grade_value.toPrecision(2) ?? ''
-            }`}
+            {
+              // @ts-ignore
+              getGradingDisplayString(collectionItem as CollectionItemRow)
+            }
           </SkeletonText>
         </View>
         <View

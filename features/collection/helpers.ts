@@ -1,4 +1,4 @@
-import { CollectionIdArgs } from '@/client/collections/types'
+import { CollectionIdArgs, CollectionItem } from '@/client/collections/types'
 import { CollectionRow } from '@/lib/store/functions/types'
 import { Colors } from 'react-native-ui-lib'
 import { DefaultPageTypes } from './provider'
@@ -54,4 +54,14 @@ export const getCollectionName = ({
   if (collection && !isDefaultCollection(collection)) {
     return collection.name
   }
+}
+
+export const getGradingDisplayString = (collectionItem?: CollectionItem) => {
+  return [
+    collectionItem?.grading_company,
+    collectionItem?.grade_condition?.grade_value,
+    ...(collectionItem?.grade_condition?.label
+      ? [`·`, `${collectionItem.grade_condition.label}`]
+      : []),
+  ]
 }

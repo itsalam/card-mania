@@ -189,7 +189,7 @@ export default function DraggableFooter({
       onLayout={onFullContentLayout}
     >
       <BlurGradientBackground
-        style={[thumbStyles.sheetInner, { flex: 1, width: '100%' }]}
+        style={[thumbStyles.sheetInner, { flex: 1, alignSelf: 'stretch' }]}
         backgroundOpacity={0.95}
       >
         <GestureDetector gesture={composed}>
@@ -199,12 +199,13 @@ export default function DraggableFooter({
                 zIndex: 2,
                 display: 'flex',
                 minHeight: 52,
+                alignSelf: 'stretch',
               },
             ]}
             opacity={mainContentBlurOpacity}
           >
             <Animated.View
-              style={thumbStyles.mainContent}
+              style={[thumbStyles.mainContent]}
               ref={mainContentRef}
               onLayout={onMainContentLayout}
             >

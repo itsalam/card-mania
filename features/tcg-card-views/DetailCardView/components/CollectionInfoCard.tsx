@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button'
 import { NumberTicker } from '@/components/ui/number-ticker'
 import { SkeletonText, Text } from '@/components/ui/text'
 import { formatPrice } from '@/components/utils'
+import { useAddToCart, useOpenCart } from '@/features/cart/hooks'
 import { useGetCollection } from '@/features/collection/hooks'
 import { useUserProfile } from '@/features/settings/client'
 import { getCardDisplayData } from '@/features/tcg-card-views/helpers'
@@ -16,6 +17,7 @@ import { BorderRadiuses, Colors, TouchableOpacity } from 'react-native-ui-lib'
 import { TextField } from '@/components/ui/input/base-input'
 import { Modal } from '@/components/ui/modal'
 import { Separator } from '@/components/ui/separator'
+import { getGradingDisplayString } from '@/features/collection/helpers'
 import { useCurrency } from '@/features/settings/hooks/useCurrency'
 import { Check, DollarSign } from 'lucide-react-native'
 
@@ -41,9 +43,13 @@ export const CollectionInfoCard = (props: { collectionItemId: string; cardId: st
     [cardData, collectionItem]
   )
 
-  const [overridePrice, setOverridePrice] = useState<number | undefined>(
-    displayData?.displayPrice ?? undefined
-  )
+  const [overridePrice, setOverridePrice] = useState<number | undefined>(undefined)
+
+  const finalPrice = overridePrice || displayData?.displayPrice
+  const [selectedQuantity, setSelectedQuantity] = useState(0)
+
+  const addToCart = useAddToCart()
+  const openCart = useOpenCart()
 
   const loadingInfo = !Boolean(collectionItem && collectionInfo && cardData)
 
@@ -58,7 +64,16 @@ export const CollectionInfoCard = (props: { collectionItemId: string; cardId: st
         alignSelf: 'stretch',
       }}
     >
-      <SkeletonText variant={'h4'} loading={loadingInfo}>{`${collectionInfo?.name}`}</SkeletonText>
+      <View>
+        <SkeletonText
+          variant={'h3'}
+          loading={loadingInfo}
+        >{`${collectionInfo?.name}`}</SkeletonText>
+        <SkeletonText variant={'info'} loading={loadingInfo}>
+          {getGradingDisplayString(collectionItem).join(' ')}
+        </SkeletonText>
+      </View>
+
       <UserContact
         user={
           user.data
@@ -89,8 +104,20 @@ export const CollectionInfoCard = (props: { collectionItemId: string; cardId: st
             }}
             loading={loadingInfo}
           >
-            {overridePrice ? (
-              formatPrice(overridePrice)
+            {finalPrice ? (
+              <>
+                {formatPrice(finalPrice)}
+                {overridePrice !== undefined && (
+                  <Text
+                    className="text-4xl opacity-100"
+                    style={{
+                      color: Colors.$textPrimary,
+                    }}
+                  >
+                    *
+                  </Text>
+                )}
+              </>
             ) : displayData?.displayPrice ? (
               formatPrice(displayData.displayPrice)
             ) : (
@@ -127,8 +154,8 @@ export const CollectionInfoCard = (props: { collectionItemId: string; cardId: st
           }}
           min={0}
           max={collectionItem?.quantity ?? 0}
-          initialNumber={loadingInfo ? undefined : 0}
-          // onChangeNumber={(n) => updateDraft({ quantity: n })}
+          initialNumber={loadingInfo ? undefined : selectedQuantity}
+          onChangeNumber={setSelectedQuantity}
         />
         <TouchableOpacity
           onPress={() => setPriceModalVisible(true)}
@@ -145,7 +172,23 @@ export const CollectionInfoCard = (props: { collectionItemId: string; cardId: st
         </TouchableOpacity>
       </View>
       <View>
-        <Button size={'lg'}>
+        <Button
+          size={'lg'}
+          disabled={loadingInfo || selectedQuantity === 0}
+          onPress={() => {
+            if (!collectionItem) return
+            const price = finalPrice ?? 0
+            addToCart({
+              data: collectionItem,
+              cart: {
+                price,
+                quantity: selectedQuantity,
+                maxQuantity: collectionItem.quantity ?? 1,
+              },
+            })
+            openCart()
+          }}
+        >
           <Text>Add to Deal</Text>
         </Button>
       </View>
@@ -153,7 +196,7 @@ export const CollectionInfoCard = (props: { collectionItemId: string; cardId: st
         visible={priceModalVisible}
         onDismiss={() => setPriceModalVisible(false)}
         data={{
-          price: overridePrice,
+          price: finalPrice ?? undefined,
           setPrice: setOverridePrice,
         }}
       />

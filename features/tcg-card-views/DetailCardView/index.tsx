@@ -7,7 +7,6 @@ import { LiquidGlassCard } from '@/components/tcg-card/GlassCard'
 import { useInvalidateOnFocus } from '@/components/tcg-card/helpers'
 import { Text } from '@/components/ui/text/base-text'
 import { chunk, formatLabel, formatPrice } from '@/components/utils'
-import { TCard } from '@/constants/types'
 import { qk } from '@/lib/store/functions/helpers'
 import { Image } from 'expo-image'
 import { Href } from 'expo-router'
@@ -34,11 +33,14 @@ import Animated, {
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Button, Colors, Dialog, PanningProvider } from 'react-native-ui-lib'
 
+import { useViewSingleCollectionItem } from '@/client/collections/query'
 import { useMeasure } from '@/components/hooks/useMeasure'
 import { useCollaspableHeader } from '@/features/collection/ui'
 import MaskedView from '@react-native-masked-view/masked-view'
 import { LinearGradient } from 'expo-linear-gradient'
 import { GestureDetector } from 'react-native-gesture-handler'
+import { getCardDisplayData } from '../helpers'
+import { DisplayData } from '../types'
 import { CardScreenHeader } from './components/CardScreenHeader'
 import { CollectionInfoCard } from './components/CollectionInfoCard'
 import { Prices } from './components/Prices'
@@ -65,6 +67,11 @@ export default function FocusCardView({
   returnTo?: Href
 }) {
   const { data: cardData } = useCardQuery(cardId)
+  const { data: collectionItem } = useViewSingleCollectionItem(collectionIdArgs?.itemId)
+  const displayData = useMemo(
+    () => getCardDisplayData({ card: cardData, collectionItem }),
+    [cardData, collectionItem]
+  )
 
   const grades = cardData?.grades_prices ?? {}
   const prices = useMemo(
@@ -96,7 +103,7 @@ export default function FocusCardView({
         animateFrom={animateFrom}
         returnTo={returnTo}
         cardId={cardId}
-        cardData={cardData}
+        displayData={displayData}
         title={
           <View
             className="p-4 flex flex-col gap-4 pb-8"
@@ -219,14 +226,14 @@ const AMaskedView = Animated.createAnimatedComponent(MaskedView)
 
 const CardDetailContainer = ({
   children,
-  cardData,
+  displayData,
   animateFrom,
   cardId,
   title,
   returnTo,
 }: {
   cardId: string
-  cardData?: TCard
+  displayData: DisplayData | null
   animateFrom: Coordinates
   children: ReactNode
   title: ReactNode
@@ -276,9 +283,6 @@ const CardDetailContainer = ({
   }, [])
   const travelDistance = CARD_TITLE_POSITION * ((W * 7) / 5)
   const scrollProgress = useDerivedValue(() => Math.max(0, y.value / travelDistance))
-  const mainBlur = useDerivedValue(() =>
-    interpolate(scrollProgress.value, [0, 1], [0, 1], Extrapolation.CLAMP)
-  )
 
   const backgroundOpacity = useSharedValue([1, 0])
   useAnimatedReaction(
@@ -303,7 +307,7 @@ const CardDetailContainer = ({
     cardId: cardId,
     imageType: 'front',
     quality: 100,
-    queryHash: cardData?.image?.query_hash ?? undefined,
+    ...displayData?.imageProxyArgs,
   })
 
   const { data: thumbnailImage } = useImageProxy({
@@ -311,7 +315,7 @@ const CardDetailContainer = ({
     shape: 'card',
     cardId: cardId,
     imageType: 'front',
-    queryHash: cardData?.image?.query_hash ?? undefined,
+    queryHash: displayData?.imageProxyArgs?.queryHash ?? undefined,
   })
 
   const {
@@ -407,8 +411,6 @@ const CardDetailContainer = ({
                   cardImageAnimStyle,
                   {
                     aspectRatio: 5 / 7,
-                    backgroundColor: 'red',
-                    // alignSelf: 'center',
                   },
                 ]}
                 ref={imageContainerLayoutRef}
@@ -461,7 +463,7 @@ const CardDetailContainer = ({
                   source={[
                     {
                       uri: image,
-                      cacheKey: cardId,
+                      cacheKey: `${displayData?.imageProxyArgs.imageId || displayData?.imageProxyArgs.cardId}-thumb`,
                       width: W * CARD_WIDTH_RATIO,
                       height: (W * CARD_WIDTH_RATIO) / (5 / 7),
                     },

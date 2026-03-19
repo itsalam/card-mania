@@ -172,7 +172,7 @@ export function useCollaspableHeader(opts?: {
       height:
         measuredHeaderHeight.value > 0
           ? interpolate(expandProgress.value, [0, 1], [measuredHeaderHeight.value, 0])
-          : undefined,
+          : 'auto',
       transform: [{ translateY: interpolate(expandProgress.value, [0, 1], [0, -12]) }],
       pointerEvents: expandProgress.value >= 0.99 ? 'none' : ('auto' as any),
     }),

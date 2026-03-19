@@ -4,7 +4,6 @@ import { useGetCollection, useGetCollectionItems } from '@/features/collection/h
 import { CardListView } from '@/features/tcg-card-views/ListCard'
 import { CollectionItemQueryView } from '@/lib/store/functions/types'
 import { View } from 'react-native'
-import { FlatList } from 'react-native-gesture-handler'
 import { BorderRadiuses, Colors } from 'react-native-ui-lib'
 
 type CollectionPreviewProps = { collectionId?: string }
@@ -28,18 +27,16 @@ type CollectionPreviewItemProps = { collection: CollectionLike }
 
 function StorefrontPreviewItems({ collection }: CollectionPreviewItemProps) {
   const { query } = useGetCollectionItems({ collectionId: collection?.id }, undefined, false)
-  const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = query
+  const { data } = query
   const flatData = data?.pages.flat() ?? []
 
   return (
-    <FlatList
-      data={flatData}
-      keyExtractor={(item) => item.collection_item_id}
-      renderItem={({ item: collectionItem }) => {
+    <View>
+      {flatData.map((collectionItem) => {
         const graded = collectionItem?.price_key !== 'ungraded'
-
         return (
           <CardListView
+            key={collectionItem.collection_item_id}
             collectionItem={{ ...collectionItem, id: collectionItem.collection_item_id }}
             cardContainerStyle={
               graded
@@ -59,8 +56,8 @@ function StorefrontPreviewItems({ collection }: CollectionPreviewItemProps) {
             navigateTo="/profile/[shop-item]"
           />
         )
-      }}
-    />
+      })}
+    </View>
   )
 }
 

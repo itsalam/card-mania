@@ -154,7 +154,6 @@ export const thumbStyles = StyleSheet.create({
     alignSelf: 'center',
   },
   mainContent: {
-    width: '100%',
     flex: 1,
     display: 'flex',
     flexDirection: 'column',
@@ -162,10 +161,11 @@ export const thumbStyles = StyleSheet.create({
     height: '100%',
   },
   sheet: {
-    width: W + 4,
+    width: W + 2,
+    paddingHorizontal: 1,
     position: 'absolute',
     top: '100%',
-    left: -2,
+    left: -1,
     right: 0,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,

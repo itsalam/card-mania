@@ -95,13 +95,14 @@ export function useViewCollectionItemsForCard(
 }
 
 export function useViewSingleCollectionItem(
-  itemId: string,
+  itemId: string | undefined,
   placeHolderData?: Partial<CollectionItem>
 ) {
   return useQuery<{}, DefaultError, CollectionItem>({
-    queryKey: [...qk.collectionItemSingle(itemId)],
-    queryFn: () => viewSingleCollectionItem(itemId),
+    queryKey: [...qk.collectionItemSingle(itemId ?? '')],
+    queryFn: () => viewSingleCollectionItem(itemId!),
     placeholderData: keepPreviousData,
+    enabled: !!itemId,
     initialData: placeHolderData,
   })
 }
