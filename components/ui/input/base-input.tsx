@@ -16,6 +16,7 @@ import React, {
   useMemo,
 } from 'react'
 import { TextInput, View } from 'react-native'
+import { Colors } from 'react-native-ui-lib'
 import { DynamicBorderBox } from '../border-label/border'
 import FloatingPlaceholder from '../border-label/placeholder'
 import ClearButton from './clear-button'
@@ -187,7 +188,7 @@ export const Input = forwardRef<TextInput, InputProps>((props, ref) => {
           <FloatingPlaceholder
             placeholder={placeholder}
             floatingPlaceholderStyle={fullFloatingPlaceholderStyle}
-            placeHolderStyle={[styles.inputTextStyle, inputStyle]}
+            placeHolderStyle={[styles.inputTextStyle, { color: Colors.$textDefault }, inputStyle]}
             fieldOffset={fieldLayout ?? undefined}
             inputOffset={inputLayout ?? undefined}
             showMandatoryIndication={showMandatoryIndication}
@@ -201,7 +202,12 @@ export const Input = forwardRef<TextInput, InputProps>((props, ref) => {
             bottom: 20,
           }}
           value={context.value}
-          style={[styles.inputBody, styles.inputTextStyle, inputStyle]}
+          style={[
+            styles.inputBody,
+            styles.inputTextStyle,
+            { color: Colors.$textDefault },
+            inputStyle,
+          ]}
           onFocus={context.onFocus}
           onBlur={context.onBlur}
           onChangeText={context.onChangeText}

@@ -15,6 +15,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { scheduleOnRN } from 'react-native-worklets'
 import { BlurBackground, BlurGradientBackground } from './Background'
 import { useMeasure } from './hooks/useMeasure'
+import { Colors } from 'react-native-ui-lib'
 import { thumbStyles } from './ui/modal'
 
 export default function DraggableFooter({
@@ -177,7 +178,12 @@ export default function DraggableFooter({
 
   return (
     <Animated.View
-      style={[containerStyle, thumbStyles.sheet, cardStyle]}
+      style={[
+        containerStyle,
+        thumbStyles.sheet,
+        { borderColor: Colors.$outlineNeutral },
+        cardStyle,
+      ]}
       className="flex flex-col items-center"
       ref={fullContentRef}
       onLayout={onFullContentLayout}
@@ -208,7 +214,13 @@ export default function DraggableFooter({
                   absoluteThumb ? thumbStyles.absoluteThumbContainer : null,
                 ]}
               >
-                <Animated.View style={[thumbStyles.thumb, thumbStyle]} />
+                <Animated.View
+                  style={[
+                    thumbStyles.thumb,
+                    { backgroundColor: Colors.rgba(Colors.$backgroundNeutralIdle, 0.8) },
+                    thumbStyle,
+                  ]}
+                />
               </Animated.View>
 
               {mainContent}

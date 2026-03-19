@@ -12,7 +12,7 @@ import {
 } from '@expo-google-fonts/montserrat'
 import { useFonts } from 'expo-font'
 import * as SplashScreen from 'expo-splash-screen'
-import React, { ReactNode, useEffect } from 'react'
+import React, { ReactNode } from 'react'
 
 import { useEffectiveColorScheme } from '@/features/settings/hooks/effective-color-scheme'
 import { NAV_THEME } from '@/lib/constants'
@@ -65,7 +65,7 @@ const ThemeProvider = ({ children }: { children: ReactNode }) => {
   const colorScheme = useEffectiveColorScheme()
 
   // Apply scheme when preference changes
-  useEffect(() => {
+  useIsomorphicLayoutEffect(() => {
     Colors.setScheme(colorScheme)
   }, [colorScheme])
 

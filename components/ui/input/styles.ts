@@ -3,13 +3,13 @@ import { StyleSheet } from 'react-native'
 import { Colors } from 'react-native-ui-lib'
 import { BASE_BADGE_HEIGHT } from '../badge'
 
-export const defaultColors = {
+export const getDefaultColors = () => ({
   default: Colors.$textNeutralLight,
   focus: Colors.$textPrimary,
   error: Colors.$textDanger,
   disabled: Colors.$textDisabled,
   readonly: Colors.$textNeutralLight,
-}
+})
 
 export const DURATION = 600
 export const GAP_PADDING = 6
@@ -25,7 +25,6 @@ export const styles = StyleSheet.create({
   inputTextStyle: {
     fontSize: 20,
     lineHeight: 24,
-    color: Colors.$textDefault,
   },
   inputBody: {
     flex: 1,

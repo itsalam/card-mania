@@ -15,7 +15,7 @@ import {
   useSharedValue,
   withTiming,
 } from 'react-native-reanimated'
-import { defaultColors, DURATION } from './styles'
+import { getDefaultColors, DURATION } from './styles'
 
 export type FieldStore = {
   value?: string
@@ -78,12 +78,13 @@ export default function useFieldState({
     [validateProp]
   )
 
+  const colors = getDefaultColors()
   const finalAccentColor = {
-    ...defaultColors,
+    ...colors,
     ...(accentColor instanceof Object
       ? accentColor
       : {
-          default: accentColor ?? defaultColors.default,
+          default: accentColor ?? colors.default,
         }),
   }
 

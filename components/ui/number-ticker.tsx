@@ -1,5 +1,5 @@
 import { cssInterop } from 'nativewind'
-import React, { PureComponent, useEffect, useState } from 'react'
+import React, { Component, useEffect, useState } from 'react'
 import { AccessibilityActionEvent, AccessibilityInfo, StyleSheet, View } from 'react-native'
 import {
   Assets,
@@ -93,7 +93,7 @@ const DEFAULT_STEP = 1
  * @description: A stepper component
  * @example: https://github.com/wix/react-native-ui-lib/blob/master/demo/src/screens/componentScreens/StepperScreen.js
  */
-class Stepper extends PureComponent<StepperProps, StepperState> {
+class Stepper extends Component<StepperProps, StepperState> {
   constructor(props: StepperProps) {
     super(props)
     const { value, minValue = 0, maxValue = 1, testID } = props
@@ -238,7 +238,12 @@ class Stepper extends PureComponent<StepperProps, StepperState> {
         row
         centerV
         {...this.getAccessibilityProps()}
-        style={type === 'floating' && styles.containerFloating}
+        style={
+          type === 'floating' && [
+            styles.containerFloating,
+            { backgroundColor: Colors.$backgroundElevated, borderColor: Colors.$outlineDefault },
+          ]
+        }
       >
         {this.renderButton(ActionType.MINUS)}
         <Text
@@ -261,9 +266,7 @@ class Stepper extends PureComponent<StepperProps, StepperState> {
 const styles = StyleSheet.create({
   containerFloating: {
     borderRadius: BorderRadiuses.br100,
-    backgroundColor: Colors.$backgroundElevated,
     borderWidth: 1,
-    borderColor: Colors.$outlineDefault,
     paddingHorizontal: Spacings.s3,
     paddingVertical: Spacings.s1,
   },

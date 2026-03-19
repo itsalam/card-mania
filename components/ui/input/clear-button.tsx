@@ -1,3 +1,4 @@
+import { useEffectiveColorScheme } from '@/features/settings/hooks/effective-color-scheme'
 import React, { useCallback, useContext, useMemo } from 'react'
 import { StyleProp, StyleSheet, ViewStyle } from 'react-native'
 import Animated, {
@@ -32,6 +33,21 @@ const ClearButton = ({
   testID?: string
   onChangeText?: (text: string) => void
 }) => {
+  const colorScheme = useEffectiveColorScheme()
+  const styles = useMemo(
+    () =>
+      StyleSheet.create({
+        clearIcon: {
+          tintColor: Colors.$textNeutralLight,
+        },
+        buttonContainer: {
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+        },
+      }),
+    [colorScheme]
+  )
   const { hasValue } = useContext<FieldStore>(FieldContext)
   const animatedValue = useSharedValue(hasValue ? VISIBLE_POSITION : NON_VISIBLE_POSITION)
   const animatedOpacity = useSharedValue(hasValue ? 1 : 0)
@@ -79,14 +95,4 @@ const ClearButton = ({
     </Animated.View>
   )
 }
-const styles = StyleSheet.create({
-  clearIcon: {
-    tintColor: Colors.$textNeutralLight,
-  },
-  buttonContainer: {
-    display: 'flex',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-})
 export default ClearButton

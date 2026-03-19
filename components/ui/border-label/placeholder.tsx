@@ -1,3 +1,4 @@
+import { useEffectiveColorScheme } from '@/features/settings/hooks/effective-color-scheme'
 import React, { useContext, useEffect, useMemo } from 'react'
 import { Platform, StyleProp, StyleSheet, TextInputProps, TextStyle } from 'react-native'
 import Animated, {
@@ -50,6 +51,29 @@ const getOffsetHeight = (style: StyleProp<TextStyle>) => {
 }
 
 const FloatingPlaceholder = (props: FloatingPlaceholderProps) => {
+  const colorScheme = useEffectiveColorScheme()
+  const styles = useMemo(
+    () =>
+      StyleSheet.create({
+        placeholder: {
+          ...Platform.select({
+            android: {
+              textAlignVertical: 'center',
+              flexShrink: 1,
+            },
+          }),
+          flexShrink: 1,
+          flex: 0,
+        },
+        valid: {
+          color: Colors.$textSuccess,
+        },
+        invalid: {
+          color: Colors.$textDanger,
+        },
+      }),
+    [colorScheme]
+  )
   const {
     placeholder: _placeholder,
     floatingPlaceholderStyle,
@@ -141,23 +165,5 @@ const FloatingPlaceholder = (props: FloatingPlaceholderProps) => {
     </Animated.View>
   )
 }
-const styles = StyleSheet.create({
-  placeholder: {
-    ...Platform.select({
-      android: {
-        textAlignVertical: 'center',
-        flexShrink: 1,
-      },
-    }),
-    flexShrink: 1,
-    flex: 0,
-  },
-  valid: {
-    color: Colors.$textSuccess,
-  },
-  invalid: {
-    color: Colors.$textDanger,
-  },
-})
 
 export default FloatingPlaceholder

@@ -98,6 +98,7 @@ export function Modal({
           <Animated.View
             style={[
               thumbStyles.modalContainer,
+              { backgroundColor: Colors.$backgroundDefault },
               {
                 paddingBottom: contentInsets.bottom,
                 overflow: 'hidden',
@@ -112,7 +113,16 @@ export function Modal({
                 absoluteThumb ? thumbStyles.absoluteThumbContainer : null,
               ]}
             >
-              <View style={[thumbStyles.thumb, { marginHorizontal: 'auto', zIndex: 2 }]} />
+              <View
+                style={[
+                  thumbStyles.thumb,
+                  {
+                    backgroundColor: Colors.rgba(Colors.$backgroundNeutralIdle, 0.8),
+                    marginHorizontal: 'auto',
+                    zIndex: 2,
+                  },
+                ]}
+              />
             </View>
             <View style={{ flex: 1 }}>{children}</View>
           </Animated.View>
@@ -134,12 +144,10 @@ export const thumbStyles = StyleSheet.create({
     bottom: 0,
 
     paddingHorizontal: 16,
-    backgroundColor: Colors.$backgroundDefault,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
   },
   thumb: {
-    backgroundColor: Colors.rgba(Colors.$backgroundNeutralIdle, 0.8),
     height: THUMB_SIZE,
     width: '15%',
     borderRadius: 10,
@@ -161,7 +169,6 @@ export const thumbStyles = StyleSheet.create({
     right: 0,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
-    borderColor: Colors.$outlineNeutral,
     borderWidth: 2,
   },
   absoluteThumbContainer: {

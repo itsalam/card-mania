@@ -2,14 +2,39 @@ import { Text } from '@/components/ui/text/base-text'
 
 import { VISIBILITY_OPTIONS } from '@/features/tcg-card-views/DetailCardView/components/ui'
 import { Eye } from 'lucide-react-native'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { StyleSheet, View } from 'react-native'
 import { Colors, SegmentedControl } from 'react-native-ui-lib'
+import { useEffectiveColorScheme } from '@/features/settings/hooks/effective-color-scheme'
 import { useCreateNewCollections } from '../../../tcg-card-views/DetailCardView/provider'
 import { OptionLabel } from './components'
 
 export function VisibilitySelector() {
   const [toggleHint, setToggleHint] = useState(false)
+  const colorScheme = useEffectiveColorScheme()
+  const styles = useMemo(
+    () =>
+      StyleSheet.create({
+        HintMessageContainer: {
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 12,
+          padding: 8,
+        },
+        HintMessageEntry: {
+          display: 'flex',
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: 8,
+          paddingRight: 20,
+        },
+        HintIcon: {
+          color: Colors.$textDefaultLight,
+          fontSize: 16,
+        },
+      }),
+    [colorScheme]
+  )
   const visibility = useCreateNewCollections((s) => s.visibility)
   const setVisibility = useCreateNewCollections((s) => s.setVisibility)
 
@@ -49,23 +74,3 @@ export function VisibilitySelector() {
     </View>
   )
 }
-
-const styles = StyleSheet.create({
-  HintMessageContainer: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: 12,
-    padding: 8,
-  },
-  HintMessageEntry: {
-    display: 'flex',
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    paddingRight: 20,
-  },
-  HintIcon: {
-    color: Colors.$textDefaultLight,
-    fontSize: 16,
-  },
-})
