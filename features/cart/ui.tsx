@@ -1,10 +1,12 @@
 import { useCardQuery } from '@/client/card'
+import { useSubmitOffer } from '@/client/offers'
 import { Button } from '@/components/ui/button'
 import { thumbStyles } from '@/components/ui/modal'
 import { NumberTicker } from '@/components/ui/number-ticker'
 import { Separator } from '@/components/ui/separator'
 import { Text } from '@/components/ui/text'
 import { formatPrice } from '@/components/utils'
+import { useToast } from '@/components/Toast'
 import type { CartItem } from '@/features/cart/types'
 import { useEffectiveColorScheme } from '@/features/settings/hooks/effective-color-scheme'
 import { Ellipsis, Trash2 } from 'lucide-react-native'
@@ -27,7 +29,6 @@ import { getCardDisplayData } from '../tcg-card-views/helpers'
 import {
   useCartItems,
   useCartTotal,
-  useClearCart,
   useCloseCart,
   useRemoveFromCart,
   useUpdateCartQuantity,
@@ -58,7 +59,8 @@ export function CartSheetInner() {
   const closeCart = useCloseCart()
   const items = useCartItems()
   const total = useCartTotal()
-  const clearCart = useClearCart()
+  const { showToast } = useToast()
+  const { mutateAsync: submitOffer, isPending } = useSubmitOffer()
   const { height: screenHeight } = useWindowDimensions()
   const insets = useSafeAreaInsets()
 
@@ -181,11 +183,40 @@ export function CartSheetInner() {
                     </View>
                     <Button
                       size="lg"
-                      onPress={() => {
-                        /* TODO: checkout flow */
+                      disabled={isPending}
+                      onPress={async () => {
+                        // Group items by seller
+                        const bySeller = new Map<string, CartItem[]>()
+                        for (const item of items) {
+                          const sellerId = item.data.user_id
+                          if (!sellerId) continue
+                          if (!bySeller.has(sellerId)) bySeller.set(sellerId, [])
+                          bySeller.get(sellerId)!.push(item)
+                        }
+
+                        try {
+                          for (const [seller_id, sellerItems] of bySeller) {
+                            await submitOffer({
+                              seller_id,
+                              items: sellerItems.map((item) => ({
+                                collection_item_id: item.data.id,
+                                quantity: item.cart.quantity,
+                                offered_price_per_unit: item.cart.price,
+                                card_snapshot: {
+                                  card_id: item.data.ref_id ?? undefined,
+                                },
+                              })),
+                            })
+                          }
+                          showToast({ title: 'Offer sent!', message: 'Your offer has been submitted.', preset: 'general' })
+                          dismiss()
+                        } catch (err) {
+                          console.error('[CartSheet] submitOffer error', err)
+                          showToast({ title: 'Error', message: 'Failed to send offer. Please try again.', preset: 'failure' })
+                        }
                       }}
                     >
-                      <Text>Send Offer</Text>
+                      <Text>{isPending ? 'Sending…' : 'Send Offer'}</Text>
                     </Button>
                   </View>
                 </>
