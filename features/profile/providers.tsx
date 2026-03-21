@@ -1,7 +1,6 @@
 import React, { createContext, useContext, useEffect, useRef } from 'react'
 import { StoreApi, useStore, createStore } from 'zustand'
 
-import { User } from '@supabase/supabase-js'
 import { UserProfile, useUserProfile } from '../settings/client'
 
 export type TabType = 'collections' | 'timeline' | 'stats' | 'storefront' | 'seeking'
@@ -37,9 +36,6 @@ type ProfilePageStore = {
   tabs: TabType[]
 }
 
-type UserProfilePageOpts = {
-  user: User
-}
 export function makeTabs(opts: { isHobbyist?: boolean; isTrader?: boolean }): TabType[] {
   const tabs: TabType[] = ['collections', 'timeline', 'stats']
   if (opts.isHobbyist) tabs.unshift('seeking')

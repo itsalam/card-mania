@@ -93,9 +93,7 @@ export function useUpdateOfferStatus() {
       if (error || !offer) throw error ?? new Error('Failed to update offer status')
 
       if (status === 'accepted') {
-        const { error: txError } = await supabase
-          .from('transactions')
-          .insert({ offer_id: offerId })
+        const { error: txError } = await supabase.from('transactions').insert({ offer_id: offerId })
         if (txError) throw txError
       }
 
