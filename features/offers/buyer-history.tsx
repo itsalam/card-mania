@@ -6,13 +6,8 @@ import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Text } from '@/components/ui/text/base-text'
-import { useState } from 'react'
 import { ScrollView, StyleSheet, View } from 'react-native'
 import { Colors } from 'react-native-ui-lib'
-
-type FilterStatus = 'pending' | 'accepted' | 'declined' | 'cancelled'
-
-const FILTERS: FilterStatus[] = ['pending', 'accepted', 'declined', 'cancelled']
 
 function formatDate(dateStr: string): string {
   const d = new Date(dateStr)
@@ -20,55 +15,22 @@ function formatDate(dateStr: string): string {
 }
 
 export function BuyerHistoryPage() {
-  const [filter, setFilter] = useState<FilterStatus>('pending')
   const { data: offers, isLoading } = useMyOffers('buyer')
-  const filtered = offers?.filter((o) => o.status === filter) ?? []
+  const list = offers ?? []
 
   return (
     <View style={styles.container}>
-      <FilterBar active={filter} onChange={setFilter} />
       {isLoading ? (
         <LoadingSkeleton />
-      ) : filtered.length === 0 ? (
-        <EmptyState filter={filter} />
+      ) : list.length === 0 ? (
+        <EmptyState />
       ) : (
         <ScrollView contentContainerStyle={styles.list}>
-          {filtered.map((offer) => (
-            <OfferCard key={offer.id} offer={offer} />
+          {list.map((offer) => (
+            <BuyerOfferCard key={offer.id} offer={offer} />
           ))}
         </ScrollView>
       )}
-    </View>
-  )
-}
-
-function FilterBar({
-  active,
-  onChange,
-}: {
-  active: FilterStatus
-  onChange: (f: FilterStatus) => void
-}) {
-  return (
-    <View style={styles.filterBar}>
-      {FILTERS.map((f) => (
-        <Button
-          key={f}
-          variant={active === f ? 'primary' : 'outline'}
-          size="lg"
-          onPress={() => onChange(f)}
-          style={styles.filterButton}
-        >
-          <Text
-            style={[
-              active === f ? styles.filterTextActive : styles.filterText,
-              { color: Colors.$textDefault },
-            ]}
-          >
-            {f.charAt(0).toUpperCase() + f.slice(1)}
-          </Text>
-        </Button>
-      ))}
     </View>
   )
 }
@@ -99,7 +61,7 @@ function StatusBadge({ status }: { status: OfferStatus }) {
   )
 }
 
-function OfferCard({ offer }: { offer: Offer }) {
+export function BuyerOfferCard({ offer }: { offer: Offer }) {
   const { mutate: updateStatus, isPending } = useUpdateOfferStatus()
   const { showToast } = useToast()
   const items = offer.offer_items ?? []
@@ -207,21 +169,14 @@ function OfferItemRow({ item, isLast }: { item: OfferItem; isLast: boolean }) {
   )
 }
 
-function EmptyState({ filter }: { filter: FilterStatus }) {
-  const messages: Record<FilterStatus, string> = {
-    pending: "You don't have any pending offers right now.",
-    accepted: 'No accepted offers to show.',
-    declined: 'No declined offers to show.',
-    cancelled: 'No cancelled offers to show.',
-  }
-
+function EmptyState() {
   return (
     <View style={styles.empty}>
       <Text variant="h3" style={[styles.emptyTitle, { color: Colors.$textNeutral }]}>
-        No {filter} offers
+        No offers
       </Text>
       <Text variant="default" style={[styles.emptySubtitle, { color: Colors.$textNeutral }]}>
-        {messages[filter]}
+        You haven't submitted any offers yet.
       </Text>
     </View>
   )
@@ -241,22 +196,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     paddingTop: 8,
-  },
-  filterBar: {
-    flexDirection: 'row',
-    gap: 8,
-    paddingHorizontal: 16,
-    paddingBottom: 12,
-  },
-  filterButton: {
-    flex: 1,
-  },
-  filterText: {
-    fontSize: 13,
-  },
-  filterTextActive: {
-    fontSize: 13,
-    fontWeight: '600',
   },
   list: {
     gap: 12,
