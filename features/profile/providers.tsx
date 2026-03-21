@@ -3,7 +3,7 @@ import { StoreApi, useStore, createStore } from 'zustand'
 
 import { UserProfile, useUserProfile } from '../settings/client'
 
-export type TabType = 'collections' | 'timeline' | 'stats' | 'storefront' | 'seeking' | 'offers'
+export type TabType = 'collections' | 'timeline' | 'stats' | 'storefront' | 'seeking'
 type TabData = {
   label?: string
 }
@@ -24,9 +24,6 @@ export const tabsRecords: Record<TabType, TabData> = {
   seeking: {
     label: 'seeking',
   },
-  offers: {
-    label: 'Offers',
-  },
 }
 
 export const defaultTab: TabType[] = ['collections', 'timeline', 'stats']
@@ -39,15 +36,10 @@ type ProfilePageStore = {
   tabs: TabType[]
 }
 
-export function makeTabs(opts: {
-  isHobbyist?: boolean
-  isTrader?: boolean
-  isSelf?: boolean
-}): TabType[] {
+export function makeTabs(opts: { isHobbyist?: boolean; isTrader?: boolean }): TabType[] {
   const tabs: TabType[] = ['collections', 'timeline', 'stats']
   if (opts.isHobbyist) tabs.unshift('seeking')
   if (opts.isTrader) tabs.unshift('storefront')
-  if (opts.isSelf) tabs.push('offers')
   return tabs
 }
 
@@ -69,18 +61,15 @@ const Ctx = createContext<StoreApi<ProfilePageStore> | null>(null)
 
 export function UserProfilePageStoreProvider({
   userId,
-  isSelf,
   children,
 }: {
   userId: string
-  isSelf?: boolean
   children: React.ReactNode
 }) {
   const { data: user } = useUserProfile(userId)
   const tabs = makeTabs({
     isHobbyist: user?.is_hobbyiest,
     isTrader: user?.is_seller,
-    isSelf,
   })
 
   // create store ONCE

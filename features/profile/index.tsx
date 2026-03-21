@@ -9,21 +9,14 @@ import { GestureBlockerProvider, useCollaspableHeader } from '../collection/ui'
 import { Body } from './components/body'
 import { ProfileHeader, SubHeader } from './components/profile-header'
 import { ProfileTabList } from './components/tab-list'
-import { OfferInboxPage } from './pages/offers'
 import { StorefrontPage } from './pages/storefront'
 import { tabsRecords, TabType, UserProfilePageStoreProvider } from './providers'
 
 const AnimatedScrollView = Animated.createAnimatedComponent(ScrollView)
 
-export default function ProfilePageLayout({
-  userId,
-  isSelf,
-}: {
-  userId?: string
-  isSelf?: boolean
-}) {
+export default function ProfilePageLayout({ userId }: { userId?: string }) {
   return (
-    <UserProfilePageStoreProvider userId={userId} isSelf={isSelf}>
+    <UserProfilePageStoreProvider userId={userId}>
       <GestureBlockerProvider>
         <ProfilePageLayoutInner />
       </GestureBlockerProvider>
@@ -45,7 +38,6 @@ function ProfilePageLayoutInner({ userId }: { userId?: string }) {
 
   const tabContent: Partial<Record<TabType, ReactNode>> = {
     storefront: <StorefrontPage />,
-    offers: <OfferInboxPage />,
   }
 
   return (

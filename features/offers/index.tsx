@@ -8,6 +8,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Text } from '@/components/ui/text/base-text'
 import { useState } from 'react'
 import { ScrollView, StyleSheet, View } from 'react-native'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Colors } from 'react-native-ui-lib'
 
 type FilterStatus = 'pending' | 'accepted' | 'declined'
@@ -17,11 +18,11 @@ const FILTERS: FilterStatus[] = ['pending', 'accepted', 'declined']
 export function OfferInboxPage() {
   const [filter, setFilter] = useState<FilterStatus>('pending')
   const { data: offers, isLoading } = useMyOffers('seller')
-
+  const insets = useSafeAreaInsets()
   const filtered = offers?.filter((o) => o.status === filter) ?? []
 
   return (
-    <View style={styles.container}>
+    <View style={(styles.containe, { paddingTop: insets.top, paddingBottom: insets.bottom })}>
       <FilterBar active={filter} onChange={setFilter} />
       {isLoading ? (
         <LoadingSkeleton />
@@ -51,11 +52,16 @@ function FilterBar({
         <Button
           key={f}
           variant={active === f ? 'primary' : 'outline'}
-          size="sm"
+          size="lg"
           onPress={() => onChange(f)}
           style={styles.filterButton}
         >
-          <Text style={active === f ? styles.filterTextActive : styles.filterText}>
+          <Text
+            style={[
+              active === f ? styles.filterTextActive : styles.filterText,
+              { color: Colors.$textDefault },
+            ]}
+          >
             {f.charAt(0).toUpperCase() + f.slice(1)}
           </Text>
         </Button>
@@ -66,9 +72,9 @@ function FilterBar({
 
 function StatusBadge({ status }: { status: OfferStatus }) {
   const colors: Record<OfferStatus, string> = {
-    pending: Colors.$backgroundWarningHeavy,
-    accepted: Colors.$backgroundSuccessHeavy,
-    declined: Colors.$backgroundDangerHeavy,
+    pending: Colors.$backgroundSuccessHeavy,
+    accepted: Colors.$backgroundSuccessLight,
+    declined: Colors.$backgroundDangerLight,
     cancelled: Colors.$backgroundNeutralMedium,
     completed: Colors.$backgroundSuccessLight,
   }
@@ -119,20 +125,31 @@ function OfferCard({ offer }: { offer: Offer }) {
   }
 
   return (
-    <View style={styles.card}>
+    <View
+      style={[
+        styles.card,
+        {
+          backgroundColor: Colors.$backgroundElevated,
+          borderColor: Colors.$outlineNeutral,
+        },
+      ]}
+    >
       {/* Header: buyer + status */}
       <View style={styles.cardHeader}>
         <View style={styles.buyerInfo}>
-          <View style={styles.avatarPlaceholder}>
-            <Text style={styles.avatarText}>{offer.buyer_id.slice(0, 2).toUpperCase()}</Text>
+          <View
+            style={[styles.avatarPlaceholder, { backgroundColor: Colors.$backgroundPrimaryHeavy }]}
+          >
+            <Text style={[styles.avatarText, { color: Colors.$textDefault }]}>
+              {offer.buyer_id.slice(0, 2).toUpperCase()}
+            </Text>
           </View>
           <View>
             <Text variant="h3" style={styles.buyerName}>
               {offer.buyer_id.slice(0, 8)}…
             </Text>
-            <Text variant="default" style={styles.offerMeta}>
-              {items.length} item{items.length !== 1 ? 's' : ''} · $
-              {offer.total_amount.toFixed(2)}
+            <Text variant="default" style={[styles.offerMeta, { color: Colors.$textNeutral }]}>
+              {items.length} item{items.length !== 1 ? 's' : ''} · ${offer.total_amount.toFixed(2)}
             </Text>
           </View>
         </View>
@@ -149,10 +166,10 @@ function OfferCard({ offer }: { offer: Offer }) {
       {/* Note */}
       {offer.buyer_note ? (
         <View style={styles.noteContainer}>
-          <Text variant="default" style={styles.noteLabel}>
+          <Text variant="default" style={[styles.noteLabel, { color: Colors.$textNeutral }]}>
             Note:
           </Text>
-          <Text variant="default" style={styles.noteText}>
+          <Text variant="default" style={[styles.noteText, { color: Colors.$textNeutral }]}>
             {offer.buyer_note}
           </Text>
         </View>
@@ -170,7 +187,7 @@ function OfferCard({ offer }: { offer: Offer }) {
               onPress={() => handleAction('declined')}
               style={styles.actionButton}
             >
-              <Text style={styles.declineText}>Decline</Text>
+              <Text style={[styles.declineText, { color: Colors.$textDefault }]}>Decline</Text>
             </Button>
             <Button
               variant="primary"
@@ -191,11 +208,17 @@ function OfferCard({ offer }: { offer: Offer }) {
 function OfferItemRow({ item, isLast }: { item: OfferItem; isLast: boolean }) {
   const title = item.card_snapshot?.title ?? 'Unknown Card'
   return (
-    <View style={[styles.itemRow, isLast && styles.itemRowLast]}>
+    <View
+      style={[
+        styles.itemRow,
+        isLast && styles.itemRowLast,
+        { borderBottomColor: Colors.$outlineNeutralLight },
+      ]}
+    >
       <Text variant="default" style={styles.itemTitle} numberOfLines={1} ellipsizeMode="tail">
         {title}
       </Text>
-      <Text variant="default" style={styles.itemMeta}>
+      <Text variant="default" style={[styles.itemMeta, { color: Colors.$textNeutral }]}>
         x{item.quantity} · ${item.offered_price_per_unit.toFixed(2)}/ea
       </Text>
     </View>
@@ -205,10 +228,10 @@ function OfferItemRow({ item, isLast }: { item: OfferItem; isLast: boolean }) {
 function EmptyState({ filter }: { filter: FilterStatus }) {
   return (
     <View style={styles.empty}>
-      <Text variant="h3" style={styles.emptyTitle}>
+      <Text variant="h3" style={[styles.emptyTitle, { color: Colors.$textNeutral }]}>
         No {filter} offers
       </Text>
-      <Text variant="default" style={styles.emptySubtitle}>
+      <Text variant="default" style={[styles.emptySubtitle, { color: Colors.$textNeutral }]}>
         {filter === 'pending'
           ? "You don't have any pending offers right now."
           : `No ${filter} offers to show.`}
@@ -242,11 +265,9 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   filterText: {
-    color: Colors.$textDefault,
     fontSize: 13,
   },
   filterTextActive: {
-    color: Colors.$textDefault,
     fontSize: 13,
     fontWeight: '600',
   },
@@ -256,10 +277,8 @@ const styles = StyleSheet.create({
     paddingBottom: 24,
   },
   card: {
-    backgroundColor: Colors.$backgroundElevated,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: Colors.$outlineNeutral,
     overflow: 'hidden',
   },
   cardHeader: {
@@ -277,12 +296,10 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: Colors.$backgroundPrimaryHeavy,
     alignItems: 'center',
     justifyContent: 'center',
   },
   avatarText: {
-    color: Colors.$textDefault,
     fontSize: 13,
     fontWeight: '700',
   },
@@ -292,7 +309,6 @@ const styles = StyleSheet.create({
   },
   offerMeta: {
     fontSize: 12,
-    color: Colors.$textNeutral,
   },
   separator: {
     height: 1,
@@ -305,7 +321,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.$outlineNeutralLight,
   },
   itemRowLast: {
     borderBottomWidth: 0,
@@ -317,7 +332,6 @@ const styles = StyleSheet.create({
   },
   itemMeta: {
     fontSize: 12,
-    color: Colors.$textNeutral,
   },
   noteContainer: {
     paddingHorizontal: 12,
@@ -328,11 +342,9 @@ const styles = StyleSheet.create({
   noteLabel: {
     fontSize: 12,
     fontWeight: '600',
-    color: Colors.$textNeutral,
   },
   noteText: {
     fontSize: 12,
-    color: Colors.$textNeutral,
     flex: 1,
   },
   actions: {
@@ -344,7 +356,6 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   declineText: {
-    color: Colors.$textDefault,
     fontSize: 13,
   },
   empty: {
@@ -357,11 +368,9 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     marginBottom: 6,
-    color: Colors.$textNeutral,
   },
   emptySubtitle: {
     fontSize: 13,
-    color: Colors.$textNeutral,
     textAlign: 'center',
   },
   skeletonCard: {

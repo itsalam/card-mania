@@ -8,7 +8,7 @@ import { useTheme } from '@react-navigation/native'
 import { PortalHost } from '@rn-primitives/portal'
 import * as Haptics from 'expo-haptics'
 import { Tabs } from 'expo-router'
-import { Compass, Home, Layers, Scan, ShoppingCart, Store, User } from 'lucide-react-native'
+import { Compass, Home, Inbox, Layers, Scan, ShoppingCart, Store, User } from 'lucide-react-native'
 import React, { useEffect } from 'react'
 import { Platform, Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native'
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated'
@@ -221,6 +221,13 @@ export default function TabLayout() {
           options={{
             title: 'Marketplace',
             tabBarIcon: ({ color }) => <Store size={24} color={color} />,
+          }}
+        />
+        <Tabs.Screen
+          name="offers"
+          options={{
+            title: 'Offers',
+            tabBarIcon: ({ color }) => <Inbox size={28} color={color} />,
           }}
         />
         <Tabs.Screen
