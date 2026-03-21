@@ -1,6 +1,6 @@
 import { ExpandableCard, ExpandedContent } from '@/components/content-card'
 import { LiquidGlassCard } from '@/components/tcg-card/GlassCard'
-import { Text } from '@/components/ui/text'
+import { Text } from '@/components/ui/text/base-text'
 import { cn } from '@/lib/utils'
 import { ArrowRight } from 'lucide-react-native'
 import { View } from 'react-native'

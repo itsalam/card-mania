@@ -1,4 +1,4 @@
-import { Text } from '@/components/ui/text'
+import { Text } from '@/components/ui/text/base-text'
 
 import { SearchBar, SearchBarProps } from '@/components/ui/search'
 import { motify, MotiView } from 'moti'
@@ -110,7 +110,7 @@ export const ScreenHeader = () => {
         >
           {!expanded
             ? 'Collections'
-            : collection?.name ?? title[currentPage as DefaultPageTypes] ?? 'Collections'}
+            : (collection?.name ?? title[currentPage as DefaultPageTypes] ?? 'Collections')}
         </Text>
       </MView>
 

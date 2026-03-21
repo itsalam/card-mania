@@ -1,4 +1,5 @@
-import { useColorScheme } from '@/lib/hooks/useColorScheme'
+import { useEffectiveColorScheme } from '@/features/settings/hooks/effective-color-scheme'
+import { useMemo } from 'react'
 import { ColorValue, View } from 'react-native'
 import { useAnimatedReaction } from 'react-native-reanimated'
 import { Colors } from 'react-native-ui-lib'
@@ -9,7 +10,7 @@ export type ColorValueArray = [ColorValue, ColorValue, ...ColorValue[]]
 export type OptionalColorValueArray = [
   OptionalColorValue,
   OptionalColorValue,
-  ...OptionalColorValue[]
+  ...OptionalColorValue[],
 ]
 
 export function hexToRgba(hex: string, opacity: number): string {
@@ -38,46 +39,76 @@ export function hexToRgba(hex: string, opacity: number): string {
 // export const getBackgroundColors = (colorScheme: ColorSchemeName): ColorValueArray => colorScheme === 'dark' ? ['#1C1C1C', '#0C0C0C'] : ['#E0E0E0', '#F5F5F5'];
 
 export const useBackgroundColors = (): ColorValueArray => {
-  const { colorScheme } = useColorScheme()
+  const colorScheme = useEffectiveColorScheme()
   // const defaultColors: ColorValueArray = getBackgroundColors(colorScheme);
-  const defaultColors: ColorValueArray = [
-    Colors.$backgroundNeutralMedium,
-    Colors.$backgroundNeutralLight,
-  ]
+  const defaultColors: ColorValueArray = useMemo(
+    () => [Colors.$backgroundNeutralMedium, Colors.$backgroundNeutralLight],
+    [colorScheme, Colors]
+  )
   return defaultColors
 }
 
+import {
+  CURRENCY_CONFIG,
+  type Currency as CurrencyCode,
+} from '@/features/settings/hooks/useCurrency'
+
 export const formatPrice = (
-  price: number,
+  price?: number,
   {
-    currency = '$',
-    minimumFractionDigits = 2,
-    maximumFractionDigits = 2,
-  }: { currency?: string; minimumFractionDigits?: number; maximumFractionDigits?: number } = {}
-): string => {
-  return `${currency}${(price / 100).toLocaleString('en-US', {
+    currencyCode,
+    currency,
     minimumFractionDigits,
     maximumFractionDigits,
+  }: {
+    currencyCode?: CurrencyCode
+    /** @deprecated pass currencyCode instead */
+    currency?: string
+    minimumFractionDigits?: number
+    maximumFractionDigits?: number
+  } = {}
+): string => {
+  if (!Boolean(price)) return '--.--'
+  const config = currencyCode ? CURRENCY_CONFIG[currencyCode] : null
+  const symbol = config?.symbol ?? currency ?? '$'
+  const locale = config?.locale ?? 'en-US'
+  const decimals = config?.decimals ?? 2
+  const multiplier = 10 ** decimals
+  return `${symbol}${(price / multiplier).toLocaleString(locale, {
+    minimumFractionDigits: minimumFractionDigits ?? decimals,
+    maximumFractionDigits: maximumFractionDigits ?? decimals,
   })}`
 }
 
 export const formatCompactPrice = (
   price: number,
-  { currency = '$', maximumSignificantDigits = 4 }: { currency?: string; maximumSignificantDigits?: number } = {}
+  {
+    currencyCode,
+    currency,
+    maximumSignificantDigits = 4,
+  }: {
+    currencyCode?: CurrencyCode
+    /** @deprecated pass currencyCode instead */
+    currency?: string
+    maximumSignificantDigits?: number
+  } = {}
 ) => {
-  const dollars = price / 100
-  const formatter = new Intl.NumberFormat('en-US', {
+  const config = currencyCode ? CURRENCY_CONFIG[currencyCode] : null
+  const symbol = config?.symbol ?? currency ?? '$'
+  const locale = config?.locale ?? 'en-US'
+  const multiplier = 10 ** (config?.decimals ?? 2)
+  const formatter = new Intl.NumberFormat(locale, {
     notation: 'compact',
     compactDisplay: 'short',
     maximumSignificantDigits,
   })
-  return `${currency}${formatter.format(dollars)}`
+  return `${symbol}${formatter.format(price / multiplier)}`
 }
 
-export const formatLabel = (label: string): string => {
+export const formatLabel = (label: string, separator: string = ' '): string => {
   return label
     .replace(/_/g, '.')
-    .replace(/([a-zA-Z])(\d)/g, '$1 $2')
+    .replace(/([a-zA-Z])(\d)/g, `$1${separator}$2`)
     .toLocaleUpperCase()
 }
 

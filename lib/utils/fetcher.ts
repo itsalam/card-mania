@@ -36,7 +36,6 @@ export async function fetchJSON<T>(path: string, opts: FetchJSONOpts = {}): Prom
 
   const runner = (async () => {
     let attempt = 0
-    // eslint-disable-next-line no-constant-condition
     while (true) {
       attempt++
       const ac = new AbortController()

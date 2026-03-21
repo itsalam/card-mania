@@ -1,5 +1,5 @@
 // Setup type definitions for built-in Supabase Runtime APIs
-import "jsr:@supabase/functions-js/edge-runtime.d.ts"
+import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
 
 type RequestBody = {
   seed?: number
@@ -75,8 +75,8 @@ Deno.serve(async (req) => {
     const dateSpan = clamp(body.date_span ?? DEFAULTS.dateSpan, 1, 365)
 
     // Seed includes provided seed + params so same inputs always yield the same series.
-  const baseSeed =
-    Math.floor((body.seed ?? DEFAULTS.seed) + initialPrice * 100 + variance * 10_000) >>> 0
+    const baseSeed =
+      Math.floor((body.seed ?? DEFAULTS.seed) + initialPrice * 100 + variance * 10_000) >>> 0
 
     const baseSeries = generateBaseSeries(baseSeed, initialPrice, variance, 365)
     const bucketed = getBucketedSeries(baseSeries, dateSpan)
@@ -90,10 +90,10 @@ Deno.serve(async (req) => {
         bucket_days: bucketed.bucketDays,
         prices: bucketed.points,
       }),
-      { headers: { "Content-Type": "application/json" } },
+      { headers: { 'Content-Type': 'application/json' } }
     )
   } catch (err) {
-    console.error("spoof_price error", err)
-    return new Response(JSON.stringify({ error: "Bad request" }), { status: 400 })
+    console.error('spoof_price error', err)
+    return new Response(JSON.stringify({ error: 'Bad request' }), { status: 400 })
   }
 })

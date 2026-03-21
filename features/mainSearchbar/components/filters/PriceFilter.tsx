@@ -1,7 +1,7 @@
 import { Button } from '@/components/ui/button'
 
 import Slider from '@/components/ui/slider'
-import { Text } from '@/components/ui/text'
+import { Text } from '@/components/ui/text/base-text'
 import React, { useEffect, useMemo, useState } from 'react'
 import { TextInput as BaseTextInput, View } from 'react-native'
 import Animated, {

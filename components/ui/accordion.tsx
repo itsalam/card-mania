@@ -1,5 +1,5 @@
 import { Icon } from '@/components/ui/icon'
-import { TextClassContext } from '@/components/ui/text'
+import { TextClassContext } from '@/components/ui/text/base-text'
 import { cn } from '@/lib/utils/index'
 import * as AccordionPrimitive from '@rn-primitives/accordion'
 import { ChevronDown } from 'lucide-react-native'

@@ -48,8 +48,7 @@ const cardVariants = tva({
 })
 
 export interface LiquidGlassCardProps
-  extends React.ComponentPropsWithoutRef<typeof Card>,
-    VariantProps<typeof cardVariants> {
+  extends React.ComponentPropsWithoutRef<typeof Card>, VariantProps<typeof cardVariants> {
   asChild?: boolean
   glassEffect?: boolean
 }
@@ -152,4 +151,3 @@ const LiquidGlassCard = React.forwardRef<CardRef, LiquidGlassCardProps>(
 LiquidGlassCard.displayName = 'LiquidGlassCard'
 
 export { CardContent, CardHeader, LiquidGlassCard }
-

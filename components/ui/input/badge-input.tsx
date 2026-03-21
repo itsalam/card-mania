@@ -67,6 +67,8 @@ export const BadgeInput = forwardRef<TextFieldHandle, ChipsInputProps>((props, r
   )
 })
 
+BadgeInput.displayName = 'BadgeInput'
+
 export const BadgeInputInner = forwardRef<TextFieldHandle, ChipsInputProps>(
   (
     {
@@ -270,3 +272,5 @@ export const BadgeInputInner = forwardRef<TextFieldHandle, ChipsInputProps>(
     )
   }
 )
+
+BadgeInputInner.displayName = 'BadgeInputInner'

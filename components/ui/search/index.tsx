@@ -6,6 +6,7 @@ import React, {
   forwardRef,
   useEffect,
   useImperativeHandle,
+  useMemo,
   useRef,
   useState,
 } from 'react'
@@ -33,14 +34,13 @@ import {
   View,
 } from 'react-native-ui-lib'
 import { ImageSourceType } from 'react-native-ui-lib/src/components/image'
-import { inputStyle, InputVariantProps } from '../input'
+import { useEffectiveColorScheme } from '@/features/settings/hooks/effective-color-scheme'
+import { inputStyle, inputStyleSheet, InputVariantProps } from '../input'
 
 const ICON_SIZE = 24
 const INPUT_HEIGHT = 60
 const TOP_INPUT_HEIGHT = Constants.isIOS ? 40 : 56
 const PROMINENT_INPUT_HEIGHT = 48
-const INVERTED_TEXT_COLOR = Colors.$textDefaultLight
-const INVERTED_ICON_COLOR = Colors.$iconDefaultLight
 const HIT_SLOP_VALUE = 20
 
 const OptionsButton = ({ onPress, color }: { onPress?: () => void; color: string }) => {
@@ -118,6 +118,7 @@ export const SearchBar = forwardRef<SearchBarRef, SearchBarProps>(
             position: 'relative',
             padding: 0,
           },
+          inputStyleSheet({ variant, size }).containerStyle,
           style,
         ]}
         className={inputStyle({ variant, size, class: className })}
@@ -129,6 +130,49 @@ export const SearchBar = forwardRef<SearchBarRef, SearchBarProps>(
 
 const SearchInput = forwardRef<ComponentRef<typeof BaseSearchInput>, SearchInputProps>(
   (props, ref) => {
+    const colorScheme = useEffectiveColorScheme()
+    const INVERTED_TEXT_COLOR = Colors.$textDefaultLight
+    const INVERTED_ICON_COLOR = Colors.$iconDefaultLight
+    const styles = useMemo(
+      () =>
+        StyleSheet.create({
+          componentContainer: {
+            paddingHorizontal: Spacings.s4,
+          },
+          inputContainer: {
+            height: INPUT_HEIGHT,
+            flex: 1,
+            flexDirection: 'row',
+            alignItems: 'center',
+            overflow: 'hidden',
+          },
+          prominentContainer: {
+            borderWidth: 1,
+            borderColor: Colors.$outlineDefault,
+            borderRadius: BorderRadiuses.br20,
+            marginHorizontal: Spacings.s5,
+          },
+          input: {
+            flex: 1,
+            paddingLeft: Spacings.s2,
+            ...Typography.body,
+            lineHeight: undefined,
+            color: Colors.$textDefault,
+            textAlign: Constants.isRTL ? 'right' : 'left',
+          },
+          emptyInput: {
+            marginRight: Spacings.s4,
+          },
+          cancelButton: {
+            marginLeft: Spacings.s4,
+            marginRight: Spacings.s4,
+          },
+          clearButton: {
+            marginRight: Spacings.s4,
+          },
+        }),
+      [colorScheme]
+    )
     const {
       preset = 'default',
       onDismiss,
@@ -157,33 +201,29 @@ const SearchInput = forwardRef<ComponentRef<typeof BaseSearchInput>, SearchInput
     const [value, setValue] = useState(controlledValue)
     const [valueState] = useState(new Animated.Value(!!controlledValue?.length ? 0 : 1))
     const [isAnimatingClearButton, setIsAnimatingClearButton] = useState(!!controlledValue?.length)
-    useImperativeHandle(
-      ref,
-      () => {
-        const input = searchInputRef.current
-        if (!input) {
-          return null as unknown as SearchBarRef
-        }
+    useImperativeHandle(ref, () => {
+      const input = searchInputRef.current
+      if (!input) {
+        return null as unknown as SearchBarRef
+      }
 
-        // Capture the original methods so we don't recursively call the overridden ones.
-        const focus = input.focus?.bind(input)
-        const blur = input.blur?.bind(input)
-        const clear = input.clear?.bind(input)
-        const isFocused = input.isFocused?.bind(input)
+      // Capture the original methods so we don't recursively call the overridden ones.
+      const focus = input.focus?.bind(input)
+      const blur = input.blur?.bind(input)
+      const clear = input.clear?.bind(input)
+      const isFocused = input.isFocused?.bind(input)
 
-        return Object.assign(input, {
-          focus: () => focus?.(),
-          blur: () => blur?.(),
-          clear: () => {
-            clear?.()
-            onChangeText?.('')
-            onClear?.()
-          },
-          isFocused: () => isFocused?.(),
-        })
-      },
-      [onChangeText, onClear]
-    )
+      return Object.assign(input, {
+        focus: () => focus?.(),
+        blur: () => blur?.(),
+        clear: () => {
+          clear?.()
+          onChangeText?.('')
+          onClear?.()
+        },
+        isFocused: () => isFocused?.(),
+      })
+    }, [onChangeText, onClear])
     useEffect(() => {
       if (controlledValue !== value) {
         setValue(controlledValue)
@@ -400,43 +440,8 @@ const SearchInput = forwardRef<ComponentRef<typeof BaseSearchInput>, SearchInput
     )
   }
 )
-const styles = StyleSheet.create({
-  componentContainer: {
-    paddingHorizontal: Spacings.s4,
-  },
-  inputContainer: {
-    height: INPUT_HEIGHT,
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    overflow: 'hidden',
-  },
-  prominentContainer: {
-    borderWidth: 1,
-    borderColor: Colors.$outlineDefault,
-    borderRadius: BorderRadiuses.br20,
-    marginHorizontal: Spacings.s5,
-  },
-  input: {
-    flex: 1,
 
-    paddingLeft: Spacings.s2,
-    ...Typography.body,
-    lineHeight: undefined,
-    color: Colors.$textDefault,
-    textAlign: Constants.isRTL ? 'right' : 'left',
-  },
-  emptyInput: {
-    marginRight: Spacings.s4,
-  },
-  cancelButton: {
-    marginLeft: Spacings.s4,
-    marginRight: Spacings.s4,
-  },
-  clearButton: {
-    marginRight: Spacings.s4,
-  },
-})
+SearchInput.displayName = 'SearchInput'
 
 cssInterop(SearchInput, {
   className: {

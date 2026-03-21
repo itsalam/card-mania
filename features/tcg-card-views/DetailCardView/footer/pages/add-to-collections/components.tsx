@@ -2,17 +2,20 @@ import { useViewCollectionItemsForCard } from '@/client/collections/query'
 import { CollectionItem, CollectionLike, EditCollectionArgsItem } from '@/client/collections/types'
 import {
   CollectionItemEntry,
+  PriceChangeModal,
+  PriceModalPayload,
   VariantsSelect,
 } from '@/components/collections/items/editable-entry-item'
 import { Spinner } from '@/components/ui/spinner'
 import { TCard } from '@/constants/types'
 import { CollectionItemRow } from '@/lib/store/functions/types'
-import { Plus, TriangleAlert } from 'lucide-react-native'
+import { Plus, TriangleAlert, Undo2 } from 'lucide-react-native'
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
-import { StyleProp, Text, View, ViewStyle } from 'react-native'
-import { Button, Colors } from 'react-native-ui-lib'
+import { StyleProp, View, ViewStyle } from 'react-native'
+import { Colors } from 'react-native-ui-lib'
 
 import { useGradingConditions } from '@/client/card/grading'
+import { Button } from '@/components/ui/button'
 import { getContentInsets, Modal } from '@/components/ui/modal'
 import {
   NativeSelectScrollView,
@@ -23,9 +26,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { Text } from '@/components/ui/text/base-text'
+import { sortCollectionItem } from '@/features/tcg-card-views/helpers'
 import { qk } from '@/lib/store/functions/helpers'
 import { useQueryClient } from '@tanstack/react-query'
+import Animated, { LinearTransition } from 'react-native-reanimated'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { v4 as uuidv4 } from 'uuid'
 // import { Label } from '@react-navigation/elements'
 
 export const CollectionCardItemEntries = ({
@@ -49,117 +56,93 @@ export const CollectionCardItemEntries = ({
     refetch,
   } = useViewCollectionItemsForCard(collection?.id, card?.id, isShown)
 
-  const [newEntries, setNewEntries] = useState<Array<Partial<CollectionItemRow>>>(
-    loadedEntries.length ? loadedEntries : [{}]
-  )
-
   const [showModal, setShowModal] = useState(false)
+  const [priceChangeEntry, setPriceChangeEntry] = useState<PriceModalPayload | null>(null)
   const handleDismiss = useCallback(() => {
     setShowModal(false)
   }, [refetch])
 
-  useEffect(() => {
-    if (isLoadingOuter) {
-      setNewEntries([{}])
-    } else {
-      loadedEntries
-    }
-  }, [isLoadingOuter])
-
-  useEffect(() => {
+  const sortedEntries = useMemo(() => {
     const hasUngradedItems = loadedEntries.some(
       (e) => e.grading_company === null && e.quantity >= 1
     )
-    const baseEntries = hasUngradedItems
-      ? loadedEntries
-      : [{ grading_company: null, quantity: 0, grade_condition_id: null }, ...loadedEntries]
+    const baseEntries = hasUngradedItems ? loadedEntries : [{ quantity: 0 }, ...loadedEntries]
 
-    const sortedEntries = [...baseEntries].sort((a, b) => {
-      //@ts-ignore
-      const aHasCompany = Boolean(a.grading_company_id || a.grading_company)
-      //@ts-ignore
-      const bHasCompany = Boolean(b.grading_company_id || b.grading_company)
-      if (aHasCompany !== bHasCompany) return aHasCompany ? 1 : -1
-
-      const aCompany = (a.grading_company ?? '').toLowerCase()
-      const bCompany = (b.grading_company ?? '').toLowerCase()
-      if (aCompany !== bCompany) return aCompany.localeCompare(bCompany)
-
-      //@ts-ignore
-      const aGradeValue = a.grade_condition?.grade_value ?? Number.NEGATIVE_INFINITY
-      //@ts-ignore
-      const bGradeValue = b.grade_condition?.grade_value ?? Number.NEGATIVE_INFINITY
-      if (aGradeValue !== bGradeValue) return aGradeValue - bGradeValue
-
-      //@ts-ignore
-      const aVariants = a.variants ?? []
-      //@ts-ignore
-      const bVariants = b.variants ?? []
-      const aVariantsEmpty = aVariants.length === 0
-      const bVariantsEmpty = bVariants.length === 0
-      if (aVariantsEmpty !== bVariantsEmpty) return aVariantsEmpty ? -1 : 1
-      const aVariantsKey = aVariants.join(',').toLowerCase()
-      const bVariantsKey = bVariants.join(',').toLowerCase()
-      if (aVariantsKey !== bVariantsKey) return aVariantsKey.localeCompare(bVariantsKey)
-
-      //@ts-ignore
-      const aCreatedBy = a.updated_at ?? ''
-      //@ts-ignore
-      const bCreatedBy = b.updated_at ?? ''
-      return aCreatedBy.localeCompare(bCreatedBy)
-    })
-    setNewEntries(sortedEntries)
+    const sortedEntries = [...baseEntries].sort(sortCollectionItem)
+    return sortedEntries
   }, [loadedEntries])
 
   return (
-    <View style={[style, { paddingRight: editable ? 0 : 12 }]}>
+    <View
+      style={[
+        style,
+        {
+          paddingRight: editable ? 0 : 12,
+          display: 'flex',
+          flexDirection: 'column',
+          alignSelf: 'stretch',
+        },
+      ]}
+    >
       {isLoading || card === null ? (
         <Spinner />
       ) : (
-        newEntries.map((entry, index) => {
-          return (
-            <CollectionItemEntry
-              card={card}
-              key={`${index}-new`}
-              collectionItem={entry}
-              collection={collection}
-              editable={editable}
-              isLoading={isLoadingOuter}
-            />
-          )
-        })
+        <View style={{ width: '100%' }}>
+          {sortedEntries.map((entry, index) => (
+            <Animated.View
+              key={entry.id ?? entry.grade_condition_id ?? `${index}-new`}
+              layout={LinearTransition}
+            >
+              <CollectionItemEntry
+                card={card}
+                collectionItem={entry}
+                collection={collection}
+                editable={editable}
+                isLoading={isLoadingOuter}
+                onPriceModalOpen={(data) => setPriceChangeEntry(data)}
+              />
+            </Animated.View>
+          ))}
+        </View>
       )}
 
       <Button
-        highLighted
-        size="xSmall"
+        variant={'primary'}
         disabled={isLoadingOuter}
         style={{
           flexGrow: 0,
           alignSelf: 'flex-end',
           marginTop: 8,
-          paddingHorizontal: 20,
-          paddingVertical: 4,
-          marginRight: 34 + (editable ? 24 : 0),
+          width: 94,
+          height: 34,
+          marginRight: 36 + (editable ? 24 : 0),
           opacity: isLoadingOuter ? 0.5 : 1,
+          borderRadius: 9999,
         }}
         onPress={() => {
           setShowModal(true)
           // setNewEntries((prev) => [...prev, {}])
         }}
-        color={Colors.$iconDefault}
-        label="Add"
-        iconSource={(style) => <Plus style={style} color={Colors.$iconDefault} />}
-      />
+      >
+        <Plus color={Colors.$iconDefault} />
+        <Text variant="large" style={{ color: Colors.$iconDefault, lineHeight: 0 }}>
+          Add
+        </Text>
+      </Button>
       {collection && (
         <AddVariantModal
-          entries={newEntries}
+          entries={sortedEntries}
           collection={collection}
           item={card}
           visible={showModal}
           onDismiss={handleDismiss}
         />
       )}
+      <PriceChangeModal
+        visible={!!priceChangeEntry}
+        onDismiss={() => setPriceChangeEntry(null)}
+        data={priceChangeEntry}
+      />
     </View>
   )
 }
@@ -171,7 +154,7 @@ const AddVariantModal = ({
   onDismiss,
   entries,
 }: {
-  entries: Array<Partial<CollectionItemRow>>
+  entries: Partial<CollectionItemRow>[]
   collection: CollectionLike
   item: TCard
   visible: boolean
@@ -187,7 +170,7 @@ const AddVariantModal = ({
 
   const initialDraft = useMemo<EditCollectionArgsItem>(() => {
     return {
-      ref_id: item?.id!,
+      ref_id: item?.id,
       quantity: 0,
       grading_company: null,
       grade_condition_id: null,
@@ -259,7 +242,7 @@ const AddVariantModal = ({
 
   return (
     <Modal visible={visible} onDismiss={onDismiss}>
-      <View className="flex flex-col gap-4 flex-1 pt-4">
+      <View className="flex flex-col gap-4 py-4 w-full">
         <View className="flex flex-row gap-4 w-full">
           <Select
             defaultValue={
@@ -359,8 +342,7 @@ const AddVariantModal = ({
           </Select>
         </View>
 
-        <View className="flex flex-col">
-          {/* {alreadyExists && <Text></Text>} */}
+        <View className="flex-col grow-0 shrink">
           <VariantsSelect
             card={item}
             inputProps={{
@@ -372,38 +354,75 @@ const AddVariantModal = ({
             }}
           />
         </View>
-        {alreadyExists(draft) && (
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 }}>
+        {alreadyExists(draft) && draft.grade_condition_id && (
+          <View
+            style={{
+              width: '100%',
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 4,
+              marginTop: 4,
+            }}
+          >
             <TriangleAlert size={20} color={Colors.$textDanger} />
             <Text style={{ color: Colors.$textDanger }}>{'Collection type already exists.'}</Text>
           </View>
         )}
-
-        <Button
-          label="Add"
-          disabled={!enableSave}
-          onPress={() => {
-            setSaving(true)
-            if (collection.id) {
-              qc.setQueryData<Partial<CollectionItem>[]>(collectionItemsKey, (prev) => {
-                const current = prev ?? []
-                const exists = current.some(
-                  (e) =>
-                    e.grade_condition_id === draft.grade_condition_id &&
-                    variantsEqual(
-                      e.variants as string[] | undefined,
-                      draft.variants as string[] | undefined
-                    )
-                )
-                if (exists) return current
-                return [...current, draft]
-              })
-            }
-            setSaving(false)
-            onDismiss()
+        <View
+          style={{
+            flexDirection: 'row',
+            gap: 12,
           }}
-          iconSource={() => (saving ? <Spinner color={Colors.$textDefaultLight} /> : null)}
-        ></Button>
+        >
+          <Button
+            size="lg"
+            style={{
+              flex: 1,
+            }}
+            variant="default"
+            onPress={() => {
+              onDismiss()
+            }}
+          >
+            <Undo2 size={24} color={Colors.$iconDefault} />
+            <Text variant={'large'}>Back</Text>
+          </Button>
+          <Button
+            style={{
+              flex: 1,
+            }}
+            disabled={!enableSave}
+            size="lg"
+            variant="primary"
+            onPress={() => {
+              setSaving(true)
+              if (collection.id) {
+                qc.setQueryData<Partial<CollectionItem>[]>(collectionItemsKey, (prev) => {
+                  const current = prev ?? []
+                  const exists = current.some(
+                    (e) =>
+                      e.grade_condition_id === draft.grade_condition_id &&
+                      variantsEqual(
+                        e.variants as string[] | undefined,
+                        draft.variants as string[] | undefined
+                      )
+                  )
+                  if (exists) return current
+                  return [...current, { id: uuidv4(), ...draft }]
+                })
+              }
+              setSaving(false)
+              onDismiss()
+            }}
+          >
+            {saving ? (
+              <Spinner color={Colors.$textDefaultLight} />
+            ) : (
+              <Plus size={24} color={Colors.$iconDefault} />
+            )}
+            <Text variant={'large'}>Add</Text>
+          </Button>
+        </View>
       </View>
     </Modal>
   )

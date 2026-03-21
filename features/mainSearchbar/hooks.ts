@@ -63,7 +63,7 @@ export const useDimensions = (
         const kh =
           Platform.OS === 'ios'
             ? Math.max(0, windowHeight - e.endCoordinates.screenY)
-            : e.endCoordinates?.height ?? 0
+            : (e.endCoordinates?.height ?? 0)
         setKeyboardHeight(kh)
       }
     )

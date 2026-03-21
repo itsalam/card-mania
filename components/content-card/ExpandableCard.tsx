@@ -10,7 +10,7 @@ import { Button } from '../ui/button'
 import { Card } from '../ui/card'
 import { HStack } from '../ui/hstack'
 import { Icon } from '../ui/icon'
-import { Text } from '../ui/text'
+import { Text } from '../ui/text/base-text'
 import { VStack } from '../ui/vstack'
 
 const DEFAULT_CARD_WIDTH = 72

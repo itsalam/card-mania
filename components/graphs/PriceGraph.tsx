@@ -1,3 +1,4 @@
+import { useEffectiveColorScheme } from '@/features/settings/hooks/effective-color-scheme'
 import {
   Blur,
   Color,
@@ -226,6 +227,7 @@ export function PriceGraph<
     style,
     showTooltipLabel = true,
   } = props
+  const scheme = useEffectiveColorScheme() // 'light' | 'dark' | null
   const { timePeriod } = useTimeRange()
   const isInactive = !Boolean(data)
   const initialY = useMemo(
@@ -332,7 +334,7 @@ export function PriceGraph<
   }, [splitX])
 
   return (
-    <Animated.View className="w-full" style={[style, { height }]}>
+    <Animated.View key={scheme} className="w-full" style={[style, { height }]}>
       {isInactive ? (
         <LoadingState
           height={height / 2}
@@ -445,7 +447,7 @@ export function PriceGraph<
                   })}
                 </Group>
                 {/* </Mask> */}
-                {lastPoints && (
+                {lastPoints && Object.keys(state.y).length && (
                   <ToolTip
                     xValue={crosshairXValue}
                     restPoints={lastPoints}
@@ -514,7 +516,6 @@ export function ToolTip({
 }) {
   const font = useFont(require('../../assets/fonts/Inter.ttf'), 12)
   const seriesKeys = useMemo(() => Object.keys(yKeys ?? {}), [yKeys])
-  if (!seriesKeys.length) return null
   const seriesIsActive = seriesActive ?? isActive
 
   const [xValueText, setXValueText] = useState('')

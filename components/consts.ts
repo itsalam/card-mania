@@ -8,5 +8,4 @@ export const Z_INDEX = {
   FAB: 50,
   FAB_MENU: 51,
   DROPDOWN_MENU: 40,
-
 }

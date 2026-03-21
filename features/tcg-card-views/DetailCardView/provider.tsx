@@ -1,17 +1,17 @@
 import { usePopulateTagCategory } from '@/client/collections/tags'
 import { CollectionLike } from '@/client/collections/types'
 import { TCard, TTag } from '@/constants/types'
-import { createContext, useContext, useEffect, useMemo, useRef } from 'react'
+import { createContext, useContext, useEffect, useMemo, useState } from 'react'
 import { createStore, StoreApi, useStore } from 'zustand'
-import { VISIBILITY_OPTIONS } from './ui'
+import { VISIBILITY_OPTIONS } from './components/ui'
 
 export type CardDetailsStore = {
   card: TCard | null
-  footerPages: Array<{ title: string; page: () => React.ReactNode }>
+  footerPages: { title: string; page: () => React.ReactNode }[]
   currentPage?: number
   setPage: (pageIdx: number) => void
   setCard: (card: TCard | null) => void
-  setFooterPages: (pages: Array<{ title: string; page: () => React.ReactNode }>) => void
+  setFooterPages: (pages: { title: string; page: () => React.ReactNode }[]) => void
   footerFullView: boolean
   setFooterFullView: (value: boolean) => void
 }
@@ -22,7 +22,7 @@ export const createCardDetailsStore = ({
   currentPage = 0,
 }: {
   card?: TCard | null
-  footerPages?: Array<{ title: string; page: () => React.ReactNode }>
+  footerPages?: { title: string; page: () => React.ReactNode }[]
   currentPage?: number
 }) =>
   createStore<CardDetailsStore>((set, get) => ({
@@ -49,32 +49,24 @@ export const CardDetailsProvider = ({
 }: {
   card?: TCard | null
   children: React.ReactNode
-  footerPages: Array<{ title: string; page: () => React.ReactNode }>
+  footerPages: { title: string; page: () => React.ReactNode }[]
 }) => {
   // create one store instance for this provider
-  const storeRef = useRef<StoreApi<CardDetailsStore> | null>(null)
-
-  if (!storeRef.current) {
-    storeRef.current = createCardDetailsStore({
-      card: card ?? null,
-      footerPages,
-      currentPage: 0,
-    })
-  }
+  const [store] = useState(() =>
+    createCardDetailsStore({ card: card ?? null, footerPages, currentPage: 0 })
+  )
 
   // Only effects may update the store
   useEffect(() => {
-    storeRef.current!.setState({ card: card ?? null }, false)
+    store.setState({ card: card ?? null }, false)
   }, [card])
 
   useEffect(() => {
     // If footerPages is re-created every render, consider memoizing it upstream
-    storeRef.current!.setState({ footerPages }, false)
+    store.setState({ footerPages }, false)
   }, [footerPages])
 
-  return (
-    <CardDetailsContext.Provider value={storeRef.current}>{children}</CardDetailsContext.Provider>
-  )
+  return <CardDetailsContext.Provider value={store}>{children}</CardDetailsContext.Provider>
 }
 
 export function useCardDetails() {
@@ -191,11 +183,10 @@ export function ModifyCollectionProvider({
   onChange?: (state: CreateNewCollectionsState) => void
 }) {
   // create once
-  const storeRef = useRef<StoreApi<CreateNewCollectionsState> | null>(null)
-  if (!storeRef.current) storeRef.current = modifyCollectionStore(collection)
+  const [store] = useState(() => modifyCollectionStore(collection))
 
   // derive category info for requested tags, then apply into the store
-  const requested = useStore(storeRef.current, (s) => s.requestedTags)
+  const requested = useStore(store, (s) => s.requestedTags)
   const namesNeedingLookup = useMemo(
     () => requested.filter((t) => !t.id && !t.name).map((t) => String(t.name!)),
     [requested]
@@ -203,18 +194,18 @@ export function ModifyCollectionProvider({
 
   const { map } = usePopulateTagCategory(namesNeedingLookup)
   useEffect(() => {
-    if (map) storeRef.current!.getState().applyRequestedTagCategories(map)
+    if (map) store.getState().applyRequestedTagCategories(map)
   }, [map])
 
   useEffect(() => {
-    if (!onChange || !storeRef.current) return
-    const unsubscribe = storeRef.current.subscribe(onChange)
+    if (!onChange) return
+    const unsubscribe = store.subscribe(onChange)
     // fire once with current state so listeners have initial snapshot
-    onChange(storeRef.current.getState())
+    onChange(store.getState())
     return unsubscribe
   }, [onChange])
 
-  return <Ctx.Provider value={storeRef.current}>{children}</Ctx.Provider>
+  return <Ctx.Provider value={store}>{children}</Ctx.Provider>
 }
 
 export function useCreateNewCollections<T>(selector: (s: CreateNewCollectionsState) => T): T {

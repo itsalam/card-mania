@@ -1,11 +1,12 @@
 import { useCardQuery } from '@/client/card'
-import { useGradingConditions } from '@/client/card/grading'
+import { Graders, useGradingConditions } from '@/client/card/grading'
 import { suggestedVariantsOptions, Variant } from '@/client/collections/items'
 
 import { useEditCollectionItem } from '@/client/collections/mutate'
 import { CollectionLike, EditCollectionArgsItem } from '@/client/collections/types'
-import { getDefaultPrice, getGradedPrice } from '@/components/tcg-card/helpers'
+import { getGradedPrice } from '@/components/tcg-card/helpers'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { TextField } from '@/components/ui/input/base-input'
 import { useInputColors } from '@/components/ui/input/provider'
 import { styles } from '@/components/ui/input/styles'
@@ -17,26 +18,19 @@ import {
 } from '@/components/ui/multi-select-input/multi-select-input'
 import { NumberTicker } from '@/components/ui/number-ticker'
 import { Separator } from '@/components/ui/separator'
-import { Skeleton } from '@/components/ui/skeleton'
-import { Text } from '@/components/ui/text'
+import { SkeletonText, Text } from '@/components/ui/text'
 import { formatPrice } from '@/components/utils'
 import { TCard } from '@/constants/types'
+import { getGradingDisplayString } from '@/features/collection/helpers'
+import { useEffectiveColorScheme } from '@/features/settings/hooks/effective-color-scheme'
 import { CollectionItemRow } from '@/lib/store/functions/types'
 import { useQueryClient } from '@tanstack/react-query'
 import { debounce } from 'lodash'
-import {
-  ArrowRight,
-  Check,
-  DollarSign,
-  EllipsisVertical,
-  Tag,
-  X,
-  XCircle,
-} from 'lucide-react-native'
+import { Check, DollarSign, EllipsisVertical, Tag, X, XCircle } from 'lucide-react-native'
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { View } from 'react-native'
-import Animated from 'react-native-reanimated'
-import { Button, Colors, TouchableOpacity, Typography } from 'react-native-ui-lib'
+import Animated, { FadeOutRight } from 'react-native-reanimated'
+import { Colors, TouchableOpacity, Typography } from 'react-native-ui-lib'
 
 const ATag = Animated.createAnimatedComponent(Tag)
 
@@ -82,6 +76,14 @@ export const VariantsSelect = ({
   )
 }
 
+export type PriceModalPayload = {
+  draft: EditCollectionArgsItem
+  updateDraft: (patch: Partial<EditCollectionArgsItem>) => void
+  price: number | null
+  currentGrade: { grade_value: number; label: string; id: string } | undefined
+  currentGrader: Graders | undefined
+}
+
 export const CollectionItemEntry = ({
   collection,
   collectionItem,
@@ -89,6 +91,7 @@ export const CollectionItemEntry = ({
   card,
   editable,
   isLoading,
+  onPriceModalOpen,
 }: {
   collection?: CollectionLike
   collectionItem?: Partial<CollectionItemRow>
@@ -96,9 +99,10 @@ export const CollectionItemEntry = ({
   card: TCard | null
   editable?: boolean
   isLoading?: boolean
+  onPriceModalOpen?: (data: PriceModalPayload) => void
 }) => {
   const { data: gradeData, error } = useGradingConditions()
-  const [priceModalVisible, setPriceModalVisible] = useState(false)
+  const [hide, setHide] = useState(false)
 
   const mutate = useEditCollectionItem(
     collectionItem?.collection_id || collection?.id,
@@ -149,7 +153,6 @@ export const CollectionItemEntry = ({
   const mutateEntry = useCallback(
     (draft: EditCollectionArgsItem, patch: Partial<EditCollectionArgsItem>) => {
       if (isEqualToInitial(draft)) return // don’t re-save same data
-
       mutate.mutate(
         { item: { ...draft, ...patch } },
         {
@@ -159,6 +162,7 @@ export const CollectionItemEntry = ({
           },
           onError: (...e) => {
             console.error({ e })
+            setHide(false)
             setDraft(draft)
           },
         }
@@ -171,6 +175,7 @@ export const CollectionItemEntry = ({
     (draft: EditCollectionArgsItem) => {
       mutate.mutate({ item: { ...draft, quantity: 0 } })
 
+      setHide(true)
       onDelete?.()
     },
     [mutate]
@@ -184,15 +189,17 @@ export const CollectionItemEntry = ({
   }
 
   const price = useMemo(() => {
-    if (cardData && gradeData && currentGrade) {
-      return getGradedPrice({ card: cardData, graders: gradeData, gradeId: currentGrade.id })
-    } else return getDefaultPrice(card ?? undefined)
+    if (cardData && gradeData) {
+      return getGradedPrice({ card: cardData, graders: gradeData, gradeId: currentGrade?.id })
+    } else return null
   }, [collectionItem, gradeData, currentGrade])
-
+  const scheme = useEffectiveColorScheme() // 'light' | 'dark' | null
   //TODO: Implement modal overriwte/selling options
 
-  return (
-    <View
+  return !hide ? (
+    <Animated.View
+      exiting={FadeOutRight}
+      key={scheme + (!hide ? 'show' : '')}
       style={{
         position: 'relative',
         width: '100%',
@@ -213,21 +220,20 @@ export const CollectionItemEntry = ({
         }}
       >
         <View style={{ flex: 1, justifyContent: 'flex-end' }}>
-          <Text
+          <SkeletonText
             className="text-base uppercase font-spaceMono"
+            defaultDimensions={{ height: 12, width: 50 }}
             style={{
               color: Colors.$textNeutral,
               fontSize: 12,
             }}
+            loading={isLoading}
           >
-            {isLoading ? (
-              <Skeleton style={{ height: 12, width: 50 }} />
-            ) : (
-              `${(currentGrader ? `${currentGrader.slug} ` : 'ungraded').toLocaleUpperCase()}${
-                currentGrade?.grade_value.toPrecision(2) ?? ''
-              }`
-            )}
-          </Text>
+            {
+              // @ts-ignore
+              getGradingDisplayString(collectionItem as CollectionItemRow)
+            }
+          </SkeletonText>
         </View>
         <View
           style={{
@@ -237,15 +243,22 @@ export const CollectionItemEntry = ({
             gap: 10,
           }}
         >
-          {isLoading ? (
-            <Skeleton style={{ height: 15, width: 66 }} />
-          ) : price?.[1] ? (
-            <Text>{formatPrice(price[1])}</Text>
-          ) : (
-            <Text style={{ color: Colors.$textNeutralLight }}>{'--.--'}</Text>
-          )}
+          <SkeletonText
+            className="text-base uppercase font-spaceMono"
+            defaultDimensions={{ height: 15, width: 66 }}
+            style={
+              price
+                ? null
+                : {
+                    color: Colors.$textNeutralLight,
+                  }
+            }
+            loading={isLoading}
+          >
+            {price ? formatPrice(price) : '--.--'}
+          </SkeletonText>
 
-          <X size={8} />
+          <X size={8} color={Colors.$iconDefault} />
           <NumberTicker
             disabled={isLoading}
             containerStyle={{ opacity: isLoading ? 0.6 : 1 }}
@@ -269,15 +282,17 @@ export const CollectionItemEntry = ({
               disabled={isLoading}
               style={{ opacity: isLoading ? 0.4 : 1 }}
             >
-              <XCircle />
+              <XCircle color={Colors.$iconDefault} />
             </TouchableOpacity>
             {editable && (
               <TouchableOpacity
-                onPress={() => setPriceModalVisible(true)}
+                onPress={() =>
+                  onPriceModalOpen?.({ draft, updateDraft, price, currentGrade, currentGrader })
+                }
                 disabled={isLoading}
                 style={{ opacity: isLoading ? 0.4 : 1 }}
               >
-                <EllipsisVertical />
+                <EllipsisVertical color={Colors.$iconDefault} />
               </TouchableOpacity>
             )}
           </View>
@@ -301,158 +316,113 @@ export const CollectionItemEntry = ({
           ))}
         </View>
       ) : null}
-      <Modal visible={priceModalVisible} onDismiss={() => setPriceModalVisible(false)}>
-        <View className="pt-4" style={{ paddingRight: 1 }}>
-          <Text
-            className="text-base uppercase font-spaceMono"
+    </Animated.View>
+  ) : null
+}
+
+export const PriceChangeModal = ({
+  data,
+  onDismiss,
+  visible,
+}: {
+  data: PriceModalPayload | null
+  onDismiss: () => void
+  visible: boolean
+}) => {
+  if (!data) return
+
+  const { currentGrader, currentGrade, price, draft, updateDraft } = data
+  return (
+    <Modal visible={visible} onDismiss={onDismiss}>
+      <View className="pt-4" style={{ paddingRight: 1, width: '100%', height: '100%' }}>
+        <Separator orientation="horizontal" />
+
+        <Separator orientation="horizontal" />
+        <View className="flex flex-col flex-1 py-4" style={{ width: '100%' }}>
+          <View
             style={{
-              color: Colors.$textNeutral,
-              fontSize: 24,
-              lineHeight: 26,
+              flexDirection: 'row',
+              alignItems: 'baseline',
+              width: '100%',
+              gap: 4,
+              paddingBottom: 12,
             }}
           >
-            {(currentGrader ? `${currentGrader.slug} ` : 'ungraded').toLocaleUpperCase()}
-            {currentGrade?.grade_value.toPrecision(2)}
-          </Text>
-          <Separator orientation="horizontal" />
-          <View className="flex flex-col flex-1 py-4" style={{ width: '100%' }}>
-            <View
-              style={{
-                alignItems: 'baseline',
-                width: '100%',
-                gap: 4,
-                paddingBottom: 12,
-              }}
-            >
-              <Text variant={'h3'}>Manual Price override -</Text>
-            </View>
-            <View
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                width: '100%',
-                gap: 4,
-              }}
-            >
-              <View style={{ flex: 0.5, alignSelf: 'stretch', paddingBottom: 14 }}>
-                <Label style={[styles.floatingPlaceholderTextStyle, { paddingTop: 2 }]}>
-                  Current Price
-                </Label>
-                <View
-                  style={{
-                    flex: 1,
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
-                >
-                  {price?.[1] ? (
-                    <Text style={{ fontSize: 24 }} variant={'large'}>
-                      {formatPrice(price[1])}
-                    </Text>
-                  ) : (
-                    <Text
-                      variant={'large'}
-                      style={{
-                        color: Colors.$textNeutralLight,
-                        fontSize: 24,
-                      }}
-                    >
-                      {'--.--'}
-                    </Text>
-                  )}
-                </View>
-              </View>
-
-              <ArrowRight size={20} />
-              <TextField
-                leadingAccessory={<DollarSign />}
-                validate={'number'}
-                placeholder="New Price"
-                floatingPlaceholder
-                containerStyle={{ flex: 0.75, margin: 8 }}
-              />
-            </View>
-            <TouchableOpacity style={{ width: '20%', alignSelf: 'flex-end', marginRight: 16 }}>
-              <Button
-                label="Save"
-                iconSource={() => (
-                  <Check
-                    color={Colors.$iconDefaultLight}
-                    size={16}
-                    strokeWidth={2}
-                    style={{ marginRight: 4 }}
-                  />
-                )}
-              ></Button>
-            </TouchableOpacity>
-          </View>
-
-          <Separator orientation="horizontal" />
-          <View className="flex flex-col flex-1 py-4" style={{ width: '100%' }}>
-            <View
-              style={{
-                flexDirection: 'row',
-                alignItems: 'baseline',
-                width: '100%',
-                gap: 4,
-                paddingBottom: 12,
-              }}
-            >
-              <Text variant={'h3'}>Sell Quanity</Text>
-            </View>
-            <View
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                width: '100%',
-                gap: 4,
-              }}
-            >
-              <View
+            <Text variant={'h3'} style={{ fontSize: 24, lineHeight: 26 }}>
+              Sell Quanity -{' '}
+              <Text
+                className="text-base uppercase font-spaceMono"
                 style={{
-                  flex: 0.5,
-                  alignSelf: 'stretch',
-                  paddingBottom: 14,
+                  color: Colors.$textNeutral,
+                  fontSize: 20,
+                  lineHeight: 22,
                 }}
               >
-                <Label style={[styles.floatingPlaceholderTextStyle, { paddingTop: 2 }]}>
-                  Quanity
-                </Label>
-                <NumberTicker
-                  min={0}
-                  max={999}
-                  initialNumber={draft.quantity ?? 0}
-                  onChangeNumber={(n) => updateDraft({ quantity: n })}
-                />
-              </View>
+                {(currentGrader ? `${currentGrader.slug} ` : 'ungraded').toLocaleUpperCase()}
+                {currentGrade?.grade_value.toPrecision(2)}
+              </Text>
+            </Text>
+          </View>
+          <View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'flex-start',
+              width: '100%',
+            }}
+          >
+            <View
+              style={{
+                flex: 0.5,
+                alignSelf: 'stretch',
+                gap: 2,
+                paddingBottom: 8,
+                paddingTop: 2,
+              }}
+            >
+              <Label style={[styles.floatingPlaceholderTextStyle]}>Quanity</Label>
+              <NumberTicker
+                min={0}
+                max={999}
+                initialNumber={draft.quantity ?? 0}
+                onChangeNumber={(n) => updateDraft({ quantity: n })}
+                containerStyle={{ marginRight: 0, paddingRight: 0 }}
+              />
+            </View>
 
-              <X size={20} />
-
+            <X size={20} color={Colors.$outlineDefault} style={{ alignSelf: 'center' }} />
+            <View
+              style={{
+                paddingVertical: 8,
+                flex: 1,
+                marginLeft: 8,
+              }}
+            >
               <TextField
-                leadingAccessory={<DollarSign />}
+                leadingAccessory={<DollarSign color={Colors.$textDefault} />}
                 validate={'number'}
                 placeholder="Selling Price"
                 floatingPlaceholder
                 containerStyle={{ flex: 1 }}
-                value={price?.[1] ? formatPrice(price?.[1]).slice(1) : '0.00'}
+                value={price ? formatPrice(price).slice(1) : '0.00'}
               />
             </View>
-            <TouchableOpacity style={{ width: '20%', alignSelf: 'flex-end', marginRight: 16 }}>
-              <Button
-                label="Save"
-                iconSource={() => (
-                  <Check
-                    color={Colors.$iconDefaultLight}
-                    size={16}
-                    strokeWidth={2}
-                    style={{ marginRight: 4 }}
-                  />
-                )}
-              ></Button>
-            </TouchableOpacity>
           </View>
+          <TouchableOpacity
+            style={{ width: '30%', alignSelf: 'flex-end', margin: 4 }}
+            onPress={() => updateDraft(draft)}
+          >
+            <Button size={'lg'} style={{ width: '100%', marginRight: 4 }}>
+              <Text>Save</Text>
+              <Check
+                color={Colors.$iconDefault}
+                size={16}
+                strokeWidth={2}
+                style={{ marginRight: 4 }}
+              />
+            </Button>
+          </TouchableOpacity>
         </View>
-      </Modal>
-    </View>
+      </View>
+    </Modal>
   )
 }

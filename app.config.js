@@ -1,7 +1,8 @@
 const dotenv = require('dotenv')
 
 // Load environment variables from the chosen file (defaults to .env.local)
-const ENVFILE = process.env.ENVFILE || process.env.NODE_ENV? `.env.${process.env.NODE_ENV}` : `.env.local`
+const ENVFILE =
+  process.env.ENVFILE || process.env.NODE_ENV ? `.env.${process.env.NODE_ENV}` : `.env.local`
 dotenv.config({ path: ENVFILE })
 
 const config = {
@@ -23,7 +24,7 @@ const config = {
     },
     android: {
       adaptiveIcon: {
-        foregroundImage: './assets/images/adaptive-icon.png',
+        foregroundImage: './assets/images/CM_LOGO.png',
         backgroundColor: '#ffffff',
       },
       edgeToEdgeEnabled: true,
@@ -39,7 +40,7 @@ const config = {
       [
         'expo-splash-screen',
         {
-          image: './assets/images/splash-icon.png',
+          image: './assets/images/CM_LOGO.png',
           imageWidth: 200,
           resizeMode: 'contain',
           backgroundColor: '#0C0C0C',
@@ -77,8 +78,8 @@ const config = {
       eas: {
         projectId: '7cb44e39-440b-46be-b799-ba4b345ed43c',
       },
-       supabaseUrl: process.env.EXPO_PUBLIC_SUPABASE_URL,
-    supabaseKey: process.env.EXPO_PUBLIC_SUPABASE_KEY,
+      supabaseUrl: process.env.EXPO_PUBLIC_SUPABASE_URL,
+      supabaseKey: process.env.EXPO_PUBLIC_SUPABASE_KEY,
     },
     runtimeVersion: {
       policy: 'appVersion',

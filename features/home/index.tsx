@@ -1,26 +1,8 @@
 import Logo from '@/assets/images/logo.svg'
-import { Button } from '@/components/ui/button'
-import {
-  DropdownMenu,
-  DropdownMenuCheckboxItem,
-  DropdownMenuContent,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
 import { Tabs, TabsContent, TabsLabel, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Text } from '@/components/ui/text'
+import { Text } from '@/components/ui/text/base-text'
 import { MainSearchBar } from '@/features/mainSearchbar'
-import { useColorScheme } from '@/lib/hooks/useColorScheme'
-import {
-  Compass,
-  History,
-  LucideIcon,
-  Menu,
-  Newspaper,
-  SettingsIcon,
-  Sheet,
-} from 'lucide-react-native'
+import { Compass, History, LucideIcon, Newspaper, SettingsIcon, Sheet } from 'lucide-react-native'
 import React from 'react'
 import { ScrollView, TouchableOpacity, View } from 'react-native'
 import { GestureDetector } from 'react-native-gesture-handler'
@@ -30,7 +12,7 @@ import { Colors } from 'react-native-ui-lib'
 import CollectionBreakdown from '../collection/components/CollectionBreakdown'
 import { useCollaspableHeader } from '../collection/ui'
 import { Graphs } from './Breakdowns'
-import { ExplorePage, ExplorePageMenu } from './ExplorePage'
+import { ExplorePage } from './ExplorePage'
 import { FeedPage } from './FeedPage'
 import { TabValue, tabValues, useHomePageStore } from './provider'
 
@@ -60,7 +42,7 @@ export default function HomeScreen() {
     onListLayout,
     onContentSizeChange,
     onHeaderLayout,
-  } = useCollaspableHeader(false, [], GRAPH_SECTION_HEIGHT)
+  } = useCollaspableHeader({ disable: false, defaultHeight: GRAPH_SECTION_HEIGHT })
 
   return (
     <SafeAreaView className="flex-1 w-full h-full overflow-visible" style={{ paddingTop: 8 }}>
@@ -158,47 +140,5 @@ export default function HomeScreen() {
         </View>
       </GestureDetector>
     </SafeAreaView>
-  )
-}
-
-const TabOptions = ({ currentTab }: { currentTab: string }) => {
-  const { colorScheme, setColorScheme } = useColorScheme()
-  const PageMenu = {
-    explore: ExplorePageMenu,
-  }[currentTab]
-  return (
-    <DropdownMenu className="place-self-end justify-self-end">
-      <DropdownMenuTrigger asChild>
-        <Button
-          variant="ghost"
-          className="p-2 rounded-t-md rounded-b-none border border-b-0  translate-y-px px-3"
-          style={{
-            borderColor: Colors.$outlineNeutral,
-            backgroundColor: Colors.$backgroundNeutral,
-          }}
-        >
-          <Menu size={16} />
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent className="w-52">
-        {PageMenu && <PageMenu />}
-        <DropdownMenuSeparator />
-        <DropdownMenuLabel>Display Options</DropdownMenuLabel>
-
-        <DropdownMenuSeparator />
-        <DropdownMenuCheckboxItem
-          checked={colorScheme === 'light'}
-          onCheckedChange={() => setColorScheme('light')}
-        >
-          <Text>Light</Text>
-        </DropdownMenuCheckboxItem>
-        <DropdownMenuCheckboxItem
-          checked={colorScheme === 'dark'}
-          onCheckedChange={() => setColorScheme('dark')}
-        >
-          <Text>Dark</Text>
-        </DropdownMenuCheckboxItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
   )
 }

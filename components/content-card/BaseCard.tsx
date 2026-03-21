@@ -1,4 +1,4 @@
-import { Card, } from '../ui/card'
+import { Card } from '../ui/card'
 
 export function BaseCard({ children, ...props }: React.ComponentProps<typeof Card>) {
   return (

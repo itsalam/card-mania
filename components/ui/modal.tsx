@@ -4,9 +4,11 @@ import {
   Dimensions,
   Platform,
   Pressable,
+  StyleProp,
   StyleSheet,
   useWindowDimensions,
   View,
+  ViewStyle,
 } from 'react-native'
 import { Gesture, GestureDetector } from 'react-native-gesture-handler'
 import Animated, {
@@ -17,10 +19,10 @@ import Animated, {
 } from 'react-native-reanimated'
 import { Colors } from 'react-native-ui-lib'
 
+import { THUMB_SIZE } from '@/features/tcg-card-views/DetailCardView/components/ui'
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller'
 import { EdgeInsets, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { scheduleOnRN } from 'react-native-worklets'
-import { THUMB_PADDING, THUMB_SIZE } from '../../features/tcg-card-views/DetailCardView/ui'
 
 export const getContentInsets = (insets: EdgeInsets) => ({
   top: insets.top,
@@ -33,10 +35,14 @@ export function Modal({
   visible,
   onDismiss,
   children,
+  absoluteThumb,
+  style,
 }: {
   visible: boolean
   onDismiss: () => void
   children?: ReactNode
+  absoluteThumb?: boolean
+  style?: StyleProp<ViewStyle>
 }) {
   const { height: screenHeight } = useWindowDimensions()
   const translateY = useSharedValue(screenHeight)
@@ -91,26 +97,34 @@ export function Modal({
         <GestureDetector gesture={panGesture}>
           <Animated.View
             style={[
-              thumbStyles.thumbContainer,
+              thumbStyles.modalContainer,
+              { backgroundColor: Colors.$backgroundDefault },
               {
-                position: 'absolute',
-                left: 0,
-                right: 0,
-                bottom: 0,
-                padding: 16,
                 paddingBottom: contentInsets.bottom,
-                backgroundColor: Colors.$backgroundDefault,
-                borderTopLeftRadius: 24,
-                borderTopRightRadius: 24,
-                justifyContent: 'center',
-                width: '100%',
-                alignItems: 'stretch',
+                overflow: 'hidden',
               },
               sheetStyle,
+              style,
             ]}
           >
-            <View style={[thumbStyles.thumb, { marginHorizontal: 'auto', marginBottom: 12 }]} />
-            {children}
+            <View
+              style={[
+                thumbStyles.thumbContainer,
+                absoluteThumb ? thumbStyles.absoluteThumbContainer : null,
+              ]}
+            >
+              <View
+                style={[
+                  thumbStyles.thumb,
+                  {
+                    backgroundColor: Colors.rgba(Colors.$backgroundNeutralIdle, 0.8),
+                    marginHorizontal: 'auto',
+                    zIndex: 2,
+                  },
+                ]}
+              />
+            </View>
+            <View style={{ flex: 1 }}>{children}</View>
           </Animated.View>
         </GestureDetector>
       </KeyboardAvoidingView>
@@ -120,20 +134,26 @@ export function Modal({
 
 const { width: W, height: H } = Dimensions.get('window')
 export const thumbStyles = StyleSheet.create({
-  thumbContainer: {
+  modalContainer: {
     width: '100%',
     justifyContent: 'center',
     alignItems: 'center',
-    paddingTop: THUMB_PADDING,
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+
+    paddingHorizontal: 16,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
   },
   thumb: {
-    backgroundColor: Colors.rgba(Colors.$backgroundNeutralIdle, 0.3),
     height: THUMB_SIZE,
     width: '15%',
     borderRadius: 10,
+    alignSelf: 'center',
   },
   mainContent: {
-    width: '100%',
     flex: 1,
     display: 'flex',
     flexDirection: 'column',
@@ -141,17 +161,26 @@ export const thumbStyles = StyleSheet.create({
     height: '100%',
   },
   sheet: {
-    width: W + 4,
+    width: W + 2,
+    paddingHorizontal: 1,
     position: 'absolute',
     top: '100%',
-    left: -2,
+    left: -1,
     right: 0,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
-    borderColor: Colors.$outlineNeutral,
     borderWidth: 2,
   },
-
+  absoluteThumbContainer: {
+    position: 'absolute',
+    top: 0,
+  },
+  thumbContainer: {
+    marginVertical: 8,
+    width: '100%',
+    alignContent: 'center',
+    justifyContent: 'center',
+  },
   sheetInner: {
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,

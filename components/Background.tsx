@@ -19,7 +19,7 @@ import Animated, {
 import { useBackgroundColors } from './utils'
 
 type ColorValueArray = readonly [ColorValue, ColorValue, ...ColorValue[]]
-type OptionalColorValueArray = Array<string | undefined>
+type OptionalColorValueArray = (string | undefined)[]
 
 const ABlur = Animated.createAnimatedComponent(BlurView)
 
@@ -135,14 +135,10 @@ function BackgroundBase({
   )
 }
 
-// Pure component with custom equality (prevents rerenders if prop *values* are the same)
 export const GradientBackground = React.memo(BackgroundBase, (prev, next) => {
   if (!colorsEq(prev.colors as any, next.colors as any)) return false
   if (!opacityEq(prev.opacity as any, next.opacity as any)) return false
-  // if you often pass inline styles, consider memoizing them at the callsite,
-  // otherwise shallow-compare here (RN flattens internally anyway).
   if (prev.style !== next.style) return false
-  // compare other props you pass to LinearGradient if any (start/end are constants here)
   return true
 })
 
@@ -170,14 +166,14 @@ export const BlurGradientBackground = React.memo(function BlurBackground({
   )
 
   return (
-    <GradientBackground {...props} opacity={backgroundOpacity}>
+    <BackgroundBase {...props} opacity={backgroundOpacity}>
       <ABlur
         style={[blurStyle, StyleSheet.absoluteFill]}
         pointerEvents="none"
         animatedProps={animProps}
       />
       {children}
-    </GradientBackground>
+    </BackgroundBase>
   )
 })
 

@@ -1,11 +1,10 @@
 // https://docs.expo.dev/guides/using-eslint/
-const { defineConfig } = require('eslint/config');
-const expoConfig = require('eslint-config-expo/flat');
+const { defineConfig } = require('eslint/config')
+const expoConfig = require('eslint-config-expo/flat')
 
 module.exports = defineConfig([
   expoConfig,
   {
-    ignores: ['dist/*'],
-    "ignorePatterns": ["supabase/functions/**/*.ts"]
+    ignores: ['dist/*', 'supabase/functions/**/*.ts', 'etc/*', 'scripts/*', 'docs/*'],
   },
-]);
+])

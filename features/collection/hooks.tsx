@@ -1,5 +1,6 @@
 import { DEFAULT_INF_Q_OPTIONS, useViewCollectionItems } from '@/client/collections/query'
 import { CollectionIdArgs, InfQueryOptions, InifiniteQueryParams } from '@/client/collections/types'
+import { TCard } from '@/constants/types'
 import { getSupabase } from '@/lib/store/client'
 import { qk, requireUser, unwrap } from '@/lib/store/functions/helpers'
 import { CollectionItemQueryView, CollectionItemRow } from '@/lib/store/functions/types'
@@ -169,15 +170,6 @@ function getCollectionItemsArgs<T extends CollectionItemRow>(
 ): InifiniteQueryParams<T> {
   const finalOpts = { ...DEFAULT_INF_Q_OPTIONS, ...opts } as InfQueryOptions<T>
   const shouldGroup = group ?? Boolean(collectionId)
-  if (collectionType === 'default') {
-    return {
-      enabled: false,
-      queryKey: [qk.userCollections, 'default', 'items'],
-      queryFn: async () => [] as T[],
-      getNextPageParam: () => null,
-      initialPageParam: null,
-    }
-  }
   if (collectionId) {
     const { pageSize, search, kind, ...queryOpts } = finalOpts
     return {
@@ -266,14 +258,14 @@ export function useGetCollectionCountInfo(args: CollectionIdArgs) {
   })
 }
 
-export function useGetCollectionItems<T extends CollectionItemQueryView>(
-  args: CollectionIdArgs,
-  opts?: InfQueryOptions<T>,
-  group?: boolean
-) {
+export function useGetCollectionItems<
+  T extends CollectionItemQueryView = CollectionItemQueryView & TCard,
+>(args: CollectionIdArgs, opts?: InfQueryOptions<T>, group?: boolean) {
   const queryArgs = getCollectionItemsArgs<T>(args, opts, group)
   return useViewCollectionItems<T>(queryArgs)
 }
+
+export function useGetSingleCollectionItem() {}
 
 type SpoofPricePoint = { day: string; price: number }
 type SpoofPriceResponse = {

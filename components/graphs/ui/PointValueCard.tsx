@@ -60,7 +60,9 @@ export function PointValueCard({
     () => ({ v: valueSV.value, active: isActive }),
     ({ v, active }) => {
       'worklet'
-      const display = active ? v : (valueOverride ?? (restPoint?.yValue as number) ?? (restPoint?.y as number) ?? 0)
+      const display = active
+        ? v
+        : (valueOverride ?? (restPoint?.yValue as number) ?? (restPoint?.y as number) ?? 0)
       scheduleOnRN(setFormattedLabel, display)
     },
     [isActive, valueOverride]
@@ -68,7 +70,8 @@ export function PointValueCard({
 
   React.useEffect(() => {
     if (!isActive) {
-      const display = valueOverride ?? (restPoint?.yValue as number) ?? (restPoint?.y as number) ?? 0
+      const display =
+        valueOverride ?? (restPoint?.yValue as number) ?? (restPoint?.y as number) ?? 0
       setValueText(formatValue(display))
     }
   }, [isActive, valueOverride, restPoint?.yValue, restPoint?.y, formatValue])

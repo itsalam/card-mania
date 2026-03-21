@@ -1,15 +1,16 @@
-import { cn } from '@/lib/utils';
-import * as SeparatorPrimitive from '@rn-primitives/separator';
-import * as React from 'react';
-import { Colors } from 'react-native-ui-lib';
+import { cn } from '@/lib/utils'
+import * as SeparatorPrimitive from '@rn-primitives/separator'
+import * as React from 'react'
+import { Colors } from 'react-native-ui-lib'
 
 function Separator({
   className,
   orientation = 'horizontal',
   decorative = true,
+  style,
   ...props
 }: SeparatorPrimitive.RootProps & {
-  ref?: React.RefObject<SeparatorPrimitive.RootRef>;
+  ref?: React.RefObject<SeparatorPrimitive.RootRef>
 }) {
   return (
     <SeparatorPrimitive.Root
@@ -20,11 +21,10 @@ function Separator({
         orientation === 'horizontal' ? 'h-[1px] w-full' : 'h-full w-[1px]',
         className
       )}
-      style={{ backgroundColor: Colors.$outlineNeutral }}
+      style={[{ backgroundColor: Colors.$outlineNeutral }, style]}
       {...props}
     />
-  );
+  )
 }
 
-export { Separator };
-
+export { Separator }

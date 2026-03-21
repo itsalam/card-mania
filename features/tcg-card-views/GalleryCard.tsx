@@ -1,89 +1,177 @@
-import { Avatar, AvatarFallbackText, AvatarImage } from '@/components/ui/avatar'
-import { Text } from '@/components/ui/text'
-import {
-  ArrowRight,
-  Ellipsis,
-  Heart,
-  MessageCircle,
-  ShoppingCart,
-  ThumbsDown,
-  ThumbsUp,
-} from 'lucide-react-native'
-import { View } from 'react-native'
-import { LiquidGlassCard } from '../../components/tcg-card/GlassCard'
+import { THUMBNAIL_WIDTH } from '@/components/tcg-card/consts'
+import { Skeleton } from '@/components/ui/skeleton'
+import { Text } from '@/components/ui/text/base-text'
+import MaskedView from '@react-native-masked-view/masked-view'
+import { LinearGradient } from 'expo-linear-gradient'
+import { debounce } from 'lodash'
+import { useState } from 'react'
+import { Dimensions, View } from 'react-native'
+import Animated, {
+  Extrapolation,
+  interpolate,
+  SharedValue,
+  useAnimatedReaction,
+  useAnimatedRef,
+  useAnimatedScrollHandler,
+  useAnimatedStyle,
+  useDerivedValue,
+  useSharedValue,
+} from 'react-native-reanimated'
+import { Colors } from 'react-native-ui-lib'
+import { scheduleOnRN } from 'react-native-worklets'
+import { ItemListView } from './ListCard'
+import { DisplayData, GalleryListingProps } from './types'
 
-const USERS = [
-  { name: 'John Doe', handle: '@johndoe', avatar: 'https://via.placeholder.com/150' },
-  { name: 'Jane Smith', handle: '@janesmith', avatar: 'https://via.placeholder.com/150' },
-  { name: 'Alice Johnson', handle: '@alicejohnson', avatar: 'https://via.placeholder.com/150' },
-  { name: 'Bob Brown', handle: '@bobbrown', avatar: 'https://via.placeholder.com/150' },
-]
+const ITEM_SEPARATOR = 24
+const ITEM_STRIDE = THUMBNAIL_WIDTH + ITEM_SEPARATOR
+const { width: SCREEN_WIDTH } = Dimensions.get('window')
 
-const DummyAvatar = ({ user }: { user: (typeof USERS)[number] }) => {
+export function AnimatedGalleryItem({
+  item,
+  index,
+  scrollX,
+  renderAccessories,
+  onPress,
+  isCurrent,
+}: {
+  item: DisplayData
+  index: number
+  scrollX: SharedValue<number>
+  renderAccessories?: GalleryListingProps['renderItemAccessories']
+  onPress?: () => void
+  isCurrent?: boolean
+}) {
+  const animatedStyle = useAnimatedStyle(() => {
+    const itemCenter = index * ITEM_STRIDE + THUMBNAIL_WIDTH / 2
+    const viewportCenter = scrollX.value + THUMBNAIL_WIDTH / 2
+    const distance = Math.abs(itemCenter - viewportCenter)
+    const scale = interpolate(distance, [0, ITEM_STRIDE], [1, 0.85], Extrapolation.CLAMP)
+    return { transform: [{ scale }] }
+  })
+
   return (
-    <Avatar size="md">
-      <AvatarFallbackText>{user.name[0]}</AvatarFallbackText>
-      <AvatarImage
-        source={{
-          uri: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=687&q=80',
-        }}
+    <Animated.View style={animatedStyle}>
+      <ItemListView
+        vertical
+        displayData={item}
+        renderAccessories={renderAccessories?.(Boolean(isCurrent))}
+        onPress={onPress}
       />
-      {/* <AvatarBadge /> */}
-    </Avatar>
+    </Animated.View>
   )
 }
 
-export function GalleryCard() {
+function Titles(props: GalleryListingProps) {
+  const { isLoading, displayData } = props
   return (
-    <View className="py-2">
-      <View className="flex flex-row justify-between px-8 items-center">
-        <View className="flex flex-row items-center gap-2">
-          <DummyAvatar user={USERS[0]} />
-          <View>
-            <View className="flex-1">
-              <View className="flex flex-col items-start justify-center">
-                <Text variant="h4">Gallery Card</Text>
-                <Text variant="h4">Shohei Ohtani</Text>
-              </View>
-              <Text className="text-xs text-muted-foreground">
-                {USERS[0].name}-<Text className="text-xs text-primary-100">{USERS[0].handle}</Text>
-              </Text>
-            </View>
-          </View>
+    <View
+      className="flex flex-col h-full w-full items-start p-4 pr-0 flex-1 pt-2"
+      // style={{ backgroundColor: 'red' }}
+    >
+      {isLoading ? (
+        <View>
+          <Skeleton style={{ height: 32, width: 190, marginBottom: 6 }} />
+          <Skeleton style={{ height: 14, width: 275, marginBottom: 4 }} />
         </View>
-        <Ellipsis size={16} />
+      ) : (
+        <>
+          <Text
+            variant={'h2'}
+            className="font-bold text-wrap leading-none"
+            style={{
+              color: Colors.$textDefault,
+            }}
+          >
+            {displayData?.title}
+          </Text>
+          <Text
+            variant={'muted'}
+            className="text-base capitalize"
+            style={{
+              color: Colors.$textNeutral,
+            }}
+          >
+            {displayData?.subHeading}
+          </Text>
+        </>
+      )}
+    </View>
+  )
+}
+
+export function GalleryCard(props: GalleryListingProps) {
+  const { displayDataArr, renderItemAccessories: renderImageAccessories } = props
+  const flatListRef = useAnimatedRef<Animated.FlatList<DisplayData>>()
+  const scrollX = useSharedValue(0)
+  const scrollHandler = useAnimatedScrollHandler((event) => {
+    scrollX.value = event.contentOffset.x
+  })
+
+  const [isCurrent, setIsCurrent] = useState(0)
+  const debounceSetIsCurrent = debounce(setIsCurrent, 350, { trailing: true })
+  const currentIndex = useDerivedValue(() => Math.round(scrollX.value / ITEM_STRIDE))
+  useAnimatedReaction(
+    () => currentIndex.value,
+    (curr, prev) => {
+      if (curr !== prev) scheduleOnRN(debounceSetIsCurrent, curr)
+    }
+  )
+
+  const scrollToIndex = (index: number) => {
+    flatListRef.current?.scrollToOffset({ offset: index * ITEM_STRIDE, animated: true })
+    setIsCurrent(index)
+  }
+
+  return (
+    <View className="py-2" style={{}}>
+      <View
+        className="flex flex-row justify-between items-center"
+        style={{
+          padding: 20,
+          paddingBottom: 0,
+        }}
+      >
+        <Titles {...props} />
       </View>
 
-      <View className="flex flex-col items-center justify-center my-4">
-        <LiquidGlassCard
-          variant="primary"
-          className="p-4 items-center justify-center"
-          style={{
-            width: '80%',
-            aspectRatio: 5 / 7,
-            borderRadius: 12,
+      <MaskedView
+        style={{ overflow: 'visible' }}
+        maskElement={
+          <LinearGradient
+            colors={['transparent', 'black', 'black', 'transparent']}
+            locations={[0, 0.08, 0.92, 1]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={{ flex: 1 }}
+          />
+        }
+      >
+        <Animated.FlatList
+          ref={flatListRef}
+          horizontal
+          data={displayDataArr}
+          keyExtractor={(item) => item.id}
+          onScroll={scrollHandler}
+          scrollEventThrottle={16}
+          contentContainerStyle={{
+            paddingEnd: SCREEN_WIDTH - THUMBNAIL_WIDTH - 20,
+            paddingStart: 20,
           }}
+          renderItem={({ item, index }) => (
+            <AnimatedGalleryItem
+              item={item}
+              index={index}
+              scrollX={scrollX}
+              renderAccessories={renderImageAccessories}
+              onPress={() => scrollToIndex(index)}
+              isCurrent={isCurrent === index}
+            />
+          )}
+          ItemSeparatorComponent={() => <View style={{ paddingHorizontal: 12 }} />}
         />
-        <View className="flex flex-row items-center">
-          <Text className="text-center mt-2 text-lg">$15.99</Text>
-          <ArrowRight size={12} className="pt-4" />
-          <Text className="text-center mt-2 text-lg">$15.99</Text>
-        </View>
-      </View>
+      </MaskedView>
 
-      <View>
-        <View className="flex flex-row justify-between px-12">
-          <View className="flex flex-row gap-4">
-            <Heart size={28} />
-            <MessageCircle size={28} />
-            <ShoppingCart size={28} />
-          </View>
-          <View className="flex flex-row gap-4">
-            <ThumbsUp size={28} />
-            <ThumbsDown size={28} />
-          </View>
-        </View>
-      </View>
+      <View></View>
     </View>
   )
 }

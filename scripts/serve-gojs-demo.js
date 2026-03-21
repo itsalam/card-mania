@@ -63,12 +63,7 @@ server.listen(port, () => {
 
 function openBrowser(url) {
   const platform = process.platform
-  const cmd =
-    platform === 'darwin'
-      ? 'open'
-      : platform === 'win32'
-        ? 'start'
-        : 'xdg-open'
+  const cmd = platform === 'darwin' ? 'open' : platform === 'win32' ? 'start' : 'xdg-open'
 
   const child = spawn(cmd, [url], { stdio: 'ignore', shell: true })
   child.on('error', () => {

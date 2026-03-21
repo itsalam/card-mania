@@ -1,21 +1,28 @@
 import { cssInterop } from 'nativewind'
-import { useEffect, useState } from 'react'
-import { AccessibilityActionEvent, View } from 'react-native'
+import React, { Component, useEffect, useState } from 'react'
 import {
-  asBaseComponent,
+  AccessibilityActionEvent,
+  AccessibilityInfo,
+  StyleProp,
+  StyleSheet,
+  View,
+  ViewStyle,
+} from 'react-native'
+import {
   Assets,
+  StepperProps as BaseStepperProps,
   BorderRadiuses,
   Colors,
   NumberInput,
   Button as RNButton,
   View as RNView,
-  Shadows,
   Spacings,
-  StepperProps,
   Text,
   TextFieldProps,
   Typography,
 } from 'react-native-ui-lib'
+
+import _isUndefined from 'lodash/isUndefined'
 
 cssInterop(NumberInput, {
   className: {
@@ -23,6 +30,10 @@ cssInterop(NumberInput, {
     target: 'style',
   },
 })
+
+type StepperProps = BaseStepperProps & {
+  style?: StyleProp<ViewStyle>
+}
 
 type NumberTickerProps = TextFieldProps & {
   disabled?: boolean
@@ -84,10 +95,6 @@ type StepperState = {
   currentValue: number
 }
 
-import _isUndefined from 'lodash/isUndefined'
-import React, { PureComponent } from 'react'
-import { AccessibilityInfo, StyleSheet } from 'react-native'
-
 enum ActionType {
   MINUS = 'minus',
   PLUS = 'plus',
@@ -97,7 +104,7 @@ const DEFAULT_STEP = 1
  * @description: A stepper component
  * @example: https://github.com/wix/react-native-ui-lib/blob/master/demo/src/screens/componentScreens/StepperScreen.js
  */
-class Stepper extends PureComponent<StepperProps, StepperState> {
+class Stepper extends Component<StepperProps, StepperState> {
   constructor(props: StepperProps) {
     super(props)
     const { value, minValue = 0, maxValue = 1, testID } = props
@@ -215,13 +222,13 @@ class Stepper extends PureComponent<StepperProps, StepperState> {
     const minusButton = isFloatingStepper
       ? Assets.internal.icons.minusSmall
       : small
-      ? Assets.internal.icons.minusOutlineSmall
-      : Assets.internal.icons.minusOutline
+        ? Assets.internal.icons.minusOutlineSmall
+        : Assets.internal.icons.minusOutline
     const plusButton = isFloatingStepper
       ? Assets.internal.icons.plusSmall
       : small
-      ? Assets.internal.icons.plusOutlineSmall
-      : Assets.internal.icons.plusOutline
+        ? Assets.internal.icons.plusOutlineSmall
+        : Assets.internal.icons.plusOutline
     return (
       <RNButton
         link
@@ -234,7 +241,7 @@ class Stepper extends PureComponent<StepperProps, StepperState> {
     )
   }
   render() {
-    const { type, disabled, testID } = this.props
+    const { type, disabled, testID, style } = this.props
     const { currentValue } = this.state
     return (
       //@ts-ignore
@@ -242,7 +249,18 @@ class Stepper extends PureComponent<StepperProps, StepperState> {
         row
         centerV
         {...this.getAccessibilityProps()}
-        style={type === 'floating' && styles.containerFloating}
+        style={[
+          ...(type === 'floating'
+            ? [
+                styles.containerFloating,
+                {
+                  backgroundColor: Colors.$backgroundElevated,
+                  borderColor: Colors.$outlineDefault,
+                },
+              ]
+            : []),
+          style,
+        ]}
       >
         {this.renderButton(ActionType.MINUS)}
         <Text
@@ -265,12 +283,9 @@ class Stepper extends PureComponent<StepperProps, StepperState> {
 const styles = StyleSheet.create({
   containerFloating: {
     borderRadius: BorderRadiuses.br100,
-    backgroundColor: Colors.$backgroundElevated,
     borderWidth: 1,
-    borderColor: Colors.$outlineDefault,
     paddingHorizontal: Spacings.s3,
     paddingVertical: Spacings.s1,
-    ...Shadows.sh10.bottom,
   },
   textDefault: {
     marginHorizontal: Spacings.s5,
@@ -281,4 +296,3 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
 })
-export default asBaseComponent(Stepper)
