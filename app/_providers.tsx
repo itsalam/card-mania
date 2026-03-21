@@ -3,6 +3,7 @@ import ThemeProvider from '@/components/ui/theme'
 import { SettingsProvider } from '@/features/settings'
 import { asyncStorageLocalAdapter } from '@/features/settings/adapters/local-adapter'
 import { reactNativeSystemAdapter } from '@/features/settings/adapters/system-adapter'
+import { useOfferRealtime } from '@/features/offers/use-offer-realtime'
 import { StoreProvider } from '@/lib/store/provider'
 import { AuthStatus, useUserStore } from '@/lib/store/useUserStore'
 import { Session } from '@supabase/supabase-js'
@@ -75,7 +76,10 @@ export default function Providers({ children }: { children: React.ReactNode }) {
           <ThemeProvider>
             <StoreProvider>
               <GestureHandlerRootView>
-                <ToastProvider>{children}</ToastProvider>
+                <ToastProvider>
+                  <OfferRealtimeProvider />
+                  {children}
+                </ToastProvider>
               </GestureHandlerRootView>
             </StoreProvider>
             {/* <StatusBar style={isDarkColorScheme ? 'light' : 'dark'} /> */}
@@ -84,6 +88,11 @@ export default function Providers({ children }: { children: React.ReactNode }) {
       </KeyboardProvider>
     </QueryClientProvider>
   )
+}
+
+function OfferRealtimeProvider() {
+  useOfferRealtime()
+  return null
 }
 
 const useIsomorphicLayoutEffect =
