@@ -2,14 +2,17 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { AppStandaloneHeader } from '@/components/ui/headers'
 import { ExpandableText, Text } from '@/components/ui/text'
+import { useToast } from '@/components/Toast'
 import { ProfilePageStat } from '@/features/profile/types'
 import { UserContact } from '@/features/users/components/UserAvatars'
 import { DUMMY_USERS } from '@/features/users/helpers'
-import { Ellipsis, LucideIcon, Share, Star, TrendingUp } from 'lucide-react-native'
+import { Copy, Ellipsis, LucideIcon, Share, Star, TrendingUp } from 'lucide-react-native'
 import React, { ReactNode, useMemo } from 'react'
-import { FlatList, TouchableOpacity, View } from 'react-native'
+import { FlatList, Platform, Share as RNShare, TouchableOpacity, View } from 'react-native'
 import { Colors } from 'react-native-ui-lib'
 import { useUserProfilePage } from '../providers'
+
+const STOREFRONT_DOMAIN = 'cardmania.vercel.app'
 
 const DUMMY_STATS: ProfilePageStat[] = [
   {
@@ -73,6 +76,21 @@ export function ProfileHeader() {
 
 export function SubHeader() {
   const user = useUserProfilePage((s) => s.user)
+  const { showToast } = useToast()
+
+  const storefrontUrl = user?.username
+    ? `https://${STOREFRONT_DOMAIN}/storefront/${user.username}`
+    : null
+
+  const handleShareStorefront = async () => {
+    if (!storefrontUrl) return
+    if (Platform.OS === 'web') {
+      await navigator.clipboard.writeText(storefrontUrl)
+      showToast({ message: 'Link copied to clipboard!' })
+    } else {
+      await RNShare.share({ url: storefrontUrl, message: storefrontUrl })
+    }
+  }
   const tags = useMemo(() => {
     const tags: Tag[] = [
       { label: 'Hobbyist', icon: Star, disabled: Boolean(user?.is_hobbyiest) },
@@ -188,6 +206,38 @@ export function SubHeader() {
           <Text variant={'large'}>Follow</Text>
         </Button>
       </View>
+
+      {storefrontUrl ? (
+        <TouchableOpacity
+          onPress={handleShareStorefront}
+          style={{
+            marginTop: 12,
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            paddingVertical: 10,
+            paddingHorizontal: 14,
+            borderRadius: 10,
+            backgroundColor: Colors.$backgroundElevated,
+            gap: 8,
+          }}
+        >
+          <View style={{ flex: 1, gap: 2 }}>
+            <Text variant="small" style={{ color: Colors.$textNeutralLight }}>
+              Share your storefront
+            </Text>
+            <Text
+              variant="small"
+              numberOfLines={1}
+              ellipsizeMode="tail"
+              style={{ color: Colors.$textNeutralHeavy }}
+            >
+              {storefrontUrl}
+            </Text>
+          </View>
+          <Copy size={16} color={Colors.$iconDefault} />
+        </TouchableOpacity>
+      ) : null}
     </View>
   )
 }
