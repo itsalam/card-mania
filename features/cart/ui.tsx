@@ -202,32 +202,45 @@ export function CartSheetInner() {
                         }
 
                         try {
-                          for (const [seller_id, sellerItems] of bySeller) {
-                            await submitOffer({
-                              seller_id,
-                              items: sellerItems.map((item) => ({
-                                collection_item_id: item.data.id,
-                                quantity: item.cart.quantity,
-                                offered_price_per_unit: item.cart.price,
-                                card_snapshot: {
-                                  card_id: item.data.ref_id ?? undefined,
-                                },
-                              })),
-                            })
-                          }
-                          showToast({
-                            title: 'Offer sent!',
-                            message: 'Your offer has been submitted.',
-                            preset: 'general',
+                          await Promise.all([
+                            ...[...bySeller.entries()].map(([seller_id, sellerItems]) =>
+                              submitOffer({
+                                seller_id,
+                                items: sellerItems.map((item) => ({
+                                  collection_item_id: item.data.id,
+                                  quantity: item.cart.quantity,
+                                  offered_price_per_unit: item.cart.price,
+                                  card_snapshot: {
+                                    card_id: item.data.ref_id ?? undefined,
+                                  },
+                                })),
+                              })
+                            ),
+                          ]).then(() => {
+                            dismiss()
+                            setTimeout(
+                              () =>
+                                showToast({
+                                  autoDismiss: 5000,
+                                  title: 'Offer sent!',
+                                  message: 'Your offer has been submitted.',
+                                  preset: 'general',
+                                }),
+                              2000
+                            )
                           })
-                          dismiss()
                         } catch (err) {
                           console.error('[CartSheet] submitOffer error', err)
-                          showToast({
-                            title: 'Error',
-                            message: 'Failed to send offer. Please try again.',
-                            preset: 'failure',
-                          })
+                          setTimeout(
+                            () =>
+                              showToast({
+                                autoDismiss: 5000,
+                                title: 'Error',
+                                message: 'Failed to send offer. Please try again.',
+                                preset: 'failure',
+                              }),
+                            2000
+                          )
                         }
                       }}
                     >
