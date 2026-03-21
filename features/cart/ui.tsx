@@ -1,12 +1,12 @@
 import { useCardQuery } from '@/client/card'
 import { useSubmitOffer } from '@/client/offers'
+import { useToast } from '@/components/Toast'
 import { Button } from '@/components/ui/button'
 import { thumbStyles } from '@/components/ui/modal'
 import { NumberTicker } from '@/components/ui/number-ticker'
 import { Separator } from '@/components/ui/separator'
 import { Text } from '@/components/ui/text'
 import { formatPrice } from '@/components/utils'
-import { useToast } from '@/components/Toast'
 import type { CartItem } from '@/features/cart/types'
 import { useEffectiveColorScheme } from '@/features/settings/hooks/effective-color-scheme'
 import { Ellipsis, Trash2 } from 'lucide-react-native'
@@ -29,6 +29,7 @@ import { getCardDisplayData } from '../tcg-card-views/helpers'
 import {
   useCartItems,
   useCartTotal,
+  useClearCart,
   useCloseCart,
   useRemoveFromCart,
   useUpdateCartQuantity,
@@ -57,6 +58,7 @@ export function CartSheetInner() {
     [colorScheme]
   )
   const closeCart = useCloseCart()
+  const clearCart = useClearCart()
   const items = useCartItems()
   const total = useCartTotal()
   const { showToast } = useToast()
@@ -186,6 +188,11 @@ export function CartSheetInner() {
                       disabled={isPending}
                       onPress={async () => {
                         // Group items by seller
+                        showToast({
+                          title: 'Offer sent!',
+                          message: 'Your offer has been submitted.',
+                          preset: 'general',
+                        })
                         const bySeller = new Map<string, CartItem[]>()
                         for (const item of items) {
                           const sellerId = item.data.user_id
@@ -195,24 +202,45 @@ export function CartSheetInner() {
                         }
 
                         try {
-                          for (const [seller_id, sellerItems] of bySeller) {
-                            await submitOffer({
-                              seller_id,
-                              items: sellerItems.map((item) => ({
-                                collection_item_id: item.data.id,
-                                quantity: item.cart.quantity,
-                                offered_price_per_unit: item.cart.price,
-                                card_snapshot: {
-                                  card_id: item.data.ref_id ?? undefined,
-                                },
-                              })),
-                            })
-                          }
-                          showToast({ title: 'Offer sent!', message: 'Your offer has been submitted.', preset: 'general' })
-                          dismiss()
+                          await Promise.all([
+                            ...[...bySeller.entries()].map(([seller_id, sellerItems]) =>
+                              submitOffer({
+                                seller_id,
+                                items: sellerItems.map((item) => ({
+                                  collection_item_id: item.data.id,
+                                  quantity: item.cart.quantity,
+                                  offered_price_per_unit: item.cart.price,
+                                  card_snapshot: {
+                                    card_id: item.data.ref_id ?? undefined,
+                                  },
+                                })),
+                              })
+                            ),
+                          ]).then(() => {
+                            dismiss()
+                            setTimeout(
+                              () =>
+                                showToast({
+                                  autoDismiss: 5000,
+                                  title: 'Offer sent!',
+                                  message: 'Your offer has been submitted.',
+                                  preset: 'general',
+                                }),
+                              2000
+                            )
+                          })
                         } catch (err) {
                           console.error('[CartSheet] submitOffer error', err)
-                          showToast({ title: 'Error', message: 'Failed to send offer. Please try again.', preset: 'failure' })
+                          setTimeout(
+                            () =>
+                              showToast({
+                                autoDismiss: 5000,
+                                title: 'Error',
+                                message: 'Failed to send offer. Please try again.',
+                                preset: 'failure',
+                              }),
+                            2000
+                          )
                         }
                       }}
                     >
