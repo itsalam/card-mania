@@ -1,9 +1,15 @@
 import { useMyOffers } from '@/client/offers'
 import { Offer, OfferStatus } from '@/client/offers/types'
+import { Button } from '@/components/ui/button'
+import { SearchBar } from '@/components/ui/search'
+import { Skeleton } from '@/components/ui/skeleton'
+import { Text } from '@/components/ui/text/base-text'
 import { BuyerOfferCard } from '@/features/offers/buyer-history'
 import { OfferCard } from '@/features/offers/index'
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import {
+  Dimensions,
+  LayoutChangeEvent,
   Modal,
   Pressable,
   ScrollView,
@@ -11,11 +17,9 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native'
+import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Colors } from 'react-native-ui-lib'
-import { Button } from '@/components/ui/button'
-import { Skeleton } from '@/components/ui/skeleton'
-import { Text } from '@/components/ui/text/base-text'
 
 type ViewFilter = 'inbox' | 'my-offers'
 type StatusFilter = 'all' | OfferStatus
@@ -61,7 +65,40 @@ export default function OffersRoute() {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
   const [sort, setSort] = useState<SortOption>('newest')
   const [sortModalVisible, setSortModalVisible] = useState(false)
+  const [sortButtonLayout, setSortButtonLayout] = useState<{
+    x: number
+    y: number
+    width: number
+    height: number
+  } | null>(null)
+  const sortButtonRef = useRef<View>(null)
   const insets = useSafeAreaInsets()
+
+  const tabWidths = useRef<number[]>([])
+  const indicatorX = useSharedValue(0)
+  const indicatorWidth = useSharedValue(0)
+
+  const indicatorStyle = useAnimatedStyle(() => ({
+    left: indicatorX.value,
+    width: indicatorWidth.value,
+  }))
+
+  function handleTabLayout(index: number, e: LayoutChangeEvent) {
+    tabWidths.current[index] = e.nativeEvent.layout.width
+    if (index === 0 && indicatorWidth.value === 0) {
+      indicatorWidth.value = e.nativeEvent.layout.width
+    }
+  }
+
+  function selectView(value: ViewFilter) {
+    setView(value)
+    const idx = VIEW_FILTERS.findIndex((f) => f.value === value)
+    const x = tabWidths.current.slice(0, idx).reduce((s, w) => s + w, 0)
+    const w = tabWidths.current[idx] ?? 0
+    const spring = { damping: 20, stiffness: 200 }
+    indicatorX.value = withSpring(x, spring)
+    indicatorWidth.value = withSpring(w, spring)
+  }
 
   const { data: inboxOffers, isLoading: inboxLoading } = useMyOffers('seller')
   const { data: myOffers, isLoading: myOffersLoading } = useMyOffers('buyer')
@@ -80,56 +117,92 @@ export default function OffersRoute() {
     <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
       {/* Header row */}
       <View style={styles.header}>
-        <Text variant="h2" style={styles.headerTitle}>
+        <Text variant="h1" style={styles.headerTitle}>
           Offers
         </Text>
-        <Pressable style={styles.sortButton} onPress={() => setSortModalVisible(true)}>
-          <Text style={[styles.sortLabel, { color: Colors.$textNeutral }]}>{currentSortLabel}</Text>
-          <Text style={[styles.sortChevron, { color: Colors.$textNeutral }]}>›</Text>
-        </Pressable>
       </View>
 
-      {/* View filter chips */}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.chipRow}
+      {/* View filter tabs */}
+      <View
+        style={[
+          styles.tapRow,
+          {
+            borderBottomColor: Colors.$outlineNeutral,
+            borderBottomWidth: StyleSheet.hairlineWidth,
+          },
+        ]}
       >
-        {VIEW_FILTERS.map((f) => (
-          <Button
+        {VIEW_FILTERS.map((f, idx) => (
+          <Pressable
             key={f.value}
-            variant={view === f.value ? 'primary' : 'outline'}
-            size="sm"
-            onPress={() => setView(f.value)}
-            style={styles.chip}
+            style={[
+              styles.tab,
+              {
+                backgroundColor:
+                  view === f.value ? Colors.$backgroundElevatedLight : Colors.$backgroundElevated,
+              },
+            ]}
+            onLayout={(e) => handleTabLayout(idx, e)}
+            onPress={() => selectView(f.value)}
           >
-            <Text style={view === f.value ? styles.chipTextActive : styles.chipText}>
+            <Text
+              style={[
+                styles.tabText,
+                view === f.value
+                  ? { color: Colors.$textPrimary, fontWeight: '600' }
+                  : { color: Colors.$textNeutral },
+              ]}
+            >
               {f.label}
             </Text>
-          </Button>
+          </Pressable>
         ))}
-      </ScrollView>
+        <Animated.View
+          style={[styles.tabIndicator, { backgroundColor: Colors.$textPrimary }, indicatorStyle]}
+        />
+      </View>
 
       {/* Status filter chips */}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.chipRow}
-      >
-        {STATUS_FILTERS.map((f) => (
-          <Button
-            key={f.value}
-            variant={statusFilter === f.value ? 'primary' : 'outline'}
-            size="sm"
-            onPress={() => setStatusFilter(f.value)}
-            style={styles.chip}
-          >
-            <Text style={statusFilter === f.value ? styles.chipTextActive : styles.chipText}>
-              {f.label}
-            </Text>
-          </Button>
-        ))}
-      </ScrollView>
+      <View style={styles.filterContents}>
+        <SearchBar
+          customRightElement={
+            <Pressable
+              ref={sortButtonRef}
+              style={styles.sortButton}
+              onPress={() => {
+                sortButtonRef.current?.measureInWindow((x, y, width, height) => {
+                  setSortButtonLayout({ x, y, width, height })
+                  setSortModalVisible(true)
+                })
+              }}
+            >
+              <Text style={[styles.sortLabel, { color: Colors.$textNeutral }]}>
+                {currentSortLabel}
+              </Text>
+              <Text style={[styles.sortChevron, { color: Colors.$textNeutral }]}>›</Text>
+            </Pressable>
+          }
+        />
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.chipRowContainer}
+          style={styles.chipRow}
+        >
+          {STATUS_FILTERS.map((f) => (
+            <Button
+              key={f.value}
+              variant={statusFilter === f.value ? 'primary' : 'outline'}
+              onPress={() => setStatusFilter(f.value)}
+              style={styles.chip}
+            >
+              <Text style={statusFilter === f.value ? styles.chipTextActive : styles.chipText}>
+                {f.label}
+              </Text>
+            </Button>
+          ))}
+        </ScrollView>
+      </View>
 
       {/* Offer list */}
       {isLoading ? (
@@ -159,12 +232,19 @@ export default function OffersRoute() {
           <View
             style={[
               styles.modalContent,
-              { backgroundColor: Colors.$backgroundElevated, borderColor: Colors.$outlineNeutral },
+              {
+                backgroundColor: Colors.$backgroundElevated,
+                borderColor: Colors.$outlineNeutral,
+                ...(sortButtonLayout && {
+                  position: 'absolute',
+                  top: sortButtonLayout.y + sortButtonLayout.height + 4,
+                  right:
+                    Dimensions.get('window').width - sortButtonLayout.x - sortButtonLayout.width,
+                }),
+              },
             ]}
           >
-            <Text variant="h3" style={[styles.modalTitle, { color: Colors.$textDefault }]}>
-              Sort by
-            </Text>
+            <Text style={[styles.modalTitle, { color: Colors.$textDefault }]}>Sort by</Text>
             {SORT_OPTIONS.map((option) => (
               <TouchableOpacity
                 key={option.value}
@@ -229,11 +309,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingTop: 12,
-    paddingBottom: 8,
+    paddingTop: 40,
+    paddingBottom: 12,
   },
   headerTitle: {
-    fontSize: 20,
     fontWeight: '700',
   },
   sortButton: {
@@ -251,10 +330,12 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   chipRow: {
+    flexGrow: 0,
+    overflow: 'visible',
+  },
+  chipRowContainer: {
     flexDirection: 'row',
-    gap: 8,
-    paddingHorizontal: 16,
-    paddingBottom: 8,
+    gap: 6,
   },
   chip: {
     // compact, no flex:1
@@ -272,6 +353,7 @@ const styles = StyleSheet.create({
     paddingBottom: 24,
   },
   empty: {
+    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 48,
@@ -305,11 +387,10 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   modalTitle: {
-    fontSize: 14,
-    fontWeight: '600',
     paddingHorizontal: 16,
-    paddingTop: 12,
-    paddingBottom: 8,
+    paddingVertical: 8,
+    fontSize: 12,
+    fontWeight: '600',
   },
   modalOption: {
     paddingHorizontal: 16,
@@ -317,5 +398,29 @@ const styles = StyleSheet.create({
   },
   modalOptionText: {
     fontSize: 14,
+  },
+  tab: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: 12,
+  },
+  tabText: {
+    fontSize: 14,
+  },
+  tabIndicator: {
+    position: 'absolute',
+    bottom: 0,
+    height: 2,
+    borderRadius: 1,
+  },
+  tapRow: {
+    flexDirection: 'row',
+    position: 'relative',
+  },
+  filterContents: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    overflow: 'visible',
+    gap: 12,
   },
 })

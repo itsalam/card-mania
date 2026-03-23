@@ -192,7 +192,7 @@ function EmptyState() {
         No offers
       </Text>
       <Text variant="default" style={[styles.emptySubtitle, { color: Colors.$textNeutral }]}>
-        You don't have any offers right now.
+        {"You don't have any offers right now."}
       </Text>
     </View>
   )
