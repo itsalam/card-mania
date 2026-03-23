@@ -6,6 +6,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Text } from '@/components/ui/text/base-text'
 import { BuyerOfferCard } from '@/features/offers/buyer-history'
 import { InboxOfferCard } from '@/features/offers/index'
+import { useProfiles } from '@/features/users/client/load-user'
 import { useRef, useState } from 'react'
 import {
   Dimensions,
@@ -107,21 +108,36 @@ export default function OffersRoute() {
   const isLoading = view === 'inbox' ? inboxLoading : myOffersLoading
   const baseOffers = view === 'inbox' ? (inboxOffers ?? []) : (myOffers ?? [])
 
+  // Collect all unique counterparty IDs from both lists so the profile cache
+  // is warm regardless of which tab the user is on.
+  const allOffers = [...(inboxOffers ?? []), ...(myOffers ?? [])]
+  const counterpartyIds = [
+    ...new Set(allOffers.flatMap((o) => [o.buyer_id, o.seller_id])),
+  ]
+  const { data: profiles = {} } = useProfiles(counterpartyIds)
+
   const query = searchQuery.trim().toLowerCase()
   const filtered = sortOffers(
     baseOffers.filter((o) => {
       if (statusFilter !== 'all' && o.status !== statusFilter) return false
       if (!query) return true
 
+      // card title (snapshot stored on offer item at offer time)
       const itemMatch = (o.offer_items ?? []).some((item) =>
         (item.card_snapshot?.title ?? '').toLowerCase().includes(query)
       )
 
+      // buyer note
       const noteMatch = (o.buyer_note ?? '').toLowerCase().includes(query)
 
-      const idMatch =
-        o.buyer_id.toLowerCase().includes(query) || o.seller_id.toLowerCase().includes(query)
-      return itemMatch || noteMatch || idMatch
+      // counterparty display name or username (resolved from user_profile)
+      const counterpartyId = view === 'inbox' ? o.buyer_id : o.seller_id
+      const profile = profiles[counterpartyId]
+      const nameMatch =
+        (profile?.display_name ?? '').toLowerCase().includes(query) ||
+        (profile?.username ?? '').toLowerCase().includes(query)
+
+      return itemMatch || noteMatch || nameMatch
     }),
     sort
   )
