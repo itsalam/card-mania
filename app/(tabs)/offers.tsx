@@ -64,6 +64,7 @@ export default function OffersRoute() {
   const [view, setView] = useState<ViewFilter>('inbox')
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
   const [sort, setSort] = useState<SortOption>('newest')
+  const [searchQuery, setSearchQuery] = useState('')
   const [sortModalVisible, setSortModalVisible] = useState(false)
   const [sortButtonLayout, setSortButtonLayout] = useState<{
     x: number
@@ -106,8 +107,22 @@ export default function OffersRoute() {
   const isLoading = view === 'inbox' ? inboxLoading : myOffersLoading
   const baseOffers = view === 'inbox' ? (inboxOffers ?? []) : (myOffers ?? [])
 
+  const query = searchQuery.trim().toLowerCase()
   const filtered = sortOffers(
-    baseOffers.filter((o) => statusFilter === 'all' || o.status === statusFilter),
+    baseOffers.filter((o) => {
+      if (statusFilter !== 'all' && o.status !== statusFilter) return false
+      if (!query) return true
+      // match card titles in offer items
+      const itemMatch = (o.offer_items ?? []).some((item) =>
+        (item.card_snapshot?.title ?? '').toLowerCase().includes(query)
+      )
+      // match buyer note
+      const noteMatch = (o.buyer_note ?? '').toLowerCase().includes(query)
+      // match the short buyer/seller id shown in cards
+      const idMatch =
+        o.buyer_id.toLowerCase().includes(query) || o.seller_id.toLowerCase().includes(query)
+      return itemMatch || noteMatch || idMatch
+    }),
     sort
   )
 
@@ -165,6 +180,9 @@ export default function OffersRoute() {
       {/* Status filter chips */}
       <View style={styles.filterContents}>
         <SearchBar
+          placeholder="Search offers..."
+          value={searchQuery}
+          onChangeText={setSearchQuery}
           customRightElement={
             <Pressable
               ref={sortButtonRef}
@@ -208,7 +226,7 @@ export default function OffersRoute() {
       {isLoading ? (
         <LoadingSkeleton />
       ) : filtered.length === 0 ? (
-        <EmptyState />
+        <EmptyState hasQuery={!!query} />
       ) : (
         <ScrollView contentContainerStyle={styles.list}>
           {filtered.map((offer) =>
@@ -277,14 +295,16 @@ export default function OffersRoute() {
   )
 }
 
-function EmptyState() {
+function EmptyState({ hasQuery }: { hasQuery?: boolean }) {
   return (
     <View style={styles.empty}>
       <Text variant="h3" style={[styles.emptyTitle, { color: Colors.$textNeutral }]}>
         No offers
       </Text>
       <Text variant="default" style={[styles.emptySubtitle, { color: Colors.$textNeutral }]}>
-        No offers match the current filters.
+        {hasQuery
+          ? 'No offers match your search.'
+          : 'No offers match the current filters.'}
       </Text>
     </View>
   )
