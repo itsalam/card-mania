@@ -5,7 +5,7 @@ import { SearchBar } from '@/components/ui/search'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Text } from '@/components/ui/text/base-text'
 import { BuyerOfferCard } from '@/features/offers/buyer-history'
-import { OfferCard } from '@/features/offers/index'
+import { InboxOfferCard } from '@/features/offers/index'
 import { useRef, useState } from 'react'
 import {
   Dimensions,
@@ -96,7 +96,7 @@ export default function OffersRoute() {
     const idx = VIEW_FILTERS.findIndex((f) => f.value === value)
     const x = tabWidths.current.slice(0, idx).reduce((s, w) => s + w, 0)
     const w = tabWidths.current[idx] ?? 0
-    const spring = { damping: 20, stiffness: 200 }
+    const spring = { damping: 24, stiffness: 300, mass: 0.6 }
     indicatorX.value = withSpring(x, spring)
     indicatorWidth.value = withSpring(w, spring)
   }
@@ -112,13 +112,13 @@ export default function OffersRoute() {
     baseOffers.filter((o) => {
       if (statusFilter !== 'all' && o.status !== statusFilter) return false
       if (!query) return true
-      // match card titles in offer items
+
       const itemMatch = (o.offer_items ?? []).some((item) =>
         (item.card_snapshot?.title ?? '').toLowerCase().includes(query)
       )
-      // match buyer note
+
       const noteMatch = (o.buyer_note ?? '').toLowerCase().includes(query)
-      // match the short buyer/seller id shown in cards
+
       const idMatch =
         o.buyer_id.toLowerCase().includes(query) || o.seller_id.toLowerCase().includes(query)
       return itemMatch || noteMatch || idMatch
@@ -231,7 +231,7 @@ export default function OffersRoute() {
         <ScrollView contentContainerStyle={styles.list}>
           {filtered.map((offer) =>
             view === 'inbox' ? (
-              <OfferCard key={offer.id} offer={offer} />
+              <InboxOfferCard key={offer.id} offer={offer} />
             ) : (
               <BuyerOfferCard key={offer.id} offer={offer} />
             )
@@ -302,9 +302,7 @@ function EmptyState({ hasQuery }: { hasQuery?: boolean }) {
         No offers
       </Text>
       <Text variant="default" style={[styles.emptySubtitle, { color: Colors.$textNeutral }]}>
-        {hasQuery
-          ? 'No offers match your search.'
-          : 'No offers match the current filters.'}
+        {hasQuery ? 'No offers match your search.' : 'No offers match the current filters.'}
       </Text>
     </View>
   )
