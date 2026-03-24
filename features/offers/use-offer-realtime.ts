@@ -2,6 +2,7 @@ import { useToast } from '@/components/Toast'
 import { getSupabase } from '@/lib/store/client'
 import { useQueryClient } from '@tanstack/react-query'
 import { useEffect } from 'react'
+import { AppNotification } from '@/client/notifications/types'
 
 export function useOfferRealtime() {
   const qc = useQueryClient()
@@ -9,58 +10,41 @@ export function useOfferRealtime() {
 
   useEffect(() => {
     const supabase = getSupabase()
-    let sellerChannel: ReturnType<typeof supabase.channel> | null = null
-    let buyerChannel: ReturnType<typeof supabase.channel> | null = null
+    let channel: ReturnType<typeof supabase.channel> | null = null
 
     supabase.auth.getUser().then(({ data }) => {
       const userId = data.user?.id
       if (!userId) return
 
-      sellerChannel = supabase
-        .channel(`offers-seller-${userId}`)
+      channel = supabase
+        .channel(`notifications-${userId}`)
         .on(
           'postgres_changes',
           {
             event: 'INSERT',
             schema: 'public',
-            table: 'offers',
-            filter: `seller_id=eq.${userId}`,
-          },
-          () => {
-            qc.invalidateQueries({ queryKey: ['offers', 'seller'] })
-            showToast({ message: 'New offer received!' })
-          }
-        )
-        .subscribe()
-
-      buyerChannel = supabase
-        .channel(`offers-buyer-${userId}`)
-        .on(
-          'postgres_changes',
-          {
-            event: 'UPDATE',
-            schema: 'public',
-            table: 'offers',
-            filter: `buyer_id=eq.${userId}`,
+            table: 'notifications',
+            filter: `user_id=eq.${userId}`,
           },
           (payload) => {
-            qc.invalidateQueries({ queryKey: ['offers', 'buyer'] })
-            const status = (payload.new as { status?: string }).status
-            if (status === 'accepted') {
-              showToast({ message: 'Your offer was accepted!' })
-            } else if (status === 'declined') {
-              showToast({ message: 'Your offer was declined!' })
-            } else {
-              showToast({ message: `Your offer was ${status ?? 'updated'}.` })
+            const notification = payload.new as AppNotification
+
+            qc.invalidateQueries({ queryKey: ['notifications'] })
+            qc.invalidateQueries({ queryKey: ['notifications', 'unread-count'] })
+
+            if (notification.category === 'offer') {
+              qc.invalidateQueries({ queryKey: ['offers', 'seller'] })
+              qc.invalidateQueries({ queryKey: ['offers', 'buyer'] })
             }
+
+            showToast({ title: notification.title, message: notification.body })
           }
         )
         .subscribe()
     })
 
     return () => {
-      if (sellerChannel) supabase.removeChannel(sellerChannel)
-      if (buyerChannel) supabase.removeChannel(buyerChannel)
+      if (channel) supabase.removeChannel(channel)
     }
   }, [qc, showToast])
 }
