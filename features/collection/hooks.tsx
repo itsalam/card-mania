@@ -265,8 +265,6 @@ export function useGetCollectionItems<
   return useViewCollectionItems<T>(queryArgs)
 }
 
-export function useGetSingleCollectionItem() {}
-
 type SpoofPricePoint = { day: string; price: number }
 type SpoofPriceResponse = {
   seed_used: number

@@ -3,11 +3,10 @@ import { ExpandableCard } from '@/components/content-card'
 import { ExpandedContent } from '@/components/content-card/ExpandableCard'
 import { THUMBNAIL_HEIGHT, THUMBNAIL_WIDTH } from '@/components/tcg-card/consts'
 import { LiquidGlassCard } from '@/components/tcg-card/GlassCard'
-import { Card } from '@/components/ui/card/index'
 import { HStack } from '@/components/ui/hstack'
 import { cn } from '@/lib/utils'
 import React, { ComponentProps } from 'react'
-import { ScrollView } from 'react-native'
+import { ScrollView, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 
 const EXPANDED_CARD_HEIGHT = THUMBNAIL_HEIGHT + 24
@@ -46,7 +45,7 @@ export default function MarketplaceScreen() {
             />
           )}
         />
-        <Card>
+        <View>
           <ExpandableCard
             title="Auctions - Graded"
             itemWidth={THUMBNAIL_WIDTH}
@@ -82,7 +81,7 @@ export default function MarketplaceScreen() {
               />
             )}
           />
-        </Card>
+        </View>
       </ScrollView>
     </SafeAreaView>
   )
