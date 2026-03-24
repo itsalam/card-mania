@@ -49,9 +49,6 @@ function Avatar({
   return (
     <VariantContext value={{ size }}>
       <AvatarPrimitive.Root
-        style={{
-          backgroundColor: 'red',
-        }}
         className={cn(
           'relative flex size-8 shrink-0 overflow-hidden rounded-full',
           avatarStyle({ size }),
