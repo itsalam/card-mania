@@ -57,6 +57,6 @@ export const useProfiles = (userIds: string[]) => {
     queryFn: () => getPublicProfiles(dedupedIds),
     enabled: dedupedIds.length > 0,
     staleTime: 60 * 60 * 1000 * 24, // 24h
-    gcTime: 60 * 60 * 1000 * 48,   // 48h
+    gcTime: 60 * 60 * 1000 * 48, // 48h
   })
 }

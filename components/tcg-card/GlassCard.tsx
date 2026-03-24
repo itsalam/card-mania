@@ -118,31 +118,7 @@ const LiquidGlassCard = React.forwardRef<CardRef, LiquidGlassCardProps>(
         {...props}
         ref={ref}
       >
-        {/* Glass effect overlay */}
-        {/* <View
-          style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            zIndex: 0,
-            height: '100%',
-            width: '100%',
-            pointerEvents: 'none',
-            // Example shadow for light mode
-            shadowColor: '#000',
-            shadowOffset: { width: 0, height: 2 },
-            shadowOpacity: 0.08,
-            shadowRadius: 6,
-            // You may need to use elevation for Android
-            elevation: 2,
-          }}
-        /> */}
-
         {children}
-        {/* <View className="absolute inset-0 z-20 rounded-lg bg-gradient-to-r from-transparent dark:via-white/5 via-black/5 to-transparent opacity-0 transition-opacity duration-200 group-hover:opacity-100 pointer-events-none" /> */}
-        {/* {glassEffect && <GlassFilter />} */}
       </Card>
     )
   }

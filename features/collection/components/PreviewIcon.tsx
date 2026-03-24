@@ -1,6 +1,5 @@
 import { LiquidGlassCard } from '@/components/tcg-card/GlassCard'
 import { CardPlaceholderImage } from '@/components/tcg-card/placeholders'
-import { VStack } from '@/components/ui/vstack'
 import { cn } from '@/lib/utils/cn'
 import { ComponentProps } from 'react'
 import { View } from 'react-native'
@@ -13,8 +12,9 @@ export function CollectionsPreviewIcon({
   className,
   style,
   width = ITEM_WIDTH,
+  onBlur,
   ...props
-}: ComponentProps<typeof VStack> & { width?: number; className?: string }) {
+}: ComponentProps<typeof View> & { width?: number; className?: string }) {
   const CONDENSED_HEIGHT = width / ITEM_ASPECT_RATIO
   const HEIGHT = CONDENSED_HEIGHT + 24
   const TOTAL_CARDS = 4
@@ -32,7 +32,7 @@ export function CollectionsPreviewIcon({
     className,
     style,
     ...props
-  }: { index: number; width: number } & ComponentProps<typeof VStack>) {
+  }: { index: number; width: number } & ComponentProps<typeof View>) {
     const height = Math.round(width / ITEM_ASPECT_RATIO)
     // Initial stacked position - centered with slight overlap
     const defaultX =
@@ -47,6 +47,7 @@ export function CollectionsPreviewIcon({
       <LiquidGlassCard
         className={cn(className, 'absolute')}
         variant="primary"
+        onBlur={onBlur ?? undefined}
         style={[
           {
             top: 0,
