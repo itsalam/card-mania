@@ -7,11 +7,8 @@ import { ScrollView, View } from 'react-native'
 import { Colors } from 'react-native-ui-lib'
 import { CARD_ASPECT_RATIO } from '../consts'
 import { Button } from '../ui/button'
-import { Card } from '../ui/card'
-import { HStack } from '../ui/hstack'
 import { Icon } from '../ui/icon'
 import { Text } from '../ui/text/base-text'
-import { VStack } from '../ui/vstack'
 
 const DEFAULT_CARD_WIDTH = 72
 const ITEM_ASPECT_RATIO = 5 / 7
@@ -20,12 +17,12 @@ export function PlaceholderBox({
   isOpen = false,
   className,
   ...props
-}: ComponentProps<typeof VStack> & { isOpen?: boolean }) {
+}: ComponentProps<typeof View> & { isOpen?: boolean }) {
   return (
-    <HStack className={cn('gap-6 flex', isOpen && 'min-w-full')}>
-      <VStack {...props} className={cn(className, 'rounded-lg')} />
+    <View className={cn('gap-6 flex flex-row', isOpen && 'min-w-full')}>
+      <View {...props} className={cn(className, 'rounded-lg')} />
       {isOpen && <ExpandedContent />}
-    </HStack>
+    </View>
   )
 }
 
@@ -45,7 +42,7 @@ type ExpandableCardProps<T extends object> = {
   itemWidth?: number
   getExpandedHeight?: (itemWidth: number) => number
   containerClassNames?: string
-} & ComponentProps<typeof Card>
+} & ComponentProps<typeof View>
 
 export function ExpandableCard<T extends object>({
   title,
@@ -63,7 +60,7 @@ export function ExpandableCard<T extends object>({
   const expandedItemHeight = getExpandedHeight(itemWidth)
 
   return (
-    <Card size="md" className={cn('overflow-hidden px-0', className)} {...cardProps}>
+    <View className={cn('overflow-hidden px-0', className)} {...cardProps}>
       <Button
         variant="ghost"
         onPress={() => setIsOpen(!isOpen)}
@@ -128,6 +125,6 @@ export function ExpandableCard<T extends object>({
           </View>
         </ScrollView>
       </MaskedView>
-    </Card>
+    </View>
   )
 }
