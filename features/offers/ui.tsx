@@ -4,13 +4,13 @@ import { Offer, OfferItem, OfferStatus } from '@/client/offers/types'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import { Skeleton } from '@/components/ui/skeleton'
+import { SkeletonText } from '@/components/ui/text'
 import { Text } from '@/components/ui/text/base-text'
 import { ReactNode } from 'react'
 import { StyleSheet, View } from 'react-native'
 import { Colors } from 'react-native-ui-lib'
 import { getGradingDisplayString } from '../collection/helpers'
 import { useGetCollection } from '../collection/hooks'
-import { useUserProfile } from '../settings/client'
 import { CardImage } from '../tcg-card-views/card-image'
 import { getCardDisplayData } from '../tcg-card-views/helpers'
 import { UserAvatar } from '../users/components/UserAvatars'
@@ -105,8 +105,6 @@ export function OfferCardBase({ offer, children }: { offer: Offer; children?: Re
   })
 
   const items = offer.offer_items ?? []
-  const { data: user } = useUserProfile()
-  const isOwnUser = offer.buyer_id === user?.user_id
 
   const title = collection?.name ?? `${offer.buyer_id.slice(0, 8)}...`
   return (
@@ -157,6 +155,80 @@ export function OfferCardBase({ offer, children }: { offer: Offer; children?: Re
 
       {/* Cancel for pending offers */}
       {children}
+    </View>
+  )
+}
+
+export function SkeletonCard() {
+  return (
+    <View
+      style={[
+        styles.card,
+        {
+          backgroundColor: Colors.$backgroundElevated,
+          borderColor: Colors.$outlineNeutral,
+        },
+      ]}
+    >
+      <View style={styles.cardHeader}>
+        <View style={styles.buyerInfo}>
+          <UserAvatar />
+          <SkeletonText variant="h3" style={styles.offerTitle}>
+            {'PlaceholderText'}
+          </SkeletonText>
+        </View>
+
+        <Skeleton style={styles.skeletonBadge} />
+      </View>
+
+      <Separator orientation="horizontal" style={styles.separator} />
+
+      {/* Items list */}
+      {[0, 1].map((item, idx) => (
+        <View
+          key={idx}
+          style={[
+            styles.itemRow,
+            idx === 1 && styles.itemRowLast,
+            { borderBottomColor: Colors.$outlineNeutralLight },
+          ]}
+        >
+          <Skeleton style={{ width: 48, aspectRatio: 5 / 7 }} />
+          <View style={{ flex: 1, gap: 4 }}>
+            <SkeletonText
+              variant="default"
+              style={styles.itemTitle}
+              numberOfLines={1}
+              ellipsizeMode="tail"
+            >
+              {'Placeholder Collection Item Text'}
+            </SkeletonText>
+            <SkeletonText
+              variant="info"
+              style={{ color: Colors.$textNeutralLight, lineHeight: 16 }}
+            >
+              {'PlaceHolder Grading'}
+            </SkeletonText>
+          </View>
+          <View style={{ flexDirection: 'row' }}>
+            <SkeletonText
+              variant="default"
+              style={[styles.itemMeta, { color: Colors.$textNeutral }]}
+            >
+              x Qty:xx
+            </SkeletonText>
+            <Text variant="default" style={[styles.itemMeta, { color: Colors.$textNeutral }]}>
+              {' · '}
+            </Text>
+            <SkeletonText
+              variant="default"
+              style={[styles.itemMeta, { color: Colors.$textNeutral }]}
+            >
+              $~~.~~/ea
+            </SkeletonText>
+          </View>
+        </View>
+      ))}
     </View>
   )
 }
@@ -267,10 +339,6 @@ export const styles = StyleSheet.create({
     fontSize: 13,
     textAlign: 'center',
   },
-  skeletonCard: {
-    height: 120,
-    borderRadius: 12,
-  },
   cancelText: {
     fontSize: 13,
   },
@@ -281,5 +349,15 @@ export const styles = StyleSheet.create({
   offerDate: {
     fontSize: 12,
     marginTop: 2,
+  },
+  skeletonCard: {
+    height: 175,
+    borderRadius: 12,
+    opacity: 0.3,
+  },
+  skeletonBadge: {
+    height: 32,
+    borderRadius: 6,
+    width: 100,
   },
 })

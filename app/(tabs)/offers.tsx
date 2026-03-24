@@ -2,10 +2,10 @@ import { useMyOffers } from '@/client/offers'
 import { Offer, OfferStatus } from '@/client/offers/types'
 import { Button } from '@/components/ui/button'
 import { SearchBar } from '@/components/ui/search'
-import { Skeleton } from '@/components/ui/skeleton'
 import { Text } from '@/components/ui/text/base-text'
 import { BuyerOfferCard } from '@/features/offers/buyer-history'
 import { InboxOfferCard } from '@/features/offers/index'
+import { SkeletonCard } from '@/features/offers/ui'
 import { useProfiles } from '@/features/users/client/load-user'
 import { useRef, useState } from 'react'
 import {
@@ -111,9 +111,7 @@ export default function OffersRoute() {
   // Collect all unique counterparty IDs from both lists so the profile cache
   // is warm regardless of which tab the user is on.
   const allOffers = [...(inboxOffers ?? []), ...(myOffers ?? [])]
-  const counterpartyIds = [
-    ...new Set(allOffers.flatMap((o) => [o.buyer_id, o.seller_id])),
-  ]
+  const counterpartyIds = [...new Set(allOffers.flatMap((o) => [o.buyer_id, o.seller_id]))]
   const { data: profiles = {} } = useProfiles(counterpartyIds)
 
   const query = searchQuery.trim().toLowerCase()
@@ -145,7 +143,7 @@ export default function OffersRoute() {
   const currentSortLabel = SORT_OPTIONS.find((s) => s.value === sort)?.label ?? 'Newest'
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
+    <View style={[styles.container, { paddingTop: insets.top }]}>
       {/* Header row */}
       <View style={styles.header}>
         <Text variant="h1" style={styles.headerTitle}>
@@ -328,7 +326,7 @@ function LoadingSkeleton() {
   return (
     <View style={styles.list}>
       {[0, 1, 2].map((i) => (
-        <Skeleton key={i} style={styles.skeletonCard} />
+        <SkeletonCard key={i} />
       ))}
     </View>
   )
@@ -402,12 +400,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
     textAlign: 'center',
   },
-  skeletonCard: {
-    height: 120,
-    borderRadius: 12,
-    marginHorizontal: 16,
-    marginBottom: 12,
-  },
+
   modalBackdrop: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.4)',
