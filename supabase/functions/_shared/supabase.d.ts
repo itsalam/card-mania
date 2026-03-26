@@ -769,6 +769,54 @@ export type Database = {
           },
         ]
       }
+      notifications: {
+        Row: {
+          action_url: string | null
+          body: string
+          category: string
+          created_at: string
+          dismissed_at: string | null
+          id: string
+          image_url: string | null
+          payload: Json
+          priority: string
+          read_at: string | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          action_url?: string | null
+          body: string
+          category: string
+          created_at?: string
+          dismissed_at?: string | null
+          id?: string
+          image_url?: string | null
+          payload?: Json
+          priority?: string
+          read_at?: string | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Update: {
+          action_url?: string | null
+          body?: string
+          category?: string
+          created_at?: string
+          dismissed_at?: string | null
+          id?: string
+          image_url?: string | null
+          payload?: Json
+          priority?: string
+          read_at?: string | null
+          title?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       offer_items: {
         Row: {
           card_snapshot: Json | null

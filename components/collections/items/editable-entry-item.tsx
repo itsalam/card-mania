@@ -3,7 +3,7 @@ import { Graders, useGradingConditions } from '@/client/card/grading'
 import { suggestedVariantsOptions, Variant } from '@/client/collections/items'
 
 import { useEditCollectionItem } from '@/client/collections/mutate'
-import { CollectionLike, EditCollectionArgsItem } from '@/client/collections/types'
+import { CollectionItem, CollectionLike, EditCollectionArgsItem } from '@/client/collections/types'
 import { getGradedPrice } from '@/components/tcg-card/helpers'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -229,10 +229,9 @@ export const CollectionItemEntry = ({
             }}
             loading={isLoading}
           >
-            {
-              // @ts-ignore
-              getGradingDisplayString(collectionItem as CollectionItemRow)
-            }
+            {getGradingDisplayString(collectionItem as CollectionItem)
+              .slice(0, 2)
+              .join(' ')}
           </SkeletonText>
         </View>
         <View

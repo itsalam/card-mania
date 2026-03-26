@@ -4,6 +4,7 @@ import { AnimatePresence } from 'moti'
 import React from 'react'
 import { ScrollView, View } from 'react-native'
 import Animated from 'react-native-reanimated'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { CategoryFilter } from './CategoryFilter'
 import { FilterBadge } from './FilterBadge'
 import PriceFilter from './PriceFilter'
@@ -13,8 +14,9 @@ const AnimatedView = Animated.createAnimatedComponent(View)
 
 export function SearchFiltersOptions() {
   const { priceRange } = useFilters()
+  const insets = useSafeAreaInsets()
   return (
-    <View className="w-full pb-2 pl-4">
+    <View className="w-full pl-4" style={{ paddingBottom: insets.bottom }}>
       <ScrollView keyboardShouldPersistTaps="always">
         <AnimatedView className="flex-col gap-2">
           <Separator orientation="horizontal" />
