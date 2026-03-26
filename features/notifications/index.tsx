@@ -1,6 +1,3 @@
-import { Button } from '@/components/ui/button'
-import { Skeleton } from '@/components/ui/skeleton'
-import { Text } from '@/components/ui/text/base-text'
 import {
   useDismissNotification,
   useMarkAllRead,
@@ -9,12 +6,18 @@ import {
   useUnreadCount,
 } from '@/client/notifications'
 import { AppNotification, NotificationCategory } from '@/client/notifications/types'
+import { TabRow } from '@/components/tabs/TabRow'
+import { ChipRowContainer, ToggleBadge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Skeleton } from '@/components/ui/skeleton'
+import { SkeletonText } from '@/components/ui/text'
+import { Text } from '@/components/ui/text/base-text'
 import { useRouter } from 'expo-router'
-import { Bell, Inbox, TrendingDown, Users } from 'lucide-react-native'
+import { Bell, Inbox, TrendingDown, Users, X } from 'lucide-react-native'
 import React, { useState } from 'react'
 import { FlatList, Pressable, StyleSheet, View } from 'react-native'
-import { Colors } from 'react-native-ui-lib'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { Colors } from 'react-native-ui-lib'
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
@@ -102,15 +105,18 @@ function NotificationRow({ notification }: { notification: AppNotification }) {
       <CategoryIcon category={notification.category} />
 
       <View style={styles.rowContent}>
-        <Text
-          style={[styles.rowTitle, { fontWeight: isUnread ? '600' : '400' }]}
-          numberOfLines={1}
-        >
-          {notification.title}
-        </Text>
-        <Text style={[styles.rowBody, { color: Colors.$textNeutral }]} numberOfLines={2}>
-          {notification.body}
-        </Text>
+        <View style={styles.textContent}>
+          <Text
+            style={[styles.rowTitle, { fontWeight: isUnread ? '600' : '400' }]}
+            numberOfLines={1}
+          >
+            {notification.title}
+          </Text>
+          <Text style={[styles.rowBody, { color: Colors.$textNeutral }]} numberOfLines={2}>
+            {notification.body}
+          </Text>
+        </View>
+
         <Text style={[styles.rowTime, { color: Colors.$textNeutralLight }]}>
           {relativeTime(notification.created_at)}
         </Text>
@@ -124,7 +130,33 @@ function NotificationRow({ notification }: { notification: AppNotification }) {
 // ── SkeletonCard ──────────────────────────────────────────────────────────────
 
 function SkeletonCard() {
-  return <Skeleton height={80} style={styles.skeletonCard} />
+  return (
+    <View
+      style={[styles.row, styles.skeletonCard, { borderLeftColor: Colors.$backgroundDisabled }]}
+    >
+      <Skeleton style={[styles.iconCircle]} />
+
+      <View style={styles.rowContent}>
+        <View style={[styles.textContent, { gap: 4 }]}>
+          <SkeletonText
+            style={[styles.rowTitle, { fontWeight: '600' }]}
+            numberOfLines={1}
+            placeholderTextLength={15}
+          />
+          <SkeletonText
+            style={[styles.rowBody, { color: Colors.$textNeutral }]}
+            // numberOfLines={2}
+            placeholderTextLength={50}
+          />
+        </View>
+
+        <SkeletonText
+          style={[styles.rowTime, { color: Colors.$textNeutralLight }]}
+          placeholderTextLength={5}
+        />
+      </View>
+    </View>
+  )
 }
 
 // ── category chips ────────────────────────────────────────────────────────────
@@ -165,16 +197,20 @@ function buildListItems(notifications: AppNotification[]): ListItem[] {
 
 export function NotificationsPage() {
   const insets = useSafeAreaInsets()
-  const [selectedCategory, setSelectedCategory] = useState<'all' | NotificationCategory>('all')
+  const [activeCategories, setActiveCategories] = useState<Set<NotificationCategory>>(new Set())
 
-  const category = selectedCategory !== 'all' ? selectedCategory : undefined
-  const { data: notifications, isLoading } = useNotifications(category)
+  const [readAll, setReadAll] = useState(false)
+  const { data: rawNotifications, isLoading } = useNotifications({ unread: !readAll })
+
+  const notifications = (rawNotifications ?? []).filter(
+    (n) => activeCategories.size === 0 || activeCategories.has(n.category)
+  )
   const { data: unreadCount = 0 } = useUnreadCount()
   const markAllRead = useMarkAllRead()
 
-  const listItems = buildListItems(notifications ?? [])
+  const listItems = buildListItems(notifications)
 
-  const renderItem = ({ item }: { item: ListItem }) => {
+  const renderItem = ({ item }: { item: ListItem; index: number }) => {
     if (item.type === 'separator') {
       return (
         <View style={styles.separator}>
@@ -189,32 +225,77 @@ export function NotificationsPage() {
     <View style={[styles.container, { paddingTop: insets.top }]}>
       {/* Header */}
       <View style={styles.header}>
-        <Text variant="h1">Notifications</Text>
-        {unreadCount > 0 && (
-          <Button
-            variant="outline"
-            size="sm"
-            onPress={() => markAllRead.mutate()}
-          >
-            Mark all read
-          </Button>
-        )}
+        <Text variant="h1" style={styles.headerTitle}>
+          Notifications
+        </Text>
+      </View>
+      <TabRow
+        options={[
+          { value: 'unread', label: 'Unread' },
+          { value: 'all', label: 'All' },
+        ]}
+        onValueChange={(value) => {
+          setReadAll(value === 'all')
+        }}
+      />
+
+      <View
+        style={{
+          flexDirection: 'row',
+          justifyContent: 'flex-end',
+          paddingTop: 12,
+          marginBottom: -24,
+        }}
+      >
+        <Button
+          style={{ flex: 0, borderWidth: 0 }}
+          variant="outline"
+          onPress={() => markAllRead.mutate()}
+        >
+          Mark all as read
+        </Button>
       </View>
 
-      {/* Category chips */}
-      <View style={styles.chipsRow}>
+      <ChipRowContainer label={'Statuses'}>
         {CHIPS.map((chip) => (
-          <Button
+          <ToggleBadge
             key={chip.value}
-            size="sm"
-            variant={selectedCategory === chip.value ? 'primary' : 'outline'}
-            onPress={() => setSelectedCategory(chip.value)}
+            label={chip.label}
+            checked={
+              chip.value === 'all'
+                ? activeCategories.size === 0
+                : activeCategories.has(chip.value as NotificationCategory)
+            }
+            onPress={() => {
+              if (chip.value === 'all') {
+                setActiveCategories(new Set())
+              } else {
+                setActiveCategories((prev) => {
+                  const next = new Set(prev)
+                  const val = chip.value as NotificationCategory
+                  if (next.has(val)) {
+                    next.delete(val)
+                  } else {
+                    next.add(val)
+                  }
+                  return next
+                })
+              }
+            }}
             style={styles.chip}
-          >
-            {chip.label}
-          </Button>
+            rightElement={
+              chip.value !== 'all' && activeCategories.has(chip.value) ? (
+                <X
+                  size={16}
+                  color={Colors.$textDefault}
+                  style={{ marginRight: 6 }}
+                  strokeWidth={3}
+                />
+              ) : null
+            }
+          />
         ))}
-      </View>
+      </ChipRowContainer>
 
       {/* List */}
       {isLoading ? (
@@ -256,14 +337,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
   },
-  chipsRow: {
+  cardHeader: {
     flexDirection: 'row',
-    paddingHorizontal: 16,
-    gap: 8,
-    marginBottom: 8,
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 12,
   },
   chip: {
-    marginRight: 0,
+    gap: 0,
+  },
+  headerTitle: {
+    paddingTop: 12,
+    fontWeight: '700',
   },
   listContent: {
     paddingBottom: 24,
@@ -289,6 +374,7 @@ const styles = StyleSheet.create({
     padding: 12,
     borderLeftWidth: 3,
     gap: 12,
+    height: 92,
   },
   iconCircle: {
     width: 36,
@@ -299,17 +385,24 @@ const styles = StyleSheet.create({
   },
   rowContent: {
     flex: 1,
-    gap: 2,
+    alignSelf: 'stretch',
+    paddingTop: 4,
   },
   rowTitle: {
     fontSize: 14,
+    lineHeight: 14,
   },
   rowBody: {
     fontSize: 13,
   },
   rowTime: {
+    marginTop: 'auto',
     fontSize: 11,
-    marginTop: 2,
+    lineHeight: 14,
+  },
+  textContent: {
+    flex: 1,
+    justifyContent: 'center',
   },
   unreadDot: {
     width: 8,

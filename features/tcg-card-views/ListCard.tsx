@@ -104,14 +104,12 @@ export const DefaultAccessories = ({
   )
 }
 
-export function CardListView({
-  card,
-  collectionItem,
-  ...props
-}: { card?: TCard & Partial<CollectionItemQueryView> } & Omit<
+export type CardListViewProps = { card?: TCard & Partial<CollectionItemQueryView> } & Omit<
   ItemListViewProps,
   'item' | 'displayData'
->) {
+>
+
+export function CardListView({ card, collectionItem, ...props }: CardListViewProps) {
   const displayData = getCardDisplayData({
     card,
     collectionItem,

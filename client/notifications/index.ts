@@ -1,11 +1,12 @@
 import { getSupabase } from '@/lib/store/client'
 import { requireUser } from '@/lib/store/functions/helpers'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { NotificationCategory } from './types'
+import { AppNotification, NotificationCategory } from './types'
 
-export function useNotifications(category?: NotificationCategory) {
+export function useNotifications(opts: { unread?: boolean; category?: NotificationCategory }) {
+  const { unread, category } = opts
   return useQuery({
-    queryKey: ['notifications', category ?? 'all'],
+    queryKey: ['notifications', category, unread],
     queryFn: async () => {
       const user = await requireUser()
       const supabase = getSupabase()
@@ -17,13 +18,19 @@ export function useNotifications(category?: NotificationCategory) {
         .is('dismissed_at', null)
         .order('created_at', { ascending: false })
 
+      if (unread === true) {
+        query = query.is('read_at', null)
+      } else if (unread === false) {
+        query = query.not('read_at', 'is', null)
+      }
+
       if (category) {
         query = query.eq('category', category)
       }
 
       const { data, error } = await query
       if (error) throw error
-      return data ?? []
+      return (data as AppNotification[]) ?? []
     },
   })
 }
