@@ -42,6 +42,7 @@ const textVariants = cva(
         small: 'text-sm font-medium leading-none',
         muted: 'text-muted-foreground text-base',
         info: 'text-base uppercase font-spaceMono',
+        badge: 'font-semibold',
       },
     },
     defaultVariants: {

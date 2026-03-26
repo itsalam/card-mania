@@ -1,16 +1,17 @@
 import { useMyOffers } from '@/client/offers'
 import { Offer, OfferStatus } from '@/client/offers/types'
-import { Button } from '@/components/ui/button'
+import { TabRow } from '@/components/tabs/TabRow'
+import { ChipRowContainer, ToggleBadge } from '@/components/ui/badge'
 import { SearchBar } from '@/components/ui/search'
 import { Text } from '@/components/ui/text/base-text'
 import { BuyerOfferCard } from '@/features/offers/buyer-history'
 import { InboxOfferCard } from '@/features/offers/index'
 import { SkeletonCard } from '@/features/offers/ui'
 import { useProfiles } from '@/features/users/client/load-user'
+import { X } from 'lucide-react-native'
 import { useRef, useState } from 'react'
 import {
   Dimensions,
-  LayoutChangeEvent,
   Modal,
   Pressable,
   ScrollView,
@@ -18,12 +19,10 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native'
-import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Colors } from 'react-native-ui-lib'
 
 type ViewFilter = 'inbox' | 'my-offers'
-type StatusFilter = 'all' | OfferStatus
 type SortOption = 'newest' | 'oldest' | 'amount-asc' | 'amount-desc'
 
 const VIEW_FILTERS: { value: ViewFilter; label: string }[] = [
@@ -31,7 +30,7 @@ const VIEW_FILTERS: { value: ViewFilter; label: string }[] = [
   { value: 'my-offers', label: 'My Offers' },
 ]
 
-const STATUS_FILTERS: { value: StatusFilter; label: string }[] = [
+const STATUS_FILTERS: { value: OfferStatus | 'all'; label: string }[] = [
   { value: 'all', label: 'All' },
   { value: 'pending', label: 'Pending' },
   { value: 'accepted', label: 'Accepted' },
@@ -63,7 +62,7 @@ function sortOffers(offers: Offer[], sort: SortOption): Offer[] {
 
 export default function OffersRoute() {
   const [view, setView] = useState<ViewFilter>('inbox')
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
+  const [activeStatuses, setActiveStatuses] = useState<Set<OfferStatus>>(new Set())
   const [sort, setSort] = useState<SortOption>('newest')
   const [searchQuery, setSearchQuery] = useState('')
   const [sortModalVisible, setSortModalVisible] = useState(false)
@@ -75,32 +74,6 @@ export default function OffersRoute() {
   } | null>(null)
   const sortButtonRef = useRef<View>(null)
   const insets = useSafeAreaInsets()
-
-  const tabWidths = useRef<number[]>([])
-  const indicatorX = useSharedValue(0)
-  const indicatorWidth = useSharedValue(0)
-
-  const indicatorStyle = useAnimatedStyle(() => ({
-    left: indicatorX.value,
-    width: indicatorWidth.value,
-  }))
-
-  function handleTabLayout(index: number, e: LayoutChangeEvent) {
-    tabWidths.current[index] = e.nativeEvent.layout.width
-    if (index === 0 && indicatorWidth.value === 0) {
-      indicatorWidth.value = e.nativeEvent.layout.width
-    }
-  }
-
-  function selectView(value: ViewFilter) {
-    setView(value)
-    const idx = VIEW_FILTERS.findIndex((f) => f.value === value)
-    const x = tabWidths.current.slice(0, idx).reduce((s, w) => s + w, 0)
-    const w = tabWidths.current[idx] ?? 0
-    const spring = { damping: 24, stiffness: 300, mass: 0.6 }
-    indicatorX.value = withSpring(x, spring)
-    indicatorWidth.value = withSpring(w, spring)
-  }
 
   const { data: inboxOffers, isLoading: inboxLoading } = useMyOffers('seller')
   const { data: myOffers, isLoading: myOffersLoading } = useMyOffers('buyer')
@@ -117,7 +90,7 @@ export default function OffersRoute() {
   const query = searchQuery.trim().toLowerCase()
   const filtered = sortOffers(
     baseOffers.filter((o) => {
-      if (statusFilter !== 'all' && o.status !== statusFilter) return false
+      if (activeStatuses.size > 0 && !activeStatuses.has(o.status as OfferStatus)) return false
       if (!query) return true
 
       // card title (snapshot stored on offer item at offer time)
@@ -152,44 +125,7 @@ export default function OffersRoute() {
       </View>
 
       {/* View filter tabs */}
-      <View
-        style={[
-          styles.tapRow,
-          {
-            borderBottomColor: Colors.$outlineNeutral,
-            borderBottomWidth: StyleSheet.hairlineWidth,
-          },
-        ]}
-      >
-        {VIEW_FILTERS.map((f, idx) => (
-          <Pressable
-            key={f.value}
-            style={[
-              styles.tab,
-              {
-                backgroundColor:
-                  view === f.value ? Colors.$backgroundElevatedLight : Colors.$backgroundElevated,
-              },
-            ]}
-            onLayout={(e) => handleTabLayout(idx, e)}
-            onPress={() => selectView(f.value)}
-          >
-            <Text
-              style={[
-                styles.tabText,
-                view === f.value
-                  ? { color: Colors.$textPrimary, fontWeight: '600' }
-                  : { color: Colors.$textNeutral },
-              ]}
-            >
-              {f.label}
-            </Text>
-          </Pressable>
-        ))}
-        <Animated.View
-          style={[styles.tabIndicator, { backgroundColor: Colors.$textPrimary }, indicatorStyle]}
-        />
-      </View>
+      <TabRow options={VIEW_FILTERS} onValueChange={setView} />
 
       {/* Status filter chips */}
       <View style={styles.filterContents}>
@@ -215,27 +151,46 @@ export default function OffersRoute() {
             </Pressable>
           }
         />
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.chipRowContainer}
-          style={styles.chipRow}
-        >
-          {STATUS_FILTERS.map((f) => (
-            <Button
-              key={f.value}
-              variant={statusFilter === f.value ? 'primary' : 'outline'}
-              onPress={() => setStatusFilter(f.value)}
-              style={styles.chip}
-            >
-              <Text style={statusFilter === f.value ? styles.chipTextActive : styles.chipText}>
-                {f.label}
-              </Text>
-            </Button>
-          ))}
-        </ScrollView>
       </View>
-
+      <ChipRowContainer label={'Statuses'}>
+        {STATUS_FILTERS.map((f) => (
+          <ToggleBadge
+            key={f.value}
+            onPress={() => {
+              if (f.value === 'all') {
+                setActiveStatuses(new Set())
+              } else {
+                setActiveStatuses((prev) => {
+                  const next = new Set(prev)
+                  if (next.has(f.value as OfferStatus)) {
+                    next.delete(f.value as OfferStatus)
+                  } else {
+                    next.add(f.value as OfferStatus)
+                  }
+                  return next
+                })
+              }
+            }}
+            style={styles.chip}
+            label={f.label}
+            checked={
+              f.value === 'all'
+                ? activeStatuses.size === 0
+                : activeStatuses.has(f.value as OfferStatus)
+            }
+            rightElement={
+              f.value !== 'all' && activeStatuses.has(f.value) ? (
+                <X
+                  size={16}
+                  color={Colors.$textDefault}
+                  style={{ marginRight: 0, paddingRight: 0 }}
+                  strokeWidth={3}
+                />
+              ) : null
+            }
+          />
+        ))}
+      </ChipRowContainer>
       {/* Offer list */}
       {isLoading ? (
         <LoadingSkeleton />
@@ -341,10 +296,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingTop: 40,
+    paddingTop: 24,
     paddingBottom: 12,
   },
   headerTitle: {
+    fontSize: 32,
     fontWeight: '700',
   },
   sortButton: {
@@ -361,16 +317,10 @@ const styles = StyleSheet.create({
     fontSize: 18,
     lineHeight: 20,
   },
-  chipRow: {
-    flexGrow: 0,
-    overflow: 'visible',
-  },
-  chipRowContainer: {
-    flexDirection: 'row',
-    gap: 6,
-  },
   chip: {
-    // compact, no flex:1
+    gap: 0,
+    // paddingRight: 12,
+    // marginRight: 12,
   },
   chipText: {
     fontSize: 13,
@@ -426,27 +376,11 @@ const styles = StyleSheet.create({
   modalOptionText: {
     fontSize: 14,
   },
-  tab: {
-    flex: 1,
-    alignItems: 'center',
-    paddingVertical: 12,
-  },
-  tabText: {
-    fontSize: 14,
-  },
-  tabIndicator: {
-    position: 'absolute',
-    bottom: 0,
-    height: 2,
-    borderRadius: 1,
-  },
-  tapRow: {
-    flexDirection: 'row',
-    position: 'relative',
-  },
+
   filterContents: {
     paddingHorizontal: 16,
     paddingVertical: 12,
+    paddingBottom: 4,
     overflow: 'visible',
     gap: 12,
   },
