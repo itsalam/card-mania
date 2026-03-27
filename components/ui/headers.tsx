@@ -39,7 +39,9 @@ export function AppStandaloneHeader({
   background,
   style,
   variant = 'h2',
+  children,
 }: {
+  children?: React.ReactNode
   title?: React.ReactNode
   onBack?: () => void
   right?: React.ReactNode
@@ -57,15 +59,16 @@ export function AppStandaloneHeader({
           paddingHorizontal: 12,
         }}
       >
-        <View style={{ width: 64, alignItems: 'flex-start' }}>
-          {onBack && (
+        {onBack && (
+          <View style={{ width: 64, alignItems: 'flex-start' }}>
             <Pressable onPress={onBack} hitSlop={12}>
               <ChevronLeft size={24} color={Colors.$iconDefault} />
             </Pressable>
-          )}
-        </View>
+          </View>
+        )}
         <View style={{ flex: 1, alignItems: 'center' }}>
           <Text variant={variant}>{title}</Text>
+          {children}
         </View>
         <View style={{ width: 64, alignItems: 'flex-end' }}>{right}</View>
       </View>
