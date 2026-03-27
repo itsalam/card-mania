@@ -33,6 +33,9 @@ RETURNS TABLE (
 )
 LANGUAGE sql STABLE AS $$
 WITH
+cfg AS (
+  SELECT * FROM public.search_config WHERE id = 1
+),
 q AS (
   SELECT trim(regexp_replace(lower(p_q), '\s+', ' ', 'g')) AS qnorm
 ),
@@ -45,22 +48,32 @@ signals AS (
     0.0::numeric                                              AS s_pop,   -- replace if you track popularity
     ts_headline('simple', coalesce(c.name,'') || ' ' || coalesce(c.set_name,''),
                 plainto_tsquery('simple', (SELECT qnorm FROM q)),
-                'StartSel=<b>,StopSel=</b>,MaxFragments=1,MaxWords=20,MinWords=5') AS snippet
+                format('StartSel=<b>,StopSel=</b>,MaxFragments=%s,MaxWords=%s,MinWords=%s',
+                  (SELECT snippet_max_fragments FROM cfg),
+                  (SELECT snippet_max_words FROM cfg),
+                  (SELECT snippet_min_words FROM cfg))) AS snippet
   FROM public.cards c
 ),
 scored AS (
   SELECT
     id, name, set_name, latest_price, snippet,
-    (0.6*s_fts + 0.3*s_trgm + 0.1*s_vec + 0.05*s_pop) AS score,
+    (  (SELECT weight_fts    FROM cfg) * s_fts
+     + (SELECT weight_trgm   FROM cfg) * s_trgm
+     + (SELECT weight_vector FROM cfg) * s_vec
+     + (SELECT weight_pop    FROM cfg) * s_pop
+    ) AS score,
     jsonb_build_object(
       'fts', s_fts, 'trgm', s_trgm, 'vector', s_vec, 'pop', s_pop,
-      'blend', '0.6*fts + 0.3*trgm + 0.1*vector + 0.05*pop'
+      'w_fts',    (SELECT weight_fts    FROM cfg),
+      'w_trgm',   (SELECT weight_trgm   FROM cfg),
+      'w_vector', (SELECT weight_vector FROM cfg),
+      'w_pop',    (SELECT weight_pop    FROM cfg)
     ) AS reason
   FROM signals
 )
 SELECT *
 FROM scored
-WHERE score > 0  -- cheap guard; tweak
+WHERE score > (SELECT min_score FROM cfg)
 ORDER BY score DESC
 LIMIT p_limit;
 $$;
@@ -148,8 +161,8 @@ WITH base AS (
                 AND (
                     c.name % p_search
                     OR c.set_name % p_search
-                    OR word_similarity(p_search, c.name) > 0.2
-                    OR word_similarity(p_search, c.set_name) > 0.2
+                    OR word_similarity(p_search, c.name) > (SELECT trgm_word_similarity_threshold FROM public.search_config WHERE id = 1)
+                    OR word_similarity(p_search, c.set_name) > (SELECT trgm_word_similarity_threshold FROM public.search_config WHERE id = 1)
                 )
             )
         )
@@ -248,8 +261,8 @@ WITH candidates AS (
                 AND (
                     c.name % p_search
                     OR c.set_name % p_search
-                    OR word_similarity(p_search, c.name) > 0.2
-                    OR word_similarity(p_search, c.set_name) > 0.2
+                    OR word_similarity(p_search, c.name) > (SELECT trgm_word_similarity_threshold FROM public.search_config WHERE id = 1)
+                    OR word_similarity(p_search, c.set_name) > (SELECT trgm_word_similarity_threshold FROM public.search_config WHERE id = 1)
                 )
             )
         )
@@ -392,8 +405,8 @@ WITH base AS (
                 AND (
                     c.name % p_search
                     OR c.set_name % p_search
-                    OR word_similarity(p_search, c.name) > 0.2
-                    OR word_similarity(p_search, c.set_name) > 0.2
+                    OR word_similarity(p_search, c.name) > (SELECT trgm_word_similarity_threshold FROM public.search_config WHERE id = 1)
+                    OR word_similarity(p_search, c.set_name) > (SELECT trgm_word_similarity_threshold FROM public.search_config WHERE id = 1)
                 )
             )
         )
