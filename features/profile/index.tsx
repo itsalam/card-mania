@@ -50,7 +50,7 @@ function ProfilePageLayoutInner({ userId }: { userId?: string }) {
             <SubHeader />
           </View>
         </Animated.View>
-
+        -
         <ProfileTabList />
         <GestureDetector gesture={composedGestures}>
           <AnimatedScrollView

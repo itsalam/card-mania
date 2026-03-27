@@ -14,7 +14,13 @@ export function ProfileTabList() {
 
   return (
     <TabsList
-      style={{ paddingTop: 20, padding: 0, paddingBottom: 0, backgroundColor: 'transparent' }}
+      style={{
+        paddingTop: 0,
+        padding: 0,
+        paddingBottom: 0,
+        backgroundColor: 'transparent',
+        marginBottom: -12,
+      }}
     >
       <MaskedView
         style={[{ flex: 1.0, position: 'relative' }]}
@@ -45,7 +51,6 @@ export function ProfileTabList() {
             alignSelf: 'stretch',
             paddingHorizontal: 4,
             marginBottom: 12,
-            backgroundColor: Colors.$backgroundElevated,
             overflow: 'visible',
           }}
           onScrollBeginDrag={() => setIsScrolling(true)}
