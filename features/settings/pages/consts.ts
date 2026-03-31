@@ -7,6 +7,7 @@ import {
   Moon,
   PersonStanding,
   ShieldBan,
+  ShoppingBag,
   Sun,
   SunMoon,
   UserPen,
@@ -61,6 +62,17 @@ export const SETTINGS_SECTIONS: Record<string, SettingsLayoutSection> = {
           label: 'Account Settings',
           items: {},
         },
+      },
+    },
+  },
+  integrations: {
+    label: 'Integrations',
+    items: {
+      ebayConnect: {
+        key: 'ebayConnect',
+        label: 'eBay Account',
+        type: 'custom',
+        Icon: ShoppingBag,
       },
     },
   },

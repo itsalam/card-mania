@@ -1,4 +1,4 @@
-import { useCardSearch, useSuggestionsFixed } from '@/client/price-charting'
+import { useCardSearch, useSuggestionsFixed } from '@/client/card-search'
 import { BlurGradientBackground } from '@/components/Background'
 import DraggableFooter from '@/components/DraggableFooter'
 import { AppStandaloneHeader } from '@/components/ui/headers'

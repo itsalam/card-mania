@@ -71,6 +71,15 @@ const SETTINGS = {
     tiers: ['remote'],
     validate: isBool,
   } satisfies SettingDescriptor<boolean>,
+
+  // UI-only action key for the eBay account connect/disconnect widget.
+  // Not persisted as a setting value — the custom component manages its own state.
+  ebayConnect: {
+    key: settingKeys.ebayConnect,
+    defaultValue: null as null,
+    tiers: [],
+    validate: (v: unknown): v is null => v === null,
+  } satisfies SettingDescriptor<null>,
 }
 
 export const settingsRegistry = defineSettings(SETTINGS)

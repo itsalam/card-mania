@@ -1,4 +1,4 @@
-import { TCardSearchItem } from '@/client/price-charting/types'
+import { TCardSearchItem } from '@/client/card-search/types'
 import { CardItemListProps, CardListView } from '@/features/tcg-card-views/ListCard'
 
 export function SearchPreviewCard({

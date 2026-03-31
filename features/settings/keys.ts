@@ -6,6 +6,7 @@ export const settingKeys = {
   hapticsEnabled: 'hapticsEnabled',
   priceCurrency: 'priceCurrency',
   notificationsWeeklySummary: 'notificationsWeeklySummary',
+  ebayConnect: 'ebayConnect',
 } as const
 
 export type SettingKey = keyof typeof settingKeys

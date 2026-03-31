@@ -7,6 +7,7 @@ const CustomComponents: Partial<
   Record<SettingKey, LazyExoticComponent<(p: AccessoryProps) => React.JSX.Element>>
 > = {
   location: lazy(() => import('./location-picker')),
+  ebayConnect: lazy(() => import('./ebay-connect')),
 }
 
 export function CustomAccessory(props: AccessoryProps) {
