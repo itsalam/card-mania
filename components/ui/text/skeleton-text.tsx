@@ -10,7 +10,7 @@ export const SkeletonText = ({
   style,
   onLayout,
   defaultDimensions,
-  placeholderTextLength: placeholderTextSize,
+  placeholderTextLength,
   ...props
 }: TextProps & {
   loading?: boolean
@@ -53,9 +53,11 @@ export const SkeletonText = ({
           props.onTextLayout?.(e)
         }}
       >
-        {(children ?? placeholderTextSize)
-          ? Array(placeholderTextSize).fill('A').join('')
-          : 'Placeholder'}
+        {children
+          ? children
+          : placeholderTextLength
+            ? Array(placeholderTextLength).fill('_').join('')
+            : 'Placeholder'}
       </Text>
       {isLoading && effectiveHeight > 0 && (
         <View

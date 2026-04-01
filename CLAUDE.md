@@ -159,12 +159,12 @@ Stores each user's eBay `ebay_username` (and optionally OAuth tokens for future 
 
 ### Planned Providers (Phase 4)
 
-| Provider | What it adds |
-| --- | --- |
-| 130point | eBay sold comps aggregated for sports cards |
-| TCGPlayer | MTG/Pokemon/YuGiOh catalog + market prices |
-| PSA Registry | Graded cert lookup by cert number |
-| Beckett | Industry book value for vintage |
-| PWCC Marketplace | High-end auction results |
+| Provider         | What it adds                                |
+| ---------------- | ------------------------------------------- |
+| 130point         | eBay sold comps aggregated for sports cards |
+| TCGPlayer        | MTG/Pokemon/YuGiOh catalog + market prices  |
+| PSA Registry     | Graded cert lookup by cert number           |
+| Beckett          | Industry book value for vintage             |
+| PWCC Marketplace | High-end auction results                    |
 
 Add each as a new provider module in `supabase/functions/_shared/providers/` and fan-out via `Promise.allSettled` in the main edge function.

@@ -19,9 +19,8 @@ export function MainSearchBar({ placeholder = 'Search...' }: { placeholder?: str
     setFocused(false)
   }
 
-  const show = (inputRef?: RefObject<View>) => {
+  const show = (_inputRef?: RefObject<View>) => {
     setFocused(true)
-    ;(inputRef as unknown as RefObject<View>).current?.focus()
   }
 
   const insets = useSafeAreaInsets()
@@ -36,7 +35,7 @@ export function MainSearchBar({ placeholder = 'Search...' }: { placeholder?: str
           id="searchInput"
           placeholder={placeholder}
           onPress={() => {
-            show(inputRef)
+            show()
           }}
         />
       </View>

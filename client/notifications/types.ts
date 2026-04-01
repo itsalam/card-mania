@@ -1,5 +1,5 @@
-export type NotificationCategory = "offer" | "social" | "price" | "system"
-export type NotificationPriority = "low" | "normal" | "high" | "urgent"
+export type NotificationCategory = 'offer' | 'social' | 'price' | 'system'
+export type NotificationPriority = 'low' | 'normal' | 'high' | 'urgent'
 
 export type AppNotification = {
   id: string

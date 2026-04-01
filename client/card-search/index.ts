@@ -18,7 +18,10 @@ export function useCardSearch(params: { q: string; filters?: FilterQuery; limit?
   const payloadBase = useMemo(
     () => ({
       q: debouncedQ,
-      filters: params.filters ?? {},
+      filters: {
+        minPrice: params.filters?.priceRange?.min,
+        maxPrice: params.filters?.priceRange?.max,
+      },
       limit: params.limit ?? 20,
     }),
     [debouncedQ, params.filters, params.limit]

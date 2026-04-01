@@ -17,7 +17,11 @@ export const getPriceFix = (args: {
   let price = collectionItem?.collection_item_value
   if (price) return price
 
-  if (!metadata?.price_key) return undefined
+  if (!metadata) {
+    return card.latest_price
+  }
+
+  if (!metadata.price_key) return undefined
 
   const priceKey = metadata.price_key.replace(/(\d+)(?:\.(\d))?/g, (_match, intPart, fracPart) =>
     !fracPart || fracPart === '0' ? intPart : `${intPart}_${fracPart}`

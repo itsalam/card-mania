@@ -9,7 +9,17 @@ import { useTheme } from '@react-navigation/native'
 import { PortalHost } from '@rn-primitives/portal'
 import * as Haptics from 'expo-haptics'
 import { Tabs } from 'expo-router'
-import { Bell, Compass, Home, Inbox, Layers, Scan, ShoppingCart, Store, User } from 'lucide-react-native'
+import {
+  Bell,
+  Compass,
+  Home,
+  Inbox,
+  Layers,
+  Scan,
+  ShoppingCart,
+  Store,
+  User,
+} from 'lucide-react-native'
 import React, { useEffect } from 'react'
 import { Platform, Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native'
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated'

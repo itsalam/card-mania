@@ -91,16 +91,6 @@ export function SearchScreen({
     animatedProgress.value = withTiming(focused ? 1 : 0, { duration: 200 })
   }, [focused])
 
-  const debouncedSetSearchText = useMemo(() => {
-    let t: ReturnType<typeof setTimeout> | null = null
-    return (text: string, delay = 200) => {
-      if (t) clearTimeout(t)
-      t = setTimeout(() => {
-        setSearchText(text)
-      }, delay)
-    }
-  }, [setSearchText])
-
   // Animated styles
   const inputContainerStyle = useAnimatedStyle(() => {
     return {
@@ -110,8 +100,11 @@ export function SearchScreen({
   }, [focused])
 
   const searchItems = useMemo(
-    () => cardSearch?.pages.flatMap((page) => page.results) || autoSuggestions?.results,
-    [cardSearch, autoSuggestions]
+    () =>
+      searchText.trim().length >= 2
+        ? cardSearch?.pages.flatMap((page) => page.results)
+        : autoSuggestions?.results,
+    [searchText, cardSearch, autoSuggestions]
   )
 
   const blurOpacity = useDerivedValue<number>(() => {
@@ -197,10 +190,9 @@ export function SearchScreen({
                 }}
                 id="searchInput"
                 placeholder={placeholder}
-                onChangeText={(text) => {
-                  debouncedSetSearchText(text)
-                }}
+                onChangeText={setSearchText}
                 defaultValue={searchText}
+                autoFocus
                 onFocus={() => {
                   if (!focused) {
                     show?.(inputRef)

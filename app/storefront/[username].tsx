@@ -68,9 +68,7 @@ export default function PublicStorefrontPage() {
         }}
       >
         <Avatar size="2xl">
-          {profile.avatar_url ? (
-            <AvatarImage source={{ uri: profile.avatar_url }} />
-          ) : null}
+          {profile.avatar_url ? <AvatarImage source={{ uri: profile.avatar_url }} /> : null}
           <AvatarFallback>
             <AvatarFallbackText>{initials}</AvatarFallbackText>
           </AvatarFallback>

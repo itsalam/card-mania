@@ -1,5 +1,6 @@
 import { TCardSearchItem } from '@/client/card-search/types'
-import { CardItemListProps, CardListView } from '@/features/tcg-card-views/ListCard'
+import { CardListView } from '@/features/tcg-card-views/ListCard'
+import { CardItemListProps } from '../tcg-card-views/types'
 
 export function SearchPreviewCard({
   searchItem,

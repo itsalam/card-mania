@@ -69,14 +69,20 @@ export async function searchPriceChartingListings(
   filters: PriceChartingFilters
 ): Promise<{ raw: any; vendorResults: SearchResultItem[] }> {
   const url = new URL(`${pcBase}/api/product${id ? '' : 's'}`)
+
   url.searchParams.set('t', pcKey)
   if (id) url.searchParams.set('id', id)
   if (q) url.searchParams.set('q', q)
+  console.log({ url })
   // Map sport filter to PriceCharting's `genre` param
   if (filters.sport) url.searchParams.set('genre', filters.sport)
 
-  const res = await fetch(url.toString(), { headers: { accept: 'application/json' } })
-  if (!res.ok) throw new Error(`PriceCharting ${res.status}: ${res.statusText}`)
+  const res = await fetch(url.toString(), {
+    headers: { accept: 'application/json' },
+  })
+  if (!res.ok) {
+    throw new Error(`PriceCharting ${res.status}: ${res.statusText}`)
+  }
 
   const raw = await res.json()
   const priceEntries: PriceChartingEntry[] = id

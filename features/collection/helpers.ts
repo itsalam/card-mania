@@ -57,7 +57,7 @@ export const getCollectionName = ({
 }
 
 export const getGradingDisplayString = (collectionItem?: CollectionItem) => {
-  if (!collectionItem) return ['ungraded']
+  if (!collectionItem || !collectionItem.grade_condition) return ['ungraded']
   return [
     collectionItem?.grading_company,
     collectionItem?.grade_condition?.grade_value,

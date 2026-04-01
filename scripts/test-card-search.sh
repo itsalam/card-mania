@@ -49,6 +49,7 @@ call() {
   local headers=(-H "Content-Type: application/json")
   if [[ -n "$ANON_KEY" ]]; then
     headers+=(-H "apikey: $ANON_KEY")
+    headers+=(-H "Authorization: Bearer $ANON_KEY")
   fi
   curl -s "${headers[@]}" "$url"
 }
