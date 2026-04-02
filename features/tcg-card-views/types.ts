@@ -16,6 +16,8 @@ export type DisplayData = {
   imageProxyArgs: ImageProxyOpts
   onPress?: () => void
   quantity?: number
+  /** W/H pixel aspect ratio resolved from image-proxy; undefined until the image loads. */
+  aspectRatio?: number
 }
 export type ItemListingProps = BaseListingProps & {
   expanded?: boolean

@@ -1,5 +1,6 @@
 import { ToastProvider } from '@/components/Toast'
 import ThemeProvider from '@/components/ui/theme'
+import { getCachedPrefetchEnabled, prefetchSuggestions } from '@/client/price-charting'
 import { useOfferRealtime } from '@/features/offers/use-offer-realtime'
 import { SettingsProvider } from '@/features/settings'
 import { asyncStorageLocalAdapter } from '@/features/settings/adapters/local-adapter'
@@ -78,6 +79,7 @@ export default function Providers({ children }: { children: React.ReactNode }) {
               <GestureHandlerRootView>
                 <ToastProvider>
                   <OfferRealtimeProvider />
+                  <SearchPrefetchProvider />
                   {children}
                 </ToastProvider>
               </GestureHandlerRootView>
@@ -92,6 +94,15 @@ export default function Providers({ children }: { children: React.ReactNode }) {
 
 function OfferRealtimeProvider() {
   useOfferRealtime()
+  return null
+}
+
+function SearchPrefetchProvider() {
+  useEffect(() => {
+    getCachedPrefetchEnabled().then((enabled) => {
+      if (enabled) prefetchSuggestions(qc)
+    })
+  }, [])
   return null
 }
 

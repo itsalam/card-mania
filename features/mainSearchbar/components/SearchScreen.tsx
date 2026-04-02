@@ -1,11 +1,11 @@
-import { useCardSearch, useSuggestionsFixed } from '@/client/price-charting'
+import { reportSearchRenderMs, useCardSearch, useSuggestionsFixed } from '@/client/price-charting'
 import { BlurGradientBackground } from '@/components/Background'
 import DraggableFooter from '@/components/DraggableFooter'
 import { AppStandaloneHeader } from '@/components/ui/headers'
 import { SearchBar } from '@/components/ui/search'
 import { Spinner } from '@/components/ui/spinner'
 import { ItemListViewProps } from '@/features/tcg-card-views/types'
-import React, { RefObject, useEffect, useMemo, useState } from 'react'
+import React, { RefObject, useEffect, useMemo, useRef, useState } from 'react'
 import { StyleProp, StyleSheet, View, ViewStyle } from 'react-native'
 import { FlatList } from 'react-native-gesture-handler'
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller'
@@ -82,6 +82,22 @@ export function SearchScreen({
       console.error('Auto suggestions error:', autoSuggestionsState.error)
     }
   }, [autoSuggestionsState.error])
+
+  // Measure time from first network fetch to data arrival and persist it so
+  // _providers.tsx can decide whether to prefetch on the next app start.
+  const fetchStartRef = useRef<number | null>(null)
+  const hasMeasuredRef = useRef(false)
+  useEffect(() => {
+    if (fetchStatus === 'fetching' && fetchStartRef.current === null) {
+      fetchStartRef.current = Date.now()
+    }
+  }, [fetchStatus])
+  useEffect(() => {
+    if (autoSuggestions && fetchStartRef.current !== null && !hasMeasuredRef.current) {
+      hasMeasuredRef.current = true
+      reportSearchRenderMs(Date.now() - fetchStartRef.current)
+    }
+  }, [autoSuggestions])
 
   // Animation hooks
   const insets = useSafeAreaInsets()
@@ -206,6 +222,7 @@ export function SearchScreen({
                     show?.(inputRef)
                   }
                 }}
+                autoFocus
                 ref={inputRef}
                 onOptionsPress={() => {
                   setFiltersExpanded(!filtersExpanded)

@@ -72,13 +72,14 @@ export const UserAvatar = ({ user, size = 'md' }: UserContactProps) => {
 
   return (
     <Avatar size={size} alt={user?.name[0] ?? 'loading-avatar'}>
-      {!imageLoaded && user ? (
-        <AnimAvatarFallback exiting={FadeOut}>
-          <AvatarFallbackText>{user?.name[0]}</AvatarFallbackText>
-        </AnimAvatarFallback>
-      ) : (
-        <Skeleton style={{ width: '100%', height: '100%' }} />
-      )}
+      {!imageLoaded &&
+        (user ? (
+          <AnimAvatarFallback exiting={FadeOut}>
+            <AvatarFallbackText>{user?.name[0]}</AvatarFallbackText>
+          </AnimAvatarFallback>
+        ) : (
+          <Skeleton style={{ width: '100%', height: '100%' }} />
+        ))}
       <AvatarImage
         source={{
           uri,

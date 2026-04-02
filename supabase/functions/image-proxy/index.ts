@@ -7,18 +7,43 @@ import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
 const SERVICE_ROLE = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-
-console.debug('Initializing Supabase client with URL:', SUPABASE_URL)
+const DEBUG = (Deno.env.get('DEBUG') ?? 'false').toLowerCase() === 'true'
+const dbg = (...args: unknown[]) => {
+  if (DEBUG) console.debug(...args)
+}
 const supabase = createClient<Database>(SUPABASE_URL, SERVICE_ROLE)
 
 // constants for trading cards: 63mm x 88mm  => H/W ≈ 1.396825
 const CARD_AR = 88 / 63 // ≈ 1.396825
 
+type ImageShape = 'card' | 'slab' | 'unknown'
+
+/**
+ * Classify an image as a standard trading card, a graded slab, or unknown
+ * based on its stored pixel dimensions.
+ *
+ * Standard card H/W ≈ 1.397  (63 × 88 mm)
+ * Graded slabs (PSA/SGC) H/W ≈ 1.50–1.52 — measurably taller than a raw card
+ * Tolerance of 8% around CARD_AR catches minor scan/crop variations.
+ */
+function classifyImageShape(width: number | null, height: number | null): ImageShape {
+  if (!width || !height || width <= 0 || height <= 0) return 'unknown'
+  const ar = height / width
+  if (Math.abs(ar - CARD_AR) / CARD_AR <= 0.08) return 'card'
+  if (ar > CARD_AR * 1.08) return 'slab'
+  return 'unknown'
+}
+
+/** W/H pixel aspect ratio from stored dimensions; null when dimensions are unavailable. */
+function pixelAspectRatio(width: number | null, height: number | null): number | null {
+  return width && height && width > 0 && height > 0 ? width / height : null
+}
+
 // Helper to compute W×H given shape + desired width
 function dimsFor(
   opts: Required<Pick<CdnOpts, 'shape' | 'fit'>> & Pick<CdnOpts, 'width' | 'height' | 'variant'>
 ) {
-  console.debug('Computing dimensions for options:', opts)
+  dbg('Computing dimensions for options:', opts)
 
   // sensible defaults per variant
   const presetWidth: Record<CdnVariant, number> = {
@@ -44,12 +69,12 @@ function dimsFor(
     height = height || 0
   }
 
-  console.debug('Computed dimensions:', { width, height })
+  dbg('Computed dimensions:', { width, height })
   return { width, height }
 }
 
 function qualityFor(variant: CdnVariant | undefined) {
-  console.debug('Getting quality for variant:', variant)
+  dbg('Getting quality for variant:', variant)
 
   switch (variant) {
     case 'tiny':
@@ -82,7 +107,7 @@ function cdnUrl(
     bucket = 'images',
   }: CdnOpts = {}
 ) {
-  console.debug('Building CDN URL for:', {
+  dbg('Building CDN URL for:', {
     storagePath,
     variant,
     shape,
@@ -95,7 +120,7 @@ function cdnUrl(
 
   if (variant === 'raw' || (shape === 'original' && !width && !height)) {
     const url = supabase.storage.from(bucket).getPublicUrl(storagePath).data.publicUrl
-    console.debug('Generated raw URL:', url)
+    dbg('Generated raw URL:', url)
     return url
   }
 
@@ -118,15 +143,15 @@ function cdnUrl(
   if (w && w > 0) transform.width = w
   if (h && h > 0) transform.height = h
 
-  console.debug('Transform parameters:', transform)
+  dbg('Transform parameters:', transform)
 
   const url = supabase.storage.from(bucket).getPublicUrl(storagePath, { transform }).data.publicUrl
-  console.debug('Generated transformed URL:', url)
+  dbg('Generated transformed URL:', url)
   return url
 }
 
 function json(data: unknown, init: ResponseInit = {}) {
-  console.debug('Creating JSON response:', { data, init })
+  dbg('Creating JSON response:', { data, init })
   return new Response(JSON.stringify(data), {
     ...init,
     headers: { 'content-type': 'application/json', ...(init.headers ?? {}) },
@@ -156,31 +181,37 @@ Deno.serve(async (req) => {
 
   try {
     let storagePath: string | null = null
+    let dims: { width: number | null; height: number | null } = { width: null, height: null }
 
     if (imageId) {
-      console.debug('Serving by image_cache.id:', imageId)
+      dbg('Serving by image_cache.id:', imageId)
       const { data, error } = await supabase
         .from('image_cache')
-        .select('storage_path')
+        .select('storage_path, width, height')
         .eq('id', imageId)
         .maybeSingle()
       if (error) throw error
       storagePath = data?.storage_path ?? null
+      dims = { width: data?.width ?? null, height: data?.height ?? null }
     }
     if (!storagePath && cardId && kind) {
-      console.debug('Serving by card binding:', { cardId, kind })
+      dbg('Serving by card binding:', { cardId, kind })
       const { data, error } = await supabase
         .from('card_images')
-        .select('image_cache(storage_path)')
+        .select('image_cache(storage_path, width, height)')
         .eq('card_id', cardId)
         .eq('kind', kind)
         .maybeSingle()
       if (error) throw error
       storagePath = data?.image_cache?.storage_path ?? null
+      dims = {
+        width: data?.image_cache?.width ?? null,
+        height: data?.image_cache?.height ?? null,
+      }
     }
     if (!storagePath && queryHash) {
       const { ic, isc } = await getImageCacheFromQueryHash(queryHash, supabase)
-      console.debug('Serving by query hash:', queryHash)
+      dbg('Serving by query hash:', queryHash)
 
       if (ic?.storage_path) {
         const cdn = cdnUrl(ic.storage_path, {
@@ -194,7 +225,12 @@ Deno.serve(async (req) => {
         })
         if (internal) {
           return json(
-            { url: cdn, status: 'READY' },
+            {
+              url: cdn,
+              status: 'READY',
+              shape: classifyImageShape(ic.width, ic.height),
+              aspectRatio: pixelAspectRatio(ic.width, ic.height),
+            },
             {
               headers: { 'cache-control': 'no-store' },
             }
@@ -250,7 +286,7 @@ Deno.serve(async (req) => {
     }
 
     if (storagePath) {
-      console.debug('Found storage path:', storagePath)
+      dbg('Found storage path:', storagePath)
       const cdn = cdnUrl(storagePath, {
         variant,
         shape,
@@ -262,7 +298,12 @@ Deno.serve(async (req) => {
       })
       if (internal) {
         return json(
-          { url: cdn, status: 'READY' },
+          {
+            url: cdn,
+            status: 'READY',
+            shape: classifyImageShape(dims.width, dims.height),
+            aspectRatio: pixelAspectRatio(dims.width, dims.height),
+          },
           {
             headers: { 'cache-control': 'no-store' },
           }
@@ -308,7 +349,7 @@ Deno.serve(async (req) => {
 })
 
 const returnInteralFallback = (opts: CdnOpts) => {
-  console.debug('Returning internal fallback with options:', opts)
+  dbg('Returning internal fallback with options:', opts)
   const { variant, shape, fit, width, height, quality } = opts
   const fallback = cdnUrl('default.png', {
     variant,
@@ -319,11 +360,16 @@ const returnInteralFallback = (opts: CdnOpts) => {
     quality,
     bucket: 'placeholder',
   })
-  return json({ url: fallback, status: 'FALLBACK' })
+  return json({
+    url: fallback,
+    status: 'FALLBACK',
+    shape: 'unknown' as ImageShape,
+    aspectRatio: null,
+  })
 }
 
 const returnExternalFallback = (opts: CdnOpts) => {
-  console.debug('Returning external fallback with options:', opts)
+  dbg('Returning external fallback with options:', opts)
   const { variant, shape, fit, width, height, quality } = opts
   const fallback = cdnUrl('default.png', {
     variant,

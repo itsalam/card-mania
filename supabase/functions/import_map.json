@@ -4,6 +4,8 @@
     "@types": "./_shared/types.ts",
     "@schema": "./_shared/supabase.d.ts",
     "@image-fetch": "./_shared/image-fetch.ts",
+    "@ebay-auth": "./_shared/ebay-auth.ts",
+    "@cardhedge": "./_shared/cardhedge.ts",
     "@supabase/supabase-js": "npm:@supabase/supabase-js@2.56.0"
   }
 }

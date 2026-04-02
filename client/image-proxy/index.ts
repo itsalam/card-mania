@@ -5,6 +5,16 @@ type CdnVariant = 'raw' | 'tiny' | 'thumb' | 'detail' | 'full'
 type CdnShape = 'original' | 'card' | 'square'
 type CdnFit = 'cover' | 'contain' // 'cover' crops to fill; 'contain' letterboxes
 
+/** Shape classification returned by the image-proxy based on stored pixel dimensions. */
+export type CardShape = 'card' | 'slab' | 'unknown'
+
+export type ImageProxyResult = {
+  url: string
+  shape: CardShape
+  /** W/H pixel aspect ratio from stored image dimensions; null when dimensions are unavailable. */
+  aspectRatio: number | null
+}
+
 type CdnOpts = {
   variant?: CdnVariant // preset size
   shape?: CdnShape // force aspect if not 'original'
@@ -20,16 +30,27 @@ type CdnKeys = {
   imageId?: string
   cardId?: string
   imageType?: 'front' | 'back' | 'extra'
+  directUrl?: string // skip the proxy entirely — use this URL as-is
 }
 
 export type ImageProxyOpts = CdnOpts & CdnKeys
 
 export function useImageProxy(cdnOpts: ImageProxyOpts) {
-  const { imageId, cardId, imageType: kind, queryHash, ...xform } = cdnOpts
-  const enabled = Boolean(imageId ?? (cardId && kind) ?? queryHash)
+  const { imageId, cardId, imageType: kind, queryHash, directUrl, ...xform } = cdnOpts
+  const enabled = Boolean(directUrl ?? imageId ?? (cardId && kind) ?? queryHash)
 
   // include **all** options that affect the resulting URL in the queryKey:
-  const key = ['image-proxy', { imageId, cardId, kind, queryHash, ...xform }]
+  const key = [
+    'image-proxy',
+    {
+      imageId,
+      cardId,
+      kind,
+      queryHash,
+      directUrl,
+      ...xform,
+    },
+  ]
 
   // build query string for the proxy in JSON mode
   const payload = {
@@ -49,22 +70,29 @@ export function useImageProxy(cdnOpts: ImageProxyOpts) {
   const isStable = Boolean(imageId) // content-addressed → stable
   const staleTime = isStable ? 10 * 60 * 1000 : 60 * 1000 // 10m vs 1m
 
-  return useQuery({
+  return useQuery<ImageProxyResult, Error, ImageProxyResult>({
     queryKey: key,
     enabled: enabled,
     queryFn: async () => {
-      const proxyRes = await invokeFx<ImageProxyOpts, { status: string; url: string }>(
-        'image-proxy',
-        payload,
-        {
-          method: 'GET',
-          useQueryParams: true,
-          headers: { 'x-internal': '1', Accept: 'application/json' },
-        }
-      )
-      return proxyRes.data.url
+      if (directUrl) {
+        console.log({ directUrl })
+        return { url: directUrl, shape: 'unknown' as CardShape, aspectRatio: null }
+      }
+      const proxyRes = await invokeFx<
+        ImageProxyOpts,
+        { status: string; url: string; shape?: CardShape; aspectRatio?: number | null }
+      >('image-proxy', payload, {
+        method: 'GET',
+        useQueryParams: true,
+        headers: { 'x-internal': '1', Accept: 'application/json' },
+      })
+      return {
+        url: proxyRes.data.url,
+        shape: proxyRes.data.shape ?? 'unknown',
+        aspectRatio: proxyRes.data.aspectRatio ?? null,
+      }
     },
-    select: (url) => url,
+    select: (res) => res,
     staleTime,
     gcTime: 5 * 60 * 1000,
     refetchOnWindowFocus: !isStable, // for query_hash mode, let it refresh

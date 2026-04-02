@@ -68,6 +68,7 @@ export default function FocusCardView({
 }) {
   const { data: cardData } = useCardQuery(cardId)
   const { data: collectionItem } = useViewSingleCollectionItem(collectionIdArgs?.itemId)
+
   const displayData = useMemo(
     () => getCardDisplayData({ card: cardData, collectionItem }),
     [cardData, collectionItem]
@@ -258,6 +259,28 @@ const CardDetailContainer = ({
   )
 
   const insets = useSafeAreaInsets()
+
+  // Resolve image first so the aspect ratio is available for animation targets below.
+  const { data: imageResult } = useImageProxy({
+    cardId: cardId,
+    imageType: 'front',
+    quality: 100,
+    ...displayData?.imageProxyArgs,
+    variant: 'detail',
+    shape: 'card',
+  })
+  const image = imageResult?.url
+  const imageShape = imageResult?.shape
+  // W/H pixel aspect ratio — prefer live image-proxy result, then displayData (pre-computed
+  // from card.image dimensions returned by fetch-card), then standard card ratio as final fallback.
+  const cardAspectRatio = imageResult?.aspectRatio ?? displayData?.aspectRatio ?? 5 / 7
+
+  const { data: thumbnailImageResult } = useImageProxy({
+    ...displayData?.imageProxyArgs,
+    variant: 'tiny',
+  })
+  const thumbnailImage = thumbnailImageResult?.url
+
   const {
     progress,
     cardStyle: cardTransition,
@@ -267,7 +290,7 @@ const CardDetailContainer = ({
     fallbackHref: returnTo,
     animateTo: {
       width: W * CARD_WIDTH_RATIO,
-      height: (W * CARD_WIDTH_RATIO) / (5 / 7),
+      height: (W * CARD_WIDTH_RATIO) / cardAspectRatio,
       x: (W * (1 - CARD_WIDTH_RATIO)) / 2,
       y: insets.top + 68,
     },
@@ -281,7 +304,7 @@ const CardDetailContainer = ({
     const offsetY = e.nativeEvent.contentOffset.y
     y.set(offsetY)
   }, [])
-  const travelDistance = CARD_TITLE_POSITION * ((W * 7) / 5)
+  const travelDistance = CARD_TITLE_POSITION * (W / cardAspectRatio)
   const scrollProgress = useDerivedValue(() => Math.max(0, y.value / travelDistance))
 
   const backgroundOpacity = useSharedValue([1, 0])
@@ -299,24 +322,6 @@ const CardDetailContainer = ({
       titleOpacity.value = [withDelay(500, withTiming(next, { duration: 300 })), 1, 0.9, 0]
     }
   )
-
-  const { data: image } = useImageProxy({
-    variant: 'detail',
-    shape: 'card',
-
-    cardId: cardId,
-    imageType: 'front',
-    quality: 100,
-    ...displayData?.imageProxyArgs,
-  })
-
-  const { data: thumbnailImage } = useImageProxy({
-    variant: 'tiny',
-    shape: 'card',
-    cardId: cardId,
-    imageType: 'front',
-    queryHash: displayData?.imageProxyArgs?.queryHash ?? undefined,
-  })
 
   const {
     expandProgress,
@@ -401,7 +406,7 @@ const CardDetailContainer = ({
               style={[
                 {
                   width: '100%',
-                  aspectRatio: 5 / 6,
+                  aspectRatio: cardAspectRatio,
                 },
               ]}
             >
@@ -410,7 +415,7 @@ const CardDetailContainer = ({
                   cardTransition,
                   cardImageAnimStyle,
                   {
-                    aspectRatio: 5 / 7,
+                    aspectRatio: cardAspectRatio,
                   },
                 ]}
                 ref={imageContainerLayoutRef}
@@ -460,12 +465,13 @@ const CardDetailContainer = ({
                       borderRadius: 6,
                     },
                   ]}
+                  key={image}
                   source={[
                     {
                       uri: image,
-                      cacheKey: `${displayData?.imageProxyArgs.imageId || displayData?.imageProxyArgs.cardId}-thumb`,
+                      cacheKey: `${displayData?.imageProxyArgs.queryHash || `${displayData?.imageProxyArgs.cardId}-thumb`}`,
                       width: W * CARD_WIDTH_RATIO,
-                      height: (W * CARD_WIDTH_RATIO) / (5 / 7),
+                      // height: (W * CARD_WIDTH_RATIO) / (5 / 7),
                     },
                   ]}
                   placeholder={
@@ -474,14 +480,14 @@ const CardDetailContainer = ({
                           uri: thumbnailImage,
                           cacheKey: `${cardId}-thumb`,
                           width: W,
-                          height: W / (5 / 7),
+                          height: W / cardAspectRatio,
                         }
                       : undefined
                   }
                   placeholderContentFit="cover"
                   cachePolicy="memory-disk"
                   transition={0}
-                  contentFit="cover"
+                  contentFit="fill"
                 />
               </Animated.View>
             </View>

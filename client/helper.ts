@@ -58,9 +58,21 @@ export async function invokeFx<In extends FunctionInvokeOptions['body'], Out>(
     method,
     headers: invokeHeaders,
   })
+
+  if (parseOut) {
+    const result = parseOut.safeParse(data)
+    if (!result.success) {
+      console.warn(`[invokeFx] Zod validation failed for "${name}"`)
+      console.warn('[invokeFx] Raw response:', JSON.stringify(data, null, 2))
+      console.warn('[invokeFx] Zod errors:', JSON.stringify(result.error.issues, null, 2))
+      throw result.error
+    }
+    return { data: result.data, response, error }
+  }
+
   return {
-    data: parseOut ? parseOut.parse(data) : (data as Out),
-    response: response,
-    error: error,
+    data: data as Out,
+    response,
+    error,
   }
 }

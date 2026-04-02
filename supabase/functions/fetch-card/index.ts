@@ -17,10 +17,12 @@ import {
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
 
 type Card = Database['public']['Tables']['cards']['Row']
+type CardImageRow = Database['public']['Tables']['card_images']['Row']
 type Image = {
   query_hash: string
   url: string | null
   kind: 'bound' | 'candidate'
+  aspectRatio?: number | null
 }
 
 Deno.serve(async (req) => {
@@ -51,7 +53,7 @@ Deno.serve(async (req) => {
         JSON.stringify({
           message: 'Card not found, populating for next fetch',
         }),
-        { status: 206 }
+        { status: 206, headers: { 'Content-Type': 'application/json' } }
       )
     }
     return new Response(JSON.stringify({ error: 'Card not found' }), {
@@ -59,7 +61,64 @@ Deno.serve(async (req) => {
     })
   }
 
-  return new Response(JSON.stringify({ data: fetchedCard }), {
+  let image: Image | undefined
+  if (fetchedCard.front_image_id) {
+    const { data: ci } = await supabase
+      .from('card_images')
+      .select('id, source_url, url_hash, image_cache(width, height)')
+      .eq('id', fetchedCard.front_image_id)
+      .maybeSingle()
+    if (ci?.source_url) {
+      const { width, height } =
+        (ci.image_cache as { width: number | null; height: number | null } | null) ?? {}
+      image = {
+        kind: 'bound',
+        url: ci.source_url,
+        query_hash: ci.url_hash ?? '',
+        aspectRatio: width && height ? width / height : null,
+      }
+    }
+  } else {
+    // front_image_id not yet set — check if image-proxy has already created a card_images row
+    const { data: ci } = await supabase
+      .from('card_images')
+      .select('id, source_url, url_hash, image_cache(width, height)')
+      .eq('card_id', fetchedCard.id)
+      .eq('kind', 'front')
+      .eq('status', 'READY')
+      .maybeSingle()
+    if (ci?.source_url) {
+      const { width, height } =
+        (ci.image_cache as { width: number | null; height: number | null } | null) ?? {}
+      image = {
+        kind: 'bound',
+        url: ci.source_url,
+        query_hash: ci.url_hash ?? '',
+        aspectRatio: width && height ? width / height : null,
+      }
+      // Lazily backfill front_image_id so future fetches skip this lookup
+      supabase.from('cards').update({ front_image_id: ci.id }).eq('id', fetchedCard.id)
+    }
+  }
+
+  // Fallback: image job still running — use query_hash from card_hints so
+  // the client can serve the image immediately via image-proxy
+  if (!image && card_hints) {
+    try {
+      const hints = JSON.parse(card_hints) as { image?: Image }
+      if (hints.image?.query_hash) {
+        image = {
+          kind: 'candidate',
+          url: hints.image.url ?? null,
+          query_hash: hints.image.query_hash,
+        }
+      }
+    } catch {
+      // ignore malformed card_hints
+    }
+  }
+
+  return new Response(JSON.stringify({ data: { ...fetchedCard, image } }), {
     headers: { 'Content-Type': 'application/json' },
   })
 })
@@ -91,22 +150,52 @@ async function commitCard(
     return null
   }
 
-  let promises: Promise<unknown>[] = []
+  const promises: Promise<unknown>[] = []
   const cardRecord = cardInsert.data
   const cardId = cardLike.id || cardRecord?.id
   if (image && image.query_hash && cardId) {
     const frontCardImageWiring = getImageCacheFromQueryHash(image.query_hash, supabase)
-      .then(({ ic }) => {
+      .then(async ({ ic }) => {
         if (ic) {
           return insertCardImageFromCache(cardId, ic, { kind: 'front' }, supabase)
             .select()
             .maybeSingle()
-            .then(({ data, error }) => {
-              if (error) {
-                console.error('Error inserting card image', error)
+            .then((result: { data: CardImageRow | null; error: unknown }) => {
+              if (result.error) {
+                console.error('Error inserting card image', result.error)
               }
-              return data
+              return result.data
             })
+        }
+        // No image_cache row yet — if we have a direct vendor URL, seed it now
+        if (image.url) {
+          const urlHash = await sha256HexStr(image.url)
+          const { data: seeded, error: seedErr } = await supabase
+            .from('image_cache')
+            .upsert(
+              {
+                source_url: image.url,
+                url_hash: urlHash,
+                query_hash: image.query_hash,
+                status: 'external',
+                is_top_for_query: true,
+                expires_at: new Date(Date.now() + 30 * 24 * 3600 * 1000).toISOString(),
+              },
+              { onConflict: 'url_hash' }
+            )
+            .select('*')
+            .maybeSingle()
+          if (seedErr) console.error('Error seeding image_cache from direct URL', seedErr)
+          if (seeded) {
+            return insertCardImageFromCache(cardId, seeded, { kind: 'front' }, supabase)
+              .select()
+              .maybeSingle()
+              .then((result) => {
+                if (result.error)
+                  console.error('Error inserting card image from seeded cache', result.error)
+                return result.data
+              })
+          }
         }
         console.error('No image cache found for query hash', image.query_hash)
       })
@@ -177,7 +266,7 @@ const populateCardImages = async (
       method: 'POST',
       body: { query_hash: qHash, card_fields: card },
     })
-    .catch((e) => {
+    .catch((e: unknown) => {
       console.error('Image commit failed:', e)
     })) as { data: { commits: ImageCacheRow[] } }
   console.debug('Back image commit', backImageCommit)

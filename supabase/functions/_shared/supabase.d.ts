@@ -1,12 +1,4 @@
-export type Json =
-  | string
-  | number
-  | boolean
-  | null
-  | {
-      [key: string]: Json | undefined
-    }
-  | Json[]
+export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[]
 
 export type Database = {
   // Allows to automatically instantiate createClient with right options
@@ -2259,3 +2251,12 @@ export type CompositeTypes<
   : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema['CompositeTypes']
     ? DefaultSchema['CompositeTypes'][PublicCompositeTypeNameOrOptions]
     : never
+
+export const Constants = {
+  public: {
+    Enums: {
+      item_kind: ['card'],
+      view_target: ['card', 'listing'],
+    },
+  },
+} as const

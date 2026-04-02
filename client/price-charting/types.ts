@@ -6,6 +6,7 @@ export const CardSearchItem = z.object({
   id: z.string(),
 
   score: z.number(),
+  rank: z.number().optional(),
   snippet: z.string().optional(),
   reason: z.any().optional(),
   source: z.enum(['local', 'vendor']),

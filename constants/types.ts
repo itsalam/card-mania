@@ -32,13 +32,13 @@ export const Card = z.object({
   id: z.string(),
   name: z.string(),
   set_name: z.string().optional(),
-  latest_price: z.number().optional(),
-
+  latest_price: z.number().optional().nullable(),
   image: z
     .object({
       kind: z.enum(['bound', 'candidate']),
-      url: z.string().optional(),
+      url: z.string().optional().nullable(),
       query_hash: z.string().optional(),
+      aspectRatio: z.number().optional().nullable(),
     })
     .optional(),
 
@@ -46,8 +46,8 @@ export const Card = z.object({
   back_image_id: z.string().optional().nullable(),
   extra_image_ids: z.array(z.string()).optional().nullable(),
 
-  grades_prices: JsonSchema,
-  release_date: z.string().nullable(),
+  grades_prices: z.record(z.string(), z.number()).optional().default({}),
+  release_date: z.string().optional().nullable(),
   genre: z.string().optional(),
   last_updated: z.string().optional(),
 })

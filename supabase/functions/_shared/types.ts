@@ -55,6 +55,7 @@ export type ImageHint = {
   kind: 'bound' | 'candidate'
   url: string | null
   query_hash?: string
+  aspectRatio?: number | null
 }
 
 export type Card = {
@@ -100,4 +101,33 @@ export type Candidate = {
   height: number
   contentType: string
   sourceUrl: string
+}
+
+export type EbayItemSummary = {
+  itemId: string
+  title: string
+  price?: { value: string; currency: string }
+  categories?: Array<{ categoryId: string; categoryName: string }>
+  image?: { imageUrl: string }
+  condition?: string
+  itemWebUrl?: string
+  buyingOptions?: string[]
+}
+
+export type CardHedgeCard = {
+  card_id: string
+  description: string
+  player?: string
+  set: string
+  set_type?: string
+  number?: string
+  variant?: string
+  category?: string
+  category_group?: string
+  image?: string // protocol-relative URL e.g. //s3.amazonaws.com/...
+  '7 Day Sales'?: number
+  '30 Day Sales'?: number
+  rookie?: boolean
+  gain?: number // 7-day price change %
+  prices?: Array<{ grade: string; price: string }>
 }

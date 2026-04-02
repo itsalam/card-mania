@@ -6,9 +6,10 @@ import {
   createSupabaseClient,
   createSupabaseServiceClient,
   json,
+  normalize,
   ok,
+  sha256HexStr,
 } from '@utils'
-import { crypto } from 'https://deno.land/std@0.224.0/crypto/mod.ts'
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
 
 const DEFAULT_LIMIT = 12
@@ -29,18 +30,6 @@ export function decodeCardKey(key: string): CardKeyFields & { v: number } {
     throw new Error('Invalid card key')
   }
   return obj
-}
-
-function normalize(s: string) {
-  return s.toLowerCase().trim().replace(/\s+/g, ' ')
-}
-
-async function sha256HexStr(s: string) {
-  const enc = new TextEncoder().encode(s)
-  const digest = await crypto.subtle.digest('SHA-256', enc)
-  return Array.from(new Uint8Array(digest))
-    .map((b) => b.toString(16).padStart(2, '0'))
-    .join('')
 }
 
 type AuthCtx =
@@ -175,22 +164,40 @@ Deno.serve(async (req) => {
 })
 
 async function filterViable(items: ImageItem[], opts: { max: number; maxBytes: number }) {
-  const out: Array<ImageItem & { contentType?: string; bytes?: number }> = []
-  for (const item of items) {
-    if (!item.sourceUrl) continue
+  type ViableItem = ImageItem & { contentType?: string; bytes?: number }
+
+  async function checkItem(item: ImageItem): Promise<ViableItem | null> {
+    if (!item.sourceUrl) return null
     try {
-      const res = await fetch(item.sourceUrl, {
-        method: 'GET',
-        headers: { accept: 'image/*' },
-      })
-      if (!res.ok) continue
+      // Try HEAD first — no body download, much faster
+      const head = await fetch(item.sourceUrl, { method: 'HEAD', headers: { accept: 'image/*' } })
+      if (head.ok) {
+        const ct = head.headers.get('content-type') ?? undefined
+        if (ct && !ct.startsWith('image/')) return null
+        const cl = head.headers.get('content-length')
+        const bytes = cl ? parseInt(cl) : undefined
+        if (bytes !== undefined && bytes > opts.maxBytes) return null
+        return { ...item, contentType: ct, bytes }
+      }
+      // HEAD failed (e.g. 405 Method Not Allowed) — fall back to GET
+      const res = await fetch(item.sourceUrl, { method: 'GET', headers: { accept: 'image/*' } })
+      if (!res.ok) return null
       const ct = res.headers.get('content-type') ?? undefined
       const buf = new Uint8Array(await res.arrayBuffer())
-      if (buf.byteLength > opts.maxBytes) continue
-      out.push({ ...item, contentType: ct, bytes: buf.byteLength })
-      if (out.length >= opts.max) break
+      if (buf.byteLength > opts.maxBytes) return null
+      return { ...item, contentType: ct, bytes: buf.byteLength }
     } catch {
-      continue
+      return null
+    }
+  }
+
+  // Run all checks in parallel
+  const results = await Promise.allSettled(items.map(checkItem))
+  const out: ViableItem[] = []
+  for (const r of results) {
+    if (r.status === 'fulfilled' && r.value) {
+      out.push(r.value)
+      if (out.length >= opts.max) break
     }
   }
   if (out.length === 0) throw new Error('No viable image found')

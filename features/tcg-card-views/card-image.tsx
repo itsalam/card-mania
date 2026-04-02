@@ -19,38 +19,43 @@ export function CardImage(props: {
 }) {
   const { isLoading = false, cardContainerStyle, displayData, imageProps, height, width } = props
 
-  const { data: thumbnailImg, isLoading: isImageLoading } = useImageProxy({
+  const { data: thumbnailImgResult, isLoading: isImageLoading } = useImageProxy({
     variant: 'tiny',
     ...displayData?.imageProxyArgs,
   })
+  const thumbnailImg = thumbnailImgResult?.url
+  // Use the resolved W/H ratio from image-proxy; fall back to the standard card ratio while loading.
+  const aspectRatio =
+    thumbnailImgResult?.aspectRatio ?? displayData?.aspectRatio ?? CARD_ASPECT_RATIO
 
-  const finalWidth = width ?? (height !== undefined ? height * CARD_ASPECT_RATIO : THUMBNAIL_WIDTH)
-  const finalHeight = height ?? (width !== undefined ? width / CARD_ASPECT_RATIO : THUMBNAIL_HEIGHT)
+  const finalWidth = width ?? (height !== undefined ? height * aspectRatio : THUMBNAIL_WIDTH)
+  const finalHeight = height ?? (width !== undefined ? width / aspectRatio : THUMBNAIL_HEIGHT)
 
   return (
     <LiquidGlassCard
       variant="primary"
-      className="p-0 aspect-[5/7] flex items-center justify-center overflow-hidden"
+      className="p-0 flex items-center justify-center overflow-hidden"
       style={[
         {
           width: finalWidth,
           height: finalHeight,
-          aspectRatio: CARD_ASPECT_RATIO,
+          aspectRatio,
         },
         cardContainerStyle,
       ]}
       {...imageProps}
     >
       <LoadingImagePlaceholder
+        key={thumbnailImg}
         source={{
           uri: thumbnailImg,
-          cacheKey: `${displayData?.imageProxyArgs.imageId || displayData?.imageProxyArgs.cardId}-thumb`,
+          cacheKey: `${displayData?.imageProxyArgs.queryHash || displayData?.imageProxyArgs.imageId || displayData?.imageProxyArgs.cardId}-thumb`,
           width: finalWidth,
           height: finalHeight,
         }}
         width={finalWidth}
         height={finalHeight}
-        contentFit="cover"
+        contentFit="fill"
         isLoading={isLoading || isImageLoading}
       />
     </LiquidGlassCard>

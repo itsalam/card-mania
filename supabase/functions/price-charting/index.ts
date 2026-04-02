@@ -1,4 +1,12 @@
-import { BlendedSearchResultItem, Card, PriceChartingEntry, SearchResultItem } from '@types'
+import { fetchCardHedgeResults } from '@cardhedge'
+import { getEbayToken, searchEbayItems } from '@ebay-auth'
+import {
+  BlendedSearchResultItem,
+  CardHedgeCard,
+  EbayItemSummary,
+  PriceChartingEntry,
+  SearchResultItem,
+} from '@types'
 import {
   buildSerpQuery,
   createSupabaseServiceClient,
@@ -14,6 +22,18 @@ const supabase = createSupabaseServiceClient()
 const HOT_THRESHOLD = Number(Deno.env.get('IMAGE_HOT_THRESHOLD') ?? '20')
 const COOL_OFF_MS = Number(Deno.env.get('IMAGE_COOL_OFF_MS') ?? `${24 * 60 * 60 * 1000}`)
 const PRICECHARTING_CACHE_TTL = Number(Deno.env.get('PRICECHARTING_CACHE_TTL') ?? '300')
+const EBAY_CACHE_TTL = Number(Deno.env.get('EBAY_CACHE_TTL') ?? String(PRICECHARTING_CACHE_TTL))
+const CARDHEDGE_CACHE_TTL = Number(
+  Deno.env.get('CARDHEDGE_CACHE_TTL') ?? String(PRICECHARTING_CACHE_TTL)
+)
+
+// Vendor priority: lower number = higher trust. Exposed in result.reason.vendor_priority.
+const VENDOR_PRIORITY = {
+  local: 0,
+  cardhedge: Number(Deno.env.get('CARDHEDGE_VENDOR_PRIORITY') ?? '1'),
+  pricecharting: Number(Deno.env.get('PRICECHARTING_VENDOR_PRIORITY') ?? '2'),
+  ebay: Number(Deno.env.get('EBAY_VENDOR_PRIORITY') ?? '3'),
+} as const
 
 const provider = 'pricecharting'
 
@@ -109,6 +129,18 @@ Deno.serve(async (req) => {
   const SCORE_THRESHOLD = Number(Deno.env.get('SCORE_THRESHOLD') ?? '0.35')
   const { supa, srole } = fetchGlobalVars()
 
+  // eBay is optional — gracefully disabled when keys are absent
+  const ebayBase = Deno.env.get('EBAY_API_BASE') ?? ''
+  const ebayAppId = Deno.env.get('EBAY_APP_ID') ?? ''
+  const ebayCertId = Deno.env.get('EBAY_CERT_ID') ?? ''
+  const ebayMarketplace = Deno.env.get('EBAY_MARKETPLACE_ID') ?? 'EBAY_US'
+  const ebayEnabled = Boolean(ebayBase && ebayAppId && ebayCertId)
+
+  // CardHedge is optional — gracefully disabled when keys are absent
+  const cardhedgeBase = Deno.env.get('CARDHEDGE_API_BASE') ?? ''
+  const cardhedgeKey = Deno.env.get('CARDHEDGE_API_KEY') ?? ''
+  const cardhedgeEnabled = Boolean(cardhedgeBase && cardhedgeKey)
+
   if (!pcBase || !pcKey || !supa || !srole) {
     return json({ error: 'Missing environment variables' }, { status: 500 })
   }
@@ -123,10 +155,18 @@ Deno.serve(async (req) => {
   // Check cache
   let vendorResults: SearchResultItem[] = []
   let blendedResults: SearchResultItem[] = []
+  let ebayResults: SearchResultItem[] = []
+  let cardhedgeResults: SearchResultItem[] = []
   let vendorCacheHit = false
   let blendedCacheHit = false
+  let ebayCacheHit = false
+  let cardhedgeCacheHit = false
   let raw
   let provider_query_key
+  let ebay_provider_query_key: string | undefined
+  let cardhedge_provider_query_key: string | undefined
+  let ebayPreknownHints: Map<string, { url: string; norm: string }> = new Map()
+  let cardhedgePreknownHints: Map<string, { url: string; norm: string }> = new Map()
   if (!skipCache) {
     //Check blended Cache
     queryHash = await queryHashPromise
@@ -139,6 +179,20 @@ Deno.serve(async (req) => {
       vendorCacheHit = providerCache.cacheHit
       vendorResults = providerCache.vendorResults
       provider_query_key = providerCache.provider_query_key
+    }
+    if (ebayEnabled && !blendedCacheHit) {
+      const ebayCache = await fetchEbayProviderCache(supa, srole, queryHash)
+      ebayCacheHit = ebayCache.cacheHit
+      ebayResults = ebayCache.results
+      ebay_provider_query_key = ebayCache.provider_query_key
+      ebayPreknownHints = ebayCache.preknownHints
+    }
+    if (cardhedgeEnabled && !blendedCacheHit) {
+      const cardhedgeCache = await fetchCardHedgeProviderCache(supa, srole, queryHash)
+      cardhedgeCacheHit = cardhedgeCache.cacheHit
+      cardhedgeResults = cardhedgeCache.results
+      cardhedge_provider_query_key = cardhedgeCache.provider_query_key
+      cardhedgePreknownHints = cardhedgeCache.preknownHints
     }
   }
 
@@ -153,6 +207,33 @@ Deno.serve(async (req) => {
           vendorResults = results.vendorResults
         }
       )
+    }
+    let ebayFetchPromise: Promise<void> | undefined
+    if (ebayEnabled && !ebayCacheHit && q) {
+      ebayFetchPromise = fetchFromEbay(
+        {
+          base: ebayBase,
+          appId: ebayAppId,
+          certId: ebayCertId,
+          marketplace: ebayMarketplace,
+        },
+        q,
+        Number(limit)
+      )
+        .then((res) => {
+          ebayResults = res.results
+          ebayPreknownHints = res.preknownHints
+        })
+        .catch((err) => console.error('eBay fetch error', err))
+    }
+    let cardhedgeFetchPromise: Promise<void> | undefined
+    if (cardhedgeEnabled && !cardhedgeCacheHit && q) {
+      cardhedgeFetchPromise = fetchFromCardHedge(cardhedgeBase, cardhedgeKey, q, Number(limit))
+        .then((res) => {
+          cardhedgeResults = res.results
+          cardhedgePreknownHints = res.preknownHints
+        })
+        .catch((err) => console.error('CardHedge fetch error', err))
     }
     const qNorm = normalize(q ?? '')
     let localRows: BlendedSearchResultItem[] = []
@@ -170,28 +251,73 @@ Deno.serve(async (req) => {
         localRows = json
       })
 
-    await Promise.all([providerCachePromise, rpcBlendedPromise])
+    await Promise.all([
+      providerCachePromise,
+      ebayFetchPromise,
+      cardhedgeFetchPromise,
+      rpcBlendedPromise,
+    ])
     if (localRows.length && localRows[0].score >= SCORE_THRESHOLD) {
-      blendedResults = await Promise.all(localRows.map(mapLocalToResult))
-    } else {
+      blendedResults = (await Promise.all(localRows.map(mapLocalToResult))).map((v) => ({
+        ...v,
+        reason: {
+          ...(v.reason ?? {}),
+          vendor: 'local',
+          vendor_priority: VENDOR_PRIORITY.local,
+        },
+      }))
+    } else if (cardhedgeResults.length) {
+      const n = cardhedgeResults.length
+      blendedResults = cardhedgeResults.map((v, i) => ({
+        ...v,
+        snippet: v.snippet ?? `${v.card.set_name} • ${v.card.name}`,
+        score: 0.25 + (n - i) * 0.01,
+        source: 'vendor',
+        reason: {
+          ...(v.reason ?? {}),
+          policy: 'cardhedge_fallback',
+          vendor: 'cardhedge',
+          vendor_priority: VENDOR_PRIORITY.cardhedge,
+          vendor_rank: i + 1,
+          formula: 'score = 0.25 + 0.01*(N - rank)',
+        },
+      }))
+    } else if (vendorResults.length) {
       const n = vendorResults.length
-
       blendedResults = vendorResults.map((v, i) => ({
         ...v,
-        // keep existing snippet if you set it earlier; otherwise build one
         snippet: v.snippet ?? `${v.card.set_name} • ${v.card.name}`,
         score: 0.2 + (n - i) * 0.01,
         source: 'vendor',
         reason: {
           ...(v.reason ?? {}),
           policy: 'vendor_fallback',
+          vendor: 'pricecharting',
+          vendor_priority: VENDOR_PRIORITY.pricecharting,
           vendor_rank: i + 1,
-          formula: 'score = 0.2 + 0.01*(N - rank)', // helpful breadcrumb
+          formula: 'score = 0.2 + 0.01*(N - rank)',
+        },
+      }))
+    } else if (ebayResults.length) {
+      // Final fallback: use eBay listings when local DB + CardHedge + PriceCharting return nothing useful
+      const n = ebayResults.length
+      blendedResults = ebayResults.map((v, i) => ({
+        ...v,
+        score: 0.15 + (n - i) * 0.01,
+        reason: {
+          ...(v.reason ?? {}),
+          policy: 'ebay_fallback',
+          vendor: 'ebay',
+          vendor_priority: VENDOR_PRIORITY.ebay,
+          vendor_rank: i + 1,
+          formula: 'score = 0.15 + 0.01*(N - rank)',
         },
       }))
     }
   }
-  const withHints = await attachImageHints(blendedResults, supa, srole)
+  // Merge all preknown hints; CardHedge hints take precedence over eBay for same hash
+  const mergedPreknownHints = new Map([...ebayPreknownHints, ...cardhedgePreknownHints])
+  const withHints = await attachImageHints(blendedResults, supa, srole, mergedPreknownHints)
 
   withHints.sort((a, b) => (b.score ?? 0) - (a.score ?? 0))
   const finalResults = withHints.map((e, i) => ({ ...e, rank: i + 1 })) // rank added at the very end
@@ -221,6 +347,15 @@ Deno.serve(async (req) => {
       provider_query_key = provider_query_key ?? (await sha256HexStr(`${provider}:${queryHash}`))
       upsertProviderCache(supa, srole, provider_query_key, raw, vendorResults)
     }
+    if (ebayEnabled && !ebayCacheHit && ebayResults.length) {
+      ebay_provider_query_key = ebay_provider_query_key ?? (await sha256HexStr(`ebay:${queryHash}`))
+      upsertEbayProviderCache(supa, srole, ebay_provider_query_key, ebayResults)
+    }
+    if (cardhedgeEnabled && !cardhedgeCacheHit && cardhedgeResults.length) {
+      cardhedge_provider_query_key =
+        cardhedge_provider_query_key ?? (await sha256HexStr(`cardhedge:${queryHash}`))
+      upsertCardHedgeProviderCache(supa, srole, cardhedge_provider_query_key, cardhedgeResults)
+    }
     if (!blendedCacheHit) {
       upsertBlendedCache(supa, srole, queryHash, payloadStr, etag)
     }
@@ -236,66 +371,136 @@ Deno.serve(async (req) => {
   })
 })
 
-async function getCandidateTopUrlOrPrewarm(card: Card, supa: string, srole: string) {
-  const { name, set_name, release_date } = card
-  const q = buildSerpQuery(
-    {
-      name: name,
-      set: set_name,
-      year: release_date ? parseInt(release_date) : undefined,
-    },
-    { includeNegatives: true, extraContext: ['front'] }
-  )
-  const qNorm = normalize(q)
-  const qHash = await sha256HexStr(qNorm)
-
+/** Fetch committed front images for a batch of real card UUIDs (local results only). */
+async function fetchBoundImages(
+  cardIds: string[],
+  supa: string,
+  srole: string
+): Promise<Record<string, string>> {
+  if (!cardIds.length) return {}
+  const idsParam = cardIds.map((id) => `"${id}"`).join(',')
   const r = await fetch(
-    `${supa}/rest/v1/image_search_cache?select=top_url,updated_at,ttl_seconds&query_hash=eq.${qHash}`,
+    `${supa}/rest/v1/card_images?card_id=in.(${idsParam})&kind=eq.front&status=eq.READY` +
+      `&select=card_id,image_cache(storage_path)&limit=100`,
     { headers: { apikey: srole, authorization: `Bearer ${srole}` } }
   )
-  const [row] = await r.json()
-  if (row?.top_url) {
-    return { url: row.top_url as string, qHash }
+  const rows = (await r.json()) as Array<{
+    card_id: string
+    image_cache: { storage_path: string } | null
+  }>
+  const map: Record<string, string> = {}
+  for (const row of rows) {
+    const sp = row.image_cache?.storage_path
+    if (sp) {
+      // Build direct Supabase image-transform URL (no proxy hop needed)
+      const w = 320
+      const h = Math.round(w * (88 / 63)) // trading-card AR
+      map[row.card_id] =
+        `${supa}/storage/v1/render/image/public/images/${sp}` +
+        `?width=${w}&height=${h}&resize=cover&quality=80`
+    }
   }
+  return map
+}
 
-  // Prewarm in background; don't await
-  EdgeRuntime.waitUntil(
-    fetch(`${supa}/functions/v1/image-search?q=${encodeURIComponent(q)}`, {
-      headers: { authorization: `Bearer ${srole}`, apikey: srole },
-    }).catch((e) => {
-      console.error('Image search error', e)
-    })
+/** Batch-fetch image_search_cache rows for a set of query hashes. */
+async function fetchImageSearchCacheBatch(
+  hashes: string[],
+  supa: string,
+  srole: string
+): Promise<Record<string, string>> {
+  if (!hashes.length) return {}
+  const hashesParam = hashes.map((h) => `"${h}"`).join(',')
+  const r = await fetch(
+    `${supa}/rest/v1/image_search_cache?query_hash=in.(${hashesParam})` +
+      `&select=query_hash,top_url,updated_at,ttl_seconds&limit=200`,
+    { headers: { apikey: srole, authorization: `Bearer ${srole}` } }
   )
-  return { url: null, qHash }
+  const rows = (await r.json()) as Array<{
+    query_hash: string
+    top_url: string | null
+    updated_at: string
+    ttl_seconds: number
+  }>
+  const map: Record<string, string> = {}
+  for (const row of rows) {
+    const fresh = Date.now() - new Date(row.updated_at).getTime() < row.ttl_seconds * 1000
+    if (fresh && row.top_url) map[row.query_hash] = row.top_url
+  }
+  return map
 }
 
 async function attachImageHints(
   entries: SearchResultItem[],
   supa: string,
-  srole: string
+  srole: string,
+  preknownHints: Map<string, { url: string; norm: string }> = new Map()
 ): Promise<SearchResultItem[]> {
-  const augmented = await Promise.all(
-    entries.map(async (e) => {
-      // If/when you can resolve bound images via card_images→image_cache, prefer those here.
-      // For now, return candidate top_url (or null) and prewarm if needed.
-      const { url, qHash } = await getCandidateTopUrlOrPrewarm(e.card, supa, srole)
-      const proxy = `${supa}/functions/v1/image-proxy?query_hash=${qHash}&variant=thumb&shape=card`
+  // 1. Batch-check card_images for local results that already have committed front images
+  const localIds = entries.filter((e) => e.source === 'local').map((e) => e.id)
+  const boundMap = await fetchBoundImages(localIds, supa, srole)
 
-      return {
-        ...e,
-        card: {
-          ...e.card,
-          image: {
-            ...e.card.image,
-            kind: 'candidate',
-            url: proxy,
-            query_hash: qHash,
-          },
-        },
+  // 2. Compute query hash for every entry (all in parallel).
+  //    eBay entries already carry a query_hash from normalization — reuse it directly
+  //    instead of building a SerpAPI query.
+  const withHashes = await Promise.all(
+    entries.map(async (e) => {
+      if (e.card.image?.query_hash) {
+        // Pre-hashed by vendor normalizer (e.g. eBay) — no SerpAPI query needed
+        return { e, q: null as string | null, qHash: e.card.image.query_hash }
       }
+      const q = buildSerpQuery(
+        {
+          name: e.card.name,
+          set: e.card.set_name,
+          year: e.card.release_date ? parseInt(e.card.release_date) : undefined,
+        },
+        { includeNegatives: true, extraContext: ['front'] }
+      )
+      const qHash = await sha256HexStr(normalize(q))
+      return { e, q, qHash }
     })
   )
-  return augmented as SearchResultItem[]
+
+  // 3. Batch-fetch image_search_cache for all hashes, then merge preknown hints
+  const allHashes = withHashes.map((x) => x.qHash)
+  const candidateMap = await fetchImageSearchCacheBatch(allHashes, supa, srole)
+  for (const [hash, { url }] of preknownHints) {
+    candidateMap[hash] = url // preknown wins
+  }
+
+  // 4a. Prewarm SerpAPI cache misses in the background (PC/local results only)
+  for (const { e, q, qHash } of withHashes) {
+    if (!q || boundMap[e.id] || candidateMap[qHash]) continue
+    EdgeRuntime.waitUntil(
+      fetch(`${supa}/functions/v1/image-search?q=${encodeURIComponent(q)}`, {
+        headers: { authorization: `Bearer ${srole}`, apikey: srole },
+      }).catch((err) => console.error('Image search prewarm error', err))
+    )
+  }
+
+  // 4b. Persist new preknown hints into image_search_cache (fire-and-forget)
+  if (preknownHints.size) {
+    upsertImageSearchCacheHints(preknownHints, supa, srole)
+  }
+
+  // 5. Assemble results — prefer bound CDN URL, then direct preknown URL, then proxy
+  return withHashes.map(({ e, qHash }) => {
+    const boundUrl = e.source === 'local' ? boundMap[e.id] : undefined
+    if (boundUrl) {
+      return {
+        ...e,
+        card: { ...e.card, image: { kind: 'bound', url: boundUrl } },
+      }
+    }
+    const directUrl = candidateMap[qHash] // set for CardHedge/eBay preknown hints
+    const url =
+      directUrl ?? `${supa}/functions/v1/image-proxy?query_hash=${qHash}&variant=thumb&shape=card`
+    return {
+      ...e,
+      card: { ...e.card, image: { kind: 'candidate', url, query_hash: qHash } },
+    }
+  }) as SearchResultItem[]
 }
 
 function handleCommitImages(
@@ -343,31 +548,6 @@ function handleCommitImages(
   EdgeRuntime.waitUntil(promises)
 }
 
-async function fetchInternalIds(
-  provider: string,
-  vendorIds: string[],
-  supa: string,
-  srole: string
-) {
-  const resolvedIds: Record<string, string | null> = {}
-
-  if (vendorIds.length) {
-    const resp = await fetch(`${supa}/rest/v1/rpc/resolve_external_refs`, {
-      method: 'POST',
-      headers: {
-        'content-type': 'application/json',
-        apikey: srole,
-        authorization: `Bearer ${srole}`,
-      },
-      body: JSON.stringify({ p_provider: provider, p_ids: vendorIds }),
-    })
-    const rows = (await resp.json()) as Array<{ external_id: string; card_id: string | null }>
-    for (const r of rows) resolvedIds[r.external_id] = r.card_id
-  }
-
-  return resolvedIds
-}
-
 async function isHot(qRaw: string, queryNorm: string, queryHash: string) {
   const bump = await supabase.rpc('bump_search_query', {
     p_query_raw: qRaw,
@@ -407,7 +587,8 @@ const fetchBlendedCache = async (supa: string, srole: string, queryHash: string)
 
   if (row && fresh) {
     cacheHit = true
-    vendorResults = JSON.parse(row.payload) as SearchResultItem[] // <-- IMPORTANT: unwrap the data payload
+    const parsed = JSON.parse(row.payload) as { results?: SearchResultItem[] } | SearchResultItem[]
+    vendorResults = Array.isArray(parsed) ? parsed : (parsed.results ?? [])
   }
 
   return { cacheHit, vendorResults }
@@ -465,7 +646,7 @@ const fetchFromProvider = async (
     headers: { accept: 'application/json' },
   })
   if (!vres.ok) {
-    console.debug({ vendorUrl, vres })
+    console.error('Vendor fetch failed', { vendorUrl, status: vres.status })
     throw new Error(`Vendor ${vres.status}, ${vres.statusText}`)
   }
   const raw = await vres.json()
@@ -530,5 +711,312 @@ const upsertBlendedCache = (
         expires_at: new Date(Date.now() + PRICECHARTING_CACHE_TTL * 1000).toISOString(),
       }),
     })
+  )
+}
+
+// ─── eBay helpers ────────────────────────────────────────────────────────────
+
+type EbayConfig = {
+  base: string
+  appId: string
+  certId: string
+  marketplace: string
+}
+
+/** Normalize eBay items into SearchResultItems + build a preknownHints map for image attachment. */
+async function convertEbayItems(items: EbayItemSummary[]): Promise<{
+  results: SearchResultItem[]
+  preknownHints: Map<string, { url: string; norm: string }>
+}> {
+  const preknownHints = new Map<string, { url: string; norm: string }>()
+
+  const results = await Promise.all(
+    items.map(async (item) => {
+      const cardId = await vendorUUID('ebay', item.itemId)
+      const price = item.price ? parseFloat(item.price.value) : null
+
+      let imageHint: SearchResultItem['card']['image']
+      const imageUrl = item.image?.imageUrl
+      if (imageUrl) {
+        const qHash = await sha256HexStr(`ebay:${item.itemId}`)
+        preknownHints.set(qHash, {
+          url: imageUrl,
+          norm: `ebay:${item.itemId}`,
+        })
+        imageHint = { kind: 'candidate', url: imageUrl, query_hash: qHash }
+      }
+
+      return {
+        id: item.itemId,
+        card: {
+          id: cardId,
+          name: item.title,
+          set_name: item.categories?.[0]?.categoryName ?? 'Trading Cards',
+          latest_price: price,
+          grades_prices: (price !== null ? { ungraded: price } : {}) as Record<string, number>,
+          genre: 'trading_card',
+          image: imageHint,
+        },
+        score: 0,
+        snippet: item.title,
+        source: 'vendor' as const,
+      }
+    })
+  )
+
+  return { results, preknownHints }
+}
+
+/** Fetch eBay listings and return normalized results + image hints. */
+async function fetchFromEbay(
+  cfg: EbayConfig,
+  q: string,
+  limit: number
+): Promise<{
+  results: SearchResultItem[]
+  preknownHints: Map<string, { url: string; norm: string }>
+}> {
+  const token = await getEbayToken(cfg.appId, cfg.certId, cfg.base)
+  const items = await searchEbayItems(q, token, cfg.base, cfg.marketplace, limit)
+  return convertEbayItems(items)
+}
+
+/** Check provider_search_cache for a cached eBay response. */
+async function fetchEbayProviderCache(supa: string, srole: string, queryHash: string) {
+  let cacheHit = false
+  let results: SearchResultItem[] = []
+  const preknownHints = new Map<string, { url: string; norm: string }>()
+  const provider_query_key = await sha256HexStr(`ebay:${queryHash}`)
+  const cacheUrl =
+    `${supa}/rest/v1/provider_search_cache?provider_query_key=eq.${encodeURIComponent(
+      provider_query_key
+    )}` + `&provider=eq.ebay&select=normalized_items,expires_at`
+  const check = await fetch(cacheUrl, {
+    headers: { apikey: srole, authorization: `Bearer ${srole}` },
+  })
+  const rows = (await check?.json()) as
+    | Array<{ normalized_items: string; expires_at: string }>
+    | undefined
+  const row = rows?.[0]
+  const fresh = row && new Date(row.expires_at).getTime() > Date.now()
+  if (check.ok && row && fresh) {
+    cacheHit = true
+    results = JSON.parse(row.normalized_items) as SearchResultItem[]
+    // Rebuild preknownHints from stored image data (raw eBay URLs are in card.image.url)
+    for (const r of results) {
+      const img = r.card.image
+      if (img?.query_hash && img?.url) {
+        preknownHints.set(img.query_hash, {
+          url: img.url,
+          norm: `ebay:${r.id}`,
+        })
+      }
+    }
+  }
+  return { cacheHit, results, preknownHints, provider_query_key }
+}
+
+/** Persist eBay results into provider_search_cache (fire-and-forget). */
+function upsertEbayProviderCache(
+  supa: string,
+  srole: string,
+  provider_query_key: string,
+  results: SearchResultItem[]
+) {
+  EdgeRuntime.waitUntil(
+    fetch(`${supa}/rest/v1/provider_search_cache`, {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        apikey: srole,
+        authorization: `Bearer ${srole}`,
+        prefer: 'resolution=merge-duplicates',
+      },
+      body: JSON.stringify({
+        provider: 'ebay',
+        provider_query_key,
+        normalized_items: JSON.stringify(results),
+        fetched_at: new Date().toISOString(),
+        expires_at: new Date(Date.now() + EBAY_CACHE_TTL * 1000).toISOString(),
+      }),
+    }).catch((err) => console.error('eBay provider cache upsert error', err))
+  )
+}
+
+// ─── CardHedge helpers ───────────────────────────────────────────────────────
+
+/** Normalize CardHedge cards into SearchResultItems + build a preknownHints map. */
+async function convertCardHedgeItems(cards: CardHedgeCard[]): Promise<{
+  results: SearchResultItem[]
+  preknownHints: Map<string, { url: string; norm: string }>
+}> {
+  const preknownHints = new Map<string, { url: string; norm: string }>()
+
+  const results = await Promise.all(
+    cards.map(async (card) => {
+      const cardId = await vendorUUID('cardhedge', card.card_id)
+
+      // Build grades_prices map from the prices array
+      const grades_prices: Record<string, number> = {}
+      let latest_price: number | null = null
+      if (card.prices) {
+        for (const { grade, price } of card.prices) {
+          const raw_key = grade.toLowerCase().replace(/\s+/g, '_')
+          const key = raw_key === 'raw' ? 'ungraded' : raw_key
+          const val = parseFloat(price)
+          if (!isNaN(val)) grades_prices[key] = val
+        }
+        // Use the Raw grade price as latest_price, or the lowest available
+        const rawEntry = card.prices.find((p) => p.grade.toLowerCase() === 'raw')
+        if (rawEntry) {
+          latest_price = parseFloat(rawEntry.price) || null
+        } else if (card.prices.length) {
+          const vals = Object.values(grades_prices).filter((v) => v > 0)
+          latest_price = vals.length ? Math.min(...vals) : null
+        }
+      }
+
+      let imageHint: SearchResultItem['card']['image']
+      if (card.image) {
+        // Protocol-relative URLs (//s3.amazonaws.com/...) → prefix with https:
+        const imageUrl = card.image.startsWith('//') ? `https:${card.image}` : card.image
+        const qHash = await sha256HexStr(`cardhedge:${card.card_id}`)
+        preknownHints.set(qHash, {
+          url: imageUrl,
+          norm: `cardhedge:${card.card_id}`,
+        })
+        imageHint = { kind: 'candidate', url: imageUrl, query_hash: qHash }
+      }
+
+      return {
+        id: card.card_id,
+        card: {
+          id: cardId,
+          name: card.description,
+          set_name: card.set,
+          latest_price,
+          grades_prices,
+          genre: card.category ?? 'trading_card',
+          image: imageHint,
+        },
+        score: 0,
+        snippet: `${card.set} • ${card.description}`,
+        source: 'vendor' as const,
+        reason: {
+          sales_7day: card['7 Day Sales'],
+          sales_30day: card['30 Day Sales'],
+          gain: card.gain,
+          rookie: card.rookie,
+          variant: card.variant,
+          player: card.player,
+        },
+      }
+    })
+  )
+
+  return { results, preknownHints }
+}
+
+/** Fetch CardHedge listings and return normalized results + image hints. */
+async function fetchFromCardHedge(
+  apiBase: string,
+  apiKey: string,
+  q: string,
+  limit: number
+): Promise<{
+  results: SearchResultItem[]
+  preknownHints: Map<string, { url: string; norm: string }>
+}> {
+  const cards = await fetchCardHedgeResults(q, apiKey, apiBase, limit)
+  const sportsCards = cards.filter((c) => c.category_group === 'Sports Cards')
+  return convertCardHedgeItems(sportsCards)
+}
+
+/** Check provider_search_cache for a cached CardHedge response. */
+async function fetchCardHedgeProviderCache(supa: string, srole: string, queryHash: string) {
+  let cacheHit = false
+  let results: SearchResultItem[] = []
+  const preknownHints = new Map<string, { url: string; norm: string }>()
+  const provider_query_key = await sha256HexStr(`cardhedge:${queryHash}`)
+  const cacheUrl =
+    `${supa}/rest/v1/provider_search_cache?provider_query_key=eq.${encodeURIComponent(
+      provider_query_key
+    )}` + `&provider=eq.cardhedge&select=normalized_items,expires_at`
+  const check = await fetch(cacheUrl, {
+    headers: { apikey: srole, authorization: `Bearer ${srole}` },
+  })
+  const rows = (await check?.json()) as
+    | Array<{ normalized_items: string; expires_at: string }>
+    | undefined
+  const row = rows?.[0]
+  const fresh = row && new Date(row.expires_at).getTime() > Date.now()
+  if (check.ok && row && fresh) {
+    cacheHit = true
+    results = JSON.parse(row.normalized_items) as SearchResultItem[]
+    for (const r of results) {
+      const img = r.card.image
+      if (img?.query_hash && img?.url) {
+        preknownHints.set(img.query_hash, {
+          url: img.url,
+          norm: `cardhedge:${r.id}`,
+        })
+      }
+    }
+  }
+  return { cacheHit, results, preknownHints, provider_query_key }
+}
+
+/** Persist CardHedge results into provider_search_cache (fire-and-forget). */
+function upsertCardHedgeProviderCache(
+  supa: string,
+  srole: string,
+  provider_query_key: string,
+  results: SearchResultItem[]
+) {
+  EdgeRuntime.waitUntil(
+    fetch(`${supa}/rest/v1/provider_search_cache`, {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        apikey: srole,
+        authorization: `Bearer ${srole}`,
+        prefer: 'resolution=merge-duplicates',
+      },
+      body: JSON.stringify({
+        provider: 'cardhedge',
+        provider_query_key,
+        normalized_items: JSON.stringify(results),
+        fetched_at: new Date().toISOString(),
+        expires_at: new Date(Date.now() + CARDHEDGE_CACHE_TTL * 1000).toISOString(),
+      }),
+    }).catch((err) => console.error('CardHedge provider cache upsert error', err))
+  )
+}
+
+/** Persist preknown eBay image hints into image_search_cache (fire-and-forget). */
+function upsertImageSearchCacheHints(
+  hints: Map<string, { url: string; norm: string }>,
+  supa: string,
+  srole: string
+) {
+  const rows = [...hints.entries()].map(([query_hash, { url: top_url, norm: query_norm }]) => ({
+    query_hash,
+    query_norm,
+    candidates: [{ id: query_hash, sourceUrl: top_url }],
+    top_url,
+    ttl_seconds: 7 * 24 * 3600,
+    updated_at: new Date().toISOString(),
+  }))
+  EdgeRuntime.waitUntil(
+    fetch(`${supa}/rest/v1/image_search_cache`, {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        apikey: srole,
+        authorization: `Bearer ${srole}`,
+        prefer: 'resolution=merge-duplicates',
+      },
+      body: JSON.stringify(rows),
+    }).catch((err) => console.error('image_search_cache hint upsert error', err))
   )
 }

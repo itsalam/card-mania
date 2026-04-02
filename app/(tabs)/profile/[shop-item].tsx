@@ -21,7 +21,6 @@ export default function ShopItemRoute() {
     collectionId,
     ['shop-item']: itemId,
   } = route.params as CardRouteParams
-  console.log({ route, params: route.params })
   const fromPos = JSON.parse(from) as { x: number; y: number; width: number; height: number }
 
   return (
