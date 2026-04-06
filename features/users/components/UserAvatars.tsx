@@ -1,4 +1,5 @@
 import { Avatar, AvatarFallback, AvatarFallbackText, AvatarImage } from '@/components/ui/avatar'
+import { Skeleton } from '@/components/ui/skeleton'
 import { SkeletonText } from '@/components/ui/text'
 import { Text } from '@/components/ui/text/base-text'
 import React, { ComponentProps, ReactNode, useMemo, useState } from 'react'
@@ -19,8 +20,8 @@ export const UserContact = ({ user, size = 'md', children }: UserContactProps) =
     Exclude<typeof size, null>,
     ComponentProps<typeof Text>['variant']
   > = {
-    xl: 'h4',
-    '2xl': 'h3',
+    xl: 'h3',
+    '2xl': 'h2',
     lg: 'large',
     md: 'large',
     sm: 'default',
@@ -49,11 +50,12 @@ export const UserContact = ({ user, size = 'md', children }: UserContactProps) =
         <SkeletonText
           variant={size ? sizeToTextVar[size] : 'default'}
           style={{ color: Colors.$textDefault }}
+          loading={!Boolean(user)}
         >
           {user?.name}
         </SkeletonText>
-        <SkeletonText variant={'muted'} style={{ left: -2 }}>
-          {`@${user?.handle}`}
+        <SkeletonText variant={'muted'} loading={!Boolean(user)}>
+          {`${user?.handle}`}
         </SkeletonText>
         {children}
       </View>
@@ -62,21 +64,27 @@ export const UserContact = ({ user, size = 'md', children }: UserContactProps) =
 }
 
 export const UserAvatar = ({ user, size = 'md' }: UserContactProps) => {
-  const uri = useMemo(() => `https://picsum.photos/seed/${Math.random()}/200/200`, [])
+  const uri = useMemo(
+    () => (user ? `https://picsum.photos/seed/${Math.random()}/200/200` : undefined),
+    [user]
+  )
   const [imageLoaded, setImageLoaded] = useState(false)
+
   return (
     <Avatar size={size} alt={user?.name[0] ?? 'loading-avatar'}>
-      {!imageLoaded && (
+      {!imageLoaded && user ? (
         <AnimAvatarFallback exiting={FadeOut}>
           <AvatarFallbackText>{user?.name[0]}</AvatarFallbackText>
         </AnimAvatarFallback>
+      ) : (
+        <Skeleton style={{ width: '100%', height: '100%' }} />
       )}
       <AvatarImage
         source={{
           uri,
         }}
         onError={(e) => e.nativeEvent.error && setImageLoaded(false)}
-        onLoad={(e) => e.nativeEvent.source && setImageLoaded(true)}
+        onLoad={(e) => e.nativeEvent.source && user && setImageLoaded(true)}
       />
     </Avatar>
   )

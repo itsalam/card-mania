@@ -13,29 +13,43 @@ export function CardImage(props: {
   imageProps?: LiquidGlassCardProps & {
     ref?: React.Ref<React.ComponentRef<typeof LiquidGlassCard>>
   }
+  width?: number
+  height?: number
   cardContainerStyle?: StyleProp<ViewStyle>
 }) {
-  const { isLoading = false, cardContainerStyle, displayData, imageProps } = props
+  const { isLoading = false, cardContainerStyle, displayData, imageProps, height, width } = props
 
   const { data: thumbnailImg, isLoading: isImageLoading } = useImageProxy({
     variant: 'tiny',
     ...displayData?.imageProxyArgs,
   })
 
+  const finalWidth = width ?? (height !== undefined ? height * CARD_ASPECT_RATIO : THUMBNAIL_WIDTH)
+  const finalHeight = height ?? (width !== undefined ? width / CARD_ASPECT_RATIO : THUMBNAIL_HEIGHT)
+
   return (
     <LiquidGlassCard
       variant="primary"
       className="p-0 aspect-[5/7] flex items-center justify-center overflow-hidden"
-      style={[cardContainerStyle, { width: THUMBNAIL_WIDTH, aspectRatio: CARD_ASPECT_RATIO }]}
+      style={[
+        {
+          width: finalWidth,
+          height: finalHeight,
+          aspectRatio: CARD_ASPECT_RATIO,
+        },
+        cardContainerStyle,
+      ]}
       {...imageProps}
     >
       <LoadingImagePlaceholder
         source={{
           uri: thumbnailImg,
           cacheKey: `${displayData?.imageProxyArgs.imageId || displayData?.imageProxyArgs.cardId}-thumb`,
-          width: THUMBNAIL_WIDTH,
-          height: THUMBNAIL_HEIGHT,
+          width: finalWidth,
+          height: finalHeight,
         }}
+        width={finalWidth}
+        height={finalHeight}
         contentFit="cover"
         isLoading={isLoading || isImageLoading}
       />

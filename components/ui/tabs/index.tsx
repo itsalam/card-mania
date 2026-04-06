@@ -4,7 +4,7 @@ import * as TabsPrimitive from '@rn-primitives/tabs'
 import { LucideIcon } from 'lucide-react-native'
 import { ReactNode } from 'react'
 import { Platform, StyleProp, TextProps, View, ViewStyle } from 'react-native'
-import { Colors } from 'react-native-ui-lib'
+import { BorderRadiuses, Colors } from 'react-native-ui-lib'
 
 function Tabs({
   className,
@@ -38,6 +38,7 @@ function TabsList({
 
 function TabsTrigger({
   className,
+  style,
   ...props
 }: TabsPrimitive.TriggerProps & React.RefAttributes<TabsPrimitive.TriggerRef>) {
   const { value } = TabsPrimitive.useRootContext()
@@ -56,18 +57,20 @@ function TabsTrigger({
             web: 'focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:outline-ring inline-flex cursor-default whitespace-nowrap transition-[color,box-shadow] focus-visible:outline-1 focus-visible:ring-[3px] disabled:pointer-events-none [&_svg]:pointer-events-none [&_svg]:shrink-0',
           }),
           props.disabled && 'opacity-50',
-          props.value === value && 'bg-background dark:border-foreground/10 dark:bg-input/30',
+          props.value === value && 'dark:border-foreground/10 dark:bg-input/30',
           className
         )}
-        style={
+        style={[
+          { borderRadius: BorderRadiuses.br50 },
           props.value === value
             ? {
                 backgroundColor: Colors.$backgroundElevatedLight,
               }
             : {
                 backgroundColor: Colors.$backgroundElevated,
-              }
-        }
+              },
+          style,
+        ]}
         {...props}
       />
     </TextClassContext.Provider>

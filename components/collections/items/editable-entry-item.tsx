@@ -232,6 +232,8 @@ export const CollectionItemEntry = ({
             {
               // @ts-ignore
               getGradingDisplayString(collectionItem as CollectionItemRow)
+                .slice(0, 2)
+                .join(' ')
             }
           </SkeletonText>
         </View>

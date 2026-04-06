@@ -1,4 +1,12 @@
-export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[]
+export type Json =
+  | string
+  | number
+  | boolean
+  | null
+  | {
+      [key: string]: Json | undefined
+    }
+  | Json[]
 
 export type Database = {
   // Allows to automatically instantiate createClient with right options
@@ -769,6 +777,129 @@ export type Database = {
           },
         ]
       }
+      notifications: {
+        Row: {
+          action_url: string | null
+          body: string
+          category: string
+          created_at: string
+          dismissed_at: string | null
+          id: string
+          image_url: string | null
+          payload: Json
+          priority: string
+          read_at: string | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          action_url?: string | null
+          body: string
+          category: string
+          created_at?: string
+          dismissed_at?: string | null
+          id?: string
+          image_url?: string | null
+          payload?: Json
+          priority?: string
+          read_at?: string | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Update: {
+          action_url?: string | null
+          body?: string
+          category?: string
+          created_at?: string
+          dismissed_at?: string | null
+          id?: string
+          image_url?: string | null
+          payload?: Json
+          priority?: string
+          read_at?: string | null
+          title?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      offer_items: {
+        Row: {
+          card_snapshot: Json | null
+          collection_item_id: string
+          id: string
+          offer_id: string
+          offered_price_per_unit: number
+          quantity: number
+        }
+        Insert: {
+          card_snapshot?: Json | null
+          collection_item_id: string
+          id?: string
+          offer_id: string
+          offered_price_per_unit: number
+          quantity?: number
+        }
+        Update: {
+          card_snapshot?: Json | null
+          collection_item_id?: string
+          id?: string
+          offer_id?: string
+          offered_price_per_unit?: number
+          quantity?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'offer_items_collection_item_id_fkey'
+            columns: ['collection_item_id']
+            isOneToOne: false
+            referencedRelation: 'collection_items'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'offer_items_offer_id_fkey'
+            columns: ['offer_id']
+            isOneToOne: false
+            referencedRelation: 'offers'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      offers: {
+        Row: {
+          buyer_id: string
+          buyer_note: string | null
+          created_at: string | null
+          id: string
+          seller_id: string
+          status: string
+          total_amount: number
+          updated_at: string | null
+        }
+        Insert: {
+          buyer_id: string
+          buyer_note?: string | null
+          created_at?: string | null
+          id?: string
+          seller_id: string
+          status?: string
+          total_amount: number
+          updated_at?: string | null
+        }
+        Update: {
+          buyer_id?: string
+          buyer_note?: string | null
+          created_at?: string | null
+          id?: string
+          seller_id?: string
+          status?: string
+          total_amount?: number
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       order_items: {
         Row: {
           condition: string | null
@@ -1371,6 +1502,38 @@ export type Database = {
         }
         Relationships: []
       }
+      transactions: {
+        Row: {
+          created_at: string | null
+          id: string
+          offer_id: string
+          status: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          offer_id: string
+          status?: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          offer_id?: string
+          status?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'transactions_offer_id_fkey'
+            columns: ['offer_id']
+            isOneToOne: true
+            referencedRelation: 'offers'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       user_profile: {
         Row: {
           avatar_url: string | null
@@ -1812,6 +1975,16 @@ export type Database = {
           username: string
         }[]
       }
+      get_public_profiles: {
+        Args: { user_ids: string[] }
+        Returns: {
+          avatar_url: string
+          display_name: string
+          is_seller: boolean
+          user_id: string
+          username: string
+        }[]
+      }
       get_tag_categories: {
         Args: { tags: string[] }
         Returns: {
@@ -2086,12 +2259,3 @@ export type CompositeTypes<
   : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema['CompositeTypes']
     ? DefaultSchema['CompositeTypes'][PublicCompositeTypeNameOrOptions]
     : never
-
-export const Constants = {
-  public: {
-    Enums: {
-      item_kind: ['card'],
-      view_target: ['card', 'listing'],
-    },
-  },
-} as const

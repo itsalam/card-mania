@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { TabsContent } from '@/components/ui/tabs'
 import { GestureDetector } from 'react-native-gesture-handler'
 import Animated from 'react-native-reanimated'
+import { BorderRadiuses, Colors } from 'react-native-ui-lib'
 import { GestureBlockerProvider, useCollaspableHeader } from '../collection/ui'
 import { Body } from './components/body'
 import { ProfileHeader, SubHeader } from './components/profile-header'
@@ -51,20 +52,31 @@ function ProfilePageLayoutInner({ userId }: { userId?: string }) {
           </View>
         </Animated.View>
 
-        <ProfileTabList />
-        <GestureDetector gesture={composedGestures}>
-          <AnimatedScrollView
-            ref={scrollViewRef}
-            onLayout={onListLayout}
-            onContentSizeChange={onContentSizeChange}
-          >
-            {Object.keys(tabsRecords).map((tab) => (
-              <TabsContent key={tab} value={tab} className="flex-1">
-                {tabContent[tab as TabType]}
-              </TabsContent>
-            ))}
-          </AnimatedScrollView>
-        </GestureDetector>
+        <View style={{ paddingHorizontal: 6 }}>
+          <ProfileTabList />
+        </View>
+        <View
+          style={{
+            marginTop: 12,
+            borderTopLeftRadius: BorderRadiuses.br60,
+            borderTopEndRadius: BorderRadiuses.br60,
+            backgroundColor: Colors.$backgroundNeutralLight,
+          }}
+        >
+          <GestureDetector gesture={composedGestures}>
+            <AnimatedScrollView
+              ref={scrollViewRef}
+              onLayout={onListLayout}
+              onContentSizeChange={onContentSizeChange}
+            >
+              {Object.keys(tabsRecords).map((tab) => (
+                <TabsContent key={tab} value={tab} className="flex-1">
+                  {tabContent[tab as TabType]}
+                </TabsContent>
+              ))}
+            </AnimatedScrollView>
+          </GestureDetector>
+        </View>
       </Body>
     </View>
   )

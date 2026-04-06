@@ -1,52 +1,98 @@
-import React from 'react'
-import { ScrollView } from 'react-native'
+import React, { useState } from 'react'
+import { ScrollView, StyleProp, View, ViewStyle } from 'react-native'
 
 import { TabsLabel, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import MaskedView from '@react-native-masked-view/masked-view'
 import { LinearGradient } from 'expo-linear-gradient'
-import { Colors } from 'react-native-ui-lib'
+import { BorderRadiuses, Colors } from 'react-native-ui-lib'
 import { tabsRecords, useUserProfilePage } from '../providers'
 import { TabIcons } from './icons'
 
-export function ProfileTabList() {
+export function ProfileTabList({ style }: { style: StyleProp<ViewStyle> }) {
   const tabs = useUserProfilePage((s) => s.tabs)
+  const [isScrolling, setIsScrolling] = useState(false)
 
   return (
     <TabsList
-      style={{ paddingTop: 20, padding: 0, paddingBottom: 0, backgroundColor: 'transparent' }}
+      style={[
+        {
+          padding: 0,
+          backgroundColor: Colors.$backgroundElevated,
+          borderRadius: BorderRadiuses.br70,
+          marginBottom: -8,
+          overflow: 'visible',
+        },
+        style,
+      ]}
     >
       <MaskedView
-        style={[{ flex: 1.0, position: 'relative' }]}
+        style={[{ flex: 1.0, position: 'relative', overflow: 'visible' }]}
         maskElement={
-          <LinearGradient
-            // MaskedView uses the alpha channel: solid shows content, transparent hides it.
-            colors={['transparent', 'black', 'black', 'transparent']}
-            start={{ x: 0.0, y: 0.5 }}
-            end={{ x: 1, y: 0.5 }}
-            locations={[0, 0.025, 0.95, 1]}
+          <View
             style={{
+              // opacity: isScrolling ? 1 : 0,
               position: 'absolute',
               height: '100%',
               width: '100%',
               // top: '-2.5%',
               left: '-0%',
+              overflow: 'visible',
             }}
-          />
+          >
+            <LinearGradient
+              // MaskedView uses the alpha channel: solid shows content, transparent hides it.
+              colors={
+                isScrolling
+                  ? ['transparent', 'black', 'black', 'transparent']
+                  : ['black', 'black', 'black', 'transparent']
+              }
+              start={{ x: 0.01, y: 0.5 }}
+              end={{ x: 0.99, y: 0.5 }}
+              locations={[0, 0.025, 0.95, 1]}
+              style={{
+                borderRadius: BorderRadiuses.br70,
+                // opacity: isScrolling ? 1 : 0,
+                height: '100%',
+                width: '100%',
+                // top: '-2.5%',
+                left: '-0%',
+              }}
+            />
+            <View
+              style={{
+                // opacity: isScrolling ? 1 : 0,
+                position: 'absolute',
+                height: '20%',
+                width: '100%',
+                top: '100%',
+                left: '-0%',
+                backgroundColor: 'black',
+              }}
+            />
+          </View>
         }
       >
         <ScrollView
           style={{
             alignSelf: 'stretch',
-            paddingHorizontal: 8,
-            marginBottom: 12,
-            backgroundColor: Colors.$backgroundElevated,
+            top: 4,
+            marginBottom: 8,
             overflow: 'visible',
-          }}
-          scrollIndicatorInsets={{
-            bottom: -10,
+            backgroundColor: Colors.$backgroundElevated,
+            borderRadius: BorderRadiuses.br70,
           }}
           contentContainerStyle={{
-            backgroundColor: Colors.$backgroundElevated,
+            paddingHorizontal: 4,
+          }}
+          // onScrollBeginDrag={() => setIsScrolling(true)}
+          onMomentumScrollBegin={() => setIsScrolling(true)}
+          onScrollEndDrag={() => {
+            // might still be scrolling due to momentum
+          }}
+          onMomentumScrollEnd={() => setIsScrolling(false)}
+          scrollEventThrottle={16}
+          scrollIndicatorInsets={{
+            bottom: -10,
           }}
           horizontal
         >

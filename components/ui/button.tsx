@@ -1,9 +1,9 @@
-import { TextClassContext } from '@/components/ui/text/base-text'
+import { Text, TextClassContext } from '@/components/ui/text/base-text'
 import { cn } from '@/lib/utils/index'
 import { cva, type VariantProps } from 'class-variance-authority'
+import React from 'react'
 import {
   Platform,
-  Pressable,
   TouchableOpacity,
   type StyleProp,
   type TextStyle,
@@ -79,9 +79,12 @@ const buttonTextVariants = cva(
   }
 )
 
-type ButtonProps = React.ComponentProps<typeof Pressable> &
-  React.RefAttributes<typeof Pressable> &
-  VariantProps<typeof buttonVariants>
+type ButtonProps = Omit<React.ComponentProps<typeof TouchableOpacity>, 'children'> &
+  React.RefAttributes<typeof TouchableOpacity> &
+  VariantProps<typeof buttonVariants> & {
+    children?: React.ReactNode
+    style?: StyleProp<ViewStyle>
+  }
 
 type ButtonVariantArgs = Parameters<typeof buttonVariants>[0]
 
@@ -141,7 +144,11 @@ const getButtonTextColorStyles = ({ variant = 'default' }: ButtonVariantArgs = {
   return { textStyle }
 }
 
-function Button({ className, variant, size, style, ...props }: ButtonProps) {
+function Button({ className, variant, size, style, children, ...props }: ButtonProps) {
+  const wrappedChildren = React.Children.map(children, (child) =>
+    typeof child === 'string' || typeof child === 'number' ? <Text>{child}</Text> : child
+  )
+
   return (
     <TextClassContext.Provider value={buttonTextVariants({ variant, size })}>
       <TouchableOpacity
@@ -158,7 +165,9 @@ function Button({ className, variant, size, style, ...props }: ButtonProps) {
           style,
         ]}
         {...props}
-      />
+      >
+        {wrappedChildren}
+      </TouchableOpacity>
     </TextClassContext.Provider>
   )
 }

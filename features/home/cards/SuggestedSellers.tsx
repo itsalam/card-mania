@@ -1,20 +1,18 @@
-import { Box } from '@/components/ui/box'
 import { Button } from '@/components/ui/button'
-import { Card } from '@/components/ui/card'
 import { Text } from '@/components/ui/text/base-text'
 import { UserContact } from '@/features/users/components/UserAvatars'
 import { DUMMY_USERS } from '@/features/users/helpers'
 import React, { ComponentProps } from 'react'
 import { View } from 'react-native'
 
-type ExpandableCardProps = {} & ComponentProps<typeof Card>
+type ExpandableCardProps = {} & ComponentProps<typeof View>
 
 export function SuggestedSellers(props: ExpandableCardProps) {
   return (
-    <Card className="w-full px-8" {...props}>
-      <Box className="h-auto w-full z-1 items-center justify-between flex flex-row">
+    <View className="w-full px-8" {...props}>
+      <View className="h-auto w-full z-1 items-center justify-between flex flex-row">
         <Text className="font-bold">{'Suggested Sellers'}</Text>
-      </Box>
+      </View>
       <View className="w-full flex flex-col pt-4">
         {DUMMY_USERS.map((user) => (
           <View
@@ -28,6 +26,6 @@ export function SuggestedSellers(props: ExpandableCardProps) {
           </View>
         ))}
       </View>
-    </Card>
+    </View>
   )
 }

@@ -1,3 +1,4 @@
+import { useUnreadCount } from '@/client/notifications'
 import { HapticTab } from '@/components/tabs/HapticTab'
 import { AppNavHeader } from '@/components/ui/headers'
 import { useCartCount, useOpenCart } from '@/features/cart/hooks'
@@ -8,7 +9,17 @@ import { useTheme } from '@react-navigation/native'
 import { PortalHost } from '@rn-primitives/portal'
 import * as Haptics from 'expo-haptics'
 import { Tabs } from 'expo-router'
-import { Compass, Home, Inbox, Layers, Scan, ShoppingCart, Store, User } from 'lucide-react-native'
+import {
+  Bell,
+  Compass,
+  Home,
+  Inbox,
+  Layers,
+  Scan,
+  ShoppingCart,
+  Store,
+  User,
+} from 'lucide-react-native'
 import React, { useEffect } from 'react'
 import { Platform, Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native'
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated'
@@ -45,6 +56,21 @@ function CartButton() {
       </View>
       <Text style={[styles.tabLabel, { color: colors.text }]}>Cart</Text>
     </Pressable>
+  )
+}
+
+function NotificationTabIcon({ color }: { color: string }) {
+  const { data: unreadCount = 0 } = useUnreadCount()
+
+  return (
+    <View style={styles.cartIconWrapper}>
+      <Bell size={24} color={color} />
+      {unreadCount > 0 && (
+        <View style={styles.badge}>
+          <Text style={styles.badgeText}>{unreadCount > 99 ? '99+' : unreadCount}</Text>
+        </View>
+      )}
+    </View>
   )
 }
 
@@ -228,6 +254,13 @@ export default function TabLayout() {
           options={{
             title: 'Offers',
             tabBarIcon: ({ color }) => <Inbox size={28} color={color} />,
+          }}
+        />
+        <Tabs.Screen
+          name="notifications"
+          options={{
+            title: 'Alerts',
+            tabBarIcon: ({ color }) => <NotificationTabIcon color={color} />,
           }}
         />
         <Tabs.Screen

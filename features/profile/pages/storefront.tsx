@@ -21,7 +21,7 @@ import { useUserStorefront } from '../client'
 import { StorefrontView } from '../components/storefront-view'
 import { useUserProfilePage } from '../providers'
 
-const BORDER_WIDTH = 3
+const BORDER_WIDTH = 1
 
 export function StorefrontPage() {
   const profile = useUserProfilePage((s) => s.user)
@@ -36,7 +36,7 @@ export function StorefrontPage() {
 
   return (
     <View>
-      <View style={{ padding: 12 }}>
+      <View style={{ padding: 8 }}>
         <StoreFrontDropdown
           collections={collections}
           activeCollection={activeCollection}
@@ -49,7 +49,9 @@ export function StorefrontPage() {
     </View>
   )
 }
+
 const ATouchableOpacity = Animated.createAnimatedComponent(TouchableOpacity)
+
 function DropdownContainer({
   collection,
   children,
@@ -68,10 +70,9 @@ function DropdownContainer({
         {
           borderRadius: BorderRadiuses.br50,
           borderWidth: index !== undefined ? 0 : BORDER_WIDTH,
-          // margin: index !== undefined ? 3 : 0,
           borderColor: Colors.$outlineNeutral,
           backgroundColor: selected ? Colors.$backgroundElevatedLight : Colors.$backgroundElevated,
-          padding: selected ? 8 : 12,
+          padding: selected ? 12 : 12,
           paddingHorizontal: selected ? 16 : 20,
           margin: selected ? 4 : 0,
         },
@@ -83,12 +84,57 @@ function DropdownContainer({
         <Text ellipsizeMode="tail" numberOfLines={1} variant={'h3'}>
           {collection?.name}
         </Text>
-        <Text variant={'default'} style={{ fontSize: 16 }} ellipsizeMode="tail" numberOfLines={1}>
-          {collection?.description}
-        </Text>
       </View>
       {children}
     </ATouchableOpacity>
+  )
+}
+
+function DropdownItemContainers({
+  activeCollection,
+  collections,
+  onSelect,
+  setFocus,
+  ...props
+}: ViewProps & {
+  activeCollection?: CollectionLike
+  collections?: CollectionLike[]
+  onSelect?: (id: string) => void
+  setFocus?: (v: boolean) => void
+}) {
+  return (
+    <View style={{ flex: 1, paddingVertical: 2 }} {...props}>
+      <DropdownContainer collection={activeCollection} style={{ opacity: 0, marginBottom: 4 }} />
+      {collections &&
+        collections.map((collection, index) => (
+          <View key={collection.id}>
+            <DropdownContainer
+              key={collection.id}
+              collection={collection}
+              index={index + 1}
+              selected={collection.id === activeCollection?.id}
+              onPress={() => {
+                if (collection.id) {
+                  onSelect?.(collection.id)
+                  setTimeout(() => setFocus?.(false), 150)
+                }
+              }}
+              style={{
+                margin: 4,
+                borderRadius: BorderRadiuses.br30,
+              }}
+            />
+            {collections?.length !== index + 1 && (
+              <View style={{ marginHorizontal: 14 }}>
+                <Separator
+                  style={{ height: 2, borderRadius: 999, opacity: 0.5 }}
+                  orientation="horizontal"
+                />
+              </View>
+            )}
+          </View>
+        ))}
+    </View>
   )
 }
 
@@ -108,61 +154,24 @@ function StoreFrontDropdown({
   const measuredDropDownHeight = useSharedValue(0)
   const currDropdownHeightSV = useSharedValue(0)
   const spinSV = useSharedValue(0)
-  const startColor = useSharedValue(Colors.$backgroundElevated)
-  const endColor = useSharedValue(Colors.$backgroundDefault)
-  const backgroundColourSV = useSharedValue(0)
   const { height: screenHeight } = useWindowDimensions()
 
   const blocker = Gesture.Native()
 
   useRegisterGestureBlocker(blocker)
 
-  const DropdownItemContainers = (props: ViewProps) => (
-    <View
-      style={{
-        flex: 1,
-      }}
-      {...props}
-    >
-      <DropdownContainer
-        collection={activeCollection}
-        style={{
-          opacity: 0,
-        }}
-      />
-
-      {collections &&
-        collections.map((collection, index) => (
-          <View key={collection.id}>
-            <DropdownContainer
-              key={collection.id}
-              collection={collection}
-              index={index + 1}
-              selected={collection.id === activeCollection?.id}
-              onPress={() => {
-                if (collection.id) {
-                  onSelect?.(collection.id)
-                  setTimeout(() => setFocus(false), 150)
-                }
-              }}
-            />
-            {collections?.length !== index + 1 && (
-              <View style={{ marginHorizontal: 14 }}>
-                <Separator
-                  style={{ height: 3, borderRadius: 999, opacity: 0.5 }}
-                  orientation="horizontal"
-                />
-              </View>
-            )}
-          </View>
-        ))}
-    </View>
+  const { layout, Clone } = useCloneMeasure(
+    <DropdownItemContainers
+      activeCollection={activeCollection}
+      collections={collections}
+      onSelect={onSelect}
+      setFocus={setFocus}
+    />,
+    {
+      removeAfterMeasure: true,
+      deps: [collections],
+    }
   )
-
-  const { layout, Clone } = useCloneMeasure(<DropdownItemContainers />, {
-    removeAfterMeasure: true,
-    deps: [collections],
-  })
 
   useEffect(() => {
     if (layout) {
@@ -179,9 +188,7 @@ function StoreFrontDropdown({
     ({ focus, h, b }) => {
       const target = focus ? h : b
       currDropdownHeightSV.value = withTiming(target, { duration: 180 })
-      backgroundColourSV.value = withTiming(focus ? 1 : 0, { duration: 180 })
 
-      // Conditional delay: Delay only when opening
       const rotationAnimation = withTiming(focus ? 1 : 0, { duration: 90 })
       spinSV.value = focus ? withDelay(100, rotationAnimation) : rotationAnimation
     },
@@ -193,9 +200,12 @@ function StoreFrontDropdown({
     [currDropdownHeightSV, measuredButtonHeight]
   )
 
+  const bgElevated = Colors.$backgroundElevated as string
+  const bgDefault = Colors.$backgroundDefault as string
+
   const buttonStyle = useAnimatedStyle(
     () => ({
-      backgroundColor: interpolateColor(spinSV.value, [0, 1], [startColor.value, endColor.value]),
+      backgroundColor: interpolateColor(spinSV.value, [0, 1], [bgElevated, bgDefault]),
     }),
     [spinSV]
   )
@@ -212,18 +222,9 @@ function StoreFrontDropdown({
   )
 
   return (
-    <View
-      style={{
-        position: 'relative',
-
-        zIndex: 100,
-      }}
-    >
-      <Animated.View
-        style={{
-          height: measuredButtonHeight,
-        }}
-      />
+    <View style={{ position: 'relative', zIndex: 100 }}>
+      {Clone}
+      <Animated.View style={{ height: measuredButtonHeight }} />
       <DropdownContainer
         collection={activeCollection}
         style={[
@@ -260,12 +261,15 @@ function StoreFrontDropdown({
               width: '100%',
               maxHeight: Math.min(screenHeight / 3, MAX_DROPDOWN_HEIGHT),
             },
-
             dropdownStyle,
           ]}
         >
-          {Clone}
-          <DropdownItemContainers />
+          <DropdownItemContainers
+            activeCollection={activeCollection}
+            collections={collections}
+            onSelect={onSelect}
+            setFocus={setFocus}
+          />
         </Animated.ScrollView>
       </GestureDetector>
     </View>

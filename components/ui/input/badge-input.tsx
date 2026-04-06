@@ -2,10 +2,10 @@ import { useCombinedRefs } from '@/components/hooks/useCombinedRefs'
 import _isUndefined from 'lodash/isUndefined'
 import { forwardRef, useCallback, useContext, useMemo, useRef, useState } from 'react'
 import { TextInputChangeEvent } from 'react-native'
-import { Assets, ChipProps, ChipsInputChipProps, Constants } from 'react-native-ui-lib'
+import { Assets, Chip, ChipProps, ChipsInputChipProps, Constants } from 'react-native-ui-lib'
 import { ChipsInputChangeReason } from 'react-native-ui-lib/src/components/chipsInput'
 import { useDidUpdate } from 'react-native-ui-lib/src/hooks'
-import { Badge, BaseBadgeProps } from '../badge'
+import { BaseBadgeProps } from '../badge'
 import { Input, TextField, TextFieldHandle } from './base-input'
 import { FieldContext, FieldStore } from './provider'
 import { InputProps } from './types'
@@ -176,7 +176,7 @@ export const BadgeInputInner = forwardRef<TextFieldHandle, ChipsInputProps>(
       const { index, chip, isMarkedForRemoval } = props
       const { iconStyle, containerStyle, labelStyle, ...defaultProps } = defaultChipProps || {}
       return (
-        <Badge
+        <Chip
           key={index}
           customValue={index}
           dismissIcon={Assets.internal.icons.xSmall}
@@ -193,7 +193,7 @@ export const BadgeInputInner = forwardRef<TextFieldHandle, ChipsInputProps>(
           {...defaultProps}
           {...(chip.invalid ? invalidChipProps : undefined)}
           {...chip}
-          onPress={onChipPress}
+          onPress={onChipPress as ChipProps['onPress']}
           onDismiss={isMarkedForRemoval ? removeMarkedChip : undefined}
         />
       )

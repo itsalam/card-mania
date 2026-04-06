@@ -14,7 +14,7 @@ const avatarStyle = cva(
         sm: 'w-8 h-8',
         md: 'w-12 h-12',
         lg: 'w-16 h-16',
-        xl: 'w-24 h-24',
+        xl: 'w-20 h-20',
         '2xl': 'w-32 h-32',
       },
     },
@@ -49,9 +49,6 @@ function Avatar({
   return (
     <VariantContext value={{ size }}>
       <AvatarPrimitive.Root
-        style={{
-          backgroundColor: 'red',
-        }}
         className={cn(
           'relative flex size-8 shrink-0 overflow-hidden rounded-full',
           avatarStyle({ size }),

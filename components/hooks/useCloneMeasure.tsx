@@ -24,6 +24,7 @@ export function useCloneMeasure(
 
   const onLayout = useCallback((e: LayoutChangeEvent) => {
     const { x, y, width, height } = e.nativeEvent.layout
+    measured.current = true
     setLayout({ x, y, width, height })
   }, [])
 
