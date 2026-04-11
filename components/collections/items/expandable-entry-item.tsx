@@ -24,7 +24,13 @@ export const ExpandableCollectionEntryListItem = ({
     <CollectionListView
       onPress={
         isWishlist
-          ? () => card && toggleWishlist.mutate({ kind: 'card', id: card.id })
+          ? () =>
+              card &&
+              toggleWishlist.mutate({
+                kind: 'card',
+                id: card.id,
+                card: { ...card, image_url: card.image?.url },
+              })
           : () => setExpanded(!expanded)
       }
       collection={collection}

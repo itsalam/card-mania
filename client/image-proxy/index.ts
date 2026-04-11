@@ -75,7 +75,6 @@ export function useImageProxy(cdnOpts: ImageProxyOpts) {
     enabled: enabled,
     queryFn: async () => {
       if (directUrl) {
-        console.log({ directUrl })
         return { url: directUrl, shape: 'unknown' as CardShape, aspectRatio: null }
       }
       const proxyRes = await invokeFx<

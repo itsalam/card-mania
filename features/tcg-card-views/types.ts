@@ -44,6 +44,7 @@ export type BaseListingProps = {
 }
 
 export type ItemListViewProps = ItemListingProps & {
+  gain?: number
   renderAccessories?: (
     props: BaseListingProps & {
       renderTitle?: (props: BaseListingProps) => ReactNode

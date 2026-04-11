@@ -8,7 +8,7 @@ type Metadata = {
   price_key: string
 }
 
-export const getPriceFix = (args: {
+export const getDisplayPrice = (args: {
   collectionItem?: Partial<CollectionItemQueryView>
   card: TCard
   metadata?: Metadata
@@ -17,16 +17,14 @@ export const getPriceFix = (args: {
   let price = collectionItem?.collection_item_value
   if (price) return price
 
-  if (!metadata?.price_key) return undefined
-
-  const priceKey = metadata.price_key.replace(/(\d+)(?:\.(\d))?/g, (_match, intPart, fracPart) =>
+  const priceKey = metadata?.price_key.replace(/(\d+)(?:\.(\d))?/g, (_match, intPart, fracPart) =>
     !fracPart || fracPart === '0' ? intPart : `${intPart}_${fracPart}`
   )
 
   const gradePrice = card.grades_prices as Record<string, number>
 
-  if (priceKey in gradePrice) return gradePrice[priceKey]
-  return undefined
+  if (priceKey && gradePrice && priceKey in gradePrice) return gradePrice[priceKey]
+  return card.latest_price ?? undefined
 }
 
 export const sortCollectionItem = (a: Partial<CollectionItem>, b: Partial<CollectionItem>) => {
@@ -79,7 +77,7 @@ export const getCardDisplayData = ({
 }) => {
   const isIncomplete = Boolean(card) && isLoading
   const displayPriceFix =
-    card === undefined ? null : getPriceFix({ card, collectionItem, metadata })
+    card === undefined ? null : getDisplayPrice({ card, collectionItem, metadata })
   const displayData: DisplayData | null =
     !Boolean(card) && isIncomplete
       ? null

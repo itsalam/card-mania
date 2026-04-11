@@ -1,4 +1,4 @@
-import { fetchCardHedgeResults } from '@cardhedge'
+import { fetchCardHedgeResults, fetchCardHedgeTopMovers } from '@cardhedge'
 import { getEbayToken, searchEbayItems } from '@ebay-auth'
 import {
   BlendedSearchResultItem,
@@ -117,7 +117,19 @@ Deno.serve(async (req) => {
   const inm = req.headers.get('if-none-match') ?? ''
   const url = new URL(req.url)
   const id = url.searchParams.get('id')
-  const q = url.searchParams.get('q')
+  let q: string | null = url.searchParams.get('q') || ''
+  // When no query or ID is provided, fall back to the active suggestion keyword
+  // from search_config so the response is always meaningful.
+  if (!q.length && !id) {
+    const { data: cfg } = await supabase
+      .from('search_config')
+      .select('suggestion_queries, suggestion_query_idx')
+      .eq('id', 1)
+      .single()
+    if (cfg?.suggestion_queries?.length) {
+      q = cfg.suggestion_queries[cfg.suggestion_query_idx] ?? cfg.suggestion_queries[0]
+    }
+  }
   const limit = url.searchParams.get('limit') ?? '20'
   const skipCache = url.searchParams.get('skipCache') === 'true'
   const cacheUpsert = (url.searchParams.get('skipCacheUpsert') ?? 'false') === 'false'
@@ -143,6 +155,30 @@ Deno.serve(async (req) => {
 
   if (!pcBase || !pcKey || !supa || !srole) {
     return json({ error: 'Missing environment variables' }, { status: 500 })
+  }
+
+  // No query and no id after config lookup — fall back to CardHedge top-movers
+  if (!q?.length && !id) {
+    if (!cardhedgeEnabled) {
+      return json({ error: 'Missing id or q' }, { status: 400 })
+    }
+    try {
+      const topMovers = await fetchCardHedgeTopMovers(cardhedgeKey, cardhedgeBase, Number(limit))
+      const sportsCards = topMovers.filter(
+        (c: CardHedgeCard) => c.category_group === 'Sports Cards'
+      )
+      const { results, preknownHints } = await convertCardHedgeItems(sportsCards)
+      if (preknownHints.size > 0) upsertImageSearchCacheHints(preknownHints, supa, srole)
+      const topMoversHash = await sha256HexStr('top-movers')
+      return json({
+        query: 'top-movers',
+        query_hash: topMoversHash,
+        results: results.slice(0, Number(limit)),
+      })
+    } catch (err) {
+      console.error('top-movers fallback failed:', err)
+      return json({ error: 'Missing id or q' }, { status: 400 })
+    }
   }
 
   const cacheKey = id ? `id:${id}` : q ? `q:${q!.toLowerCase().trim()}` : null
@@ -587,7 +623,9 @@ const fetchBlendedCache = async (supa: string, srole: string, queryHash: string)
 
   if (row && fresh) {
     cacheHit = true
-    const parsed = JSON.parse(row.payload) as { results?: SearchResultItem[] } | SearchResultItem[]
+    const parsed = (typeof row.payload === 'string' ? JSON.parse(row.payload) : row.payload) as
+      | { results?: SearchResultItem[] }
+      | SearchResultItem[]
     vendorResults = Array.isArray(parsed) ? parsed : (parsed.results ?? [])
   }
 
@@ -863,7 +901,7 @@ async function convertCardHedgeItems(cards: CardHedgeCard[]): Promise<{
         for (const { grade, price } of card.prices) {
           const raw_key = grade.toLowerCase().replace(/\s+/g, '_')
           const key = raw_key === 'raw' ? 'ungraded' : raw_key
-          const val = parseFloat(price)
+          const val = parseFloat(price) * 100
           if (!isNaN(val)) grades_prices[key] = val
         }
         // Use the Raw grade price as latest_price, or the lowest available

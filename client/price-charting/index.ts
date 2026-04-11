@@ -1,4 +1,5 @@
 import { FiltersKeys } from '@/features/mainSearchbar/components/filters/providers'
+import { getSupabase } from '@/lib/store/client'
 import { useDebounced } from '@/lib/utils'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { QueryClient, useInfiniteQuery, useQuery } from '@tanstack/react-query'
@@ -47,19 +48,14 @@ export async function getCachedPrefetchEnabled(): Promise<boolean> {
   }
 }
 
-const SUGGESTIONS_PAYLOAD = SearchRequest.parse({
-  q: 'baseball-cards-2025-topps',
-  limit: 8,
-  commit_images: 'true',
-})
-
-export function prefetchSuggestions(queryClient: QueryClient): Promise<void> {
+export function prefetchSuggestions(queryClient: QueryClient, q = ''): Promise<void> {
+  const payload = SearchRequest.parse({ q, limit: 8, commit_images: 'true' })
   return queryClient.prefetchQuery({
-    queryKey: ['price-charting-suggestions'],
+    queryKey: ['price-charting-suggestions', q],
     queryFn: async () => {
-      const { data, error } = await invokeFx<typeof SUGGESTIONS_PAYLOAD, TSearchRes>(
+      const { data, error } = await invokeFx<typeof payload, TSearchRes>(
         'price-charting',
-        SUGGESTIONS_PAYLOAD,
+        payload,
         { parseOut: SearchResponse, useQueryParams: true }
       )
       if (error) throw error
@@ -67,6 +63,35 @@ export function prefetchSuggestions(queryClient: QueryClient): Promise<void> {
     },
     staleTime: 60_000,
   })
+}
+
+/**
+ * Returns the currently active suggestion keyword from search_config.
+ * Cached for 1 hour — refreshes when the cron advances the rotation index.
+ */
+type SuggestionConfig = { suggestion_queries: string[]; suggestion_query_idx: number }
+
+/**
+ * Returns the currently active suggestion keyword from search_config.
+ * Cached for 1 hour — refreshes when the cron advances the rotation index.
+ */
+export function useSuggestionQuery(): string | undefined {
+  const { data } = useQuery({
+    queryKey: ['search-config-suggestion'],
+    queryFn: async () => {
+      // Cast required until supabase types are regenerated after the migration
+      const { data } = await (getSupabase() as any)
+        .from('search_config')
+        .select('suggestion_queries, suggestion_query_idx')
+        .eq('id', 1)
+        .single()
+      return (data ?? null) as SuggestionConfig | null
+    },
+    staleTime: 60 * 60 * 1000,
+    gcTime: 60 * 60 * 1000,
+  })
+  if (!data?.suggestion_queries?.length) return undefined
+  return data.suggestion_queries[data.suggestion_query_idx] ?? data.suggestion_queries[0]
 }
 
 type FilterQuery = Partial<Record<FiltersKeys, string>> & {
@@ -110,13 +135,16 @@ export function useCardSearch(params: { q: string; filters?: FilterQuery; limit?
 }
 
 export function useSuggestionsFixed() {
+  const activeQuery = useSuggestionQuery()
+  const q = activeQuery ?? ''
   return useQuery({
-    queryKey: ['price-charting-suggestions'],
+    queryKey: ['price-charting-suggestions', q],
     enabled: true,
     queryFn: async () => {
-      const { data, error } = await invokeFx<typeof SUGGESTIONS_PAYLOAD, TSearchRes>(
+      const payload = SearchRequest.parse({ q, limit: 8, commit_images: 'true' })
+      const { data, error } = await invokeFx<typeof payload, TSearchRes>(
         'price-charting',
-        SUGGESTIONS_PAYLOAD,
+        payload,
         { parseOut: SearchResponse, useQueryParams: true }
       )
       if (error) throw error

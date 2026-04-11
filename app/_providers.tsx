@@ -1,6 +1,6 @@
+import { getCachedPrefetchEnabled, prefetchSuggestions } from '@/client/price-charting'
 import { ToastProvider } from '@/components/Toast'
 import ThemeProvider from '@/components/ui/theme'
-import { getCachedPrefetchEnabled, prefetchSuggestions } from '@/client/price-charting'
 import { useOfferRealtime } from '@/features/offers/use-offer-realtime'
 import { SettingsProvider } from '@/features/settings'
 import { asyncStorageLocalAdapter } from '@/features/settings/adapters/local-adapter'
@@ -99,8 +99,16 @@ function OfferRealtimeProvider() {
 
 function SearchPrefetchProvider() {
   useEffect(() => {
-    getCachedPrefetchEnabled().then((enabled) => {
-      if (enabled) prefetchSuggestions(qc)
+    getCachedPrefetchEnabled().then(async (enabled) => {
+      if (!enabled) return
+      const { data } = await (getSupabase() as any)
+        .from('search_config')
+        .select('suggestion_queries, suggestion_query_idx')
+        .eq('id', 1)
+        .single()
+      const q =
+        data?.suggestion_queries?.[data.suggestion_query_idx] ?? data?.suggestion_queries?.[0] ?? ''
+      prefetchSuggestions(qc, q)
     })
   }, [])
   return null

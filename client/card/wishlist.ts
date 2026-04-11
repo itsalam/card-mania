@@ -182,11 +182,21 @@ export function useIsWishlisted(kind: ItemKinds, ids: string[]) {
   return query
 }
 
+type CardStub = {
+  name: string
+  set_name?: string | null
+  genre?: string | null
+  grades_prices?: Record<string, number>
+  latest_price?: number | null
+  image_url?: string | null
+}
+
 type ToggleWishlistParams = {
   kind: ItemKinds
   id: string
   grade_condition_id?: string
   viewParams?: ViewParams
+  card?: CardStub
 }
 
 type ToggleWishlistContext = Partial<{
@@ -203,7 +213,18 @@ export function useToggleWishlist(kind: ItemKinds) {
   const qc = useQueryClient()
 
   return useMutation({
-    mutationFn: async ({ kind, id, grade_condition_id }: ToggleWishlistParams) => {
+    mutationFn: async ({ kind, id, grade_condition_id, card }: ToggleWishlistParams) => {
+      if (card) {
+        await getSupabase().rpc('ensure_card_stub' as any, {
+          p_id: id,
+          p_name: card.name,
+          p_set_name: card.set_name ?? '',
+          p_genre: card.genre ?? 'trading_card',
+          p_grades_prices: card.grades_prices ?? {},
+          p_latest_price: card.latest_price ?? null,
+          p_image_url: card.image_url ?? null,
+        })
+      }
       const { data, error } = await getSupabase().rpc('wishlist_toggle', {
         p_kind: kind,
         p_ref_id: id,
@@ -250,6 +271,8 @@ export function useToggleWishlist(kind: ItemKinds) {
       // If you have aggregates, invalidate them—NOT your card lists
       qc.invalidateQueries({ queryKey: ['wishlist', 'totals'] })
       qc.invalidateQueries({ queryKey: ['wishlist', 'view', kind] })
+      // Refresh the wishlist collection page item list
+      qc.invalidateQueries({ queryKey: qk.collectionItems('wishlist') })
     },
   })
 }

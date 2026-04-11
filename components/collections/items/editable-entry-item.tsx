@@ -104,7 +104,7 @@ export const CollectionItemEntry = ({
   const { data: gradeData, error } = useGradingConditions()
   const [hide, setHide] = useState(false)
 
-  const mutate = useEditCollectionItem(
+  const editableItem = useEditCollectionItem(
     collectionItem?.collection_id || collection?.id,
     card?.id,
     collectionItem?.id
@@ -153,7 +153,7 @@ export const CollectionItemEntry = ({
   const mutateEntry = useCallback(
     (draft: EditCollectionArgsItem, patch: Partial<EditCollectionArgsItem>) => {
       if (isEqualToInitial(draft)) return // don’t re-save same data
-      mutate.mutate(
+      editableItem.mutate(
         { item: { ...draft, ...patch } },
         {
           onSuccess: (res) => {
@@ -168,17 +168,17 @@ export const CollectionItemEntry = ({
         }
       )
     },
-    [mutate]
+    [editableItem]
   )
 
   const deleteEntry = useCallback(
     (draft: EditCollectionArgsItem) => {
-      mutate.mutate({ item: { ...draft, quantity: 0 } })
+      editableItem.mutate({ item: { ...draft, quantity: 0 } })
 
       setHide(true)
       onDelete?.()
     },
-    [mutate]
+    [editableItem]
   )
 
   const mutateDebounce = useCallback(debounce(mutateEntry, 1000), [mutateEntry])

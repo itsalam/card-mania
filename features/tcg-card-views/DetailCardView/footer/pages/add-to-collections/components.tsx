@@ -29,7 +29,7 @@ import {
 import { Text } from '@/components/ui/text/base-text'
 import { sortCollectionItem } from '@/features/tcg-card-views/helpers'
 import { qk } from '@/lib/store/functions/helpers'
-import { useQueryClient } from '@tanstack/react-query'
+import { InfiniteData, useQueryClient } from '@tanstack/react-query'
 import Animated, { LinearTransition } from 'react-native-reanimated'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { v4 as uuidv4 } from 'uuid'
@@ -55,6 +55,8 @@ export const CollectionCardItemEntries = ({
     isLoading,
     refetch,
   } = useViewCollectionItemsForCard(collection?.id, card?.id, isShown)
+
+  const qc = useQueryClient()
 
   const [showModal, setShowModal] = useState(false)
   const [priceChangeEntry, setPriceChangeEntry] = useState<PriceModalPayload | null>(null)
@@ -100,6 +102,31 @@ export const CollectionCardItemEntries = ({
                 editable={editable}
                 isLoading={isLoadingOuter}
                 onPriceModalOpen={(data) => setPriceChangeEntry(data)}
+                onDelete={() => {
+                  qc.invalidateQueries({
+                    queryKey: [
+                      ...qk.collectionItems(collection?.id),
+                      ...(card?.id ? ['cardId', card?.id] : []),
+                    ],
+                  })
+                  if (card?.id) {
+                    qc.invalidateQueries({ queryKey: qk.collectionForCard(card.id) })
+                  }
+                  if (loadedEntries.length <= 1 && card?.id && collection?.id) {
+                    qc.setQueriesData<InfiniteData<{ ref_id: string }[]>>(
+                      { queryKey: [...qk.collectionItems(collection.id), 'infinite'] },
+                      (prev) => {
+                        if (!prev) return prev
+                        return {
+                          ...prev,
+                          pages: prev.pages.map((page) =>
+                            page.filter((item) => item.ref_id !== card.id)
+                          ),
+                        }
+                      }
+                    )
+                  }
+                }}
               />
             </Animated.View>
           ))}

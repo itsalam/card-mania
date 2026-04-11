@@ -19,7 +19,7 @@ const createDiagram = () => {
     console.error('GoJS failed to load from CDN.')
     return
   }
-  console.log('??')
+
   const $ = go.GraphObject.make
   const diagram: Diagram = $(go.Diagram, 'diagram', {
     layout: $(go.LayeredDigraphLayout, {

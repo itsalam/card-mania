@@ -8,6 +8,7 @@ export function SearchPreviewCard({
   searchItem: TCardSearchItem
 }) {
   const { card } = searchItem
+  const gain: number | undefined = searchItem.reason?.gain
 
-  return <CardListView card={card} expanded {...props} />
+  return <CardListView card={card} gain={gain} expanded {...props} />
 }

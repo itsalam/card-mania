@@ -15,7 +15,7 @@ export const CardSearchItem = z.object({
 })
 
 export const SearchRequest = z.object({
-  q: z.string().trim().min(1),
+  q: z.string().trim().min(0),
   filters: z
     .object({
       sport: z.string().optional(),

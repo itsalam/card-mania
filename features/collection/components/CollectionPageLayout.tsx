@@ -24,7 +24,7 @@ import Animated, {
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Colors } from 'react-native-ui-lib'
 import { shallow } from 'zustand/shallow'
-import { useGetCollection, useGetCollectionItems } from '../hooks'
+import { useDefaultCollectionIds, useGetCollection, useGetCollectionItems } from '../hooks'
 import { ModifyCollectionView } from '../pages/modify-collection'
 import { defaultPages, getCollectionIdArgs, useCollectionsPageStore } from '../provider'
 import { useCollaspableHeader } from '../ui'
@@ -45,7 +45,10 @@ export function WishlistDebug({ ids }: { ids: string[] }) {
   )
 }
 
-const AnimatedFlatList = Animated.createAnimatedComponent(FlatList<CollectionListItem>)
+const AnimatedCollectionList = Animated.createAnimatedComponent(FlatList<CollectionRow>)
+const AnimatedCollectionItemList = Animated.createAnimatedComponent(
+  FlatList<CollectionItemQueryView & TCard>
+)
 
 export const CollectionsPageLayout = () => {
   const insets = useSafeAreaInsets()
@@ -179,7 +182,7 @@ const DefaultCollectionView = ({ direction }: { direction: 'forward' | 'backward
         </Animated.View>
         <Animated.View>
           <FolderTabsContainer>
-            <AnimatedFlatList
+            <AnimatedCollectionList
               initialNumToRender={10}
               //@ts-ignore
               ref={scrollViewRef}
@@ -207,23 +210,33 @@ const DefaultCollectionView = ({ direction }: { direction: 'forward' | 'backward
 }
 
 const DetailCollectionView = ({ direction }: { direction: 'forward' | 'backward' }) => {
-  const {
-    currentPage,
-    setCurrentPage,
-    preferenceState,
-    setIsExpanded,
-    setShowEditView,
-    showEditView,
-  } = useCollectionsPageStore()
+  const { currentPage, setCurrentPage, preferenceState } = useCollectionsPageStore()
+
+  // 'default' is a UI-only page with no backing collection; only wishlist/selling/vault have real IDs
+  const isBackedDefaultPage =
+    currentPage === 'wishlist' || currentPage === 'selling' || currentPage === 'vault'
+  const { data: defaultIds } = useDefaultCollectionIds(isBackedDefaultPage)
+
+  // For backed default pages (wishlist/selling/vault), use the resolved actual collection UUID
+  // so the infinite items query key is a flat, ID-based key consistent with regular collections.
+  // This ensures onDelete can find and update the query via prefix matching.
+  const collectionItemsArgs = useMemo(() => {
+    if (isBackedDefaultPage) {
+      const resolvedId = defaultIds?.[currentPage as keyof typeof defaultIds]
+      if (resolvedId) return { collectionId: resolvedId }
+    }
+    return getCollectionIdArgs(currentPage)
+  }, [isBackedDefaultPage, defaultIds, currentPage])
 
   const { data: collection } = useGetCollection(getCollectionIdArgs(currentPage))
   const { query: collectionItemsQuery } = useGetCollectionItems<CollectionItemQueryView & TCard>(
-    getCollectionIdArgs(currentPage),
+    collectionItemsArgs,
     { pageSize: 20 },
     true
   )
   const { isLoading: isLoadingItems } = collectionItemsQuery
   const collectionItems = useMemo(() => {
+    console.log('UPDATED')
     return collectionItemsQuery.data?.pages.flat() ?? []
   }, [collectionItemsQuery.data])
 
@@ -233,7 +246,7 @@ const DetailCollectionView = ({ direction }: { direction: 'forward' | 'backward'
     }
 
     return collectionItems
-  }, [, , collectionItems, , isLoadingItems])
+  }, [collectionItems, isLoadingItems])
 
   const {
     tabsExpanded,
@@ -307,7 +320,7 @@ const DetailCollectionView = ({ direction }: { direction: 'forward' | 'backward'
           }}
         >
           <FolderTabsContainer>
-            <AnimatedFlatList
+            <AnimatedCollectionItemList
               initialNumToRender={10}
               //@ts-ignore
 

@@ -1,3 +1,4 @@
+import { useSuggestionQuery } from '@/client/price-charting'
 import { SearchBar } from '@/components/ui/search'
 import { Portal } from '@rn-primitives/portal'
 import React, { RefObject, useRef, useState } from 'react'
@@ -7,9 +8,11 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { SearchInput } from 'react-native-ui-lib'
 import { SearchScreen } from './components/SearchScreen'
 
-export function MainSearchBar({ placeholder = 'Search...' }: { placeholder?: string }) {
+export function MainSearchBar({ placeholder }: { placeholder?: string }) {
   // Theme and store hooks
   const [focused, setFocused] = useState(false)
+  const activeQuery = useSuggestionQuery()
+  const effectivePlaceholder = placeholder ?? (activeQuery ? `${activeQuery}` : 'Search...')
 
   const inputRef = useRef<typeof SearchInput>(null)
 
@@ -34,7 +37,7 @@ export function MainSearchBar({ placeholder = 'Search...' }: { placeholder?: str
       >
         <SearchBar
           id="searchInput"
-          placeholder={placeholder}
+          placeholder={effectivePlaceholder}
           onPress={() => {
             show(inputRef)
           }}
@@ -43,9 +46,10 @@ export function MainSearchBar({ placeholder = 'Search...' }: { placeholder?: str
       {focused && (
         <Portal name="searchbar" hostName="searchbar">
           <SearchScreen
+            autofocus
             style={{ paddingTop: insets.top }}
             focused={focused}
-            placeholder={placeholder}
+            placeholder={effectivePlaceholder}
             title={'Search'}
             show={show}
             hide={hide}

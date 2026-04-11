@@ -27,3 +27,25 @@ export async function fetchCardHedgeResults(
   const data = (await resp.json()) as { cards?: CardHedgeCard[] }
   return data.cards ?? []
 }
+
+/**
+ * Fetch top-moving cards from CardHedge.
+ * Uses GET /v1/cards/top-movers with X-API-Key header.
+ */
+export async function fetchCardHedgeTopMovers(
+  apiKey: string,
+  apiBase: string,
+  count: number
+): Promise<CardHedgeCard[]> {
+  const url = new URL(`${apiBase}/v1/cards/top-movers`)
+  url.searchParams.set('count', String(Math.min(count, 100)))
+  const resp = await fetch(url.toString(), {
+    headers: { 'X-API-Key': apiKey },
+  })
+  if (!resp.ok) {
+    const body = await resp.text()
+    throw new Error(`CardHedge top-movers error ${resp.status}: ${body}`)
+  }
+  const data = (await resp.json()) as { cards?: CardHedgeCard[] }
+  return data.cards ?? []
+}
