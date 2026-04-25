@@ -323,10 +323,12 @@ export const CollectionItemEntry = ({
 }
 
 export const PriceChangeModal = ({
+  cardData,
   data,
   onDismiss,
   visible,
 }: {
+  cardData: TCard
   data: PriceModalPayload | null
   onDismiss: () => void
   visible: boolean

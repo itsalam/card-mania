@@ -1,4 +1,4 @@
-import { Database } from '@schema'
+import { Database } from './supabase.ts'
 
 export type ImageItem = {
   sourceUrl: string
@@ -112,6 +112,36 @@ export type EbayItemSummary = {
   condition?: string
   itemWebUrl?: string
   buyingOptions?: string[]
+}
+
+// Shape returned by POST /v1/cards/card-match
+export type CardMatchResult = {
+  confidence: number // 0.0 – 1.0
+  reasoning: string
+  description: string
+  player: string
+  set: string
+  number: string
+  variant?: string
+  card_id: string // CardHedge card ID
+  image?: string
+  category?: string
+  prices?: Array<{ grade: string; price: string }>
+}
+
+export type CardMatchResponse = {
+  match: CardMatchResult | null
+  candidates_evaluated: number
+  search_query_used: string
+}
+
+// Shape returned by POST /v1/cards/prices-by-card
+// Each element in the "prices" array of the response
+export type CardHedgePricePoint = {
+  closing_date: string // ISO timestamp, e.g. "2025-10-26T23:59:00.000Z"
+  Grade: string // CardHedge grade label, e.g. "PSA 9", "Raw"
+  card_id: string // CardHedge card ID
+  price: string // decimal string, e.g. "337.67"
 }
 
 export type CardHedgeCard = {

@@ -13,6 +13,8 @@ export const wrapContent = (
   return {
     width: width + padX * 2,
     height: height + padY * 2,
+    contentStartX: width + padX,
+    contentStartY: height + padY,
     radius: radius,
   }
 }

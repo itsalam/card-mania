@@ -1,216 +1,55 @@
 import { useEffectiveColorScheme } from '@/features/settings/hooks/effective-color-scheme'
 import {
-  Blur,
   Color,
+  DashPathEffect,
   Group,
   Mask,
   Paint,
   Path,
   Rect,
-  RoundedRect,
   Skia,
-  SkPath,
+  Line as SkiaLine,
   Text,
   useFont,
+  vec,
 } from '@shopify/react-native-skia'
-import React, { Fragment, ReactNode, useCallback, useEffect, useMemo, useState } from 'react'
-import { Dimensions, View } from 'react-native'
+import React, { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { View } from 'react-native'
 import Animated, {
-  DerivedValue,
-  SharedValue,
   useAnimatedReaction,
   useAnimatedStyle,
   useDerivedValue,
   useSharedValue,
-  withRepeat,
   withTiming,
 } from 'react-native-reanimated'
-import { Colors, SegmentedControl } from 'react-native-ui-lib'
+import { Colors } from 'react-native-ui-lib'
 import { scheduleOnRN } from 'react-native-worklets'
+import { CartesianChart, Line, PointsArray, Scatter, useChartPressState } from 'victory-native'
+import { TIME_PERIODS, TIME_PERIODS_DURATION, WINDOW_WIDTH } from './constants'
 import {
-  CartesianChart,
-  CurveType,
-  Line,
-  PointsArray,
-  useAreaPath,
-  useChartPressState,
-  useLinePath,
-} from 'victory-native'
-import { Skeleton } from '../ui/skeleton'
-import { PointValueCard } from './ui/PointValueCard'
-import { SeriesDot } from './ui/SeriesDot'
-import {
-  GraphInputKey,
-  InputFieldType,
-  NumericalFields,
-  PriceGraphProps,
-  SeriesPoint,
-  SeriesSV,
-} from './ui/types'
+  findNearest,
+  fmtAxisValue,
+  fmtCardValue,
+  formatXTick,
+  getTimeRange,
+  getXTickValues,
+  gradientColors,
+  parseXValue,
+  roundToNiceCents,
+  xRawToMs,
+} from './helpers'
+import { useAxisTransform } from './hooks/useAxisTransform'
+import { ChartPressContext, ChartPressProvider, useSharedPress } from './hooks/useChartPress'
+import { DateRangeContext, DateRangeProvider, useTimeRange } from './hooks/useDateRange'
+import { LineEffect } from './ui/LineEffect'
+import { FetchingDot, LoadingState } from './ui/LoadingState'
+import { PendingState } from './ui/PendingState'
+import { ToolTip } from './ui/ToolTip'
+import { GraphInputKey, NumericalFields, PriceGraphProps } from './ui/types'
 import { getFontHeight, wrapContent } from './utils'
 
-export const TIME_PERIODS = ['1W', '1M', '3M', '1Y', 'all']
-const TIME_PERIODS_DURATION: Record<string, number> = {
-  '1W': 1000 * 60 * 60 * 24 * 7,
-  '1M': 1000 * 60 * 60 * 24 * 30,
-  '3M': 1000 * 60 * 60 * 24 * 90,
-  '1Y': 1000 * 60 * 60 * 24 * 365,
-}
-
-const getTimeRange = (timePeriod: string): [Date, Date] => {
-  const duration = TIME_PERIODS_DURATION[timePeriod]
-  const now = new Date()
-  const start = new Date(new Date(now.getTime() - duration).setHours(0, 0, 0, 0))
-
-  return [start, now]
-}
-
-const LineEffect = (props: {
-  points: PointsArray
-  curveType?: CurveType
-  connectMissingData?: boolean
-  fadePx?: number
-  color: Color
-  strokeWidth?: number
-  y0: number
-}) => {
-  const {
-    points,
-    curveType = 'natural',
-    connectMissingData = true,
-    fadePx = 5,
-    color,
-    strokeWidth = 10,
-    y0,
-  } = props
-  const { path: linePath } = useLinePath(points, { curveType, connectMissingData })
-  const { path: areaPath } = useAreaPath(points, y0, { curveType, connectMissingData })
-  return (
-    <Group clip={areaPath}>
-      <Group
-        layer={
-          <Paint>
-            {/* apply blur to the entire offscreen layer */}
-            <Blur blur={fadePx} mode="decal" />
-          </Paint>
-        }
-      >
-        <Path path={linePath} style="stroke" strokeWidth={strokeWidth} color={color} />
-      </Group>
-    </Group>
-  )
-}
-
-export const DateRangeContext = React.createContext<{
-  timePeriod: string
-  setTimePeriod: (s: string) => void
-} | null>(null)
-
-export const ChartPressContext = React.createContext<{
-  sharedX: SharedValue<number>
-  sharedXValue: SharedValue<number>
-  sharedActive: SharedValue<boolean>
-  latestX: SharedValue<number>
-  latestXValue: SharedValue<number>
-  setLatest: (x: number, xv: number) => void
-} | null>(null)
-
-const useTimeRange = () => {
-  const context = React.useContext(DateRangeContext)
-  if (!context) {
-    throw new Error('useTimeRange must be used within a DateRangeProvider')
-  }
-  return context
-}
-
-export const ChartPressProvider = ({ children }: { children: React.ReactNode }) => {
-  const sharedX = useSharedValue(0)
-  const sharedXValue = useSharedValue(0)
-  const sharedActive = useSharedValue(false)
-  const latestX = useSharedValue(0)
-  const latestXValue = useSharedValue(0)
-  const setLatest = React.useCallback(
-    (x: number, xv: number) => {
-      latestX.set(x)
-      latestXValue.set(xv)
-    },
-    [latestX, latestXValue]
-  )
-
-  const [activeJs, setActiveJs] = useState(false)
-
-  useAnimatedReaction(
-    () => sharedActive.value,
-    (v) => {
-      'worklet'
-      scheduleOnRN(setActiveJs, v)
-    },
-    [sharedActive]
-  )
-
-  useEffect(() => {
-    if (activeJs) return
-    const t = setTimeout(() => {
-      sharedX.set(latestX.value)
-      sharedXValue.set(latestXValue.value)
-      sharedActive.set(true)
-    }, 80)
-    return () => clearTimeout(t)
-  }, [activeJs, sharedX, sharedXValue, sharedActive, latestX, latestXValue])
-
-  return (
-    <ChartPressContext.Provider
-      value={{ sharedX, sharedXValue, sharedActive, latestX, latestXValue, setLatest }}
-    >
-      {children}
-    </ChartPressContext.Provider>
-  )
-}
-
-const useSharedPress = () => {
-  const context = React.useContext(ChartPressContext)
-  if (!context) {
-    throw new Error('useChartPress must be used within a ChartPressProvider')
-  }
-  return context
-}
-
-export function DateRangeProvider({
-  children,
-  renderChildren,
-  isLoading,
-}: {
-  children?: ReactNode
-  renderChildren?: (control: ReactNode) => ReactNode
-  isLoading?: boolean
-}) {
-  const [timePeriod, setTimePeriod] = useState(TIME_PERIODS[0])
-
-  const SegmentControlComponent = !isLoading ? (
-    <SegmentedControl
-      activeColor={Colors.$iconPrimary}
-      segments={TIME_PERIODS.map((period) => ({ label: period }))}
-      onChangeIndex={(index) => setTimePeriod(TIME_PERIODS[index])}
-    />
-  ) : (
-    <View className="w-full px-12 py-4">
-      <Skeleton style={{ width: '100%', height: 34, borderRadius: 1000 }} />
-    </View>
-  )
-
-  return (
-    <DateRangeContext.Provider value={{ timePeriod, setTimePeriod }}>
-      {renderChildren ? (
-        renderChildren(SegmentControlComponent)
-      ) : (
-        <View>
-          {children}
-          {SegmentControlComponent}
-        </View>
-      )}
-    </DateRangeContext.Provider>
-  )
-}
+// Re-export providers and constants for external consumers.
+export { ChartPressContext, ChartPressProvider, DateRangeContext, DateRangeProvider, TIME_PERIODS }
 
 export function PriceGraph<
   T extends Record<string, YValues>,
@@ -218,16 +57,26 @@ export function PriceGraph<
   YValues extends keyof NumericalFields<T> = keyof NumericalFields<T>,
 >(props: PriceGraphProps<T, InputKeys, YValues>) {
   const {
-    width = Dimensions.get('window').width,
+    width = WINDOW_WIDTH,
     height = 450,
     data,
+    pending = false,
+    fetching = false,
     xKey,
     yKeys,
     color = Colors.$outlinePrimary,
+    colors,
+    colorRange,
     style,
     showTooltipLabel = true,
   } = props
-  const scheme = useEffectiveColorScheme() // 'light' | 'dark' | null
+
+  const resolvedColors = useMemo(
+    () => (colorRange ? gradientColors(colorRange[0], colorRange[1], yKeys.length) : undefined),
+    [colorRange, yKeys.length]
+  )
+  const getSeriesColor = (idx: number) => resolvedColors?.[idx] ?? colors?.[idx] ?? color
+  const scheme = useEffectiveColorScheme()
   const { timePeriod } = useTimeRange()
   const isInactive = !Boolean(data)
   const initialY = useMemo(
@@ -241,6 +90,20 @@ export function PriceGraph<
   }>({ x: 0 as never, y: initialY })
 
   const { sharedX, sharedXValue, sharedActive, setLatest, latestX, latestXValue } = useSharedPress()
+
+  // Fade in whenever yKeys change (CartesianChart remounts on key change).
+  const chartOpacity = useSharedValue(1)
+  const prevYKeysStr = useRef((yKeys as string[]).join(','))
+  useEffect(() => {
+    const curr = (yKeys as string[]).join(',')
+    if (prevYKeysStr.current !== curr) {
+      chartOpacity.value = 0
+      chartOpacity.value = withTiming(1, { duration: 200 })
+      prevYKeysStr.current = curr
+    }
+  }, [yKeys])
+  const chartAnimStyle = useAnimatedStyle(() => ({ opacity: chartOpacity.value }))
+
   const toNumberX = useCallback((v: any) => {
     if (typeof v === 'number') return v
     if (typeof v === 'string') {
@@ -254,15 +117,13 @@ export function PriceGraph<
   const [sharedXJs, setSharedXJs] = useState(0)
   const [sharedActiveJs, setSharedActiveJs] = useState(false)
 
-  // When a press ends, snap back to the latest point ("current date")
   useEffect(() => {
     if (isActive) return
     if (!data?.length) return
-
-    sharedX.value = latestX.value
-    sharedXValue.value = latestXValue.value
-    sharedActive.value = true
-  }, [isActive, data, xKey, sharedX, sharedXValue, sharedActive, toNumberX])
+    sharedX.set(latestX.value)
+    sharedXValue.set(latestXValue.value)
+    sharedActive.set(true)
+  }, [isActive, data, xKey, timePeriod, sharedX, sharedXValue, sharedActive, toNumberX])
 
   useAnimatedReaction(
     () => sharedX.value,
@@ -282,34 +143,18 @@ export function PriceGraph<
     [sharedActive]
   )
 
-  // keep shared crosshair in sync
   useDerivedValue(() => {
     if (isActive) {
       sharedX.value = state.x.position.value
-      // worklet-safe numeric coercion
-      const raw = state.x.value as unknown
-      const parsed =
-        typeof raw === 'number'
-          ? raw
-          : typeof raw === 'string'
-            ? (() => {
-                'worklet'
-                const d = Date.parse(raw as string)
-                if (!Number.isNaN(d)) return d
-                const n = Number(raw)
-                return Number.isNaN(n) ? 0 : n
-              })()
-            : 0
-      sharedXValue.value = parsed
+      sharedXValue.value = parseXValue(state.x.value.value)
       sharedActive.value = true
     }
   }, [isActive, sharedX, sharedActive, sharedXValue])
 
-  // When another chart is controlling the shared crosshair, mirror its X into this chart's press state
   useDerivedValue(() => {
     if (sharedActive.value && !isActive) {
       state.x.position.value = sharedX.value
-      state.x.value = sharedXValue.value
+      state.x.value.value = sharedXValue.value
     }
   }, [sharedActive, sharedX, sharedXValue, isActive])
 
@@ -318,153 +163,734 @@ export function PriceGraph<
     if (isActive) return state.x.position.value
     return sharedX.value || width
   }, [sharedActive, sharedX, isActive, width])
+
   const crosshairX = useDerivedValue(
     () => (sharedActive.value ? sharedX.value : state.x.position.value),
     [sharedActive, sharedX]
   )
 
   const crosshairXValue = useDerivedValue(
-    () => (sharedActive.value ? sharedXValue.value : state.x.value),
+    () => (sharedActive.value ? sharedXValue.value : state.x.value.value),
     [sharedActive, sharedXValue]
   )
+
+  const clipPath = useMemo(() => Skia.Path.Make(), [])
   const clipRect = useDerivedValue(() => {
-    const clipRect = Skia.Path.Make()
-    clipRect.addRect(Skia.XYWHRect(0, 0, splitX.value, height)) //
-    return clipRect
+    clipPath.reset()
+    clipPath.addRect(Skia.XYWHRect(0, 0, splitX.value, height))
+    return clipPath
   }, [splitX])
 
+  const xDomain = useMemo<[number, number] | undefined>(() => {
+    if (!TIME_PERIODS_DURATION[timePeriod]) return undefined
+    return getTimeRange(timePeriod).map((d) => d.getTime()) as [number, number]
+  }, [timePeriod])
+
+  const visibleData = useMemo(() => {
+    if (!data?.length || !xDomain) return data
+    const [xMin, xMax] = xDomain
+    return (data as Record<string, unknown>[]).filter((point) => {
+      const ms = xRawToMs(point[xKey as string])
+      return isFinite(ms) && ms >= xMin && ms <= xMax
+    }) as T[]
+  }, [data, xDomain, xKey])
+
+  const yDomainFallback = useMemo<[number, number] | undefined>(() => {
+    if (!visibleData?.length) return undefined
+    const values = (visibleData as Record<string, unknown>[]).flatMap((point) =>
+      (yKeys as string[]).flatMap((k) => {
+        const v = point[k]
+        return typeof v === 'number' && v > 0 ? [v] : []
+      })
+    )
+    if (!values.length) return undefined
+    const min = Math.min(...values)
+    const max = Math.max(...values)
+    const pad = (max - min) * 0.12
+    return [Math.max(0, min - pad), max + pad]
+  }, [visibleData, yKeys])
+
+  const {
+    renderData,
+    renderYDomain,
+    axisBreaks,
+    valueDenorm,
+    valueNorm,
+    normClusterRanges,
+    clusterDataRanges,
+  } = useAxisTransform(visibleData, yKeys)
+  const yDomain = renderYDomain ?? yDomainFallback
+  const needsZeroBreak = axisBreaks.length === 0 && (yDomain?.[0] ?? 0) > 0
+
+  const visibleXMin = useMemo(() => {
+    if (!visibleData?.length || !xDomain) return xDomain?.[0]
+    const xMs = (visibleData as Record<string, unknown>[])
+      .map((d) => {
+        const ms = xRawToMs(d[xKey as string])
+        const snapped = new Date(ms)
+        snapped.setHours(0, 0, 0, 0)
+        return snapped.getTime()
+      })
+      .filter((v) => isFinite(v) && v > 0)
+    return xMs.length ? Math.min(...xMs) : xDomain[0]
+  }, [visibleData, xDomain, xKey])
+
+  const xTickValues = useMemo(() => {
+    if (!data?.length) return undefined
+    if (xDomain) {
+      return getXTickValues(visibleXMin ?? xDomain[0], xDomain[1], timePeriod)
+    }
+    const xMs = (data as Record<string, unknown>[])
+      .map((d) => xRawToMs(d[xKey as string]))
+      .filter((v) => isFinite(v) && v > 0)
+    if (xMs.length < 2) return undefined
+    return getXTickValues(xMs[0], xMs[xMs.length - 1], timePeriod)
+  }, [data, xKey, xDomain, timePeriod, visibleXMin])
+
+  const yTickValues = useMemo(() => {
+    if (!normClusterRanges?.length) return undefined
+    const raw = [
+      0,
+      ...normClusterRanges.flatMap(([lo, hi], i) =>
+        i === 0 ? [lo + (hi - lo) * 0.8] : [lo + (hi - lo) * 0.2, lo + (hi - lo) * 0.8]
+      ),
+    ]
+    const mapped = raw.map((tv) => {
+      if (tv === 0) return 0
+      const clusterIdx = normClusterRanges.findIndex(
+        ([lo, hi]) => tv >= lo - 0.001 && tv <= hi + 0.001
+      )
+      const rounded = roundToNiceCents(valueDenorm(tv))
+      if (clusterIdx < 0 || !clusterDataRanges?.[clusterIdx]) return valueNorm(Math.max(rounded, 1))
+      const [dataMin, dataMax] = clusterDataRanges[clusterIdx]
+      return valueNorm(Math.max(dataMin + 1, Math.min(rounded, dataMax - 1)))
+    })
+    return [...new Set(mapped)]
+  }, [normClusterRanges, clusterDataRanges, valueDenorm, valueNorm])
+
+  // Convert ISO string x values → ms numbers so Victory Native treats data as
+  // isNumericalData=true, enabling domain.x, tickValues, and formatXLabel.
+  const chartData = useMemo(() => {
+    const source = (renderData ?? data ?? []) as Record<string, unknown>[]
+    if (!source.length) return source
+    return source.map((d) => {
+      const ms = xRawToMs(d[xKey as string])
+      const snapped = new Date(ms)
+      snapped.setHours(0, 0, 0, 0)
+      return {
+        ...d,
+        [xKey as string]: snapped.getTime(),
+      }
+    }) as T[]
+  }, [renderData, data, xKey])
+
+  const hasValidData = useMemo(
+    () =>
+      chartData.length > 0 &&
+      (chartData as Record<string, unknown>[]).some((point) =>
+        (yKeys as string[]).some((k) => typeof point[k] === 'number')
+      ),
+    [chartData, yKeys]
+  )
+
+  const axisFont = useFont(require('../../assets/fonts/Inter.ttf'), 11)
+  // Same fonts PointValueCard uses — needed to measure card width for domainPadding.right
+  const cardPriceFont = useFont(require('../../assets/fonts/SpaceMono-Regular.ttf'), 12)
+  const cardLabelFont = useFont(require('../../assets/fonts/SpaceMono-Regular.ttf'), 10)
+
+  const yLabelPad = useMemo(() => {
+    if (!yTickValues || !axisFont) return 0
+    const maxW = Math.max(
+      0,
+      ...yTickValues.map((tv) => {
+        const real = axisBreaks.length ? valueDenorm(tv) : tv
+        return axisFont.measureText(fmtAxisValue(real)).width
+      })
+    )
+    return Math.ceil(maxW) + 2
+  }, [yTickValues, axisFont, axisBreaks, valueDenorm])
+
+  // domainPadding.right large enough to fully show the PointValueCard for the rightmost point.
+  // Card width mirrors PointValueCard: wrapContent(max(priceW, labelW), ..., { padX: 8 })
+  // plus the default card offset of 8px from the dot.
+  const cardRightPad = useMemo(() => {
+    if (!cardPriceFont || !cardLabelFont) return 100
+    const allValues = (visibleData ?? []) as Record<string, unknown>[]
+    let maxCents = 0
+    for (const point of allValues) {
+      for (const k of yKeys as string[]) {
+        const v = point[k]
+        if (typeof v === 'number' && v > maxCents) maxCents = v
+      }
+    }
+    const priceStr = fmtCardValue(maxCents)
+    const priceW = cardPriceFont.measureText(priceStr).width
+    const labelW = Math.max(
+      0,
+      ...(yKeys as string[]).map((k) => cardLabelFont.measureText(k.replace(/_price$/, '')).width)
+    )
+    const { width: cardW } = wrapContent(Math.max(priceW, labelW), 0, { padX: 8 })
+    const DOT_RADIUS = 4
+    const CARD_OFFSET_X = 8 // PointValueCard default offset.x
+    return Math.ceil(cardW) + DOT_RADIUS + CARD_OFFSET_X
+  }, [cardPriceFont, cardLabelFont, visibleData, yKeys, timePeriod])
+
   return (
-    <Animated.View key={scheme} className="w-full" style={[style, { height }]}>
-      {isInactive ? (
-        <LoadingState
-          height={height / 2}
-          width={width}
-          yKeys={yKeys as unknown as string[]}
-          clipRect={clipRect}
-        />
+    <Animated.View key={scheme} className="w-full" style={[style, { height, overflow: 'visible' }]}>
+      {isInactive || !hasValidData ? (
+        pending ? (
+          <PendingState height={height} width={width} yKeys={yKeys as unknown as string[]} />
+        ) : (
+          <LoadingState height={height} width={width} yKeys={yKeys as unknown as string[]} />
+        )
       ) : (
-        <CartesianChart<
-          T,
-          InputKeys,
-          // @ts-ignore
-          YValues
-        >
-          data={data ?? []}
-          // @ts-ignore
-          chartPressState={state}
-          xKey={xKey}
-          yKeys={yKeys}
-          xAxis={{
-            tickCount: 0,
-          }}
-          domainPadding={{
-            right: 140,
-            top: 40,
-            bottom: 40,
-          }}
-          yAxis={[
-            {
-              tickCount: 0,
-            },
-          ]}
-          domain={{
-            x: getTimeRange(timePeriod).map((date) => date.getTime()) as [number, number],
-          }}
-        >
-          {({ points, chartBounds, ...rest }) => {
-            const primaryPts = points[props.yKeys[0]] as PointsArray | undefined
+        <Animated.View style={[{ flex: 1 }, chartAnimStyle]}>
+          <CartesianChart<
+            T,
+            InputKeys,
+            // @ts-ignore
+            YValues
+          >
+            key={(yKeys as string[]).join(',')}
+            data={chartData as T[]}
+            // @ts-ignore
+            chartPressState={state}
+            xKey={xKey}
+            yKeys={yKeys}
+            xAxis={{
+              tickValues: xTickValues,
+              formatXLabel: (v) => formatXTick(v, timePeriod),
+              labelColor: 'rgba(255,255,255,0.35)',
+              lineColor: 'transparent',
+              font: axisFont,
+              labelOffset: -12,
+              // labelPosition: 'inset',
+            }}
+            padding={{
+              ...(yLabelPad ? { left: yLabelPad } : undefined),
+              bottom: 16,
+            }}
+            domainPadding={{
+              top: 40,
+              bottom: needsZeroBreak ? 24 : 12,
+              left: 4,
+              right: cardRightPad,
+            }}
+            yAxis={[
+              yTickValues
+                ? {
+                    tickValues: yTickValues,
+                    lineColor: 'transparent',
+                    labelOffset: 0,
+                  }
+                : {
+                    tickCount: 4,
+                    lineColor: 'rgba(255,255,255,0.2)',
+                    linePathEffect: <DashPathEffect intervals={[6, 3]} />,
+                    labelColor: 'rgba(255,255,255,0.3)',
+                    font: axisFont,
+                    labelOffset: 4,
+                    formatYLabel: (v: string | number) => {
+                      const n = Number(v)
+                      if (n < 0) return ''
+                      return fmtAxisValue(n)
+                    },
+                  },
+            ]}
+            renderOutside={({ chartBounds, yScale, xScale, xTicks }) => {
+              const lh = axisFont ? getFontHeight(axisFont) : 0
+              return (
+                <>
+                  {yTickValues &&
+                    axisFont &&
+                    yTickValues.map((tv, idx) => {
+                      const py = yScale(tv)
+                      const real = axisBreaks.length ? valueDenorm(tv) : tv
+                      const label = fmtAxisValue(real)
+                      const lw = axisFont.measureText(label).width
+                      const labelX = chartBounds.left - lw - 2
+                      const labelY = py + lh / 2
+                      return (
+                        <Text
+                          key={`ylabel-${idx}`}
+                          text={label}
+                          x={labelX}
+                          y={labelY}
+                          font={axisFont}
+                          color="rgba(255,255,255,0.3)"
+                        />
+                      )
+                    })}
+                  {xTicks.map((tick) => {
+                    const px = xScale(tick)
+                    if (px < chartBounds.left || px > chartBounds.right) return null
+                    return (
+                      <SkiaLine
+                        key={`x-notch-${tick}`}
+                        p1={vec(px, chartBounds.bottom - 20)}
+                        p2={vec(px, chartBounds.bottom - 15)}
+                        color="rgba(255,255,255,0.35)"
+                        strokeWidth={1.5}
+                      />
+                    )
+                  })}
+                </>
+              )
+            }}
+            domain={
+              xDomain || yDomain
+                ? {
+                    ...(xDomain
+                      ? { x: [visibleXMin ?? xDomain[0], xDomain[1]] as [number, number] }
+                      : {}),
+                    ...(yDomain ? { y: yDomain } : {}),
+                  }
+                : undefined
+            }
+          >
+            {({ points, chartBounds, yScale, xScale }) => {
+              const primaryPts = points[props.yKeys[0]] as PointsArray | undefined
 
-            const lp = primaryPts?.[primaryPts.length - 1]
-            const latestVal = lp?.x
-            setLatest(lp?.x ?? 0, latestVal ?? 0)
+              const lp = primaryPts?.[primaryPts.length - 1]
+              if (lp?.x) {
+                const lpX = lp.x
+                const lpXValue = (lp.xValue as number) ?? 0
+                setLatest(lpX, lpXValue)
+                if (sharedX.value === 0) {
+                  sharedX.set(lpX)
+                  sharedXValue.set(lpXValue)
+                  sharedActive.set(true)
+                }
+              }
 
-            const activeX = sharedActiveJs ? sharedXJs : state.x.position.value
-            const lastPoints = yKeys.reduce(
-              (acc, yKey) => {
-                const pts = points[yKey] as PointsArray
-                if (!pts?.length) return acc
-                const nearest = pts.reduce((best, p) =>
-                  Math.abs(p.x - activeX) < Math.abs(best.x - activeX) ? p : best
-                )
-                acc[yKey] = nearest
-                return acc
-              },
-              {} as Record<string, PointsArray[number]>
-            )
-
-            const effectiveIsActiveBool = sharedActiveJs || isActive
-
-            return (
-              <>
-                {props.yKeys.map((yKey) => {
-                  const key = String(yKey)
+              const activeX = sharedActiveJs ? sharedXJs : state.x.position.value
+              const lastPoints = yKeys.reduce(
+                (acc, yKey) => {
                   const pts = points[yKey] as PointsArray
-                  return (
-                    <Line
-                      points={pts}
-                      color={Colors.rgba(color, 0.1)}
-                      strokeWidth={3}
-                      curveType="natural"
-                      connectMissingData
-                      key={`${key}-line-shadow`}
-                    />
+                  if (!pts?.length) return acc
+                  const nearest = findNearest(pts, activeX, true)
+                  if (nearest) acc[yKey as keyof typeof acc] = nearest
+                  return acc
+                },
+                {} as Record<string, PointsArray[number]>
+              )
+
+              const effectiveIsActiveBool = sharedActiveJs || isActive
+
+              // --- Compressed-zone detection (pixel-space) ---
+              const CLUSTER_THRESH_PX = 28
+              const ZONE_PAD = 14
+              type SRange = { minY: number; maxY: number; midY: number }
+              const seriesRanges: SRange[] = (yKeys as string[])
+                .map((yKey) => {
+                  const pts = (points[yKey as keyof typeof points] as PointsArray)?.filter(
+                    (p) => p.y != null && p.y > 0
                   )
-                })}
+                  if (!pts?.length) return null
+                  const ys = pts.map((p) => p.y!)
+                  const minY = Math.min(...ys)
+                  const maxY = Math.max(...ys)
+                  return { minY, maxY, midY: (minY + maxY) / 2 }
+                })
+                .filter(Boolean) as SRange[]
+              seriesRanges.sort((a, b) => a.midY - b.midY)
+              const compressedZones: { top: number; bottom: number }[] = []
+              let zi = 0
+              while (zi < seriesRanges.length) {
+                let groupMin = seriesRanges[zi].minY
+                let groupMax = seriesRanges[zi].maxY
+                let zj = zi + 1
+                while (
+                  zj < seriesRanges.length &&
+                  seriesRanges[zj].midY - seriesRanges[zi].midY < CLUSTER_THRESH_PX
+                ) {
+                  groupMin = Math.min(groupMin, seriesRanges[zj].minY)
+                  groupMax = Math.max(groupMax, seriesRanges[zj].maxY)
+                  zj++
+                }
+                if (zj > zi + 1) compressedZones.push({ top: groupMin, bottom: groupMax })
+                zi = zj
+              }
 
-                <Mask mask={<Rect x={0} y={0} width={splitX} height={height} color="white" />}>
-                  {props.yKeys.map((yKey) => {
-                    const key = String(yKey)
-                    const pts = points[yKey] as PointsArray
+              // --- Broken-axis pixel positions ---
+              type BreakGap = { topPx: number; bottomPx: number; label: string }
+              const breakGaps: BreakGap[] = axisBreaks.map((b) => ({
+                topPx: yScale(b.normHigh),
+                bottomPx: yScale(b.normLow),
+                label: b.label,
+              }))
+
+              const zoneWidth = chartBounds.right - chartBounds.left
+
+              return (
+                <>
+                  {/* Custom y-axis grid lines (normalised mode only). */}
+                  {yTickValues?.map((tv, idx) => {
+                    const py = yScale(tv)
+                    if (tv === 0) {
+                      return (
+                        <Rect
+                          key={`gridline-${idx}`}
+                          x={chartBounds.left}
+                          y={py - 0.5}
+                          width={zoneWidth}
+                          height={1}
+                          color="rgba(255,255,255,0.10)"
+                        />
+                      )
+                    }
+                    const p = Skia.Path.Make()
+                    p.moveTo(chartBounds.left, py)
+                    p.lineTo(chartBounds.right, py)
                     return (
-                      <Line
-                        key={`${key}-mask-line`}
-                        points={pts}
-                        strokeWidth={3}
-                        color={Colors.rgba(color, 1.0)}
-                        curveType="natural"
-                      />
+                      <Path
+                        key={`gridline-${idx}`}
+                        path={p}
+                        style="stroke"
+                        strokeWidth={1}
+                        color="rgba(255,255,255,0.2)"
+                      >
+                        <DashPathEffect intervals={[4, 6]} />
+                      </Path>
                     )
                   })}
-                </Mask>
 
-                {/* <Mask mask={<Rect x={0} y={0} width={splitX} height={height} color="white" />}> */}
-                <Group clip={clipRect}>
-                  {props.yKeys.map((yKey) => {
-                    const key = String(yKey)
-                    const pts = points[yKey] as PointsArray
+                  {/* Broken-axis zones — hatched band where the y-axis jumps non-linearly */}
+                  {breakGaps.map((gap, idx) => {
+                    const gapH = Math.max(0, gap.bottomPx - gap.topPx)
+                    if (gapH < 4) return null
+                    const hatchPath = Skia.Path.Make()
+                    const hSpacing = 10
+                    for (let ox = -gapH; ox <= zoneWidth + gapH; ox += hSpacing) {
+                      hatchPath.moveTo(chartBounds.left + ox, gap.topPx)
+                      hatchPath.lineTo(chartBounds.left + ox + gapH, gap.bottomPx)
+                    }
+                    const clipR = Skia.XYWHRect(chartBounds.left, gap.topPx, zoneWidth, gapH)
+                    const labelText = gap.label
+                    const labelW = axisFont?.measureText(labelText)?.width ?? 0
+                    const labelX = chartBounds.left + zoneWidth / 2 - labelW / 2
+                    const labelY = gap.topPx + gapH / 2 + 4
                     return (
-                      <LineEffect
-                        key={`${key}-effect-mask`}
-                        points={pts}
-                        curveType="natural"
-                        connectMissingData
-                        fadePx={15}
-                        y0={chartBounds.bottom}
-                        strokeWidth={30}
-                        color={Colors.rgba(color, 0.3) as Color}
-                      />
+                      <Group key={`bgap-${idx}`} clip={clipR}>
+                        <Rect
+                          x={chartBounds.left}
+                          y={gap.topPx}
+                          width={zoneWidth}
+                          height={gapH}
+                          color="rgba(10,10,14,0.9)"
+                        />
+                        <Path path={hatchPath}>
+                          <Paint style="stroke" strokeWidth={1} color="rgba(255,255,255,0.1)" />
+                        </Path>
+                        <Rect
+                          x={chartBounds.left}
+                          y={gap.topPx}
+                          width={zoneWidth}
+                          height={1}
+                          color="rgba(255,255,255,0.25)"
+                        />
+                        <Rect
+                          x={chartBounds.left}
+                          y={gap.bottomPx - 1}
+                          width={zoneWidth}
+                          height={1}
+                          color="rgba(255,255,255,0.25)"
+                        />
+                        {axisFont && (
+                          <Text
+                            x={labelX}
+                            y={labelY}
+                            text={labelText}
+                            font={axisFont}
+                            color="rgba(255,255,255,0.35)"
+                          />
+                        )}
+                      </Group>
                     )
                   })}
-                </Group>
-                {/* </Mask> */}
-                {lastPoints && Object.keys(state.y).length && (
-                  <ToolTip
-                    xValue={crosshairXValue}
-                    restPoints={lastPoints}
-                    isActive={effectiveIsActiveBool}
-                    seriesActive={isActive}
-                    x={crosshairX}
-                    yKeys={state.y}
-                    bottom={chartBounds.bottom}
-                    top={chartBounds.top}
-                    color={color}
-                    showLabel={showTooltipLabel}
-                  />
-                )}
-              </>
-            )
-          }}
-        </CartesianChart>
+
+                  {/* Compressed-zone highlight bands
+                  {axisBreaks.length === 0 &&
+                    compressedZones.map((zone, idx) => {
+                      const zoneY = zone.top - ZONE_PAD
+                      const zoneH = zone.bottom - zone.top + ZONE_PAD * 2
+                      return (
+                        <Fragment key={`czone-${idx}`}>
+                          <RoundedRect
+                            x={chartBounds.left}
+                            y={zoneY}
+                            width={zoneWidth}
+                            height={zoneH}
+                            r={6}
+                            color="transparent"
+                          >
+                            <Paint style="stroke" strokeWidth={1} color="rgba(255,255,255,0.1)" />
+                          </RoundedRect>
+                        </Fragment>
+                      )
+                    })} */}
+
+                  {/* Zero break zone — shown when chart bottom is above $0 */}
+                  {needsZeroBreak &&
+                    (() => {
+                      const ZERO_BREAK_H = 20
+                      const breakY = chartBounds.bottom + 2
+                      const breakLabel = `$0 — ${fmtAxisValue(yDomain![0])}`
+                      const labelW = axisFont?.measureText(breakLabel)?.width ?? 0
+                      const labelX = chartBounds.left + zoneWidth / 2 - labelW / 2
+                      const labelY = breakY + ZERO_BREAK_H / 2 + 4
+                      const clipR = Skia.XYWHRect(chartBounds.left, breakY, zoneWidth, ZERO_BREAK_H)
+                      const hatchPath = Skia.Path.Make()
+                      for (let ox = -ZERO_BREAK_H; ox <= zoneWidth + ZERO_BREAK_H; ox += 10) {
+                        hatchPath.moveTo(chartBounds.left + ox, breakY)
+                        hatchPath.lineTo(
+                          chartBounds.left + ox + ZERO_BREAK_H,
+                          breakY + ZERO_BREAK_H
+                        )
+                      }
+                      return (
+                        <Group key="zero-break" clip={clipR}>
+                          <Rect
+                            x={chartBounds.left}
+                            y={breakY}
+                            width={zoneWidth}
+                            height={ZERO_BREAK_H}
+                            color="rgba(10,10,14,0.9)"
+                          />
+                          <Path path={hatchPath}>
+                            <Paint style="stroke" strokeWidth={1} color="rgba(255,255,255,0.1)" />
+                          </Path>
+                          <Rect
+                            x={chartBounds.left}
+                            y={breakY}
+                            width={zoneWidth}
+                            height={1}
+                            color="rgba(255,255,255,0.25)"
+                          />
+                          {axisFont && (
+                            <Text
+                              x={labelX}
+                              y={labelY}
+                              text={breakLabel}
+                              font={axisFont}
+                              color="rgba(255,255,255,0.35)"
+                            />
+                          )}
+                        </Group>
+                      )
+                    })()}
+
+                  {/* Shadow lines (dim, always visible) */}
+                  {props.yKeys.map((yKey, i) => {
+                    const key = String(yKey)
+                    const pts = points[yKey] as PointsArray
+                    const seriesColor = getSeriesColor(i)
+                    const pastPoints = pts.filter((p) => activeX - (p.x ?? 0) > 0)
+                    return (
+                      <Fragment key={`${key}-dots`}>
+                        <Line
+                          points={pts}
+                          color={Colors.rgba(seriesColor, 0.1)}
+                          strokeWidth={3}
+                          curveType="monotoneX"
+                          connectMissingData
+                          key={`${key}-line-shadow`}
+                        />
+                        <Scatter
+                          points={pastPoints}
+                          radius={3}
+                          color={Colors.rgba(seriesColor, 0.7)}
+                        />
+                        <Scatter points={pts} radius={3} color={Colors.rgba(seriesColor, 0.4)} />
+                      </Fragment>
+                    )
+                  })}
+
+                  {/* Masked lines (full colour only on the left side of the crosshair) */}
+                  <Mask mask={<Rect x={0} y={0} width={splitX} height={height} color="white" />}>
+                    {props.yKeys.map((yKey, i) => {
+                      const key = String(yKey)
+                      const pts = points[yKey] as PointsArray
+                      return (
+                        <Line
+                          key={`${key}-mask-line`}
+                          points={pts}
+                          strokeWidth={3}
+                          color={Colors.rgba(getSeriesColor(i), 1.0)}
+                          curveType="monotoneX"
+                          connectMissingData
+                        />
+                      )
+                    })}
+                  </Mask>
+
+                  {/* Glow/area effect */}
+                  <Group clip={clipRect}>
+                    {props.yKeys.map((yKey, i) => {
+                      const key = String(yKey)
+                      const pts = points[yKey] as PointsArray
+                      return (
+                        <LineEffect
+                          key={`${key}-effect-mask`}
+                          points={pts}
+                          curveType="monotoneX"
+                          connectMissingData
+                          fadePx={15}
+                          y0={chartBounds.bottom}
+                          strokeWidth={30}
+                          color={Colors.rgba(getSeriesColor(i), 0.3) as Color}
+                        />
+                      )
+                    })}
+                  </Group>
+
+                  {/* Flat extrapolation lines for series that don't reach the domain end */}
+                  {props.yKeys.map((yKey, i) => {
+                    const key = String(yKey)
+                    const pts = (points[yKey] as PointsArray)?.filter(
+                      (p) => p.x != null && p.y != null
+                    )
+                    if (!pts?.length) return null
+                    const lastPt = pts[pts.length - 1]
+                    if (!lastPt.x || !lastPt.y) return null
+                    const endPx = xDomain ? xScale(xDomain[1]) : chartBounds.right
+                    if (lastPt.x >= endPx - 2) return null
+                    const p = Skia.Path.Make()
+                    p.moveTo(lastPt.x, lastPt.y)
+                    p.lineTo(endPx, lastPt.y)
+                    return (
+                      <Path
+                        key={`${key}-extrap`}
+                        path={p}
+                        style="stroke"
+                        strokeWidth={2}
+                        color={Colors.rgba(getSeriesColor(i), 0.3)}
+                      >
+                        <DashPathEffect intervals={[4, 5]} />
+                      </Path>
+                    )
+                  })}
+
+                  {/* Flat extrapolation lines for series that don't reach the domain start */}
+                  {(() => {
+                    // The global earliest x across all series — if a series starts here,
+                    // we've hit the edge of our historical data (dashed); otherwise solid.
+                    const globalFirstX = Math.min(
+                      ...(props.yKeys as string[]).flatMap((yKey) => {
+                        const pts = (points[yKey] as PointsArray)?.filter(
+                          (p) => p.x != null && p.y != null
+                        )
+                        return pts?.length ? [pts[0].x!] : []
+                      })
+                    )
+                    return props.yKeys.map((yKey, i) => {
+                      const key = String(yKey)
+                      const pts = (points[yKey] as PointsArray)?.filter(
+                        (p) => p.x != null && p.y != null
+                      )
+                      if (!pts?.length) return null
+                      const firstPt = pts[0]
+                      if (!firstPt.x || !firstPt.y) return null
+                      const startPx = xDomain ? xScale(xDomain[0]) : chartBounds.left
+                      if (firstPt.x <= startPx + 2) return null
+                      const p = Skia.Path.Make()
+                      p.moveTo(startPx, firstPt.y)
+                      p.lineTo(firstPt.x, firstPt.y)
+                      // Dashed only if this series starts at the earliest historical point.
+                      const atHistoricalEdge = Math.abs(firstPt.x - globalFirstX) < 3
+                      return atHistoricalEdge ? (
+                        <Path
+                          key={`${key}-extrap-start`}
+                          path={p}
+                          style="stroke"
+                          strokeWidth={2}
+                          color={Colors.rgba(getSeriesColor(i), 0.3)}
+                        >
+                          <DashPathEffect intervals={[4, 5]} />
+                        </Path>
+                      ) : (
+                        <Path
+                          key={`${key}-extrap-start`}
+                          path={p}
+                          style="stroke"
+                          strokeWidth={2}
+                          color={Colors.rgba(getSeriesColor(i), 0.5)}
+                        />
+                      )
+                    })
+                  })()}
+
+                  {lastPoints && Object.keys(state.y).length && (
+                    <ToolTip
+                      xValue={crosshairXValue}
+                      restPoints={lastPoints}
+                      isActive={effectiveIsActiveBool}
+                      seriesActive={isActive}
+                      x={crosshairX}
+                      yKeys={state.y}
+                      bottom={chartBounds.bottom}
+                      top={chartBounds.top}
+                      left={chartBounds.left}
+                      right={chartBounds.right}
+                      color={color}
+                      colors={resolvedColors ?? colors}
+                      valueDenorm={axisBreaks.length ? valueDenorm : undefined}
+                      showLabel={showTooltipLabel}
+                      breakGaps={breakGaps}
+                      lastDataXPerSeries={(() => {
+                        const m: Record<string, number> = {}
+                        for (const yKey of props.yKeys as string[]) {
+                          const pts = (points[yKey] as PointsArray)?.filter(
+                            (p) => p.x != null && p.y != null
+                          )
+                          const last = pts?.[pts.length - 1]
+                          if (last?.x) m[yKey] = last.x
+                        }
+                        return m
+                      })()}
+                    />
+                  )}
+                </>
+              )
+            }}
+          </CartesianChart>
+          {fetching && (
+            <View
+              pointerEvents="none"
+              style={{
+                position: 'absolute',
+                bottom: 0,
+                left: 0,
+                right: 0,
+                alignItems: 'center',
+                paddingBottom: 8,
+              }}
+            >
+              <View
+                style={{
+                  backgroundColor: 'rgba(0,0,0,0.45)',
+                  borderRadius: 20,
+                  paddingHorizontal: 14,
+                  paddingVertical: 6,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 6,
+                }}
+              >
+                <FetchingDot />
+                <Text
+                  style={{
+                    color: 'rgba(255,255,255,0.75)',
+                    fontSize: 12,
+                    fontFamily: 'SpaceMono',
+                  }}
+                >
+                  Fetching price history…
+                </Text>
+              </View>
+            </View>
+          )}
+        </Animated.View>
       )}
     </Animated.View>
   )
@@ -475,281 +901,16 @@ export default function FullPriceGraph<
   InputKeys extends GraphInputKey<T> = GraphInputKey<T>,
   YValues extends keyof NumericalFields<T> = keyof NumericalFields<T>,
 >(props: PriceGraphProps<T, InputKeys, YValues>) {
-  const { width = Dimensions.get('window').width, height = 450, data, yKeys } = props
+  const { width = WINDOW_WIDTH, height = 450, data } = props
   const isInactive = !Boolean(data)
 
   return (
-    <Animated.View className="w-full" style={{ height: isInactive ? height / 2 : height }}>
+    <Animated.View className="w-full" style={{ height: isInactive ? height / 4 : height }}>
       <DateRangeProvider>
         <ChartPressProvider>
           <PriceGraph {...props} />
         </ChartPressProvider>
       </DateRangeProvider>
-    </Animated.View>
-  )
-}
-
-export function ToolTip({
-  isActive,
-  seriesActive,
-  x,
-  yKeys, // { [seriesKey]: { value, position } }
-  bottom,
-  top,
-  xValue,
-  restPoints, // { [seriesKey]: { x, y } }  (in *pixel* coords)
-  color,
-  showLabel = true,
-}: {
-  isActive: boolean
-  seriesActive?: boolean
-  x: SharedValue<number>
-  yKeys: Record<string, SeriesSV>
-  bottom: number
-  top: number
-  xValue: SharedValue<number>
-  fontSize?: number
-  topOffset?: number
-  restPoints: Record<string, SeriesPoint>
-  color?: string
-  showLabel?: boolean
-}) {
-  const font = useFont(require('../../assets/fonts/Inter.ttf'), 12)
-  const seriesKeys = useMemo(() => Object.keys(yKeys ?? {}), [yKeys])
-  const seriesIsActive = seriesActive ?? isActive
-
-  const [xValueText, setXValueText] = useState('')
-
-  const restP = useMemo(() => {
-    let mx = -Infinity
-    const points = Object.values(restPoints)
-    let resultP: SeriesPoint | undefined = points[points.length - 1]
-    for (const p of points) {
-      if (p?.x && p.x > mx) {
-        mx = p.x
-        resultP = p
-      }
-    }
-    return resultP
-  }, [restPoints])
-
-  // Target X (animates between active crosshair and rest)
-  const targetX = useDerivedValue(() => {
-    const to = x.value
-    return withTiming(to, { duration: isActive ? 10 : 100 })
-  }, [isActive, restP])
-
-  const rectX = useDerivedValue(() => targetX.value - 1)
-
-  // Height for the guide (we’ll draw a thin Rect instead of <Line> to avoid vecs)
-  const guideTop = top
-  const guideHeight = Math.max(0, bottom - guideTop)
-
-  // Debounce date formatting to avoid jitter during drag; only the last call in a burst runs
-  const formatDateValue = useMemo(() => {
-    let timeout: ReturnType<typeof setTimeout> | undefined
-    return (v: InputFieldType) => {
-      if (timeout) clearTimeout(timeout)
-      timeout = setTimeout(() => {
-        const dateVal = v ?? (restP?.xValue as string)
-        const dateLabel = new Date(dateVal).toLocaleDateString('en-US', {
-          month: 'short',
-          day: 'numeric',
-        })
-        setXValueText(dateLabel)
-      }, 10)
-    }
-  }, [setXValueText, restP?.xValue])
-
-  useAnimatedReaction(
-    () => ({ x: xValue.value, rest: restP?.xValue ?? restP?.x ?? 0 }),
-    ({ x, rest }) => {
-      'worklet'
-      scheduleOnRN(formatDateValue, rest)
-    },
-    [xValue, isActive, restP]
-  )
-
-  const textWidth = font ? font.measureText(xValueText).width : 0
-  const textHeight = getFontHeight(font)
-  const { width: cardW, height: cardH, radius } = wrapContent(textWidth, textHeight, {})
-
-  const cardX = useDerivedValue(() => rectX.value - cardW / 2)
-  const cardY = useDerivedValue(() => guideTop)
-  const lineY = useDerivedValue(() => guideTop + cardH)
-
-  const textY = useDerivedValue(
-    () => cardY.value + cardH - textHeight / 2,
-    [cardY, cardH, textHeight]
-  )
-  const textX = useDerivedValue(
-    () => cardX.value + cardW / 2 - textWidth / 2,
-    [cardX, cardW, textWidth]
-  )
-
-  return (
-    <>
-      {/* Vertical guide only while active. Using Rect lets us pass SharedValues directly. */}
-      {
-        <>
-          <Rect
-            x={rectX} // center the 2px guide
-            y={lineY}
-            width={1}
-            height={guideHeight}
-            color="rgba(0,0,0,0.3)"
-          />
-          {showLabel && (
-            <>
-              <RoundedRect
-                x={cardX} // left at cx + offset.x, but RoundedRect wants a number
-                y={cardY}
-                width={cardW}
-                height={cardH}
-                r={radius}
-                color="rgba(0,0,0, 0.3)"
-                // shift by offset: supply separate SVs via tiny derived mirrors if you prefer.
-              />
-              <Text text={xValueText} x={textX} y={textY} font={font} color="white" />
-            </>
-          )}
-        </>
-      }
-
-      {/* Series dots (always shown). Each computes its own Y target with a derived value. */}
-      {seriesKeys.map((key) => (
-        <Fragment key={key}>
-          <SeriesDot
-            key={key}
-            isActive={seriesIsActive}
-            x={targetX}
-            posY={yKeys[key].position}
-            restY={restPoints[key]?.y}
-            color={color as Color}
-          />
-          <PointValueCard
-            key={key + '-card'}
-            isActive={seriesIsActive}
-            cx={targetX}
-            label={key}
-            cy={yKeys[key].position}
-            valueSV={yKeys[key].value}
-            canvasWidth={100}
-            canvasTop={10}
-            canvasBottom={100}
-            restPoint={restPoints[key]}
-            valueOverride={(restPoints[key] as any)?.yValue ?? (restPoints[key]?.y as number)}
-            textColor={color as string | undefined}
-          />
-        </Fragment>
-      ))}
-    </>
-  )
-}
-
-const LoadingState = ({
-  width,
-  height,
-  yKeys,
-  clipRect,
-}: {
-  width: number
-  height: number
-  yKeys: string[]
-  clipRect: DerivedValue<SkPath>
-}) => {
-  const pulse = useSharedValue(0.5)
-  const maskX = useSharedValue(0)
-
-  useEffect(() => {
-    pulse.value = withRepeat(withTiming(1, { duration: 900 }), -1, true)
-    maskX.value = withRepeat(withTiming(width, { duration: 1400 }), -1, false)
-  }, [maskX, pulse, width])
-
-  const animatedStyle = useAnimatedStyle(() => ({
-    opacity: pulse.value,
-  }))
-
-  const skeletonData = useMemo(() => {
-    const [start, end] = getTimeRange('1M')
-    const points = 10
-    const step = (end.getTime() - start.getTime()) / (points - 1)
-    return Array.from({ length: points }).map((_, idx) => {
-      const x = start.getTime() + step * idx
-      const base = 80 + idx * 2
-      const wobble = Math.sin(idx / 2) * 7
-      return yKeys.reduce(
-        (acc, key, keyIdx) => ({
-          ...acc,
-          [key]: base + wobble + keyIdx * 2,
-        }),
-        { x }
-      )
-    })
-  }, [yKeys])
-
-  return (
-    <Animated.View className="w-full px-6" style={[{ height }, animatedStyle]}>
-      <CartesianChart
-        data={skeletonData}
-        xKey="x"
-        yKeys={yKeys as any}
-        xAxis={{ tickCount: 0 }}
-        yAxis={[{ tickCount: 0 }]}
-        domainPadding={{ right: 60, top: 20, bottom: 20 }}
-      >
-        {({ points, chartBounds }) => (
-          <>
-            {yKeys.map((key) => {
-              //@ts-ignore
-              const pts = points[key] as PointsArray
-              return (
-                <Line
-                  key={`${key}-skeleton`}
-                  points={pts}
-                  strokeWidth={3}
-                  color={Colors.rgba(Colors.$outlineNeutral, 0.5)}
-                  curveType="natural"
-                />
-              )
-            })}
-            <Mask mask={<Rect x={maskX} y={0} width={width / 2} height={height} color="white" />}>
-              {yKeys.map((key) => {
-                //@ts-ignore
-                const pts = points[key] as PointsArray
-                return (
-                  <Line
-                    key={`${key}-skeleton-mask`}
-                    points={pts}
-                    strokeWidth={4}
-                    color={Colors.rgba(Colors.$outlineDefault, 1)}
-                    curveType="natural"
-                  />
-                )
-              })}
-            </Mask>
-            <Group clip={clipRect}>
-              {yKeys.map((yKey) => {
-                const key = String(yKey)
-                //@ts-ignore
-                const pts = points[yKey] as PointsArray
-                return (
-                  <LineEffect
-                    key={`${key}-effect-mask`}
-                    points={pts}
-                    curveType="natural"
-                    connectMissingData
-                    fadePx={20}
-                    y0={chartBounds.bottom}
-                    strokeWidth={50}
-                    color={Colors.rgba(Colors.$outlineDisabled, 1.0) as Color}
-                  />
-                )
-              })}
-            </Group>
-          </>
-        )}
-      </CartesianChart>
     </Animated.View>
   )
 }

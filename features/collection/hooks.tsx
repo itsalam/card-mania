@@ -11,6 +11,51 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { getDefaultPageCollectionId } from './cached-ids'
 import { defaultPages, DefaultPageTypes } from './provider'
 
+export type CollectionHistoryPoint = {
+  snapshotted_at: string
+  total_cents: number
+  quantity_total: number
+}
+
+/**
+ * Fetches real portfolio value history from collection_value_history via the
+ * get_portfolio_history RPC. Rows are written on every item change (trigger)
+ * and by the nightly pg_cron snapshot.
+ */
+export function useCollectionHistory(args: CollectionIdArgs, options?: { from?: Date; to?: Date }) {
+  const { collectionId, collectionType } = args
+  const isDefaultType =
+    collectionType === 'wishlist' || collectionType === 'selling' || collectionType === 'vault'
+
+  const { data: defaultCollectionIds } = useDefaultCollectionIds(isDefaultType && !collectionId)
+  const resolvedId =
+    collectionId ??
+    (isDefaultType && collectionType
+      ? (defaultCollectionIds?.[collectionType as keyof typeof defaultCollectionIds] ?? undefined)
+      : undefined)
+
+  return useQuery<CollectionHistoryPoint[]>({
+    enabled: Boolean(resolvedId),
+    queryKey: [
+      ...qk.collections,
+      'history',
+      resolvedId,
+      options?.from?.toISOString(),
+      options?.to?.toISOString(),
+    ],
+    staleTime: 30_000,
+    queryFn: async () => {
+      const { data, error } = await getSupabase().rpc('get_portfolio_history', {
+        p_collection_id: resolvedId!,
+        ...(options?.from ? { p_from: options.from.toISOString() } : {}),
+        ...(options?.to ? { p_to: options.to.toISOString() } : {}),
+      })
+      if (error) throw error
+      return (data ?? []) as CollectionHistoryPoint[]
+    },
+  })
+}
+
 const COLLECTION_UI_PREFERENCES_KEY = 'collections-ui-preferences'
 
 export type CollectionUiPreferences = {

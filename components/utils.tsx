@@ -57,24 +57,21 @@ export const formatPrice = (
   price?: number,
   {
     currencyCode,
-    currency,
     minimumFractionDigits,
     maximumFractionDigits,
   }: {
     currencyCode?: CurrencyCode
-    /** @deprecated pass currencyCode instead */
-    currency?: string
     minimumFractionDigits?: number
     maximumFractionDigits?: number
   } = {}
 ): string => {
   if (!Boolean(price)) return '--.--'
   const config = currencyCode ? CURRENCY_CONFIG[currencyCode] : null
-  const symbol = config?.symbol ?? currency ?? '$'
+  const symbol = config?.symbol ?? '$'
   const locale = config?.locale ?? 'en-US'
   const decimals = config?.decimals ?? 2
   const multiplier = 10 ** decimals
-  return `${symbol}${(price / multiplier).toLocaleString(locale, {
+  return `${symbol}${(price ?? 0 / multiplier).toLocaleString(locale, {
     minimumFractionDigits: minimumFractionDigits ?? decimals,
     maximumFractionDigits: maximumFractionDigits ?? decimals,
   })}`
@@ -107,7 +104,7 @@ export const formatCompactPrice = (
 
 export const formatLabel = (label: string, separator: string = ' '): string => {
   return label
-    .replace(/_/g, '.')
+    .replace(/_/g, ' ')
     .replace(/([a-zA-Z])(\d)/g, `$1${separator}$2`)
     .toLocaleUpperCase()
 }

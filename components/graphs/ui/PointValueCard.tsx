@@ -1,6 +1,15 @@
-import { formatPrice } from '@/components/utils'
-import { Group, RoundedRect, Text, useFont } from '@shopify/react-native-skia'
-import React from 'react'
+import { formatLabel } from '@/components/utils'
+import { fmtCardValue } from '../helpers'
+import {
+  DashPathEffect,
+  Group,
+  Path,
+  RoundedRect,
+  Skia,
+  Text,
+  useFont,
+} from '@shopify/react-native-skia'
+import React, { useMemo } from 'react'
 import {
   SharedValue,
   useAnimatedReaction,
@@ -10,6 +19,7 @@ import {
 import { Colors } from 'react-native-ui-lib'
 import { scheduleOnRN } from 'react-native-worklets'
 import { getFontHeight, wrapContent } from '../utils'
+import { SeriesDot } from './SeriesDot'
 import { SeriesPoint } from './types'
 
 type PointValueCardProps = {
@@ -19,33 +29,40 @@ type PointValueCardProps = {
   valueSV: SharedValue<number> // the numeric value to show (y or formatted)
   formatValue?: (n: number) => string
   restPoint: SeriesPoint
-  canvasWidth: number
   canvasTop: number
   canvasBottom: number
   isActive: boolean
   offset?: { x: number; y: number } // offset from the point
   textColor?: string
   valueOverride?: number
+  /** Collision-resolved Y positions for all series cards (worklet-safe array). */
+  adjustedPositions?: SharedValue<number[]>
+  /** Index of this card in the adjustedPositions array. */
+  seriesIndex?: number
+  /** Pixel x of the last real data point — beyond this the series is extrapolated. */
+  lastDataX?: number
 }
 
 export function PointValueCard({
   cx,
   cy,
   valueSV,
-  formatValue = formatPrice,
+  formatValue = fmtCardValue,
   restPoint,
   label,
-  canvasWidth,
   canvasTop,
   canvasBottom,
   offset = { x: 8, y: 0 },
   textColor = Colors.$textGeneral,
   valueOverride,
   isActive,
+  adjustedPositions,
+  seriesIndex,
+  lastDataX,
 }: PointValueCardProps) {
   // 1) load a font (must be a real .ttf/.otf file in your bundle)
   const priceFont = useFont(require('../../../assets/fonts/SpaceMono-Regular.ttf'), 12)
-  const labelFont = useFont(require('../../../assets/fonts/SpaceMono-Regular.ttf'), 9)
+  const labelFont = useFont(require('../../../assets/fonts/SpaceMono-Regular.ttf'), 10)
   const setFormattedLabel = React.useCallback(
     (n: number) => {
       const fallback = restPoint?.yValue ?? (0 as number)
@@ -57,15 +74,17 @@ export function PointValueCard({
   // 2) keep a React label string synced from the UI-thread SharedValue
   const [valueText, setValueText] = React.useState(formatValue(restPoint?.yValue ?? (0 as number)))
   useAnimatedReaction(
-    () => ({ v: valueSV.value, active: isActive }),
-    ({ v, active }) => {
+    () => ({ v: valueSV.value, active: isActive, curX: cx.value }),
+    ({ v, active, curX }) => {
       'worklet'
-      const display = active
-        ? v
-        : (valueOverride ?? (restPoint?.yValue as number) ?? (restPoint?.y as number) ?? 0)
+      const inExtrapolated = lastDataX !== undefined && curX > lastDataX
+      const display =
+        active && !inExtrapolated
+          ? v
+          : (valueOverride ?? (restPoint?.yValue as number) ?? (restPoint?.y as number) ?? 0)
       scheduleOnRN(setFormattedLabel, display)
     },
-    [isActive, valueOverride]
+    [isActive, valueOverride, lastDataX]
   )
 
   React.useEffect(() => {
@@ -79,80 +98,135 @@ export function PointValueCard({
   // 3) measure text (once font loaded); fall back widths if not ready
 
   const textWidth = priceFont ? priceFont.measureText(valueText).width : 40
-  const labelWidth = labelFont ? labelFont.measureText(valueText).width : 40
+  const labelWidth = labelFont ? labelFont.measureText(label).width : 40
   const textHeight = getFontHeight(priceFont)
   const labelHeight = getFontHeight(labelFont)
   const {
     width: cardW,
     height: cardH,
     radius,
-  } = wrapContent(Math.max(textWidth, labelWidth), textHeight + labelHeight, {})
+  } = wrapContent(Math.max(textWidth, labelWidth), textHeight + labelHeight - 4, {
+    padX: 8,
+    padY: 4,
+  })
 
-  const x = useDerivedValue(
-    () => withTiming(isActive ? cx.value : restPoint?.x, { duration: 20 }),
-    [cx, isActive, restPoint]
-  )
+  // cx (= targetX from ToolTip) is already animated — derive cardX directly so the
+  // card tracks the crosshair with no extra lag.
+  const cardX = useDerivedValue(() => cx.value + offset.x, [cx, offset])
+
   const y = useDerivedValue(() => {
-    const rawY = isActive ? cy.value : (restPoint?.y ?? 0)
-    const chartHeight = canvasBottom - canvasTop
-    const minAllowedY = canvasBottom - chartHeight * 0.7 // cap at top 20% buffer
-    const cappedY = Math.max(minAllowedY, Math.min(rawY, canvasBottom))
-    return withTiming(cappedY, { duration: 20 })
-  }, [cy, isActive, restPoint, canvasBottom, canvasTop])
+    const inExtrapolated = lastDataX !== undefined && cx.value > lastDataX
+    // Use collision-resolved position when provided; fall back to raw series Y.
+    const rawY =
+      adjustedPositions && seriesIndex !== undefined
+        ? adjustedPositions.value[seriesIndex]
+        : isActive && !inExtrapolated
+          ? cy.value
+          : (restPoint?.y ?? 0)
+    return withTiming(Math.max(canvasTop, Math.min(rawY, canvasBottom)), { duration: 20 })
+  }, [
+    cx,
+    cy,
+    isActive,
+    restPoint,
+    canvasBottom,
+    canvasTop,
+    adjustedPositions,
+    seriesIndex,
+    lastDataX,
+  ])
 
-  const cardX = useDerivedValue(
-    () => withTiming(x.value + offset.x, { duration: 20 }),
-    [cx, offset]
-  )
-  const cardY = useDerivedValue(
-    () => withTiming(y.value + offset.y - cardH / 2, { duration: 20 }),
-    [cy, cardH, offset, priceFont]
-  )
+  const cardY = useDerivedValue(() => y.value + (offset?.y ?? 0) - cardH / 2, [y, cardH, offset])
 
-  // 4) compute static y bounds and cap later at render time
-  const minY = canvasTop + 4
-  const maxY = canvasBottom - cardH - 4
+  // Raw dot Y — the series' actual line position before collision offset
+  const dotY = useDerivedValue(() => {
+    const inExtrapolated = lastDataX !== undefined && cx.value > lastDataX
+    return isActive && !inExtrapolated ? cy.value : (restPoint?.y ?? 0)
+  }, [cx, cy, isActive, restPoint, lastDataX])
 
-  // We can’t compute final x/y in React from SharedValues; just do simple anchoring
-  // and let Skia place the group using cx/cy plus fixed offsets.
-  // For edge-clamping on X, do a tiny onJS mirror of cx if you need it dynamic.
+  // Cardinal connector: vertical from dot to card's Y, then horizontal to card left edge
+  const connectorSkPath = useMemo(() => Skia.Path.Make(), [])
+  const connectorPath = useDerivedValue(() => {
+    connectorSkPath.reset()
+    const startX = cx.value
+    const startY = dotY.value
+    const endX = cardX.value
+    const endY = cardY.value + cardH / 2
+
+    const dy = endY - startY
+    const dx = endX - startX
+
+    if (Math.abs(dy) < 1 || Math.abs(dx) < 1) {
+      connectorSkPath.moveTo(startX, startY)
+      connectorSkPath.lineTo(endX, endY)
+    } else {
+      const R = Math.min(Math.abs(dx), Math.abs(dy), 5)
+      const signDy = dy > 0 ? 1 : -1
+      const signDx = dx > 0 ? 1 : -1
+      connectorSkPath.moveTo(startX, startY)
+      connectorSkPath.lineTo(startX, endY - R * signDy)
+      connectorSkPath.quadTo(startX, endY, startX + R * signDx, endY)
+      connectorSkPath.lineTo(endX, endY)
+    }
+
+    return connectorSkPath
+  }, [cx, dotY, cardX, cardY])
 
   const textY = useDerivedValue(
     () => cardY.value + cardH - textHeight / 2,
     [cardY, cardH, textHeight, labelHeight]
   )
-  const textX = useDerivedValue(
-    () => cardX.value + cardW / 2 - textWidth / 2,
-    [cardX, cardW, textWidth, priceFont]
-  )
+  const textX = useDerivedValue(() => cardX.value + 8, [cardX, cardW, textWidth, priceFont])
 
   const labelY = useDerivedValue(
-    () => cardY.value + cardH - textHeight - labelHeight / 2,
+    () => cardY.value + 4 + labelHeight / 2,
     [cardY, cardH, textHeight, labelHeight]
   )
-  const labelX = useDerivedValue(
-    () => cardX.value + cardW - labelWidth,
-    [cardX, cardW, labelWidth, priceFont]
-  )
+  const labelX = useDerivedValue(() => cardX.value + 8, [cardX, cardW, labelWidth, priceFont])
 
   return priceFont ? (
     <Group
       // anchor the card near the dot (no hooks here)
       transform={[{ translateX: 0 }, { translateY: 0 }]}
     >
-      {/* Background with rounded corners.
-         We compute x/y in drawspace by shifting card relative to the circle.
-         Skia supports SharedValue<number> directly for numeric props. */}
+      <SeriesDot
+        isActive={isActive}
+        x={cx}
+        posY={dotY}
+        restY={restPoint.y ?? 0}
+        color={textColor as any}
+      />
+      {/* Dashed connector from dot to card */}
+      <Path
+        path={connectorPath}
+        style="stroke"
+        strokeWidth={1.5}
+        color={Colors.rgba(textColor, 0.5)}
+      >
+        <DashPathEffect intervals={[3, 2]} />
+      </Path>
+      {/* Outer shadow layer for depth */}
       <RoundedRect
-        x={cardX} // left at cx + offset.x, but RoundedRect wants a number
+        x={cardX}
         y={cardY}
         width={cardW}
         height={cardH}
         r={radius}
-        color={Colors.$backgroundNeutral}
-        opacity={0.75}
+        color={Colors.rgba(textColor, 0.4)}
+        style="stroke"
+        strokeWidth={5}
       />
-      <Text text={label} x={labelX} y={labelY} font={labelFont} color={textColor} />
+      {/* Main card background */}
+      <RoundedRect
+        x={cardX}
+        y={cardY}
+        width={cardW}
+        height={cardH}
+        r={radius}
+        color={Colors.$backgroundElevatedLight}
+        opacity={0.9}
+      />
+      <Text text={formatLabel(label)} x={labelX} y={labelY} font={labelFont} color={textColor} />
       <Text text={valueText} x={textX} y={textY} font={priceFont} color={textColor} />
     </Group>
   ) : null

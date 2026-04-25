@@ -20,7 +20,7 @@
     "db:push": "supabase db push",
     "db:types": "npm run db:types:app && npm run db:types:function",
     "db:types:app": "PROJECT_REF=zijgqgpwmqrgnzcictcb && supabase gen types typescript --project-id $PROJECT_REF > lib/store/supabase.d.ts",
-    "db:types:function": "PROJECT_REF=zijgqgpwmqrgnzcictcb && supabase gen types typescript --project-id $PROJECT_REF > supabase/functions/_shared/supabase.d.ts",
+    "db:types:function": "PROJECT_REF=zijgqgpwmqrgnzcictcb && supabase gen types typescript --project-id $PROJECT_REF > supabase/functions/_shared/supabase.ts",
     "generate:icons": "tsx ./etc/scripts/lucide-svg-to-png.ts --config config/icons.json",
     "prepare": "husky",
     "eslint": "eslint .",

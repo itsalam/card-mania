@@ -4,8 +4,10 @@ import { ScrollView, View } from 'react-native'
 import { Colors } from 'react-native-ui-lib'
 
 import { LiquidGlassCard } from '@/components/tcg-card/GlassCard'
-import { formatLabel, formatPrice, splitToNChunks } from '@/components/utils'
+import { fmtCardValue } from '@/components/graphs/helpers'
+import { formatLabel, splitToNChunks } from '@/components/utils'
 import { Eye, EyeOff, Plus } from 'lucide-react-native'
+import { useGradeColors } from '../GradeColorsProvider'
 
 export const Prices = ({
   prices,
@@ -20,12 +22,14 @@ export const Prices = ({
   selectedGrades: string[]
   setShowMoreGrades: React.Dispatch<React.SetStateAction<boolean>>
 }) => {
+  const gradeColors = useGradeColors()
   const NUM_PRICE_ROWS = 2
   const rows = useMemo(
     () =>
       splitToNChunks(
         prices.filter(([key]) => visibleGrades.includes(key)),
-        NUM_PRICE_ROWS
+        NUM_PRICE_ROWS,
+        3
       ).filter((r) => r.length > 0),
     [prices, visibleGrades]
   )
@@ -43,10 +47,18 @@ export const Prices = ({
       {rows.map((row, i) => (
         <View key={`row-${i}`} className={'flex flex-row gap-2 overflow-visible pr-4'}>
           {row.map(([key, value]) => {
+            const isSelected = selectedGrades.includes(key)
             return (
               <LiquidGlassCard
                 className="flex items-center justify-center"
-                style={{ opacity: value ? 1 : 0.5, minWidth: 100 }}
+                style={{
+                  opacity: value ? 1 : 0.5,
+                  minWidth: 100,
+                  borderLeftWidth: 3,
+                  borderLeftColor: gradeColors[key]
+                    ? Colors.rgba(gradeColors[key], isSelected ? 1 : 0.25)
+                    : 'transparent',
+                }}
                 size="sm"
                 key={`${key}-${value}-${i}`}
                 onPress={() => {
@@ -56,17 +68,17 @@ export const Prices = ({
                 }}
               >
                 <View className="flex flex-row gap-2 items-center justify-end">
-                  {selectedGrades.includes(key) ? (
+                  {isSelected ? (
                     <Eye size={16} color={Colors.$iconDefault} />
                   ) : (
                     <EyeOff size={16} color={Colors.$iconDefault} />
                   )}
-                  <Text className="text-lg font-bold text-muted-foreground text-nowrap text-right font-spaceMono">
+                  <Text className="text-sm font-bold text-muted-foreground text-nowrap text-right font-spaceMono">
                     {formatLabel(key)}
                   </Text>
                 </View>
-                <Text className="text-3xl capitalize text-nowrap text-right">
-                  {value ? formatPrice(value) : '--'}
+                <Text className="text-2xl capitalize text-nowrap text-right">
+                  {value ? fmtCardValue(value) : '--'}
                 </Text>
               </LiquidGlassCard>
             )
@@ -78,7 +90,7 @@ export const Prices = ({
               size="sm"
               onPress={() => setShowMoreGrades((prev) => !prev)}
             >
-              <Plus size={28} />
+              <Plus size={28} color={Colors.$outlineDefault} />
             </LiquidGlassCard>
           )}
         </View>

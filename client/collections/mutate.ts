@@ -1,4 +1,5 @@
-import { TCollection, TTag } from '@/constants/types'
+import { prewarmPriceHistory } from '@/client/chart-data'
+import { TCard, TCollection, TTag } from '@/constants/types'
 import { getSupabase } from '@/lib/store/client'
 import { qk, requireUser } from '@/lib/store/functions/helpers'
 import { CollectionRow } from '@/lib/store/functions/types'
@@ -247,6 +248,15 @@ export const useEditCollectionItem = (collectionId?: string, cardId?: string, it
         qc.setQueryData(queryKey, [
           ...prevItems.filter((pi) => pi.id !== `temp-${data.grade_condition_id}`),
         ])
+      }
+
+      // Strategy 2: pre-warm price history when a card is added to a collection.
+      // Kicks off the backfill now so the chart is ready when the user opens the detail view.
+      if (!deleteItem && data?.ref_id) {
+        const card = qc.getQueryData<TCard>(qk.card(data.ref_id))
+        const gradesPrices = card?.grades_prices as Record<string, number> | undefined
+        const grades = gradesPrices ? Object.keys(gradesPrices) : []
+        if (grades.length) prewarmPriceHistory(data.ref_id, grades)
       }
     },
     onSettled: () => {

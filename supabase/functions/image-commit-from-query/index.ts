@@ -3,19 +3,19 @@
 // This enables autocomplete, go to definition, etc.
 
 // Setup type definitions for built-in Supabase Runtime APIs
-import { Database } from '@schema'
-import { createClient } from '@supabase/supabase-js'
-import { commitCacheFromQueryHash, commitCardImageFromCacheUpsert } from '@utils'
+import {
+  commitCacheFromQueryHash,
+  commitCardImageFromCacheUpsert,
+  createSupabaseServiceClient,
+} from '@utils'
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
 // --- config
-const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
-const SERVICE_ROLE = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 const HOT_THRESHOLD = Number(Deno.env.get('IMAGE_HOT_THRESHOLD') ?? '20')
 const COOLOFF_HOURS = Number(Deno.env.get('IMAGE_COMMIT_COOLOFF_HOURS') ?? '24')
 const MAX_BATCH = Number(Deno.env.get('IMAGE_COMMIT_MAX_BATCH') ?? '50')
 const DEFAULT_SAMPLE = Number(Deno.env.get('IMAGE_COMMIT_SAMPLE') ?? '1')
 
-const supabase = createClient<Database>(SUPABASE_URL, SERVICE_ROLE)
+const supabase = createSupabaseServiceClient()
 
 function logAuthInfo(req: Request) {
   const authHeader = req.headers.get('authorization')
@@ -31,7 +31,7 @@ async function readJson<T extends Record<string, unknown>>(req: Request): Promis
     // try best-effort parse, but don't crash
     const txt = await req.text()
     try {
-      return txt ? JSON.parse(txt) : {}
+      return txt ? JSON.parse(txt) : ({} as T)
     } catch {
       return {} as T
     }
@@ -65,7 +65,7 @@ Deno.serve(async (req) => {
         supabase
       )
 
-      const commitUpdatedPromise = getSupabase()
+      const commitUpdatedPromise = supabase
         .from('search_queries')
         .update({ committed_at: new Date().toISOString() })
         .eq('query_hash', query_hash)

@@ -5,7 +5,7 @@ import { cn } from '@/lib/utils/index'
 import * as SelectPrimitive from '@rn-primitives/select'
 import { Check, ChevronDown, ChevronDownIcon, ChevronUpIcon } from 'lucide-react-native'
 import * as React from 'react'
-import { Platform, ScrollView, StyleSheet, View } from 'react-native'
+import { Platform, PressableStateCallbackType, ScrollView, StyleSheet, View } from 'react-native'
 import { FadeIn, FadeOut } from 'react-native-reanimated'
 import { FullWindowOverlay as RNFullWindowOverlay } from 'react-native-screens'
 import { BorderRadiuses, Colors } from 'react-native-ui-lib'
@@ -45,6 +45,7 @@ function SelectValue({
   ref,
   className,
   placeholder,
+  children,
   ...props
 }: Omit<SelectPrimitive.ValueProps, 'placeholder'> &
   React.RefAttributes<SelectPrimitive.ValueRef> & {
@@ -76,11 +77,12 @@ function SelectValue({
             flexDirection: 'row',
             alignItems: 'center',
             flex: 1,
+            color: Colors.$textDefault,
           },
         ]}
         {...props}
       />
-
+      {children}
       <FloatingPlaceholder
         placeholder={placeholder}
         placeHolderStyle={[
@@ -96,7 +98,7 @@ function SelectValue({
         inputOffset={inputLayout ?? undefined}
         // inputOffset={inputLayout ?? undefined}
       />
-      <Icon as={ChevronDown} aria-hidden={true} size={16} />
+      <Icon as={ChevronDown} aria-hidden={true} size={16} color={Colors.$textDefault} />
     </View>
   )
 }
@@ -252,10 +254,44 @@ function SelectItem({
   ...props
 }: SelectPrimitive.ItemProps &
   React.RefAttributes<SelectPrimitive.ItemRef> & { groupItem?: boolean }) {
+  const indicator = (
+    <SelectPrimitive.ItemIndicator>
+      <View className="ml-3 mr-1.5 flex size-3.5 items-center justify-center">
+        <Icon as={Check} size={20} className="text-muted-foreground shrink-0" />
+      </View>
+    </SelectPrimitive.ItemIndicator>
+  )
+
+  const itemText = (
+    <SelectPrimitive.ItemText
+      style={[styles.inputTextStyle, { color: Colors.$textDefault }]}
+      className="group-active:text-accent-foreground select-none text-sm"
+    />
+  )
+
+  // Merge the default indicator + label with any caller-supplied children.
+  // Supports both ReactNode and the Pressable render-prop form.
+  const resolvedChildren: SelectPrimitive.ItemProps['children'] =
+    typeof children === 'function' ? (
+      (state: PressableStateCallbackType) => (
+        <>
+          {itemText}
+          {children(state)}
+          {indicator}
+        </>
+      )
+    ) : (
+      <>
+        {itemText}
+        {children}
+        {indicator}
+      </>
+    )
+
   return (
     <SelectPrimitive.Item
       className={cn(
-        'active:bg-accent group relative flex w-full flex-row items-center gap-2',
+        'active:bg-accent group relative flex w-full flex-row items-center pr-1.5',
         Platform.select({
           web: 'focus:bg-accent focus:text-accent-foreground *:[span]:last:flex *:[span]:last:items-center *:[span]:last:gap-2 cursor-default outline-none data-[disabled]:pointer-events-none [&_svg]:pointer-events-none',
         }),
@@ -266,15 +302,7 @@ function SelectItem({
       // style={[styles.container]}
       {...props}
     >
-      <View className="absolute right-2 flex size-3.5 items-center justify-center">
-        <SelectPrimitive.ItemIndicator>
-          <Icon as={Check} size={20} className="text-muted-foreground shrink-0" />
-        </SelectPrimitive.ItemIndicator>
-      </View>
-      <SelectPrimitive.ItemText
-        style={[styles.inputTextStyle]}
-        className="text-foreground group-active:text-accent-foreground select-none text-sm"
-      />
+      {resolvedChildren}
     </SelectPrimitive.Item>
   )
 }

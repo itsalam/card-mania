@@ -35,11 +35,19 @@ export type PriceGraphProps<
   YKeys extends keyof NumericalFields<T> = keyof NumericalFields<T>,
 > = {
   data?: T[]
+  /** True when a first-time backfill is in progress and no history exists yet. */
+  pending?: boolean
+  /** True when a fresh price fetch is in-flight but data is already available. */
+  fetching?: boolean
   width?: number
   height?: number
   xKey: InputKey
   yKeys: YKeys[]
   color?: string
+  /** Per-series color overrides. colors[i] maps to yKeys[i]; falls back to `color` for unspecified indices. */
+  colors?: string[]
+  /** Two hex colors [from, to] — series colors are interpolated evenly across this gradient. */
+  colorRange?: [string, string]
   style?: StyleProp<ViewStyle>
   showTooltipLabel?: boolean
 }

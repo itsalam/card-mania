@@ -14,14 +14,22 @@ import { useCollectionTotal, useWishlistTotal } from '@/client/collections/query
 import { Text } from '@/components/ui/text/base-text'
 import { formatCompactPrice } from '@/components/utils'
 import { cn } from '@/lib/utils'
+import { Eye, EyeOff } from 'lucide-react-native'
 import { AnimatePresence, motify, MotiView } from 'moti'
 import { motifySvg } from 'moti/svg'
 import { useMemo, useReducer } from 'react'
 import { Pressable, StyleProp, View, ViewStyle } from 'react-native'
 import { Easing } from 'react-native-reanimated'
+import { Colors } from 'react-native-ui-lib'
 import { Circle, Defs, LinearGradient, Stop, Svg } from 'react-native-svg'
 import { DefaultCollectionData } from '../helpers'
 import { CircleProgressProps } from '../types'
+
+const LABEL_TO_TYPE: Record<string, string> = {
+  WISHLIST: 'wishlist',
+  SELLING: 'selling',
+  PORTFOLIO: 'vault',
+}
 
 const MotiCircle = motifySvg(Circle)()
 
@@ -105,41 +113,52 @@ export const CircleProgress = ({ data, index }: CircleProgressProps) => {
   )
 }
 
-const DetailedActivityInfo = () => {
+const DetailedActivityInfo = ({
+  selectedCollections,
+  onToggle,
+}: {
+  selectedCollections: string[]
+  onToggle: (type: string) => void
+}) => {
   return (
     <MotiView
-      className="flex flex-col gap-6"
+      className="flex flex-col gap-3"
       from={{ opacity: 0, translateX: 20 }}
       animate={{ opacity: 1, translateX: 0 }}
       transition={{ duration: 500, delay: 300 }}
     >
       {DefaultCollectionData.map((activity) => {
+        const collectionType = LABEL_TO_TYPE[activity.label]
+        const isSelected = selectedCollections.includes(collectionType)
         const isCurrency = activity.unit === '$'
         const currentText = isCurrency ? formatCompactPrice(activity.current) : activity.current
         const targetText = isCurrency ? formatCompactPrice(activity.target) : activity.target
         return (
-          <MotiView key={activity.label} className="flex flex-col">
-            <Text variant={'small'}>{activity.label}</Text>
-            <View
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                flexDirection: 'row',
-              }}
-            >
-              <Text
-                variant={'h3'}
-                style={{
-                  color: activity.colors[1],
-                  fontWeight: '400',
-                }}
-              >
+          <Pressable
+            key={activity.label}
+            onPress={() => onToggle(collectionType)}
+            style={{
+              opacity: isSelected ? 1 : 0.45,
+              borderLeftWidth: 3,
+              borderLeftColor: Colors.rgba(activity.colors[0], isSelected ? 1 : 0.3),
+              paddingLeft: 8,
+            }}
+          >
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              {isSelected ? (
+                <Eye size={12} color={Colors.$iconDefault} />
+              ) : (
+                <EyeOff size={12} color={Colors.$iconDefault} />
+              )}
+              <Text variant={'small'}>{activity.label}</Text>
+            </View>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <Text variant={'h3'} style={{ color: activity.colors[1], fontWeight: '400' }}>
                 {currentText}/{targetText}
               </Text>
-
               {!isCurrency && <Text className="ml-0.5">{activity.unit}</Text>}
             </View>
-          </MotiView>
+          </Pressable>
         )
       })}
     </MotiView>
@@ -152,13 +171,19 @@ export default function CollectionBreakdown({
   title = 'Collection Breakdown',
   style,
   className,
+  selectedCollections,
+  onToggleCollection,
 }: {
   title?: string
   style?: StyleProp<ViewStyle>
   className?: string
+  selectedCollections?: string[]
+  onToggleCollection?: (type: string) => void
 }) {
-  const [visible, toggle] = useReducer((s) => !s, true)
+  const [visible] = useReducer((s) => !s, true)
   const { data: wishlistTotal, ...wishlistReq } = useWishlistTotal()
+  const _selected = selectedCollections ?? ['wishlist', 'selling', 'vault']
+  const _onToggle = onToggleCollection ?? (() => {})
   const { data: sellingTotal } = useCollectionTotal({ collectionType: 'selling' })
   const { data: portfolioTotal } = useCollectionTotal({ collectionType: 'vault' })
   const totals = useMemo(() => {
@@ -199,9 +224,7 @@ export default function CollectionBreakdown({
             ))}
         </AnimatePresence>
       </View>
-      <Pressable onPress={toggle}>
-        <DetailedActivityInfo />
-      </Pressable>
+      <DetailedActivityInfo selectedCollections={_selected} onToggle={_onToggle} />
     </View>
   )
 }

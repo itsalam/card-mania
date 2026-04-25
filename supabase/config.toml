@@ -359,6 +359,14 @@ entrypoint = "./functions/image-commit-from-query/index.ts"
 # For example, if you want to serve static HTML pages in your function:
 # static_files = [ "./functions/image-commit-from-query/*.html" ]
 
+[functions.fetch-card-history]
+enabled = true
+# Called service-to-service (from fetch-card and price-fetch) using the service
+# role key — no user JWT is in scope. Security is enforced inside the function
+# via createSupabaseServiceClient() which requires the service role key.
+verify_jwt = false
+entrypoint = "./functions/fetch-card-history/index.ts"
+
 [functions.fetch-card]
 enabled = true
 verify_jwt = true

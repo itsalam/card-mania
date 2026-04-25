@@ -1,8 +1,8 @@
 import { fetchImageStrict } from '@image-fetch'
-import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { Candidate, CardImageFields } from '@types'
 import { crypto } from 'https://deno.land/std@0.224.0/crypto/mod.ts'
-import { Database } from './supabase.d.ts'
+import { createClient, type SupabaseClient } from 'npm:@supabase/supabase-js'
+import { Database } from './supabase.ts'
 
 export async function requireUser(userClient: SupabaseClient<Database>) {
   const {
@@ -248,11 +248,8 @@ export async function commitCacheFromUrl(
 ) {
   // 1) fetch via imageproxy (recommended) to get normalized bytes + final mime
   const { ttlSec } = fetchGlobalVars()
-  const res = await fetchImageStrict(url)
-  if (!res.ok) {
-    console.debug(res)
-    throw new Error(`Fetch failed ${res.statusText} ${res.status}`)
-  }
+  const { bytes: buf, mime, finalUrl } = await fetchImageStrict(url)
+  const ct = mime ?? 'application/octet-stream'
 
   const { error: checkBucketError } = await supabase.storage.getBucket('images')
   if (checkBucketError) {
@@ -263,11 +260,15 @@ export async function commitCacheFromUrl(
     })
   }
 
-  const ct = res.headers.get('content-type') ?? 'application/octet-stream'
-  const buf = new Uint8Array(await res.arrayBuffer())
-  const urlHash = await sha256HexStr(url)
-  // If your imageproxy can return a canonical content hash header, use that instead:
-  const contentSha = hex(await crypto.subtle.digest('SHA-256', buf.buffer))
+  // Use the final URL after redirects for the cache key so we don't double-store
+  const canonicalUrl = finalUrl ?? url
+  const urlHash = await sha256HexStr(canonicalUrl)
+  const contentSha = hex(
+    await crypto.subtle.digest(
+      'SHA-256',
+      buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength)
+    )
+  )
 
   const ext = ct.includes('png')
     ? 'png'
@@ -283,7 +284,7 @@ export async function commitCacheFromUrl(
     .from('images')
     .upload(storagePath, buf, { upsert: true, contentType: ct })
   if (up.error) {
-    console.error('Error uploading image to storage', url)
+    console.error('Error uploading image to storage', canonicalUrl)
     throw up.error
   }
 
@@ -303,7 +304,7 @@ export async function commitCacheFromUrl(
       {
         ...imageCacheFields,
         id: imageId,
-        source_url: url,
+        source_url: canonicalUrl,
         url_hash: urlHash,
         content_sha256: contentSha,
         expires_at: expiresAt,
@@ -441,6 +442,52 @@ export const getImageCacheFromQueryHash = async (
     ic = data
   }
   return { ic, isc }
+}
+
+/**
+ * Convert an internal normalized grade key to the grade label CardHedge expects
+ * for its /v1/cards/prices-by-card endpoint.
+ *
+ * Handles both CardHedge-style keys ("psa_9" → "PSA 9") and PriceCharting-style
+ * keys ("psa9_5" → "PSA 9.5") since grades_prices is a merged result of both vendors.
+ *
+ * Returns null for keys that can't be mapped (e.g. custom/unknown formats).
+ *
+ * Examples:
+ *   "ungraded"  → "Raw"
+ *   "psa9"      → "PSA 9"
+ *   "psa_9"     → "PSA 9"
+ *   "psa9_5"    → "PSA 9.5"
+ *   "bgs_9.5"   → "BGS 9.5"
+ *   "psa10"     → "PSA 10"
+ *   "cgc10"     → "CGC 10"
+ */
+export function toCardHedgeGradeLabel(key: string): string | null {
+  if (key === 'ungraded') return 'Raw'
+  // Match "psa9", "psa_9", "psa9_5", "bgs_9.5", "cgc10", etc.
+  const m = key.match(/^([a-z]+)_?(\d[\d._]*)$/i)
+  if (!m) return null
+  const company = m[1].toUpperCase()
+  const grade = m[2].replace(/_/g, '.') // "9_5" → "9.5"
+  return `${company} ${grade}`
+}
+
+/**
+ * Normalize a CardHedge grade label to the internal grade key stored in
+ * cards.grades_prices and card_price_history.
+ *
+ * This is the inverse of toCardHedgeGradeLabel and matches the normalization
+ * already applied in fetch-card when processing CardHedge search results.
+ *
+ * Examples:
+ *   "Raw"     → "ungraded"
+ *   "PSA 9"   → "psa_9"
+ *   "PSA 10"  → "psa_10"
+ *   "BGS 9.5" → "bgs_9.5"
+ */
+export function normalizeGradeKey(chLabel: string): string {
+  const key = chLabel.toLowerCase().replace(/\s+/g, '_')
+  return key === 'raw' ? 'ungraded' : key
 }
 
 export const DEBUG = (Deno.env.get('DEBUG') ?? 'false').toLowerCase() === 'true'

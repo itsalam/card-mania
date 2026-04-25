@@ -2,7 +2,7 @@ import { usePriceChartingDataBatch } from '@/client/chart-data'
 import { TCard } from '@/constants/types'
 import { useIsFocused } from '@react-navigation/native'
 import { Href, router } from 'expo-router'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Dimensions } from 'react-native'
 import {
   cancelAnimation,
@@ -22,10 +22,33 @@ export const useSelectedGrades = (card?: Partial<TCard>, preSelectedGrades?: str
     grades: selectedGrades,
   })
 
+  // Synthesise today-priced stub points for grades not yet in real history data.
+  // Keeps hasValidData true immediately after a grade toggle, preventing LoadingState flash.
+  // Replaced seamlessly once real history arrives.
+  const optimisticPriceData = useMemo<Record<string, string | number>[] | undefined>(() => {
+    if (!card?.grades_prices || !selectedGrades.length) return undefined
+    const gradesPrices = card.grades_prices as Record<string, number>
+    const gradesWithData = new Set(
+      (priceChartingData?.priceData ?? []).flatMap((pt) =>
+        Object.keys(pt).filter((k) => k !== 'date' && typeof pt[k] === 'number')
+      )
+    )
+    const missingGrades = selectedGrades.filter(
+      (g) => !gradesWithData.has(g) && gradesPrices[g] != null
+    )
+    if (!missingGrades.length) return undefined
+    const point: Record<string, string | number> = { date: Date.now() }
+    for (const g of missingGrades) {
+      point[g] = Math.round(gradesPrices[g] * 100)
+    }
+    return Object.keys(point).length > 1 ? [point] : undefined
+  }, [card?.grades_prices, selectedGrades, priceChartingData?.priceData])
+
   return {
     selectedGrades,
     setSelectedGrades,
     priceChartingData,
+    optimisticPriceData,
     priceFetchResults,
   }
 }

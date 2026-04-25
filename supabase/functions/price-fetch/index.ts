@@ -1,8 +1,3 @@
-// Follow this setup guide to integrate the Deno language server with your editor:
-// https://deno.land/manual/getting_started/setup_your_environment
-// This enables autocomplete, go to definition, etc.
-
-// Setup type definitions for built-in Supabase Runtime APIs
 import { createSupabaseClient } from '@utils'
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
 
@@ -16,52 +11,99 @@ Deno.serve(async (req) => {
   const { mock_data, grade, card_id } = await req.json()
   const supabase = createSupabaseClient(req)
 
-  if (mock_data) {
-    const { end_cost } = mock_data // make sure grade is available
-    if (!end_cost) {
-      json({ priceData: null })
-    }
+  // ── Mock mode: only when the caller explicitly opts in ───────────────────────
+  // Never used as a silent fallback — this is a dev/debug path only.
+  if (mock_data && typeof mock_data.end_cost === 'number') {
+    const { end_cost } = mock_data
     const days = 90
-
     const MS_DAY = 86_400_000
     const startOfUTCDay = (ts: number) => {
       const d = new Date(ts)
-      return Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()) // ms
+      return Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate())
     }
-
-    // last point is "today" at UTC midnight
     const endMs = startOfUTCDay(Date.now())
     const startMs = endMs - (days - 1) * MS_DAY
-
-    // trend toward end_cost with some noise
     const startCost = end_cost * 0.8 + Math.random() * end_cost * 0.4
     const priceData = Array.from({ length: days }, (_, i) => {
-      const t = startMs + i * MS_DAY // epoch ms at UTC midnight
+      const t = startMs + i * MS_DAY
       const progress = i / (days - 1)
       const trend = startCost + (end_cost - startCost) * progress
       const variation = trend * 0.1
       const price = i === days - 1 ? end_cost : trend + (Math.random() * 2 - 1) * variation
-
-      return {
-        date: t, // <-- epoch ms (UTC midnight)
-        [grade]: Math.max(0, Math.round(price)),
-      }
+      return { date: t, [grade]: Math.max(0, Math.round(price)) }
     })
-
     return json(priceData)
   }
 
-  return new Response(null, { headers: { 'Content-Type': 'application/json' } })
+  // ── Real data path ───────────────────────────────────────────────────────────
+  if (!card_id || !grade) {
+    return json({ error: 'card_id and grade are required' }, { status: 400 })
+  }
+
+  const { data: history, error } = await supabase
+    .from('card_price_history')
+    .select('price_cents, recorded_at')
+    .eq('card_id', card_id)
+    .eq('grade', grade)
+    .order('recorded_at', { ascending: true })
+
+  if (error) {
+    console.error('[price-fetch] history query failed:', error)
+    return json({ error: 'Failed to query price history' }, { status: 500 })
+  }
+
+  if (history && history.length > 0) {
+    const priceData = history.map(({ price_cents, recorded_at }) => ({
+      date: new Date(recorded_at).getTime(),
+      [grade]: price_cents,
+    }))
+    return json(priceData)
+  }
+
+  // ── No history yet — two-phase backfill ─────────────────────────────────────
+  const supaUrl = Deno.env.get('SUPABASE_URL')
+  const srole = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+
+  if (supaUrl && srole) {
+    const historyBase = `${supaUrl}/functions/v1/fetch-card-history`
+    const headers = { Authorization: `Bearer ${srole}` }
+
+    // Phase 1 — synchronous 30-day fetch.
+    // Blocks until the minimum viable window is written so this request can
+    // return real data rather than a pending signal.
+    try {
+      await fetch(`${historyBase}?card_id=${card_id}&days=30`, { headers })
+    } catch (e) {
+      console.error('[price-fetch] 30-day backfill failed:', e)
+    }
+
+    // Re-query for the rows just written.
+    const { data: freshHistory } = await supabase
+      .from('card_price_history')
+      .select('price_cents, recorded_at')
+      .eq('card_id', card_id)
+      .eq('grade', grade)
+      .order('recorded_at', { ascending: true })
+
+    if (freshHistory && freshHistory.length > 0) {
+      // Phase 2 — background 180-day enrichment.
+      // ignoreDuplicates on the upsert means the 30 rows already present are
+      // skipped; only the remaining ~150 days are inserted.
+      EdgeRuntime.waitUntil(
+        fetch(`${historyBase}?card_id=${card_id}`, { headers }).catch((e) =>
+          console.error('[price-fetch] full backfill failed:', e)
+        )
+      )
+
+      return json(
+        freshHistory.map(({ price_cents, recorded_at }) => ({
+          date: new Date(recorded_at).getTime(),
+          [grade]: price_cents,
+        }))
+      )
+    }
+  }
+
+  // Last resort: Phase 1 failed or credentials unavailable.
+  return json({ pending: true, data: [] })
 })
-
-/* To invoke locally:
-
-  1. Run `supabase start` (see: https://getSupabase().com/docs/reference/cli/supabase-start)
-  2. Make an HTTP request:
-
-  curl -i --location --request POST 'http://127.0.0.1:54321/functions/v1/price-fetch' \
-    --header 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0' \
-    --header 'Content-Type: application/json' \
-    --data '{"name":"Functions"}'
-
-*/

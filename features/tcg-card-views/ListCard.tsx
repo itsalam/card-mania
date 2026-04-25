@@ -5,7 +5,7 @@ import { formatLabel, formatPrice } from '@/components/utils'
 import { TCard } from '@/constants/types'
 import { CollectionItemQueryView } from '@/lib/store/functions/types'
 import { cn } from '@/lib/utils/cn'
-import { EllipsisVertical, Heart, TrendingDown, TrendingUp } from 'lucide-react-native'
+import { EllipsisVertical, Heart, Maximize, TrendingDown, TrendingUp } from 'lucide-react-native'
 import { forwardRef, ReactNode } from 'react'
 import { StyleSheet, View } from 'react-native'
 import { Colors, TouchableOpacity } from 'react-native-ui-lib'
@@ -125,6 +125,7 @@ export const DefaultAccessories = ({
                     set_name: displayData?.subHeading,
                     latest_price: displayData?.displayPrice,
                     image_url: displayData?.imageProxyArgs?.directUrl,
+                    grades_prices: (item as any).grades_prices ?? undefined,
                   },
                 })
             }}
@@ -204,10 +205,31 @@ export const ItemListView = forwardRef<View, ItemListViewProps>(function ItemLis
       className={cn('items-start flex', vertical ? '' : 'flex-row w-full', className)}
       style={style}
     >
-      <CardImage
-        displayData={displayData}
-        imageProps={{ onPress: onPress ?? handlePress, ref: cardElement }}
-      />
+      <View
+        style={{
+          position: 'relative',
+          overflow: 'visible',
+        }}
+      >
+        <CardImage
+          displayData={displayData}
+          imageProps={{ onPress: onPress ?? handlePress, ref: cardElement }}
+        />
+        <View
+          style={{
+            aspectRatio: 1,
+            borderRadius: 999,
+            backgroundColor: Colors.rgba(Colors.$backgroundElevatedLight, 0.8),
+            position: 'absolute',
+            right: 0,
+            bottom: 0,
+            transform: [{ translateX: '25%' }, { translateY: '25%' }],
+            padding: 8,
+          }}
+        >
+          <Maximize size={18} color={Colors.$iconDefault} />
+        </View>
+      </View>
 
       {expanded && !Boolean(vertical) ? (
         <HorizontalAccessory renderAccessories={renderAccessories} {...props} />

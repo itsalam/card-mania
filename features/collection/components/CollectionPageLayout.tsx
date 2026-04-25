@@ -236,7 +236,6 @@ const DetailCollectionView = ({ direction }: { direction: 'forward' | 'backward'
   )
   const { isLoading: isLoadingItems } = collectionItemsQuery
   const collectionItems = useMemo(() => {
-    console.log('UPDATED')
     return collectionItemsQuery.data?.pages.flat() ?? []
   }, [collectionItemsQuery.data])
 

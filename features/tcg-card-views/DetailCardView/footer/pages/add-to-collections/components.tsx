@@ -27,6 +27,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Text } from '@/components/ui/text/base-text'
+import { formatPrice } from '@/components/utils'
 import { sortCollectionItem } from '@/features/tcg-card-views/helpers'
 import { qk } from '@/lib/store/functions/helpers'
 import { InfiniteData, useQueryClient } from '@tanstack/react-query'
@@ -65,10 +66,8 @@ export const CollectionCardItemEntries = ({
   }, [refetch])
 
   const sortedEntries = useMemo(() => {
-    const hasUngradedItems = loadedEntries.some(
-      (e) => e.grading_company === null && e.quantity >= 1
-    )
-    const baseEntries = hasUngradedItems ? loadedEntries : [{ quantity: 0 }, ...loadedEntries]
+    const hasItems = loadedEntries.some((e) => e.quantity >= 1)
+    const baseEntries = hasItems ? loadedEntries : [{ quantity: 0 }, ...loadedEntries]
 
     const sortedEntries = [...baseEntries].sort(sortCollectionItem)
     return sortedEntries
@@ -166,6 +165,7 @@ export const CollectionCardItemEntries = ({
         />
       )}
       <PriceChangeModal
+        cardData={card}
         visible={!!priceChangeEntry}
         onDismiss={() => setPriceChangeEntry(null)}
         data={priceChangeEntry}
@@ -348,7 +348,23 @@ const AddVariantModal = ({
             }}
           >
             <SelectTrigger label="Condition" disabled={!draft.grading_company}>
-              <SelectValue />
+              <SelectValue>
+                <View
+                  style={{
+                    flex: 1,
+                    justifyContent: 'flex-end',
+                    alignContent: 'flex-end',
+                  }}
+                >
+                  {company && draft.grade_condition && (
+                    <Text style={{ textAlign: 'right' }}>
+                      {formatPrice(
+                        item.grades_prices[`${company.slug}${draft.grade_condition?.grade_value}`]
+                      )}
+                    </Text>
+                  )}
+                </View>
+              </SelectValue>
             </SelectTrigger>
             <SelectContent insets={contentInsets} side="top" sideOffset={12}>
               <NativeSelectScrollView>
@@ -360,7 +376,17 @@ const AddVariantModal = ({
                       value={String(index)}
                       groupItem
                     >
-                      {`${grade.grade_value}`}
+                      <View
+                        style={{
+                          flex: 1,
+                          justifyContent: 'flex-end',
+                          alignContent: 'flex-end',
+                        }}
+                      >
+                        <Text style={{ textAlign: 'right' }}>
+                          {formatPrice(item.grades_prices[`${company.slug}${grade.grade_value}`])}
+                        </Text>
+                      </View>
                     </SelectItem>
                   ))}
                 </SelectGroup>

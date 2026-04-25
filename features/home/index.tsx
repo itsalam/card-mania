@@ -3,7 +3,7 @@ import { Tabs, TabsContent, TabsLabel, TabsList, TabsTrigger } from '@/component
 import { Text } from '@/components/ui/text/base-text'
 import { MainSearchBar } from '@/features/mainSearchbar'
 import { Compass, History, LucideIcon, Newspaper, SettingsIcon, Sheet } from 'lucide-react-native'
-import React from 'react'
+import React, { useCallback, useState } from 'react'
 import { ScrollView, TouchableOpacity, View } from 'react-native'
 import { GestureDetector } from 'react-native-gesture-handler'
 import Animated from 'react-native-reanimated'
@@ -33,7 +33,17 @@ const AnimatedScrollView = Animated.createAnimatedComponent(ScrollView)
 export default function HomeScreen() {
   const { currentPage, setCurrentPage } = useHomePageStore()
   const insets = useSafeAreaInsets()
-  const GRAPH_SECTION_HEIGHT = 260
+  const GRAPH_SECTION_HEIGHT = 284
+  const [selectedCollections, setSelectedCollections] = useState<string[]>([
+    'wishlist',
+    'selling',
+    'vault',
+  ])
+  const toggleCollection = useCallback((type: string) => {
+    setSelectedCollections((prev) =>
+      prev.includes(type) ? prev.filter((t) => t !== type) : [...prev, type]
+    )
+  }, [])
   const {
     tabsExpanded,
     headerAnimatedStyle,
@@ -60,6 +70,8 @@ export default function HomeScreen() {
           marginBottom: 20,
           marginHorizontal: 12,
         }}
+        selectedCollections={selectedCollections}
+        onToggleCollection={toggleCollection}
       />
       <GestureDetector gesture={composedGestures}>
         <View style={{ height: 500 }}>
@@ -78,7 +90,7 @@ export default function HomeScreen() {
             ]}
             onLayout={onHeaderLayout}
           >
-            <Graphs height={GRAPH_SECTION_HEIGHT} />
+            <Graphs height={GRAPH_SECTION_HEIGHT} selectedCollections={selectedCollections} />
           </Animated.View>
           <Tabs
             className="flex-1"

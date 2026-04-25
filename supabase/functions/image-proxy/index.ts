@@ -1,9 +1,9 @@
 // /functions/image_proxy/index.ts
-import { Database } from '@schema'
 import { createClient } from '@supabase/supabase-js'
 import { CardImageFields, CdnFit, CdnOpts, CdnShape, CdnVariant } from '@types'
 import { getImageCacheFromQueryHash } from '@utils'
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
+import { Database } from '../_shared/supabase.ts'
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!
 const SERVICE_ROLE = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!

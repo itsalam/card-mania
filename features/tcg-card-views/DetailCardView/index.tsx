@@ -1,6 +1,7 @@
 import { useCardQuery } from '@/client/card'
 import { useImageProxy } from '@/client/image-proxy'
 import { BlurBackground, BlurGradientBackground, GradientBackground } from '@/components/Background'
+import { gradientColors } from '@/components/graphs/helpers'
 import FullPriceGraph from '@/components/graphs/PriceGraph'
 import { GraphInputKey } from '@/components/graphs/ui/types'
 import { LiquidGlassCard } from '@/components/tcg-card/GlassCard'
@@ -10,7 +11,7 @@ import { chunk, formatLabel, formatPrice } from '@/components/utils'
 import { qk } from '@/lib/store/functions/helpers'
 import { Image } from 'expo-image'
 import { Href } from 'expo-router'
-import { Eye, EyeOff, Undo2, X } from 'lucide-react-native'
+import { Eye, EyeOff, MoveLeft, Undo2 } from 'lucide-react-native'
 import React, { ReactNode, useCallback, useMemo, useState } from 'react'
 import {
   Dimensions,
@@ -31,10 +32,11 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { Button, Colors, Dialog, PanningProvider } from 'react-native-ui-lib'
+import { Colors, Dialog, PanningProvider } from 'react-native-ui-lib'
 
 import { useViewSingleCollectionItem } from '@/client/collections/query'
 import { useMeasure } from '@/components/hooks/useMeasure'
+import { Button } from '@/components/ui/button'
 import { useCollaspableHeader } from '@/features/collection/ui'
 import MaskedView from '@react-native-masked-view/masked-view'
 import { LinearGradient } from 'expo-linear-gradient'
@@ -47,6 +49,7 @@ import { Prices } from './components/Prices'
 import { Footer } from './footer/footer'
 import { AddToCollectionsView } from './footer/pages/add-to-collections'
 import { CreateCollectionView } from './footer/pages/create-collection'
+import { GradeColorsProvider } from './GradeColorsProvider'
 import { Coordinates, useSelectedGrades, useTransitionAnimation } from './helpers'
 import { CardDetailsProvider } from './provider'
 
@@ -73,7 +76,7 @@ export default function FocusCardView({
     () => getCardDisplayData({ card: cardData, collectionItem }),
     [cardData, collectionItem]
   )
-
+  console.log(cardData?.grades_prices)
   const grades = cardData?.grades_prices ?? {}
   const prices = useMemo(
     () => Object.entries(grades || {}).sort((a, b) => b[0].localeCompare(a[0])),
@@ -85,10 +88,21 @@ export default function FocusCardView({
     prices.filter(([, value]) => !!value).map(([key]) => key)
   )
 
-  const { selectedGrades, setSelectedGrades, priceChartingData } = useSelectedGrades(
-    cardData,
-    visibleGrades
+  const { selectedGrades, setSelectedGrades, priceChartingData, optimisticPriceData } =
+    useSelectedGrades(cardData, visibleGrades)
+
+  const mergedPriceData = useMemo(
+    () => [...(priceChartingData?.priceData ?? []), ...(optimisticPriceData ?? [])],
+    [priceChartingData?.priceData, optimisticPriceData]
   )
+
+  const COLOR_RANGE: [string, string] = ['#34d399', '#818cf8']
+  const gradeKeys = useMemo(() => prices.map(([k]) => k), [prices])
+  const gradeColors = useMemo(() => {
+    if (!gradeKeys.length) return {}
+    const cs = gradientColors(COLOR_RANGE[0], COLOR_RANGE[1], gradeKeys.length)
+    return Object.fromEntries(gradeKeys.map((g, i) => [g, cs[i]]))
+  }, [gradeKeys])
 
   useInvalidateOnFocus(qk.recent)
 
@@ -134,22 +148,28 @@ export default function FocusCardView({
           </View>
         }
       >
-        <View className="flex flex-col items-start justify-stretch gap-2 w-full">
-          <CardScreenHeader title={'Prices'} />
-          <Prices
-            prices={prices}
-            visibleGrades={visibleGrades}
-            setSelectedGrades={setSelectedGrades}
-            setShowMoreGrades={setShowMoreGrades}
-            selectedGrades={selectedGrades}
-          />
+        <GradeColorsProvider grades={gradeKeys} colorRange={COLOR_RANGE}>
+          <View className="flex flex-col items-start justify-stretch gap-2 w-full pb-12">
+            <CardScreenHeader title={'Prices'} />
+            <Prices
+              prices={prices}
+              visibleGrades={visibleGrades}
+              setSelectedGrades={setSelectedGrades}
+              setShowMoreGrades={setShowMoreGrades}
+              selectedGrades={selectedGrades}
+            />
 
-          <FullPriceGraph<Record<string, string | number>>
-            xKey={'date' as GraphInputKey<typeof priceChartingData>}
-            yKeys={selectedGrades}
-            data={priceChartingData?.priceData}
-          />
-        </View>
+            <FullPriceGraph<Record<string, string | number>>
+              xKey={'date' as GraphInputKey<typeof priceChartingData>}
+              yKeys={selectedGrades}
+              data={mergedPriceData.length ? mergedPriceData : undefined}
+              height={300}
+              colors={selectedGrades.map((g) => gradeColors[g] ?? COLOR_RANGE[0])}
+              pending={!optimisticPriceData && priceChartingData?.pending}
+              fetching={Boolean(priceChartingData?.pending)}
+            />
+          </View>
+        </GradeColorsProvider>
 
         <View className="pt-4 flex flex-col items-start justify-stretch gap-2 w-full">
           <CardScreenHeader title={'Offers'} />
@@ -281,6 +301,13 @@ const CardDetailContainer = ({
   })
   const thumbnailImage = thumbnailImageResult?.url
 
+  const animateTo = {
+    width: W * CARD_WIDTH_RATIO,
+    height: (W * CARD_WIDTH_RATIO) / cardAspectRatio,
+    x: (W * (1 - CARD_WIDTH_RATIO)) / 2,
+    y: insets.top + 44,
+  }
+
   const {
     progress,
     cardStyle: cardTransition,
@@ -288,12 +315,7 @@ const CardDetailContainer = ({
     close,
   } = useTransitionAnimation(animateFrom, {
     fallbackHref: returnTo,
-    animateTo: {
-      width: W * CARD_WIDTH_RATIO,
-      height: (W * CARD_WIDTH_RATIO) / cardAspectRatio,
-      x: (W * (1 - CARD_WIDTH_RATIO)) / 2,
-      y: insets.top + 68,
-    },
+    animateTo,
     ready: !!imageContainerLayout,
   })
   const CARD_TITLE_POSITION = 1.0
@@ -339,7 +361,7 @@ const CardDetailContainer = ({
         ? interpolate(
             expandProgress.value,
             [0, 1],
-            [measuredHeaderHeight.value, measuredHeaderHeight.value * 0.4]
+            [measuredHeaderHeight.value, measuredHeaderHeight.value * 0.5]
           )
         : 'auto',
   }))
@@ -351,7 +373,7 @@ const CardDetailContainer = ({
       [W * CARD_WIDTH_RATIO, W],
       Extrapolation.CLAMP
     ),
-    top: interpolate(expandProgress.value, [0, 1], [insets.top + 68, 0], Extrapolation.CLAMP),
+    top: interpolate(expandProgress.value, [0, 1], [insets.top + 68, -40], Extrapolation.CLAMP),
     left: interpolate(
       expandProgress.value,
       [0, 1],
@@ -494,10 +516,10 @@ const CardDetailContainer = ({
           </AMaskedView>
         </View>
         <GradientBackground
-          start={{ x: 0.5, y: 0.5 }}
+          start={{ x: 0.5, y: 1.0 }}
           end={{ x: 0.5, y: 0.0 }}
           colors={[Colors.$backgroundDefault, 'transparent']}
-          positions={[0.5, 1.0]}
+          positions={[0, 1.0]}
           opacity={[1, 0]}
           style={{
             zIndex: 2,
@@ -509,10 +531,19 @@ const CardDetailContainer = ({
           {title}
         </GradientBackground>
         <Button
+          variant={'primary'}
+          size={'icon'}
           onPress={close}
-          style={{ position: 'absolute', left: 16, top: insets.top + 16, zIndex: 20 }}
+          style={{
+            position: 'absolute',
+            zIndex: 20,
+            left: animateTo.x,
+            top: animateTo.y,
+            transform: [{ translateX: '-100%' }, { translateY: '-60%' }],
+            padding: 30,
+          }}
         >
-          <X size={20} />
+          <MoveLeft size={20} color={Colors.$iconDefault} style={{ margin: 20 }} />
         </Button>
         <BlurBackground />
         <BlurGradientBackground

@@ -86,6 +86,41 @@ export type Database = {
           },
         ]
       }
+      card_price_history: {
+        Row: {
+          card_id: string
+          grade: string
+          id: string
+          price_cents: number
+          recorded_at: string
+          recorded_date: string
+        }
+        Insert: {
+          card_id: string
+          grade: string
+          id?: string
+          price_cents: number
+          recorded_at?: string
+          recorded_date?: string
+        }
+        Update: {
+          card_id?: string
+          grade?: string
+          id?: string
+          price_cents?: number
+          recorded_at?: string
+          recorded_date?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'card_price_history_card_id_fkey'
+            columns: ['card_id']
+            isOneToOne: false
+            referencedRelation: 'cards'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       card_variants: {
         Row: {
           card_id: string
@@ -130,6 +165,7 @@ export type Database = {
           latest_price: number | null
           name: string
           release_date: string | null
+          search_vector: unknown
           set_name: string
         }
         Insert: {
@@ -146,6 +182,7 @@ export type Database = {
           latest_price?: number | null
           name: string
           release_date?: string | null
+          search_vector?: unknown
           set_name: string
         }
         Update: {
@@ -162,6 +199,7 @@ export type Database = {
           latest_price?: number | null
           name?: string
           release_date?: string | null
+          search_vector?: unknown
           set_name?: string
         }
         Relationships: [
@@ -180,6 +218,33 @@ export type Database = {
             referencedColumns: ['id']
           },
         ]
+      }
+      collection_item_events: {
+        Row: {
+          collection_id: string
+          grade_condition_id: string | null
+          id: string
+          occurred_at: string
+          quantity_delta: number
+          ref_id: string
+        }
+        Insert: {
+          collection_id: string
+          grade_condition_id?: string | null
+          id?: string
+          occurred_at?: string
+          quantity_delta: number
+          ref_id: string
+        }
+        Update: {
+          collection_id?: string
+          grade_condition_id?: string | null
+          id?: string
+          occurred_at?: string
+          quantity_delta?: number
+          ref_id?: string
+        }
+        Relationships: []
       }
       collection_items: {
         Row: {
@@ -431,6 +496,52 @@ export type Database = {
             foreignKeyName: 'collection_totals_collection_id_fkey'
             columns: ['collection_id']
             isOneToOne: true
+            referencedRelation: 'collections_with_tags'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      collection_value_history: {
+        Row: {
+          collection_id: string
+          id: string
+          quantity_total: number
+          snapshotted_at: string
+          total_cents: number
+        }
+        Insert: {
+          collection_id: string
+          id?: string
+          quantity_total?: number
+          snapshotted_at?: string
+          total_cents: number
+        }
+        Update: {
+          collection_id?: string
+          id?: string
+          quantity_total?: number
+          snapshotted_at?: string
+          total_cents?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'collection_value_history_collection_id_fkey'
+            columns: ['collection_id']
+            isOneToOne: false
+            referencedRelation: 'collection_totals_with_flags'
+            referencedColumns: ['collection_id']
+          },
+          {
+            foreignKeyName: 'collection_value_history_collection_id_fkey'
+            columns: ['collection_id']
+            isOneToOne: false
+            referencedRelation: 'collections'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'collection_value_history_collection_id_fkey'
+            columns: ['collection_id']
+            isOneToOne: false
             referencedRelation: 'collections_with_tags'
             referencedColumns: ['id']
           },
@@ -1258,6 +1369,78 @@ export type Database = {
         }
         Relationships: []
       }
+      search_config: {
+        Row: {
+          id: number
+          min_score: number
+          prefetch_enabled: boolean
+          prefetch_threshold_ms: number
+          snippet_max_fragments: number
+          snippet_max_words: number
+          snippet_min_words: number
+          suggestion_queries: string[]
+          suggestion_query_idx: number
+          trgm_word_similarity_threshold: number
+          updated_at: string | null
+          weight_fts: number
+          weight_pop: number
+          weight_trgm: number
+          weight_vector: number
+        }
+        Insert: {
+          id?: number
+          min_score?: number
+          prefetch_enabled?: boolean
+          prefetch_threshold_ms?: number
+          snippet_max_fragments?: number
+          snippet_max_words?: number
+          snippet_min_words?: number
+          suggestion_queries?: string[]
+          suggestion_query_idx?: number
+          trgm_word_similarity_threshold?: number
+          updated_at?: string | null
+          weight_fts?: number
+          weight_pop?: number
+          weight_trgm?: number
+          weight_vector?: number
+        }
+        Update: {
+          id?: number
+          min_score?: number
+          prefetch_enabled?: boolean
+          prefetch_threshold_ms?: number
+          snippet_max_fragments?: number
+          snippet_max_words?: number
+          snippet_min_words?: number
+          suggestion_queries?: string[]
+          suggestion_query_idx?: number
+          trgm_word_similarity_threshold?: number
+          updated_at?: string | null
+          weight_fts?: number
+          weight_pop?: number
+          weight_trgm?: number
+          weight_vector?: number
+        }
+        Relationships: []
+      }
+      search_perf_samples: {
+        Row: {
+          created_at: string
+          id: string
+          render_ms: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          render_ms: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          render_ms?: number
+        }
+        Relationships: []
+      }
       search_queries: {
         Row: {
           committed_at: string | null
@@ -1946,6 +2129,32 @@ export type Database = {
       }
       curated_tags_import: { Args: { payload: Json }; Returns: Json }
       effective_user_id: { Args: never; Returns: string }
+      ensure_card_stub:
+        | {
+            Args: {
+              p_external_id?: string
+              p_genre?: string
+              p_grades_prices?: Json
+              p_id: string
+              p_image_url?: string
+              p_latest_price?: number
+              p_name: string
+              p_provider?: string
+              p_set_name?: string
+            }
+            Returns: undefined
+          }
+        | {
+            Args: {
+              p_external_id?: string
+              p_genre?: string
+              p_id: string
+              p_name: string
+              p_provider?: string
+              p_set_name?: string
+            }
+            Returns: undefined
+          }
       ensure_default_collections: { Args: never; Returns: undefined }
       ensure_default_collections_for_user: {
         Args: { p_user_id: string }
@@ -1954,6 +2163,14 @@ export type Database = {
       ensure_demo_mapping: {
         Args: { p_base_user_id: string }
         Returns: undefined
+      }
+      get_portfolio_history: {
+        Args: { p_collection_id: string; p_from?: string; p_to?: string }
+        Returns: {
+          quantity_total: number
+          snapshotted_at: string
+          total_cents: number
+        }[]
       }
       get_public_profile: {
         Args: { target_user_id: string }
