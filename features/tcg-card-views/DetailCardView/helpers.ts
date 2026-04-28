@@ -39,7 +39,7 @@ export const useSelectedGrades = (card?: Partial<TCard>, preSelectedGrades?: str
     if (!missingGrades.length) return undefined
     const point: Record<string, string | number> = { date: Date.now() }
     for (const g of missingGrades) {
-      point[g] = Math.round(gradesPrices[g] * 100)
+      point[g] = gradesPrices[g]
     }
     return Object.keys(point).length > 1 ? [point] : undefined
   }, [card?.grades_prices, selectedGrades, priceChartingData?.priceData])

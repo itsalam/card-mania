@@ -1,9 +1,12 @@
 import { prewarmPriceHistory } from '@/client/chart-data'
+import { gradingConditionsKeys, Graders } from '@/client/card/grading'
 import { TCard, TCollection, TTag } from '@/constants/types'
+import { getGradedPrice } from '@/components/tcg-card/helpers'
 import { getSupabase } from '@/lib/store/client'
 import { qk, requireUser } from '@/lib/store/functions/helpers'
 import { CollectionRow } from '@/lib/store/functions/types'
 import { useUserStore } from '@/lib/store/useUserStore'
+import { reportError } from '@/lib/utils/report-error'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   CollectionItem,
@@ -147,11 +150,11 @@ export const useEditCollection = (collectionId?: string) => {
       return { prev: prevCollection }
     },
 
-    onError: (_err, _vars, ctx) => {
-      if (!ctx) return
-      if (ctx.prev) {
+    onError: (err, vars, ctx) => {
+      if (ctx?.prev) {
         qc.setQueryData([...qk.userCollections, ctx.prev.id], ctx.prev)
       }
+      reportError({ context: 'useEditCollection', error: err, metadata: { vars, collectionId } })
     },
     onSettled: (_data, _err, vars) => {
       // Revalidate to ensure canonical server state
@@ -180,6 +183,7 @@ const mutateCollectionItemFn =
       ...parsedItem,
       user_id: item.user_id ?? user.id,
     }
+    console.log({ args, fullArgs })
     if (fullArgs.id && (deleteRecord || fullArgs.quantity === 0)) {
       const { data, error } = await getSupabase()
         .from('collection_items')
@@ -211,6 +215,8 @@ export const useEditCollectionItem = (collectionId?: string, cardId?: string, it
     ...(cardId ? ['cardId', cardId] : []),
   ] as const
 
+  const totalsKey = [...qk.collections, collectionId, 'totals'] as const
+
   const items = qc.getQueryData<(CollectionItem & EditCollectionArgsItem)[]>(queryKey)
 
   const baseItem: CollectionItem | undefined = items?.find((it) => it.id === itemId)
@@ -218,10 +224,13 @@ export const useEditCollectionItem = (collectionId?: string, cardId?: string, it
   const id = Boolean(itemId?.includes('temp')) ? undefined : itemId
 
   return useMutation<
-    CollectionItem, // mutationFn result
-    unknown, // error
-    { item: EditCollectionArgsItem; delete?: boolean }, // variables passed into mutate()
-    { prevItems: (CollectionItem & EditCollectionArgsItem)[] | undefined } // context
+    CollectionItem | undefined,
+    unknown,
+    { item: EditCollectionArgsItem; delete?: boolean },
+    {
+      prevItems: (CollectionItem & EditCollectionArgsItem)[] | undefined
+      prevTotal: number | undefined
+    }
   >({
     mutationFn: mutateCollectionItemFn({
       user_id: user?.id,
@@ -231,27 +240,58 @@ export const useEditCollectionItem = (collectionId?: string, cardId?: string, it
     onMutate: async (vars) => {
       const { delete: deleteItem, item } = vars
       await qc.cancelQueries({ queryKey })
+      await qc.cancelQueries({ queryKey: totalsKey })
+
       if (deleteItem && items) {
         qc.setQueryData(queryKey, [...items.filter((pi) => pi.id !== item.id)])
       }
 
-      return { prevItems: items }
+      const prevTotal = qc.getQueryData<number>(totalsKey)
+
+      // Optimistically adjust collection total using cached card + grading data
+      if (prevTotal !== undefined) {
+        const refId = baseItem?.ref_id ?? item.ref_id
+        const card = refId ? qc.getQueryData<TCard>(qk.card(refId)) : undefined
+        const graders = qc.getQueryData<Graders[]>(gradingConditionsKeys.all)
+
+        if (card && graders) {
+          const priceOf = (gradeId: string | null | undefined, qty: number) =>
+            (getGradedPrice({ card, graders, gradeId: gradeId ?? undefined }) ?? 0) * qty
+
+          const before = baseItem ? priceOf(baseItem.grade_condition_id, baseItem.quantity ?? 0) : 0
+          const after = deleteItem ? 0 : priceOf(item.grade_condition_id, item.quantity ?? 0)
+          const delta = after - before
+
+          if (delta !== 0) {
+            qc.setQueryData<number>(totalsKey, prevTotal + delta)
+          }
+        }
+      }
+
+      return { prevItems: items, prevTotal }
     },
-    onError: (_err, _vars, ctx) => {
-      if (!ctx?.prevItems) return
-      qc.setQueryData(queryKey, items)
+    onError: (err, vars, ctx) => {
+      if (ctx?.prevItems) {
+        qc.setQueryData(queryKey, ctx.prevItems)
+      }
+      if (ctx?.prevTotal !== undefined) {
+        qc.setQueryData(totalsKey, ctx.prevTotal)
+      }
+      reportError({
+        context: 'useEditCollectionItem',
+        error: err,
+        metadata: { vars, collectionId, cardId, itemId },
+      })
     },
     onSuccess: (data, vars, ctx) => {
       const deleteItem = vars.delete
       const prevItems = ctx.prevItems
-      if (deleteItem && prevItems) {
+      if (data && deleteItem && prevItems) {
         qc.setQueryData(queryKey, [
           ...prevItems.filter((pi) => pi.id !== `temp-${data.grade_condition_id}`),
         ])
       }
 
-      // Strategy 2: pre-warm price history when a card is added to a collection.
-      // Kicks off the backfill now so the chart is ready when the user opens the detail view.
       if (!deleteItem && data?.ref_id) {
         const card = qc.getQueryData<TCard>(qk.card(data.ref_id))
         const gradesPrices = card?.grades_prices as Record<string, number> | undefined
@@ -261,6 +301,7 @@ export const useEditCollectionItem = (collectionId?: string, cardId?: string, it
     },
     onSettled: () => {
       qc.invalidateQueries({ queryKey })
+      qc.invalidateQueries({ queryKey: totalsKey })
     },
   })
 }

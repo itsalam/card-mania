@@ -1,0 +1,6 @@
+# linear cli
+# https://github.com/schpet/linear-cli
+
+workspace = "itsalam"
+team_id = "ITS"
+issue_sort = "manual"

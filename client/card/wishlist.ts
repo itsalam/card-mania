@@ -2,6 +2,7 @@ import { ItemKinds } from '@/constants/types'
 import { getSupabase } from '@/lib/store/client'
 import { qk, requireUser, WishlistKey } from '@/lib/store/functions/helpers'
 import { Database } from '@/lib/store/supabase'
+import { reportError } from '@/lib/utils/report-error'
 import {
   InfiniteData,
   QueryClient,
@@ -251,10 +252,9 @@ export function useToggleWishlist(kind: ItemKinds) {
       }
     },
 
-    onError: (_e, _vars, ctx) => {
-      // rollback set & entity
-      if (!ctx) return
-      qc.setQueryData(qk.wishlist(kind), ctx.prev)
+    onError: (err, vars, ctx) => {
+      if (ctx) qc.setQueryData(qk.wishlist(kind), ctx.prev)
+      reportError({ context: 'useToggleWishlist', error: err, metadata: { vars } })
     },
 
     onSuccess: ({ id, on }) => {

@@ -152,9 +152,10 @@ export const CollectionItemEntry = ({
 
   const mutateEntry = useCallback(
     (draft: EditCollectionArgsItem, patch: Partial<EditCollectionArgsItem>) => {
-      if (isEqualToInitial(draft)) return // don’t re-save same data
+      const merged = { ...draft, ...patch }
+      if (isEqualToInitial(merged)) return // don’t re-save same data
       editableItem.mutate(
-        { item: { ...draft, ...patch } },
+        { item: merged },
         {
           onSuccess: (res) => {
             // you can optionally mark clean here; depends on how parent refetches
@@ -171,21 +172,35 @@ export const CollectionItemEntry = ({
     [editableItem]
   )
 
-  const deleteEntry = useCallback(
-    (draft: EditCollectionArgsItem) => {
-      editableItem.mutate({ item: { ...draft, quantity: 0 } })
-
-      setHide(true)
-      onDelete?.()
-    },
-    [editableItem]
-  )
-
   const mutateDebounce = useCallback(debounce(mutateEntry, 1000), [mutateEntry])
 
+  const deleteEntry = useCallback(
+    (draft: EditCollectionArgsItem) => {
+      console.log('cancelling')
+      mutateDebounce.cancel()
+      editableItem.mutate(
+        { delete: true, item: { ...draft, quantity: 0 } },
+        {
+          onSettled: (...a) => {
+            console.log('done')
+            setHide(true)
+            onDelete?.()
+            console.log(a)
+          },
+          onError: (...a) => console.log(a),
+        }
+      )
+    },
+    [editableItem, mutateDebounce]
+  )
+
   const updateDraft = (patch: Partial<typeof initialDraft>) => {
-    setDraft((prev) => ({ ...prev, ...patch }))
-    mutateDebounce(draft, patch)
+    if (patch.quantity === 0 && (draft.quantity ?? 0) > 0) {
+      deleteEntry(draft)
+    } else {
+      setDraft((prev) => ({ ...prev, ...patch }))
+      mutateDebounce(draft, patch)
+    }
   }
 
   const price = useMemo(() => {

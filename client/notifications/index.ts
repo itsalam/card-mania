@@ -1,5 +1,6 @@
 import { getSupabase } from '@/lib/store/client'
 import { requireUser } from '@/lib/store/functions/helpers'
+import { reportError } from '@/lib/utils/report-error'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { AppNotification, NotificationCategory } from './types'
 
@@ -72,6 +73,9 @@ export function useMarkRead(id: string) {
       qc.invalidateQueries({ queryKey: ['notifications'] })
       qc.invalidateQueries({ queryKey: ['notifications', 'unread-count'] })
     },
+    onError: (err) => {
+      reportError({ context: 'useMarkRead', error: err, metadata: { id } })
+    },
   })
 }
 
@@ -93,6 +97,9 @@ export function useMarkAllRead() {
       qc.invalidateQueries({ queryKey: ['notifications'] })
       qc.invalidateQueries({ queryKey: ['notifications', 'unread-count'] })
     },
+    onError: (err) => {
+      reportError({ context: 'useMarkAllRead', error: err })
+    },
   })
 }
 
@@ -111,6 +118,9 @@ export function useDismissNotification(id: string) {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['notifications'] })
       qc.invalidateQueries({ queryKey: ['notifications', 'unread-count'] })
+    },
+    onError: (err) => {
+      reportError({ context: 'useDismissNotification', error: err, metadata: { id } })
     },
   })
 }

@@ -20,8 +20,8 @@ import { motifySvg } from 'moti/svg'
 import { useMemo, useReducer } from 'react'
 import { Pressable, StyleProp, View, ViewStyle } from 'react-native'
 import { Easing } from 'react-native-reanimated'
-import { Colors } from 'react-native-ui-lib'
 import { Circle, Defs, LinearGradient, Stop, Svg } from 'react-native-svg'
+import { Colors } from 'react-native-ui-lib'
 import { DefaultCollectionData } from '../helpers'
 import { CircleProgressProps } from '../types'
 
@@ -196,7 +196,7 @@ export default function CollectionBreakdown({
     seeking.target = fullTarget
     selling.target = fullTarget
     holding.target = fullTarget
-    holding.current = (sellingTotal ?? 0) + (portfolioTotal ?? 0)
+    holding.current = portfolioTotal ?? 0
     return [seeking, selling, holding]
   }, [wishlistTotal, sellingTotal, portfolioTotal])
 

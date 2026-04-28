@@ -1,3 +1,9 @@
+export interface SubArc {
+  value: number
+  colors: string[]
+  label: string
+}
+
 export interface CollectionData {
   label: string
   value: number
@@ -5,6 +11,7 @@ export interface CollectionData {
   current: number
   target: number
   unit: string
+  subArcs?: SubArc[]
 }
 
 export interface CircleProgressProps {

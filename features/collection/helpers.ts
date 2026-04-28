@@ -16,7 +16,7 @@ export const DefaultCollectionData: CollectionData[] = [
   {
     label: 'SELLING',
     value: 0,
-    colors: [Colors.green30, Colors.green40],
+    colors: [Colors.blue30, Colors.blue40],
     current: 0,
     target: 0,
     unit: '$',
@@ -24,7 +24,7 @@ export const DefaultCollectionData: CollectionData[] = [
   {
     label: 'PORTFOLIO',
     value: 0,
-    colors: [Colors.blue30, Colors.blue40],
+    colors: [Colors.violet30, Colors.violet40],
     current: 0,
     target: 0,
     unit: '$',

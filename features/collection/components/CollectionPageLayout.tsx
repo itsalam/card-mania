@@ -6,6 +6,7 @@ import { CollectionItemQueryView, CollectionRow } from '@/lib/store/functions/ty
 
 import { useIsWishlisted } from '@/client/card/wishlist'
 import { CollectionLike } from '@/client/collections/types'
+import { THUMBNAIL_HEIGHT } from '@/components/tcg-card/consts'
 import { Tabs } from '@/components/ui/tabs'
 import { Text } from '@/components/ui/text/base-text'
 import { CollectionCardItemEntries } from '@/features/tcg-card-views/DetailCardView/footer/pages/add-to-collections/components'
@@ -29,9 +30,19 @@ import { ModifyCollectionView } from '../pages/modify-collection'
 import { defaultPages, getCollectionIdArgs, useCollectionsPageStore } from '../provider'
 import { useCollaspableHeader } from '../ui'
 import CollectionBreakdown from './CollectionBreakdown'
+import { CollectionGroupContainer } from './CollectionGroupContainer'
 import { CollectionInfo } from './CollectionInfo'
 import { ScreenHeader } from './Header'
 import { CollectionTabList } from './TabList'
+
+type ListEntry =
+  | {
+      type: 'group'
+      collectionRef: string | null
+      collectionName: string
+      items: (CollectionItemQueryView & TCard)[]
+    }
+  | { type: 'item'; data: CollectionItemQueryView & TCard }
 
 export function WishlistDebug({ ids }: { ids: string[] }) {
   const { data, isFetching, fetchStatus, ...rest } = useIsWishlisted('card', ids)
@@ -46,9 +57,7 @@ export function WishlistDebug({ ids }: { ids: string[] }) {
 }
 
 const AnimatedCollectionList = Animated.createAnimatedComponent(FlatList<CollectionRow>)
-const AnimatedCollectionItemList = Animated.createAnimatedComponent(
-  FlatList<CollectionItemQueryView & TCard>
-)
+const AnimatedCollectionItemList = Animated.createAnimatedComponent(FlatList<ListEntry>)
 
 export const CollectionsPageLayout = () => {
   const insets = useSafeAreaInsets()
@@ -132,9 +141,10 @@ const DefaultCollectionView = ({ direction }: { direction: 'forward' | 'backward
   }, [collections, isLoadingCollections])
 
   const renderItem = useCallback(
-    ({ item }: { item: CollectionRow }) => {
+    ({ item, index }: { item: CollectionRow; index: number }) => {
       return (
         <CollectionListView
+          key={keyExtractor(item, index)}
           collection={item}
           onPress={() => {
             const isDefaultPage = item?.is_selling || item?.is_vault || item?.is_wishlist
@@ -229,6 +239,7 @@ const DetailCollectionView = ({ direction }: { direction: 'forward' | 'backward'
   }, [isBackedDefaultPage, defaultIds, currentPage])
 
   const { data: collection } = useGetCollection(getCollectionIdArgs(currentPage))
+  const { data: allCollections } = useViewCollectionForUser()
   const { query: collectionItemsQuery } = useGetCollectionItems<CollectionItemQueryView & TCard>(
     collectionItemsArgs,
     { pageSize: 20 },
@@ -239,13 +250,30 @@ const DetailCollectionView = ({ direction }: { direction: 'forward' | 'backward'
     return collectionItemsQuery.data?.pages.flat() ?? []
   }, [collectionItemsQuery.data])
 
-  const listData = useMemo<(CollectionItemQueryView & TCard)[]>(() => {
+  const listData = useMemo<ListEntry[]>(() => {
     if (isLoadingItems) {
-      return Array(4).fill({ kind: 'skeleton' })
+      return Array(4).fill({ type: 'item', data: { kind: 'skeleton' } })
     }
 
-    return collectionItems
-  }, [collectionItems, isLoadingItems])
+    if (collection?.is_selling && collectionItems.length > 0) {
+      const groups = new Map<string | null, (CollectionItemQueryView & TCard)[]>()
+      for (const item of collectionItems) {
+        const key = item.collection_ref ?? null
+        if (!groups.has(key)) groups.set(key, [])
+        groups.get(key)!.push(item)
+      }
+      const entries: ListEntry[] = []
+      for (const [ref, items] of groups) {
+        const name = ref
+          ? (allCollections?.find((c) => c.id === ref)?.name ?? 'Collection')
+          : 'Direct'
+        entries.push({ type: 'group', collectionRef: ref, collectionName: name, items })
+      }
+      return entries
+    }
+
+    return collectionItems.map((d) => ({ type: 'item', data: d }))
+  }, [collectionItems, isLoadingItems, collection?.is_selling, allCollections])
 
   const {
     tabsExpanded,
@@ -260,15 +288,61 @@ const DetailCollectionView = ({ direction }: { direction: 'forward' | 'backward'
     resetKeys: [currentPage, collection?.id],
   })
 
-  const renderItem = useCallback(
-    ({ item }: { item: CollectionItemQueryView & TCard }) => {
-      return (
+  const navigateToCollection = useCallback(
+    (collectionRef: string | null) => {
+      if (!collectionRef) return
+      const refCollection = allCollections?.find((c) => c.id === collectionRef)
+      if (!refCollection) return
+      const isDefaultPage =
+        refCollection.is_selling || refCollection.is_vault || refCollection.is_wishlist
+      const defaultValues = Object.entries(preferenceState.preferences.defaultIds)
+      const defaultPage = defaultValues.find(([, id]) => id && id === collectionRef)
+      if (!isDefaultPage) {
+        preferenceState.updatePreferences({
+          tabs: Array.from(new Set([...(preferenceState.preferences.tabs ?? []), collectionRef])),
+        })
+      }
+      setCurrentPage(defaultPage?.[0] ?? collectionRef)
+    },
+    [allCollections, preferenceState, setCurrentPage]
+  )
+
+  const renderCardItem = useCallback(
+    (data: CollectionItemQueryView & TCard, isLast: boolean) => (
+      <View style={{ position: 'relative', marginLeft: 12 }}>
+        <View
+          style={{
+            position: 'absolute',
+            left: 4,
+            top: THUMBNAIL_HEIGHT,
+            bottom: 0,
+            width: 3,
+            marginTop: 8,
+            marginBottom: 20,
+            backgroundColor: Colors.$outlineNeutral,
+            opacity: 0.7,
+            borderRadius: 999,
+          }}
+        />
+        {isLast && (
+          <View
+            style={{
+              position: 'absolute',
+              bottom: 0,
+              left: 0,
+              right: 0,
+              height: 0,
+              backgroundColor: Colors.$outlineNeutral,
+            }}
+          />
+        )}
         <CardListView
-          card={item}
+          card={data}
           renderAccessories={({ isLoading }) => (
             <CollectionCardItemEntries
+              key={collection?.id}
               isLoading={isLoading}
-              card={item}
+              card={data}
               //@ts-ignore
               collection={collection!}
               isShown
@@ -277,14 +351,41 @@ const DetailCollectionView = ({ direction }: { direction: 'forward' | 'backward'
           )}
           isLoading={isLoadingItems}
         />
-      )
-    },
-    [preferenceState, setCurrentPage, isLoadingItems]
+      </View>
+    ),
+    [collection, isLoadingItems]
   )
 
-  const keyExtractor = useCallback((item: CollectionItemQueryView & TCard, index: number) => {
-    return `item-${item?.collection_item_id ?? item?.id ?? `skeleton-${index}`}`
-  }, [])
+  const renderItem = useCallback(
+    ({ item }: { item: ListEntry }) => {
+      if (item.type === 'group') {
+        return (
+          <CollectionGroupContainer
+            name={item.collectionName}
+            onNavigate={
+              item.collectionRef ? () => navigateToCollection(item.collectionRef) : undefined
+            }
+          >
+            {item.items.map((d, i) => (
+              <React.Fragment key={d.collection_item_id ?? d.id ?? i}>
+                {renderCardItem(d, i === item.items.length - 1)}
+              </React.Fragment>
+            ))}
+          </CollectionGroupContainer>
+        )
+      }
+      return renderCardItem(item.data, false)
+    },
+    [renderCardItem, navigateToCollection]
+  )
+
+  const keyExtractor = useCallback(
+    (item: ListEntry, index: number) => {
+      if (item.type === 'group') return `group-${item.collectionRef ?? 'direct'}`
+      return `item-${currentPage}-${item.data?.collection_item_id ?? item.data?.id ?? `skeleton-${index}`}`
+    },
+    [currentPage]
+  )
 
   return (
     <GestureDetector gesture={composedGestures}>
@@ -321,8 +422,6 @@ const DetailCollectionView = ({ direction }: { direction: 'forward' | 'backward'
           <FolderTabsContainer>
             <AnimatedCollectionItemList
               initialNumToRender={10}
-              //@ts-ignore
-
               scrollEnabled={false}
               style={{ flex: 1 }}
               bounces={false}
@@ -330,8 +429,7 @@ const DetailCollectionView = ({ direction }: { direction: 'forward' | 'backward'
               contentContainerStyle={{
                 display: 'flex',
                 gap: 18,
-                paddingLeft: 12,
-                paddingTop: 18,
+                paddingTop: collection?.is_selling ? 0 : 18,
               }}
               ListEmptyComponent={EmptyColelctionList}
               keyExtractor={keyExtractor}

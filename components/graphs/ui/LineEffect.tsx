@@ -15,23 +15,25 @@ export const LineEffect = ({
   points,
   curveType = 'natural',
   connectMissingData = true,
-  fadePx = 5,
+  fadePx = 10,
   color,
   strokeWidth = 10,
   y0,
 }: LineEffectProps) => {
   const { path: linePath } = useLinePath(points, { curveType, connectMissingData })
+  // y0 is already offset by fadePx at the call site so the blur fades out
+  // exactly at the intended boundary without the path needing to overshoot.
   const { path: areaPath } = useAreaPath(points, y0, { curveType, connectMissingData })
   return (
     <Group clip={areaPath}>
       <Group
         layer={
           <Paint>
-            <Blur blur={fadePx} mode="decal" />
+            <Blur blur={fadePx} mode="repeat" />
           </Paint>
         }
       >
-        <Path path={linePath} style="stroke" strokeWidth={strokeWidth} color={color} />
+        <Path path={linePath} style="stroke" strokeWidth={24} color={color} />
       </Group>
     </Group>
   )

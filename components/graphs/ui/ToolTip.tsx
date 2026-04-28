@@ -1,6 +1,7 @@
 import { Rect, RoundedRect, Text, useFont } from '@shopify/react-native-skia'
 import React, { Fragment, useMemo, useState } from 'react'
 import {
+  Easing,
   SharedValue,
   useAnimatedReaction,
   useDerivedValue,
@@ -143,7 +144,10 @@ export function ToolTip({
 
   const targetX = useDerivedValue(() => {
     const to = x.value
-    return withTiming(to, { duration: isActive ? 10 : 100 })
+    return withTiming(to, {
+      duration: isActive ? 80 : 250,
+      easing: isActive ? Easing.out(Easing.quad) : Easing.out(Easing.cubic),
+    })
   }, [isActive, restP])
 
   const rectX = useDerivedValue(() => targetX.value - 1)

@@ -324,7 +324,7 @@ async function commitCard(
     const stubRows = Object.entries(gradesPrices).map(([grade, price]) => ({
       card_id: cardId,
       grade,
-      price_cents: Math.round(price * 100),
+      price_cents: price,
     }))
     if (stubRows.length) {
       supabase

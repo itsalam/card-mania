@@ -14,6 +14,7 @@ import {
   SharedValue,
   useAnimatedReaction,
   useDerivedValue,
+  withSpring,
   withTiming,
 } from 'react-native-reanimated'
 import { Colors } from 'react-native-ui-lib'
@@ -123,7 +124,11 @@ export function PointValueCard({
         : isActive && !inExtrapolated
           ? cy.value
           : (restPoint?.y ?? 0)
-    return withTiming(Math.max(canvasTop, Math.min(rawY, canvasBottom)), { duration: 20 })
+    return withSpring(Math.max(canvasTop, Math.min(rawY, canvasBottom)), {
+      mass: 0.6,
+      damping: 18,
+      stiffness: 180,
+    })
   }, [
     cx,
     cy,

@@ -2005,6 +2005,7 @@ export type Database = {
           collection_id: string
           collection_item_id: string
           collection_item_value: number
+          collection_ref: string | null
           created_at: string
           extras: string[]
           front_id: string

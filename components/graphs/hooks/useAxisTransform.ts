@@ -60,13 +60,19 @@ export function useAxisTransform<T extends Record<string, unknown>>(
       let cMin = seriesRanges[ci].min
       let cMax = seriesRanges[ci].max
       let cj = ci + 1
-      while (
-        cj < seriesRanges.length &&
-        seriesRanges[cj].min / Math.max(cMax, 1) < VALUE_BREAK_RATIO
-      ) {
-        cMin = Math.min(cMin, seriesRanges[cj].min)
-        cMax = Math.max(cMax, seriesRanges[cj].max)
-        cj++
+      while (cj < seriesRanges.length) {
+        const gapRatio = seriesRanges[cj].min / Math.max(cMax, 1)
+        const seriesInternalRatio = seriesRanges[cj].max / Math.max(seriesRanges[cj].min, 1)
+        // Merge if the gap is small, OR if the candidate series' own range spans at least
+        // as wide as the gap — meaning it continuously crosses through the break zone and
+        // splitting would misrepresent a natural value decline as a y-axis discontinuity.
+        if (gapRatio < VALUE_BREAK_RATIO || seriesInternalRatio >= gapRatio) {
+          cMin = Math.min(cMin, seriesRanges[cj].min)
+          cMax = Math.max(cMax, seriesRanges[cj].max)
+          cj++
+        } else {
+          break
+        }
       }
       valueClusters.push({ min: cMin, max: cMax })
       ci = cj

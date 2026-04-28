@@ -71,7 +71,7 @@ export const formatPrice = (
   const locale = config?.locale ?? 'en-US'
   const decimals = config?.decimals ?? 2
   const multiplier = 10 ** decimals
-  return `${symbol}${(price ?? 0 / multiplier).toLocaleString(locale, {
+  return `${symbol}${((price ?? 0) / multiplier).toLocaleString(locale, {
     minimumFractionDigits: minimumFractionDigits ?? decimals,
     maximumFractionDigits: maximumFractionDigits ?? decimals,
   })}`

@@ -1,5 +1,6 @@
 import { getSupabase } from '@/lib/store/client'
 import { requireUser } from '@/lib/store/functions/helpers'
+import { reportError } from '@/lib/utils/report-error'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useClearCart } from '@/features/cart/hooks'
 import { Offer, OfferStatus, SubmitOfferPayload } from './types'
@@ -52,6 +53,9 @@ export function useSubmitOffer() {
       clearCart()
       qc.invalidateQueries({ queryKey: ['offers'] })
     },
+    onError: (err, vars) => {
+      reportError({ context: 'useSubmitOffer', error: err, metadata: { vars } })
+    },
   })
 }
 
@@ -101,6 +105,9 @@ export function useUpdateOfferStatus() {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['offers'] })
+    },
+    onError: (err, vars) => {
+      reportError({ context: 'useUpdateOfferStatus', error: err, metadata: { vars } })
     },
   })
 }

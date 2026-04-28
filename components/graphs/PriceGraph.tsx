@@ -16,10 +16,12 @@ import {
 import React, { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { View } from 'react-native'
 import Animated, {
+  Easing,
   useAnimatedReaction,
   useAnimatedStyle,
   useDerivedValue,
   useSharedValue,
+  withSequence,
   withTiming,
 } from 'react-native-reanimated'
 import { Colors } from 'react-native-ui-lib'
@@ -93,6 +95,7 @@ export function PriceGraph<
 
   // Fade in whenever yKeys change (CartesianChart remounts on key change).
   const chartOpacity = useSharedValue(1)
+  const drawWidth = useSharedValue(0)
   const prevYKeysStr = useRef((yKeys as string[]).join(','))
   useEffect(() => {
     const curr = (yKeys as string[]).join(',')
@@ -180,6 +183,13 @@ export function PriceGraph<
     clipPath.addRect(Skia.XYWHRect(0, 0, splitX.value, height))
     return clipPath
   }, [splitX])
+
+  const drawClipPath = useMemo(() => Skia.Path.Make(), [])
+  const drawClipRect = useDerivedValue(() => {
+    drawClipPath.reset()
+    drawClipPath.addRect(Skia.XYWHRect(0, 0, drawWidth.value, height))
+    return drawClipPath
+  }, [drawWidth])
 
   const xDomain = useMemo<[number, number] | undefined>(() => {
     if (!TIME_PERIODS_DURATION[timePeriod]) return undefined
@@ -293,6 +303,35 @@ export function PriceGraph<
     [chartData, yKeys]
   )
 
+  const prevTimePeriodRef = useRef(timePeriod)
+  useEffect(() => {
+    if (timePeriod === prevTimePeriodRef.current) return
+    prevTimePeriodRef.current = timePeriod
+    if (!hasValidData) return
+    chartOpacity.value = withSequence(
+      withTiming(0, { duration: 120 }),
+      withTiming(1, { duration: 280, easing: Easing.out(Easing.cubic) })
+    )
+  }, [timePeriod, hasValidData])
+
+  const hasDrawAnimatedRef = useRef(false)
+  const prevDrawAnimKeyRef = useRef('')
+  useEffect(() => {
+    const animKey = (yKeys as string[]).join(',')
+    if (animKey !== prevDrawAnimKeyRef.current) {
+      prevDrawAnimKeyRef.current = animKey
+      hasDrawAnimatedRef.current = false
+    }
+    if (hasValidData && !hasDrawAnimatedRef.current) {
+      drawWidth.value = 0
+      drawWidth.value = withTiming(width * 1.1, {
+        duration: 700,
+        easing: Easing.out(Easing.cubic),
+      })
+      hasDrawAnimatedRef.current = true
+    }
+  }, [hasValidData, yKeys])
+
   const axisFont = useFont(require('../../assets/fonts/Inter.ttf'), 11)
   // Same fonts PointValueCard uses — needed to measure card width for domainPadding.right
   const cardPriceFont = useFont(require('../../assets/fonts/SpaceMono-Regular.ttf'), 12)
@@ -363,17 +402,19 @@ export function PriceGraph<
               labelColor: 'rgba(255,255,255,0.35)',
               lineColor: 'transparent',
               font: axisFont,
-              labelOffset: -12,
+              labelOffset: -14,
               // labelPosition: 'inset',
             }}
             padding={{
               ...(yLabelPad ? { left: yLabelPad } : undefined),
-              bottom: 16,
+              // bottom: 16,
+
+              // bottom: needsZeroBreak ? 24 : 12,
             }}
             domainPadding={{
               top: 40,
-              bottom: needsZeroBreak ? 24 : 12,
               left: 4,
+              bottom: 1,
               right: cardRightPad,
             }}
             yAxis={[
@@ -441,7 +482,12 @@ export function PriceGraph<
               xDomain || yDomain
                 ? {
                     ...(xDomain
-                      ? { x: [visibleXMin ?? xDomain[0], xDomain[1]] as [number, number] }
+                      ? {
+                          x: [Math.max(visibleXMin ?? xDomain[0], 0), xDomain[1]] as [
+                            number,
+                            number,
+                          ],
+                        }
                       : {}),
                     ...(yDomain ? { y: yDomain } : {}),
                   }
@@ -680,127 +726,87 @@ export function PriceGraph<
                       )
                     })()}
 
-                  {/* Shadow lines (dim, always visible) */}
-                  {props.yKeys.map((yKey, i) => {
-                    const key = String(yKey)
-                    const pts = points[yKey] as PointsArray
-                    const seriesColor = getSeriesColor(i)
-                    const pastPoints = pts.filter((p) => activeX - (p.x ?? 0) > 0)
-                    return (
-                      <Fragment key={`${key}-dots`}>
-                        <Line
-                          points={pts}
-                          color={Colors.rgba(seriesColor, 0.1)}
-                          strokeWidth={3}
-                          curveType="monotoneX"
-                          connectMissingData
-                          key={`${key}-line-shadow`}
-                        />
-                        <Scatter
-                          points={pastPoints}
-                          radius={3}
-                          color={Colors.rgba(seriesColor, 0.7)}
-                        />
-                        <Scatter points={pts} radius={3} color={Colors.rgba(seriesColor, 0.4)} />
-                      </Fragment>
-                    )
-                  })}
-
-                  {/* Masked lines (full colour only on the left side of the crosshair) */}
-                  <Mask mask={<Rect x={0} y={0} width={splitX} height={height} color="white" />}>
+                  <Group clip={drawClipRect}>
+                    {/* Shadow lines (dim, always visible) */}
                     {props.yKeys.map((yKey, i) => {
                       const key = String(yKey)
                       const pts = points[yKey] as PointsArray
+                      const seriesColor = getSeriesColor(i)
+                      const pastPoints = pts.filter((p) => activeX - (p.x ?? 0) > 0)
                       return (
-                        <Line
-                          key={`${key}-mask-line`}
-                          points={pts}
-                          strokeWidth={3}
-                          color={Colors.rgba(getSeriesColor(i), 1.0)}
-                          curveType="monotoneX"
-                          connectMissingData
-                        />
+                        <Fragment key={`${key}-dots`}>
+                          <Line
+                            points={pts}
+                            color={Colors.rgba(seriesColor, 0.1)}
+                            strokeWidth={3}
+                            curveType="monotoneX"
+                            connectMissingData
+                            key={`${key}-line-shadow`}
+                          />
+                          <Scatter
+                            points={pastPoints}
+                            radius={3}
+                            color={Colors.rgba(seriesColor, 0.7)}
+                          />
+                          <Scatter points={pts} radius={3} color={Colors.rgba(seriesColor, 0.4)} />
+                        </Fragment>
                       )
                     })}
-                  </Mask>
 
-                  {/* Glow/area effect */}
-                  <Group clip={clipRect}>
-                    {props.yKeys.map((yKey, i) => {
-                      const key = String(yKey)
-                      const pts = points[yKey] as PointsArray
-                      return (
-                        <LineEffect
-                          key={`${key}-effect-mask`}
-                          points={pts}
-                          curveType="monotoneX"
-                          connectMissingData
-                          fadePx={15}
-                          y0={chartBounds.bottom}
-                          strokeWidth={30}
-                          color={Colors.rgba(getSeriesColor(i), 0.3) as Color}
-                        />
-                      )
-                    })}
-                  </Group>
-
-                  {/* Flat extrapolation lines for series that don't reach the domain end */}
-                  {props.yKeys.map((yKey, i) => {
-                    const key = String(yKey)
-                    const pts = (points[yKey] as PointsArray)?.filter(
-                      (p) => p.x != null && p.y != null
-                    )
-                    if (!pts?.length) return null
-                    const lastPt = pts[pts.length - 1]
-                    if (!lastPt.x || !lastPt.y) return null
-                    const endPx = xDomain ? xScale(xDomain[1]) : chartBounds.right
-                    if (lastPt.x >= endPx - 2) return null
-                    const p = Skia.Path.Make()
-                    p.moveTo(lastPt.x, lastPt.y)
-                    p.lineTo(endPx, lastPt.y)
-                    return (
-                      <Path
-                        key={`${key}-extrap`}
-                        path={p}
-                        style="stroke"
-                        strokeWidth={2}
-                        color={Colors.rgba(getSeriesColor(i), 0.3)}
-                      >
-                        <DashPathEffect intervals={[4, 5]} />
-                      </Path>
-                    )
-                  })}
-
-                  {/* Flat extrapolation lines for series that don't reach the domain start */}
-                  {(() => {
-                    // The global earliest x across all series — if a series starts here,
-                    // we've hit the edge of our historical data (dashed); otherwise solid.
-                    const globalFirstX = Math.min(
-                      ...(props.yKeys as string[]).flatMap((yKey) => {
-                        const pts = (points[yKey] as PointsArray)?.filter(
-                          (p) => p.x != null && p.y != null
+                    {/* Masked lines (full colour only on the left side of the crosshair) */}
+                    <Mask mask={<Rect x={0} y={0} width={splitX} height={height} color="white" />}>
+                      {props.yKeys.map((yKey, i) => {
+                        const key = String(yKey)
+                        const pts = points[yKey] as PointsArray
+                        return (
+                          <Line
+                            key={`${key}-mask-line`}
+                            points={pts}
+                            strokeWidth={3}
+                            color={Colors.rgba(getSeriesColor(i), 1.0)}
+                            curveType="monotoneX"
+                            connectMissingData
+                          />
                         )
-                        return pts?.length ? [pts[0].x!] : []
-                      })
-                    )
-                    return props.yKeys.map((yKey, i) => {
+                      })}
+                    </Mask>
+
+                    {/* Glow/area effect */}
+                    <Group clip={clipRect}>
+                      {props.yKeys.map((yKey, i) => {
+                        const key = String(yKey)
+                        const pts = points[yKey] as PointsArray
+                        return (
+                          <LineEffect
+                            key={`${key}-effect-mask`}
+                            points={pts}
+                            curveType="monotoneX"
+                            connectMissingData
+                            y0={yScale(0)}
+                            topY={chartBounds.top}
+                            color={Colors.rgba(getSeriesColor(i), 0.5) as Color}
+                          />
+                        )
+                      })}
+                    </Group>
+
+                    {/* Flat extrapolation lines for series that don't reach the domain end */}
+                    {props.yKeys.map((yKey, i) => {
                       const key = String(yKey)
                       const pts = (points[yKey] as PointsArray)?.filter(
                         (p) => p.x != null && p.y != null
                       )
                       if (!pts?.length) return null
-                      const firstPt = pts[0]
-                      if (!firstPt.x || !firstPt.y) return null
-                      const startPx = xDomain ? xScale(xDomain[0]) : chartBounds.left
-                      if (firstPt.x <= startPx + 2) return null
+                      const lastPt = pts[pts.length - 1]
+                      if (!lastPt.x || !lastPt.y) return null
+                      const endPx = xDomain ? xScale(xDomain[1]) : chartBounds.right
+                      if (lastPt.x >= endPx - 2) return null
                       const p = Skia.Path.Make()
-                      p.moveTo(startPx, firstPt.y)
-                      p.lineTo(firstPt.x, firstPt.y)
-                      // Dashed only if this series starts at the earliest historical point.
-                      const atHistoricalEdge = Math.abs(firstPt.x - globalFirstX) < 3
-                      return atHistoricalEdge ? (
+                      p.moveTo(lastPt.x, lastPt.y)
+                      p.lineTo(endPx, lastPt.y)
+                      return (
                         <Path
-                          key={`${key}-extrap-start`}
+                          key={`${key}-extrap`}
                           path={p}
                           style="stroke"
                           strokeWidth={2}
@@ -808,17 +814,58 @@ export function PriceGraph<
                         >
                           <DashPathEffect intervals={[4, 5]} />
                         </Path>
-                      ) : (
-                        <Path
-                          key={`${key}-extrap-start`}
-                          path={p}
-                          style="stroke"
-                          strokeWidth={2}
-                          color={Colors.rgba(getSeriesColor(i), 0.5)}
-                        />
                       )
-                    })
-                  })()}
+                    })}
+
+                    {/* Flat extrapolation lines for series that don't reach the domain start */}
+                    {(() => {
+                      // The global earliest x across all series — if a series starts here,
+                      // we've hit the edge of our historical data (dashed); otherwise solid.
+                      const globalFirstX = Math.min(
+                        ...(props.yKeys as string[]).flatMap((yKey) => {
+                          const pts = (points[yKey] as PointsArray)?.filter(
+                            (p) => p.x != null && p.y != null
+                          )
+                          return pts?.length ? [pts[0].x!] : []
+                        })
+                      )
+                      return props.yKeys.map((yKey, i) => {
+                        const key = String(yKey)
+                        const pts = (points[yKey] as PointsArray)?.filter(
+                          (p) => p.x != null && p.y != null
+                        )
+                        if (!pts?.length) return null
+                        const firstPt = pts[0]
+                        if (!firstPt.x || !firstPt.y) return null
+                        const startPx = xDomain ? xScale(xDomain[0]) : chartBounds.left
+                        if (firstPt.x <= startPx + 2) return null
+                        const p = Skia.Path.Make()
+                        p.moveTo(startPx, firstPt.y)
+                        p.lineTo(firstPt.x, firstPt.y)
+                        // Dashed only if this series starts at the earliest historical point.
+                        const atHistoricalEdge = Math.abs(firstPt.x - globalFirstX) < 3
+                        return atHistoricalEdge ? (
+                          <Path
+                            key={`${key}-extrap-start`}
+                            path={p}
+                            style="stroke"
+                            strokeWidth={2}
+                            color={Colors.rgba(getSeriesColor(i), 0.3)}
+                          >
+                            <DashPathEffect intervals={[4, 5]} />
+                          </Path>
+                        ) : (
+                          <Path
+                            key={`${key}-extrap-start`}
+                            path={p}
+                            style="stroke"
+                            strokeWidth={2}
+                            color={Colors.rgba(getSeriesColor(i), 0.5)}
+                          />
+                        )
+                      })
+                    })()}
+                  </Group>
 
                   {lastPoints && Object.keys(state.y).length && (
                     <ToolTip

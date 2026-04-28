@@ -23,8 +23,6 @@ export type CollectionItemRow = Database['public']['Tables']['collection_items']
 }
 
 export type CollectionItemQueryView =
-  Database['public']['Functions']['collection_item_query']['Returns'][number] & {
-    collection_ref: string | null
-  }
+  Database['public']['Functions']['collection_item_query']['Returns'][number]
 
 export type RecentViewRow = Database['public']['Tables']['recent_views']['Row']
