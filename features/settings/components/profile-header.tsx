@@ -4,9 +4,9 @@ import { Separator } from '@/components/ui/separator'
 import { Text } from '@/components/ui/text/base-text'
 import { ProfilePageStat } from '@/features/profile/types'
 import { useUserStore } from '@/lib/store/useUserStore'
-import { LucideIcon, Star, TrendingUp } from 'lucide-react-native'
+import { LucideIcon, LogOut, Star, TrendingUp } from 'lucide-react-native'
 import React from 'react'
-import { FlatList, useWindowDimensions, View } from 'react-native'
+import { Alert, FlatList, TouchableOpacity, useWindowDimensions, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Colors } from 'react-native-ui-lib'
 import { useEffectiveColorScheme } from '../hooks/effective-color-scheme'
@@ -14,8 +14,12 @@ import { useEffectiveColorScheme } from '../hooks/effective-color-scheme'
 export function ProfileHeader() {
   const insets = useSafeAreaInsets()
   const { height } = useWindowDimensions()
-  const { user } = useUserStore()
+  const { user, profile, signOut } = useUserStore()
   const scheme = useEffectiveColorScheme()
+
+  // Resolve display name and handle from profile, falling back to auth data
+  const displayName = profile?.display_name ?? profile?.username ?? 'CardMania User'
+  const handle = profile?.username ?? user?.email?.split('@')[0] ?? 'username'
 
   const DUMMY_STATS: ProfilePageStat[] = [
     {
@@ -32,6 +36,24 @@ export function ProfileHeader() {
     { label: 'Hobbyist', icon: Star },
     { label: 'Trader', icon: TrendingUp, disabled: false },
   ]
+
+  const handleSignOut = () => {
+    Alert.alert(
+      'Sign out',
+      'Are you sure you want to sign out?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Sign out',
+          style: 'destructive',
+          onPress: () => signOut(),
+          // AuthGate detects user === null and renders SplashPage automatically
+        },
+      ],
+      { cancelable: true }
+    )
+  }
+
   return (
     <View
       style={{
@@ -49,8 +71,8 @@ export function ProfileHeader() {
           alignItems: 'center',
         }}
       >
-        <Text variant={'h4'}>PROFILE NAME</Text>
-        <Text variant={'large'}>@{user?.email ?? 'profile.handle'}</Text>
+        <Text variant={'h4'}>{displayName}</Text>
+        <Text variant={'large'}>@{handle}</Text>
       </View>
       <FlatList
         contentContainerStyle={{
@@ -104,6 +126,37 @@ export function ProfileHeader() {
       <Button style={{ marginVertical: 12 }}>
         <Text variant={'large'}>View Profile</Text>
       </Button>
+
+      <Separator
+        style={{
+          paddingVertical: 4,
+          width: '100%',
+          backgroundColor: Colors.$backgroundNeutral,
+        }}
+      />
+
+      {/* Sign out row — sits just above the settings sections */}
+      <TouchableOpacity
+        onPress={handleSignOut}
+        accessibilityLabel="Sign out"
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: 10,
+          paddingHorizontal: 20,
+          paddingVertical: 16,
+          width: '100%',
+        }}
+      >
+        <LogOut size={22} color={Colors.$iconDangerLight ?? Colors.red30} />
+        <Text
+          variant={'large'}
+          style={{ fontSize: 18, color: Colors.$iconDangerLight ?? Colors.red30 }}
+        >
+          Sign out
+        </Text>
+      </TouchableOpacity>
+
       <Separator
         style={{
           paddingVertical: 4,

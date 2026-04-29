@@ -2,6 +2,8 @@ import Logo from '@/assets/images/logo.svg'
 import { Tabs, TabsContent, TabsLabel, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Text } from '@/components/ui/text/base-text'
 import { MainSearchBar } from '@/features/mainSearchbar'
+import { useUserStore } from '@/lib/store/useUserStore'
+import { useRouter } from 'expo-router'
 import { Compass, History, LucideIcon, Newspaper, SettingsIcon, Sheet } from 'lucide-react-native'
 import React, { useCallback, useState } from 'react'
 import { ScrollView, TouchableOpacity, View } from 'react-native'
@@ -33,6 +35,16 @@ const AnimatedScrollView = Animated.createAnimatedComponent(ScrollView)
 export default function HomeScreen() {
   const { currentPage, setCurrentPage } = useHomePageStore()
   const insets = useSafeAreaInsets()
+  const router = useRouter()
+  const { profile, user } = useUserStore()
+
+  // Resolve the best available display name for the greeting
+  const displayName =
+    profile?.display_name ??
+    profile?.username ??
+    user?.email?.split('@')[0] ??
+    'there'
+
   const GRAPH_SECTION_HEIGHT = 284
   const [selectedCollections, setSelectedCollections] = useState<string[]>([
     'wishlist',
@@ -58,9 +70,13 @@ export default function HomeScreen() {
     <SafeAreaView className="flex-1 w-full h-full overflow-visible" style={{ paddingTop: 8 }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, gap: 12 }}>
         <Logo width={48} height={48} />
-        <Text variant={'large'}>Welcome back, TODO: BUILD USER</Text>
-        <TouchableOpacity style={{ marginLeft: 'auto' }}>
-          <SettingsIcon size={32} />
+        <Text variant={'large'}>Welcome back, {displayName}</Text>
+        <TouchableOpacity
+          style={{ marginLeft: 'auto' }}
+          onPress={() => router.push('/(tabs)/profile/settings')}
+          accessibilityLabel="Open settings"
+        >
+          <SettingsIcon size={32} color={Colors.$iconDefault} />
         </TouchableOpacity>
       </View>
       <MainSearchBar />
