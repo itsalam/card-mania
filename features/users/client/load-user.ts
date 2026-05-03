@@ -1,5 +1,6 @@
-import { getSupabase } from '@/lib/store/client'
+import { getSupabase, supabaseRestFetch } from '@/lib/store/client'
 import { qk } from '@/lib/store/functions/helpers'
+import { useUserStore } from '@/lib/store/useUserStore'
 import { useQuery } from '@tanstack/react-query'
 
 const getUserProfile = async (userId: string) => {
@@ -47,6 +48,30 @@ const getPublicProfiles = async (userIds: string[]): Promise<Record<string, Publ
     map[row.user_id] = row
   }
   return map
+}
+
+const getSellers = async (excludeUserId?: string): Promise<PublicProfile[]> => {
+  const params: Record<string, string> = {
+    select: 'user_id,username,display_name,avatar_url,is_seller',
+    is_seller: 'eq.true',
+    limit: '10',
+    order: 'user_id.asc',
+  }
+  if (excludeUserId) {
+    params['user_id'] = `neq.${excludeUserId}`
+  }
+  return supabaseRestFetch<PublicProfile>('user_profile', params)
+}
+
+/** Fetches up to 10 seller profiles, excluding the current authenticated user. */
+export const useSellers = () => {
+  const userId = useUserStore((s) => s.user?.id)
+  return useQuery({
+    queryKey: [...qk.profile, 'sellers', userId ?? 'anon'],
+    queryFn: () => getSellers(userId),
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+  })
 }
 
 /**

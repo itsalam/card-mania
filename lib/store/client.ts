@@ -37,3 +37,18 @@ export function getSupabase() {
 
   return client ?? initSupabase()
 }
+
+export async function supabaseRestFetch<T>(
+  table: string,
+  params: Record<string, string> = {}
+): Promise<T[]> {
+  const supabaseUrl = Constants.expoConfig?.extra?.supabaseUrl as string
+  const supabaseKey = Constants.expoConfig?.extra?.supabaseKey as string
+  const qs = new URLSearchParams(params).toString()
+  const url = `${supabaseUrl}/rest/v1/${table}${qs ? `?${qs}` : ''}`
+  const res = await fetch(url, {
+    headers: { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` },
+  })
+  if (!res.ok) throw new Error(`supabaseRestFetch ${table} failed: ${res.status}`)
+  return res.json() as Promise<T[]>
+}

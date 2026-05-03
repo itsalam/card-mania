@@ -6,6 +6,7 @@ import '@/components/nativewind-svg'
 import '../global.css'
 
 import { PortalHost } from '@rn-primitives/portal'
+import { OnboardingOverlay } from '@/features/onboarding'
 import * as Sentry from '@sentry/react-native'
 import { isRunningInExpoGo } from 'expo'
 import Constants from 'expo-constants'
@@ -90,6 +91,7 @@ export default Sentry.wrap(function RootLayout() {
         <Stack.Screen name="+not-found" />
       </Stack>
       <PortalHost />
+      <OnboardingOverlay />
     </Providers>
   )
 })

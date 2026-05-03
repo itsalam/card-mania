@@ -1,5 +1,5 @@
 import { invokeFx } from '@/client/helper'
-import { getSupabase } from '@/lib/store/client'
+import { getSupabase, supabaseRestFetch } from '@/lib/store/client'
 import { Database, Json } from '@/lib/store/supabase'
 import { useDebounced } from '@/lib/utils'
 import { QueryClient, queryOptions, useQuery } from '@tanstack/react-query'
@@ -15,20 +15,14 @@ export const userProfileOptions = (userId?: string | null, queryClient?: QueryCl
     enabled: Boolean(userId),
     queryFn: async (): Promise<Partial<UserProfile>> => {
       if (!userId) throw new Error('userId is required')
-      // Refer to local storage first (for immediate/fallback preferences)
-      const { data, error } = await getSupabase()
-        .from('user_profile')
-        .select(
-          'user_id, username, display_name, avatar_url, bio, location, is_seller, is_hobbyiest, last_seen_at, timezone, created_at, updated_at'
-        )
-        .eq('user_id', userId)
-        .single()
-
-      const profile = data as UserProfile
-      if (error) throw error
-      return {
-        ...profile,
-      }
+      const rows = await supabaseRestFetch<UserProfile>('user_profile', {
+        select:
+          'user_id,username,display_name,avatar_url,bio,location,is_seller,is_hobbyiest,last_seen_at,timezone,created_at,updated_at',
+        user_id: `eq.${userId}`,
+      })
+      if (!rows.length) throw new Error('profile not found')
+      console.log({ rows })
+      return rows[0]
     },
     staleTime: 60_000,
     gcTime: 5 * 60_000,

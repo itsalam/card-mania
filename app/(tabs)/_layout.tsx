@@ -9,53 +9,95 @@ import { useTheme } from '@react-navigation/native'
 import { PortalHost } from '@rn-primitives/portal'
 import * as Haptics from 'expo-haptics'
 import { Tabs } from 'expo-router'
-import {
-  Bell,
-  Compass,
-  Home,
-  Inbox,
-  Layers,
-  Scan,
-  ShoppingCart,
-  Store,
-  User,
-} from 'lucide-react-native'
+import { Bell, Compass, Home, Inbox, Layers, Scan, ShoppingCart, User } from 'lucide-react-native'
 import React, { useEffect } from 'react'
 import { Platform, Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native'
-import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated'
+import { Gesture, GestureDetector } from 'react-native-gesture-handler'
+import Animated, {
+  FadeIn,
+  FadeOut,
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+} from 'react-native-reanimated'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 const CURSOR_WIDTH = '80%'
 const TAB_BAR_HEIGHT = 58
 const TAB_BAR_PADDING_TOP = 8
+const FLOAT_SIZE = 56
+const FLOAT_MARGIN = 16
 
-function CartButton() {
+function FloatingCartButton() {
   const count = useCartCount()
   const openCart = useOpenCart()
   const { colors } = useTheme()
+  const { width: screenW, height: screenH } = useWindowDimensions()
+  const insets = useSafeAreaInsets()
+
+  const defaultX = screenW - FLOAT_SIZE - FLOAT_MARGIN
+  const defaultY = screenH - TAB_BAR_HEIGHT - insets.bottom - FLOAT_SIZE - FLOAT_MARGIN * 2
+
+  const translateX = useSharedValue(defaultX)
+  const translateY = useSharedValue(defaultY)
+  const scale = useSharedValue(1)
+
+  const panGesture = Gesture.Pan()
+    .onStart(() => {
+      scale.value = withSpring(1.08, { damping: 10 })
+    })
+    .onChange((e) => {
+      translateX.value += e.changeX
+      translateY.value += e.changeY
+    })
+    .onEnd(() => {
+      scale.value = withSpring(1, { damping: 12 })
+      const snapRight = translateX.value + FLOAT_SIZE / 2 > screenW / 2
+      translateX.value = withSpring(
+        snapRight ? screenW - FLOAT_SIZE - FLOAT_MARGIN : FLOAT_MARGIN,
+        { damping: 20, stiffness: 200 }
+      )
+      translateY.value = withSpring(
+        Math.max(insets.top + FLOAT_MARGIN, Math.min(translateY.value, defaultY)),
+        { damping: 20, stiffness: 200 }
+      )
+    })
+
+  const animStyle = useAnimatedStyle(() => ({
+    transform: [
+      { translateX: translateX.value },
+      { translateY: translateY.value },
+      { scale: scale.value },
+    ],
+  }))
+
+  if (count === 0) return null
 
   return (
-    <Pressable
-      onPress={openCart}
-      onPressIn={() => {
-        if (process.env.EXPO_OS === 'ios') {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
-        }
-      }}
-      accessibilityRole="button"
-      accessibilityLabel="Open cart"
-      style={styles.tabButton}
+    <Animated.View
+      entering={FadeIn.springify().damping(14)}
+      exiting={FadeOut.duration(150)}
+      style={[floatStyles.button, { backgroundColor: colors.primary }, animStyle]}
     >
-      <View style={styles.cartIconWrapper}>
-        <ShoppingCart size={24} color={colors.text} />
-        {count > 0 && (
-          <View style={styles.badge}>
-            <Text style={styles.badgeText}>{count > 99 ? '99+' : count}</Text>
+      <GestureDetector gesture={panGesture}>
+        <Pressable
+          onPress={openCart}
+          onPressIn={() => {
+            if (process.env.EXPO_OS === 'ios') {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
+            }
+          }}
+          accessibilityRole="button"
+          accessibilityLabel="Open cart"
+          style={floatStyles.buttonInner}
+        >
+          <ShoppingCart size={22} color="#fff" />
+          <View style={floatStyles.floatBadge}>
+            <Text style={floatStyles.floatBadgeText}>{count > 99 ? '99+' : count}</Text>
           </View>
-        )}
-      </View>
-      <Text style={[styles.tabLabel, { color: colors.text }]}>Cart</Text>
-    </Pressable>
+        </Pressable>
+      </GestureDetector>
+    </Animated.View>
   )
 }
 
@@ -79,19 +121,26 @@ function CustomTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
   const insets = useSafeAreaInsets()
   const { width: screenWidth } = useWindowDimensions()
 
-  // +1 for the cart button slot
-  const numSlots = state.routes.length + 1
+  const visibleRoutes = state.routes.filter(
+    (route) => (descriptors[route.key].options.tabBarItemStyle as any)?.display !== 'none'
+  )
+
+  const numSlots = visibleRoutes.length
   const tabWidth = screenWidth / numSlots
 
-  const cursorX = useSharedValue(state.index * tabWidth)
+  const focusedVisibleIndex = visibleRoutes.findIndex(
+    (r) => r.key === state.routes[state.index]?.key
+  )
+
+  const cursorX = useSharedValue(focusedVisibleIndex * tabWidth)
 
   useEffect(() => {
-    cursorX.value = withSpring(state.index * tabWidth, {
+    cursorX.value = withSpring(focusedVisibleIndex * tabWidth, {
       damping: 24,
       stiffness: 300,
       mass: 0.6,
     })
-  }, [state.index, tabWidth])
+  }, [focusedVisibleIndex, tabWidth])
 
   const cursorStyle = useAnimatedStyle(() => ({
     transform: [{ translateX: cursorX.value }],
@@ -115,9 +164,10 @@ function CustomTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
         <View style={[styles.cursor, { backgroundColor: colors.primary }]} />
       </Animated.View>
 
-      {state.routes.map((route, index) => {
+      {visibleRoutes.map((route) => {
         const { options } = descriptors[route.key]
-        const isFocused = state.index === index
+        const routeIndex = state.routes.indexOf(route)
+        const isFocused = state.index === routeIndex
         const color = isFocused ? colors.primary : colors.text
 
         const onPress = () => {
@@ -150,8 +200,6 @@ function CustomTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
           </HapticTab>
         )
       })}
-
-      <CartButton />
     </View>
   )
 }
@@ -204,6 +252,48 @@ const styles = StyleSheet.create({
   },
 })
 
+const floatStyles = StyleSheet.create({
+  button: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    width: FLOAT_SIZE,
+    height: FLOAT_SIZE,
+    borderRadius: FLOAT_SIZE / 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 8,
+    zIndex: 100,
+  },
+  buttonInner: {
+    width: FLOAT_SIZE,
+    height: FLOAT_SIZE,
+    borderRadius: FLOAT_SIZE / 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  floatBadge: {
+    position: 'absolute',
+    top: 6,
+    right: 6,
+    minWidth: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: '#ef4444',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 3,
+  },
+  floatBadgeText: {
+    color: '#fff',
+    fontSize: 9,
+    fontWeight: '700',
+    lineHeight: 12,
+  },
+})
+
 export default function TabLayout() {
   const scheme = useEffectiveColorScheme()
 
@@ -244,10 +334,7 @@ export default function TabLayout() {
         />
         <Tabs.Screen
           name="marketplace"
-          options={{
-            title: 'Marketplace',
-            tabBarIcon: ({ color }) => <Store size={24} color={color} />,
-          }}
+          options={{ href: null, tabBarItemStyle: { display: 'none' } }}
         />
         <Tabs.Screen
           name="offers"
@@ -259,7 +346,7 @@ export default function TabLayout() {
         <Tabs.Screen
           name="notifications"
           options={{
-            title: 'Alerts',
+            title: 'Notifications',
             tabBarIcon: ({ color }) => <NotificationTabIcon color={color} />,
           }}
         />
@@ -268,6 +355,7 @@ export default function TabLayout() {
           options={{
             title: 'Scan',
             tabBarIcon: ({ color }) => <Scan size={24} color={color} />,
+            tabBarItemStyle: { display: 'none' },
           }}
         />
         <Tabs.Screen
@@ -280,6 +368,7 @@ export default function TabLayout() {
         <Tabs.Screen name="cart" options={{ href: null }} />
       </Tabs>
 
+      <FloatingCartButton />
       <PortalHost name="searchbar" />
     </AuthGate>
   )

@@ -1,40 +1,33 @@
-import { Avatar } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import { Text } from '@/components/ui/text/base-text'
-import { ProfilePageStat } from '@/features/profile/types'
+import { UserAvatar } from '@/features/users/components/UserAvatars'
+import { UserDisplayInfo } from '@/features/users/types'
 import { useUserStore } from '@/lib/store/useUserStore'
-import { LucideIcon, LogOut, Star, TrendingUp } from 'lucide-react-native'
+import { useRouter } from 'expo-router'
+import { LogOut } from 'lucide-react-native'
 import React from 'react'
 import { Alert, FlatList, TouchableOpacity, useWindowDimensions, View } from 'react-native'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Colors } from 'react-native-ui-lib'
-import { useEffectiveColorScheme } from '../hooks/effective-color-scheme'
 
 export function ProfileHeader() {
-  const insets = useSafeAreaInsets()
   const { height } = useWindowDimensions()
   const { user, profile, signOut } = useUserStore()
-  const scheme = useEffectiveColorScheme()
+  const router = useRouter()
 
   // Resolve display name and handle from profile, falling back to auth data
   const displayName = profile?.display_name ?? profile?.username ?? 'CardMania User'
   const handle = profile?.username ?? user?.email?.split('@')[0] ?? 'username'
 
-  const DUMMY_STATS: ProfilePageStat[] = [
-    {
-      label: 'Followers',
-      value: 0,
-    },
-    {
-      label: 'Following',
-      value: 0,
-    },
-  ]
+  const displayInfo: UserDisplayInfo = {
+    name: displayName,
+    handle: `@${handle}`,
+    avatar: profile?.avatar_url ?? '',
+  }
 
-  const DUMMY_TAGS: { icon: LucideIcon; label: string; color?: string; disabled?: boolean }[] = [
-    { label: 'Hobbyist', icon: Star },
-    { label: 'Trader', icon: TrendingUp, disabled: false },
+  const stats = [
+    { label: 'Followers', value: 0 },
+    { label: 'Following', value: 0 },
   ]
 
   const handleSignOut = () => {
@@ -46,8 +39,10 @@ export function ProfileHeader() {
         {
           text: 'Sign out',
           style: 'destructive',
-          onPress: () => signOut(),
-          // AuthGate detects user === null and renders SplashPage automatically
+          onPress: () => {
+            signOut()
+            if (router.canDismiss()) router.dismissAll()
+          },
         },
       ],
       { cancelable: true }
@@ -63,7 +58,7 @@ export function ProfileHeader() {
         paddingBottom: 20,
       }}
     >
-      <Avatar size="2xl" />
+      <UserAvatar size="2xl" user={displayInfo} />
       <View
         style={{
           paddingTop: 20,
@@ -81,9 +76,9 @@ export function ProfileHeader() {
           alignItems: 'stretch',
         }}
         horizontal
-        data={DUMMY_STATS}
+        data={stats}
         renderItem={({ item }) => {
-          const { label, element, icon: Icon, value } = item
+          const { label, value } = item
           return (
             <View
               style={{
@@ -93,30 +88,8 @@ export function ProfileHeader() {
                 paddingVertical: 8,
               }}
             >
-              <Text
-                style={{
-                  ...(!Icon
-                    ? { color: Colors.$iconDefault }
-                    : Boolean(value)
-                      ? { color: Colors.$iconPrimary }
-                      : { color: Colors.rgba(Colors.$iconDefault, 0.4) }),
-                }}
-              >
-                {label}
-              </Text>
-              {element ? (
-                element
-              ) : Icon ? (
-                <Icon
-                  size={20}
-                  style={{ marginTop: 3 }}
-                  {...(Boolean(value)
-                    ? { color: Colors.$iconPrimary }
-                    : { color: Colors.rgba(Colors.$iconDefault, 0.4) })}
-                />
-              ) : value !== undefined ? (
-                <Text variant={'large'}>{String(value)}</Text>
-              ) : null}
+              <Text style={{ color: Colors.$iconDefault }}>{label}</Text>
+              <Text variant={'large'}>{value}</Text>
             </View>
           )
         }}
@@ -135,7 +108,6 @@ export function ProfileHeader() {
         }}
       />
 
-      {/* Sign out row — sits just above the settings sections */}
       <TouchableOpacity
         onPress={handleSignOut}
         accessibilityLabel="Sign out"

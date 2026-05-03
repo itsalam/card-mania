@@ -172,6 +172,7 @@ export const Input = forwardRef<TextInput, InputProps>((props, ref) => {
     styles.floatingPlaceholderTextStyle,
     floatingPlaceholderStyle,
   ]
+  const isMultiline = !!others.multiline
   return (
     <DynamicBorderBox
       {...containerProps}
@@ -182,7 +183,11 @@ export const Input = forwardRef<TextInput, InputProps>((props, ref) => {
       opacity={opacity}
       forceFloat={forceFloatFinal}
     >
-      <View style={[styles.field]} ref={fieldLayoutRef} onLayout={onFieldLayout}>
+      <View
+        style={[styles.field, isMultiline && styles.fieldMultiline]}
+        ref={fieldLayoutRef}
+        onLayout={onFieldLayout}
+      >
         {leadingAccessory}
         {floatingPlaceholder && (
           <FloatingPlaceholder
@@ -206,6 +211,7 @@ export const Input = forwardRef<TextInput, InputProps>((props, ref) => {
             styles.inputBody,
             styles.inputTextStyle,
             { color: Colors.$textDefault },
+            isMultiline && styles.inputBodyMultiline,
             inputStyle,
           ]}
           onFocus={context.onFocus}

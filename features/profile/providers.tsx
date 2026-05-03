@@ -1,9 +1,9 @@
 import React, { createContext, useContext, useEffect, useRef } from 'react'
-import { StoreApi, useStore, createStore } from 'zustand'
+import { createStore, StoreApi, useStore } from 'zustand'
 
 import { UserProfile, useUserProfile } from '../settings/client'
 
-export type TabType = 'collections' | 'timeline' | 'stats' | 'storefront' | 'seeking'
+export type TabType = 'collections' | 'posts' | 'timeline' | 'stats' | 'storefront' | 'seeking'
 type TabData = {
   label?: string
 }
@@ -11,6 +11,9 @@ type TabData = {
 export const tabsRecords: Record<TabType, TabData> = {
   collections: {
     label: 'Collections',
+  },
+  posts: {
+    label: 'Posts',
   },
   timeline: {
     label: 'Timeline',
@@ -22,11 +25,11 @@ export const tabsRecords: Record<TabType, TabData> = {
     label: 'Storefront',
   },
   seeking: {
-    label: 'seeking',
+    label: 'Seeking',
   },
 }
 
-export const defaultTab: TabType[] = ['collections', 'timeline', 'stats']
+export const defaultTab: TabType[] = ['collections', 'posts']
 
 type ProfilePageStore = {
   user?: UserProfile
@@ -36,11 +39,8 @@ type ProfilePageStore = {
   tabs: TabType[]
 }
 
-export function makeTabs(opts: { isHobbyist?: boolean; isTrader?: boolean }): TabType[] {
-  const tabs: TabType[] = ['collections', 'timeline', 'stats']
-  if (opts.isHobbyist) tabs.unshift('seeking')
-  if (opts.isTrader) tabs.unshift('storefront')
-  return tabs
+export function makeTabs(_opts: { isHobbyist?: boolean; isTrader?: boolean }): TabType[] {
+  return ['collections', 'posts']
 }
 
 export function createUserProfilePageStore(initial: { tabs: TabType[]; user?: UserProfile }) {
@@ -66,12 +66,13 @@ export function UserProfilePageStoreProvider({
   userId: string
   children: React.ReactNode
 }) {
-  const { data: user } = useUserProfile(userId)
+  const { data: user, ...error } = useUserProfile(userId)
   const tabs = makeTabs({
     isHobbyist: user?.is_hobbyiest,
     isTrader: user?.is_seller,
   })
 
+  console.log({ user, userId, error })
   // create store ONCE
   const storeRef = useRef<StoreApi<ProfilePageStore> | null>(null)
   if (!storeRef.current) {

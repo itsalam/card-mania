@@ -1,6 +1,6 @@
 import { useCombinedRefs } from '@/components/hooks/useCombinedRefs'
 import { Canvas, DashPathEffect, RoundedRect } from '@shopify/react-native-skia'
-import React, { forwardRef, useMemo } from 'react'
+import React, { forwardRef, useMemo, useState } from 'react'
 import { ColorValue, StyleProp, StyleSheet, Text, TextStyle, View, ViewProps } from 'react-native'
 import Animated, {
   DerivedValue,
@@ -40,6 +40,7 @@ export const DynamicBorderBox = forwardRef<View, DynamicBorderBoxProps>(
     const animRef = useAnimatedRef<View>()
     const combinedRef = useCombinedRefs(ref, animRef)
     const shouldFloat = forceFloat
+    const [hasLayout, setHasLayout] = useState(false)
     const size = useSharedValue({ width: 0, height: 0 })
     const {
       borderWidth: strokeWidth,
@@ -113,6 +114,7 @@ export const DynamicBorderBox = forwardRef<View, DynamicBorderBoxProps>(
           onLayout={(e) => {
             const { width, height } = e.nativeEvent.layout
             size.set({ width, height })
+            setHasLayout(true)
             onLayout?.(e)
           }}
           style={[ExtraStyles.container, containerStyle]}
@@ -120,7 +122,7 @@ export const DynamicBorderBox = forwardRef<View, DynamicBorderBoxProps>(
           {...props}
         >
           {children}
-          {size.value.width > 0 && size.value.height > 0 && (
+          {hasLayout && (
             <Canvas
               style={[StyleSheet.absoluteFill, { zIndex: -1 }]}
               onSize={size}
@@ -188,6 +190,5 @@ const ExtraStyles = StyleSheet.create({
     display: 'flex',
     position: 'relative',
     flexDirection: 'row',
-    flex: 1,
   },
 })

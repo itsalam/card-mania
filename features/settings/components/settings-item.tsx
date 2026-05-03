@@ -22,13 +22,13 @@ export function SettingsItem({
     switch (type) {
       case 'toggle':
         return (
-          <ToggleAccessory display={display} settingKey={settingKey}>
+          <ToggleAccessory display={display as any} settingKey={settingKey}>
             {children}
           </ToggleAccessory>
         )
       case 'custom':
         return (
-          <CustomAccessory display={display} settingKey={settingKey}>
+          <CustomAccessory display={display as any} settingKey={settingKey}>
             {children}
           </CustomAccessory>
         )

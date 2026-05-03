@@ -29,6 +29,9 @@ export const styles = StyleSheet.create({
   inputBody: {
     flex: 1,
   },
+  inputBodyMultiline: {
+    textAlignVertical: 'top',
+  },
   floatingPlaceholderTextStyle: {
     fontSize: BASE_PLACEHOLDER_FONT_SIZE,
     lineHeight: BASE_PLACEHOLDER_FONT_SIZE + 2,
@@ -50,6 +53,10 @@ export const styles = StyleSheet.create({
     zIndex: 1,
     flex: 1,
     minHeight: BASE_BADGE_HEIGHT + GAP_PADDING,
+  },
+  fieldMultiline: {
+    alignItems: 'flex-start',
+    alignContent: 'flex-start',
   },
   centeredContainer: {
     alignSelf: 'center',

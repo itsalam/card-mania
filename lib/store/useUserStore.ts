@@ -11,7 +11,8 @@ type State = {
   session: Session | null
   user: User | null
   profile: Profile | null
-  hydrated: boolean // for UI guards
+  profileSetupComplete: boolean | null // null = not yet loaded
+  hydrated: boolean
   error?: string
 }
 
@@ -20,12 +21,11 @@ type Actions = {
   setStatus: (s: AuthStatusType) => void
   setAuth: (session: Session | null) => Promise<void>
   loadProfile: (userId: string) => Promise<void>
+  updateProfile: (patch: Partial<Profile>) => Promise<void>
+  setProfileSetupComplete: (v: boolean) => Promise<void>
+  verifySignUpOtp: (email: string, token: string) => Promise<void>
   signIn: (email: string, password: string) => Promise<void>
-  signUp: (
-    email: string,
-    password: string,
-    displayName?: string
-  ) => Promise<{ needsEmailConfirmation: boolean }>
+  signUp: (email: string, password: string) => Promise<{ needsEmailConfirmation: boolean }>
   signOut: () => Promise<void>
   signInAnonymously: () => Promise<void>
   signInWithGoogle: () => Promise<void>
@@ -48,6 +48,7 @@ export const useUserStore = create<State & Actions>()(
       session: null,
       user: null,
       profile: null,
+      profileSetupComplete: null,
       hydrated: false,
 
       setHydrated: () => set({ hydrated: true }),
@@ -81,22 +82,54 @@ export const useUserStore = create<State & Actions>()(
             )
             .subscribe()
         } else {
-          set({ profile: null })
+          set({ profile: null, profileSetupComplete: null })
         }
       },
 
       loadProfile: async (userId) => {
-        const { data, error } = await getSupabase()
-          .from('user_profile')
-          .select('*')
-          .eq('user_id', userId) // fixed: PK is user_id, not id
-          .maybeSingle()
+        const [profileRes, settingsRes] = await Promise.all([
+          getSupabase().from('user_profile').select('*').eq('user_id', userId).maybeSingle(),
+          getSupabase()
+            .from('user_settings')
+            .select('profile_setup_complete')
+            .eq('user_id', userId)
+            .maybeSingle(),
+        ])
 
-        if (error) {
-          set({ error: error.message })
+        if (profileRes.error) {
+          set({ error: profileRes.error.message })
         } else {
-          set({ profile: data as Profile | null, error: undefined })
+          set({
+            profile: profileRes.data as Profile | null,
+            profileSetupComplete: settingsRes.data?.profile_setup_complete ?? false,
+            error: undefined,
+          })
         }
+      },
+
+      updateProfile: async (patch) => {
+        const userId = get().user?.id
+        if (!userId) return
+        await getSupabase()
+          .from('user_profile')
+          .upsert({ user_id: userId, ...patch }, { onConflict: 'user_id' })
+        await get().loadProfile(userId)
+      },
+
+      setProfileSetupComplete: async (v) => {
+        const userId = get().user?.id
+        if (!userId) return
+        set({ profileSetupComplete: v })
+        const { error } = await getSupabase()
+          .from('user_settings')
+          .upsert({ user_id: userId, profile_setup_complete: v }, { onConflict: 'user_id' })
+        if (error) console.error('[setProfileSetupComplete] DB write failed:', error.message)
+      },
+
+      verifySignUpOtp: async (email, token) => {
+        const { data, error } = await getSupabase().auth.verifyOtp({ email, token, type: 'signup' })
+        if (error) throw error
+        if (data.session) await get().setAuth(data.session)
       },
 
       signIn: async (email, password) => {
@@ -109,46 +142,19 @@ export const useUserStore = create<State & Actions>()(
         // onAuthStateChange in _providers.tsx drives the rest of the state update
       },
 
-      signUp: async (email, password, displayName) => {
-        set({ status: 'loading', error: undefined })
+      signUp: async (email, password) => {
         const { data, error } = await getSupabase().auth.signUp({ email, password })
-        if (error) {
-          set({ status: 'error', error: error.message })
-          throw error
-        }
+        if (error) throw error
 
         const user = data.user
         if (!user) throw new Error('Sign up succeeded but no user was returned.')
 
-        // Provision user_profile client-side as a belt-and-suspenders complement
-        // to the DB trigger (provision_user_profile_on_signup migration).
-        const baseUsername = email
-          .split('@')[0]
-          .toLowerCase()
-          .replace(/[^a-z0-9_]/g, '_')
-        const suffix = Math.random().toString(36).slice(2, 6)
-        const username = `${baseUsername}_${suffix}`
-
-        await getSupabase()
-          .from('user_profile')
-          .upsert(
-            {
-              user_id: user.id,
-              username,
-              display_name: displayName?.trim() || email.split('@')[0],
-            },
-            { onConflict: 'user_id' }
-          )
-
-        const needsEmailConfirmation = !data.session
         if (data.session) {
-          // Email confirmation is disabled — session is live immediately
+          // Email confirmation disabled — session is live immediately
           await get().setAuth(data.session)
         }
-        // If confirmation is required the user stays on SplashPage with a
-        // success message; AuthGate will navigate to home after they confirm.
 
-        return { needsEmailConfirmation }
+        return { needsEmailConfirmation: !data.session }
       },
 
       signOut: async () => {
@@ -161,6 +167,7 @@ export const useUserStore = create<State & Actions>()(
             session: null,
             user: null,
             profile: null,
+            profileSetupComplete: null,
             status: 'signed_out',
           })
         }
@@ -199,10 +206,11 @@ export const useUserStore = create<State & Actions>()(
       },
     }),
     {
-      name: 'user-store', // persists profile + minor UI flags; not tokens
+      name: 'user-store',
       storage: createJSONStorage(() => AsyncStorage),
       partialize: (s) => ({
         profile: s.profile,
+        profileSetupComplete: s.profileSetupComplete,
         hydrated: s.hydrated,
       }),
       onRehydrateStorage: () => (state) => {

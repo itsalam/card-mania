@@ -2,6 +2,7 @@ import Logo from '@/assets/images/logo.svg'
 import { Tabs, TabsContent, TabsLabel, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Text } from '@/components/ui/text/base-text'
 import { MainSearchBar } from '@/features/mainSearchbar'
+import { OnboardingTarget } from '@/features/onboarding'
 import { useUserStore } from '@/lib/store/useUserStore'
 import { useRouter } from 'expo-router'
 import { Compass, History, LucideIcon, Newspaper, SettingsIcon, Sheet } from 'lucide-react-native'
@@ -10,7 +11,7 @@ import { ScrollView, TouchableOpacity, View } from 'react-native'
 import { GestureDetector } from 'react-native-gesture-handler'
 import Animated from 'react-native-reanimated'
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
-import { Colors } from 'react-native-ui-lib'
+import { BorderRadiuses, Colors } from 'react-native-ui-lib'
 import CollectionBreakdown from '../collection/components/CollectionBreakdown'
 import { useCollaspableHeader } from '../collection/ui'
 import { Graphs } from './Breakdowns'
@@ -40,10 +41,7 @@ export default function HomeScreen() {
 
   // Resolve the best available display name for the greeting
   const displayName =
-    profile?.display_name ??
-    profile?.username ??
-    user?.email?.split('@')[0] ??
-    'there'
+    profile?.display_name ?? profile?.username ?? user?.email?.split('@')[0] ?? 'there'
 
   const GRAPH_SECTION_HEIGHT = 284
   const [selectedCollections, setSelectedCollections] = useState<string[]>([
@@ -71,42 +69,51 @@ export default function HomeScreen() {
       <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, gap: 12 }}>
         <Logo width={48} height={48} />
         <Text variant={'large'}>Welcome back, {displayName}</Text>
-        <TouchableOpacity
-          style={{ marginLeft: 'auto' }}
-          onPress={() => router.push('/(tabs)/profile/settings')}
-          accessibilityLabel="Open settings"
-        >
-          <SettingsIcon size={32} color={Colors.$iconDefault} />
-        </TouchableOpacity>
+        <OnboardingTarget id="settings-icon" style={{ marginLeft: 'auto' }}>
+          <TouchableOpacity
+            onPress={() => router.push('/(tabs)/profile/settings')}
+            accessibilityLabel="Open settings"
+          >
+            <SettingsIcon size={32} color={Colors.$iconDefault} />
+          </TouchableOpacity>
+        </OnboardingTarget>
       </View>
-      <MainSearchBar />
-      <CollectionBreakdown
-        style={{
-          paddingTop: 12,
-          marginBottom: 20,
-          marginHorizontal: 12,
-        }}
-        selectedCollections={selectedCollections}
-        onToggleCollection={toggleCollection}
-      />
+      <OnboardingTarget id="search-bar">
+        <MainSearchBar />
+      </OnboardingTarget>
+
+      <OnboardingTarget id="collection-breakdown">
+        <CollectionBreakdown
+          style={{
+            paddingTop: 12,
+            marginBottom: 20,
+            marginHorizontal: 12,
+          }}
+          selectedCollections={selectedCollections}
+          onToggleCollection={toggleCollection}
+        />
+      </OnboardingTarget>
       <GestureDetector gesture={composedGestures}>
         <View style={{ height: 500 }}>
           <Animated.View
             style={[
               {
-                backgroundColor: Colors.$backgroundNeutral,
-                paddingTop: 8,
-                borderTopColor: Colors.$outlineDefault,
-                borderTopWidth: 2,
-                borderBottomColor: Colors.$outlineDefault,
-                borderBottomWidth: 2,
+                // backgroundColor: Colors.$backgroundNeutral,
+                margin: 8,
+                borderColor: Colors.$outlineDefault,
+                borderWidth: 2,
+                // borderBottomColor: Colors.$outlineDefault,
+                // borderBottomWidth: 2,
                 overflow: 'hidden',
+                borderRadius: BorderRadiuses.br40,
               },
               headerAnimatedStyle,
             ]}
             onLayout={onHeaderLayout}
           >
-            <Graphs height={GRAPH_SECTION_HEIGHT} selectedCollections={selectedCollections} />
+            <OnboardingTarget id="collection-graphs">
+              <Graphs height={GRAPH_SECTION_HEIGHT} selectedCollections={selectedCollections} />
+            </OnboardingTarget>
           </Animated.View>
           <Tabs
             className="flex-1"
@@ -115,24 +122,26 @@ export default function HomeScreen() {
             style={{ height: 400, width: '100%' }}
           >
             <View style={{ flexDirection: 'row' }}>
-              <TabsList className="ml-4" style={{ height: 48 }}>
-                {tabValues.map((tab) => (
-                  <TabsTrigger key={tab} value={tab}>
-                    <TabsLabel
-                      label={tab}
-                      value={tab}
-                      leftElement={(isCurrent) =>
-                        React.createElement(tabIcons[tab], {
-                          size: 16,
-                          color: isCurrent ? Colors.$textPrimary : Colors.$textDefault,
-                        })
-                      }
-                    />
-                  </TabsTrigger>
-                ))}
+              <OnboardingTarget id="tab-list">
+                <TabsList className="ml-4" style={{ height: 48 }}>
+                  {tabValues.map((tab) => (
+                    <TabsTrigger key={tab} value={tab}>
+                      <TabsLabel
+                        label={tab}
+                        value={tab}
+                        leftElement={(isCurrent) =>
+                          React.createElement(tabIcons[tab], {
+                            size: 16,
+                            color: isCurrent ? Colors.$textPrimary : Colors.$textDefault,
+                          })
+                        }
+                      />
+                    </TabsTrigger>
+                  ))}
 
-                {/* <TabOptions currentTab={currentPage} /> */}
-              </TabsList>
+                  {/* <TabOptions currentTab={currentPage} /> */}
+                </TabsList>
+              </OnboardingTarget>
 
               <TabsList style={{ height: 48 }}>
                 <TabsTrigger key={'Recents'} value={'Recents'} style={{}}>

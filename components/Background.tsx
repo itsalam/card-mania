@@ -139,6 +139,7 @@ export const GradientBackground = React.memo(BackgroundBase, (prev, next) => {
   if (!colorsEq(prev.colors as any, next.colors as any)) return false
   if (!opacityEq(prev.opacity as any, next.opacity as any)) return false
   if (prev.style !== next.style) return false
+  if (prev.children !== next.children) return false
   return true
 })
 

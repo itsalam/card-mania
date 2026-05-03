@@ -64,10 +64,7 @@ export const UserContact = ({ user, size = 'md', children }: UserContactProps) =
 }
 
 export const UserAvatar = ({ user, size = 'md' }: UserContactProps) => {
-  const uri = useMemo(
-    () => (user ? `https://picsum.photos/seed/${Math.random()}/200/200` : undefined),
-    [user]
-  )
+  const uri = useMemo(() => (user?.avatar ? user.avatar : undefined), [user?.avatar])
   const [imageLoaded, setImageLoaded] = useState(false)
 
   return (

@@ -1,3 +1,5 @@
+import { useOnboardingStore } from '@/features/onboarding'
+import { router } from 'expo-router'
 import { SettingsLayoutSection } from '@/features/settings/types'
 import {
   Bell,
@@ -6,6 +8,7 @@ import {
   Monitor,
   Moon,
   PersonStanding,
+  Route,
   ShieldBan,
   Sun,
   SunMoon,
@@ -57,9 +60,25 @@ export const SETTINGS_SECTIONS: Record<string, SettingsLayoutSection> = {
         label: 'Public Profile Settings',
         type: 'page',
         Icon: UserPen,
+        route: '/(tabs)/profile/edit',
         page: {
-          label: 'Account Settings',
+          label: 'Profile Settings',
           items: {},
+        },
+      },
+    },
+  },
+  onboarding: {
+    label: 'Help & Onboarding',
+    items: {
+      replayTour: {
+        key: 'replay-onboarding',
+        label: 'Replay App Tour',
+        type: 'action',
+        Icon: Route,
+        onPress: () => {
+          router.navigate('/(tabs)')
+          setTimeout(() => useOnboardingStore.getState().start(), 400)
         },
       },
     },

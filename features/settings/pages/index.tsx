@@ -8,6 +8,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Separator } from '@rn-primitives/dropdown-menu'
 import { Colors } from 'react-native-ui-lib'
 import { ProfileHeader } from '../components/profile-header'
+import { SettingsActionItem } from '../components/settings-action-item'
 import { SettingsItem } from '../components/settings-item'
 import { SettingsPageItem } from '../components/settings-page'
 import { useEffectiveColorScheme } from '../hooks/effective-color-scheme'
@@ -30,6 +31,7 @@ export default function ProfilePageLayout() {
       style={{
         height: '100%',
         width: '100%',
+        backgroundColor: Colors.$backgroundDefault,
       }}
       contentContainerStyle={{
         paddingTop: insets.top,
@@ -45,8 +47,10 @@ export default function ProfilePageLayout() {
           {Object.entries(section?.items).map(([key, setting]) =>
             setting.type === 'page' ? (
               <SettingsPageItem key={key} display={setting} />
+            ) : setting.type === 'action' ? (
+              <SettingsActionItem key={key} display={setting} />
             ) : (
-              <SettingsItem key={key} settingKey={setting.key} display={setting} />
+              <SettingsItem key={key} settingKey={setting.key as any} display={setting} />
             )
           )}
         </SettingsContainer>

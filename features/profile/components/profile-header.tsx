@@ -1,10 +1,11 @@
 import { useToast } from '@/components/Toast'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { ExpandableText, Text } from '@/components/ui/text'
-import { ProfilePageStat } from '@/features/profile/types'
 import { UserContact } from '@/features/users/components/UserAvatars'
-import { DUMMY_USERS } from '@/features/users/helpers'
+import { UserDisplayInfo } from '@/features/users/types'
+import { useUserStore } from '@/lib/store/useUserStore'
 import { Copy, Ellipsis, LucideIcon, Star, TrendingUp } from 'lucide-react-native'
 import React, { ReactNode, useMemo } from 'react'
 import { FlatList, Platform, Share as RNShare, TouchableOpacity, View } from 'react-native'
@@ -12,17 +13,6 @@ import { BorderRadiuses, Colors } from 'react-native-ui-lib'
 import { useUserProfilePage } from '../providers'
 
 const STOREFRONT_DOMAIN = 'cardmania.vercel.app'
-
-const DUMMY_STATS: ProfilePageStat[] = [
-  {
-    label: 'Followers',
-    value: 0,
-  },
-  {
-    label: 'Following',
-    value: 0,
-  },
-]
 
 type Tag = {
   icon: LucideIcon
@@ -32,13 +22,33 @@ type Tag = {
   element?: ReactNode
 }
 
-const DUMMY_TAGS: Tag[] = [
-  { label: 'Hobbyist', icon: Star },
-  { label: 'Trader', icon: TrendingUp, disabled: true },
-]
-
 export function ProfileHeader() {
   const user = useUserProfilePage((s) => s.user)
+  const { user: authUser } = useUserStore()
+  const { showToast } = useToast()
+
+  const isOwnProfile = !!authUser?.id && authUser.id === user?.user_id
+  const storefrontUrl = user?.username
+    ? `https://${STOREFRONT_DOMAIN}/storefront/${user.username}`
+    : null
+
+  const handleShareStorefront = async () => {
+    if (!storefrontUrl) return
+    if (Platform.OS === 'web') {
+      await navigator.clipboard.writeText(storefrontUrl)
+      showToast({ message: 'Link copied to clipboard!' })
+    } else {
+      await RNShare.share({ url: storefrontUrl, message: storefrontUrl })
+    }
+  }
+
+  const displayInfo: UserDisplayInfo | undefined = user
+    ? {
+        name: user.display_name ?? user.username ?? 'Unknown',
+        handle: user.username ? `@${user.username}` : '',
+        avatar: user.avatar_url ?? '',
+      }
+    : undefined
 
   return (
     <View
@@ -63,14 +73,29 @@ export function ProfileHeader() {
             width: '100%',
           }}
         >
-          <UserContact size="xl" user={DUMMY_USERS[0]}></UserContact>
+          <UserContact size="xl" user={displayInfo} />
 
           <View style={{ flexDirection: 'row', gap: 10 }}>
-            <TouchableOpacity>
-              <Button size={'icon'}>
-                <Ellipsis size={22} color={Colors.$iconDefault} />
-              </Button>
-            </TouchableOpacity>
+            <Popover>
+              <PopoverTrigger asChild>
+                <TouchableOpacity>
+                  <Button size={'icon'}>
+                    <Ellipsis size={22} color={Colors.$iconDefault} />
+                  </Button>
+                </TouchableOpacity>
+              </PopoverTrigger>
+              <PopoverContent className="w-48 p-2">
+                {isOwnProfile && storefrontUrl ? (
+                  <TouchableOpacity
+                    onPress={handleShareStorefront}
+                    style={{ padding: 8, flexDirection: 'row', alignItems: 'center', gap: 8 }}
+                  >
+                    <Copy size={16} color={Colors.$iconDefault} />
+                    <Text>Share storefront</Text>
+                  </TouchableOpacity>
+                ) : null}
+              </PopoverContent>
+            </Popover>
           </View>
         </View>
       </View>
@@ -80,7 +105,10 @@ export function ProfileHeader() {
 
 export function SubHeader() {
   const user = useUserProfilePage((s) => s.user)
+  const { user: authUser } = useUserStore()
   const { showToast } = useToast()
+
+  const isOwnProfile = !!authUser?.id && authUser.id === user?.user_id
 
   const storefrontUrl = user?.username
     ? `https://${STOREFRONT_DOMAIN}/storefront/${user.username}`
@@ -98,11 +126,16 @@ export function SubHeader() {
 
   const tags = useMemo(() => {
     const tags: Tag[] = [
-      { label: 'Hobbyist', icon: Star, disabled: Boolean(user?.is_hobbyiest) },
-      { label: 'Trader', icon: TrendingUp, disabled: Boolean(user?.is_seller) },
+      { label: 'Hobbyist', icon: Star, disabled: !user?.is_hobbyiest },
+      { label: 'Trader', icon: TrendingUp, disabled: !user?.is_seller },
     ]
     return tags
   }, [user])
+
+  const stats = [
+    { label: 'Followers', value: 0 },
+    { label: 'Following', value: 0 },
+  ]
 
   return (
     <View
@@ -126,49 +159,28 @@ export function SubHeader() {
           borderRadius: BorderRadiuses.br30,
         }}
       >
-        {DUMMY_STATS.map((item) => {
-          const { label, element, icon: Icon, value } = item
-          return (
-            <View
-              style={{
-                justifyContent: 'center',
-                alignItems: 'flex-start',
-                paddingVertical: 4,
-                gap: 4,
-              }}
-              key={label}
+        {stats.map(({ label, value }) => (
+          <View
+            style={{
+              justifyContent: 'center',
+              alignItems: 'flex-start',
+              paddingVertical: 4,
+              gap: 4,
+            }}
+            key={label}
+          >
+            <Text
+              className="font-roboto"
+              variant={'default'}
+              style={{ color: Colors.$iconDefault }}
             >
-              <Text
-                className="font-roboto"
-                variant={'default'}
-                style={{
-                  ...(!Icon
-                    ? { color: Colors.$iconDefault }
-                    : Boolean(value)
-                      ? { color: Colors.$iconPrimary }
-                      : { color: Colors.rgba(Colors.$iconDefault, 0.4) }),
-                }}
-              >
-                {label}
-              </Text>
-              {element ? (
-                element
-              ) : Icon ? (
-                <Icon
-                  size={20}
-                  style={{ marginTop: 3 }}
-                  {...(Boolean(value)
-                    ? { color: Colors.$iconPrimary }
-                    : { color: Colors.rgba(Colors.$iconDefault, 0.4) })}
-                />
-              ) : value !== undefined ? (
-                <Text className="font-roboto" style={{ fontSize: 20, fontWeight: 700 }}>
-                  {String('17,89') + String(value)}
-                </Text>
-              ) : null}
-            </View>
-          )
-        })}
+              {label}
+            </Text>
+            <Text className="font-roboto" style={{ fontSize: 20, fontWeight: 700 }}>
+              {value}
+            </Text>
+          </View>
+        ))}
         <Button size={'lg'}>
           <Text variant={'large'}>Follow</Text>
         </Button>
@@ -198,24 +210,25 @@ export function SubHeader() {
               containerStyle={{
                 borderColor: Colors.$textNeutralLight,
                 borderWidth: 1.5,
-                opacity: disabled ? 0.3 : 0.7,
+                opacity: 0.7,
                 alignSelf: 'center',
               }}
             />
           )
         }}
       />
-      <ExpandableText
-        minNumLines={2}
-        style={{
-          color: Colors.$textNeutralHeavy,
-        }}
-      >
-        Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut
-        labore et dolore magna aliqua.
-      </ExpandableText>
+      {user?.bio ? (
+        <ExpandableText
+          minNumLines={2}
+          style={{
+            color: Colors.$textNeutralHeavy,
+          }}
+        >
+          {user.bio}
+        </ExpandableText>
+      ) : null}
 
-      {storefrontUrl ? (
+      {!isOwnProfile && storefrontUrl ? (
         <TouchableOpacity
           onPress={handleShareStorefront}
           style={{

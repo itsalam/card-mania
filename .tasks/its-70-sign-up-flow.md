@@ -4,12 +4,12 @@
 
 ### Files changed
 
-| File | Change |
-|---|---|
-| `lib/store/useUserStore.ts` | Added `signIn` + `signUp` actions; fixed `loadProfile` PK bug (`.eq('id')` → `.eq('user_id')`); fixed realtime subscription table + filter column |
-| `features/splash/index.tsx` | Wired up email/password login form; toggle between login and sign-up views |
-| `features/splash/SignUpForm.tsx` | New component: email, display name, password, confirm password; friendly error messages; email-confirmation holding state |
-| `supabase/migrations/20260429000000_provision_user_profile_on_signup.sql` | DB trigger: auto-provisions `user_profile` row on every `auth.users` INSERT |
+| File                                                                      | Change                                                                                                                                            |
+| ------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `lib/store/useUserStore.ts`                                               | Added `signIn` + `signUp` actions; fixed `loadProfile` PK bug (`.eq('id')` → `.eq('user_id')`); fixed realtime subscription table + filter column |
+| `features/splash/index.tsx`                                               | Wired up email/password login form; toggle between login and sign-up views                                                                        |
+| `features/splash/SignUpForm.tsx`                                          | New component: email, display name, password, confirm password; friendly error messages; email-confirmation holding state                         |
+| `supabase/migrations/20260429000000_provision_user_profile_on_signup.sql` | DB trigger: auto-provisions `user_profile` row on every `auth.users` INSERT                                                                       |
 
 ### Flow
 

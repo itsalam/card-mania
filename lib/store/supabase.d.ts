@@ -1,10 +1,30 @@
 export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[]
 
 export type Database = {
-  // Allows to automatically instantiate createClient with right options
-  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
-  __InternalSupabase: {
-    PostgrestVersion: '13.0.4'
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
   }
   public: {
     Tables: {
@@ -165,7 +185,7 @@ export type Database = {
           latest_price: number | null
           name: string
           release_date: string | null
-          search_vector: unknown
+          search_vector: unknown | null
           set_name: string
         }
         Insert: {
@@ -182,7 +202,7 @@ export type Database = {
           latest_price?: number | null
           name: string
           release_date?: string | null
-          search_vector?: unknown
+          search_vector?: unknown | null
           set_name: string
         }
         Update: {
@@ -199,7 +219,7 @@ export type Database = {
           latest_price?: number | null
           name?: string
           release_date?: string | null
-          search_vector?: unknown
+          search_vector?: unknown | null
           set_name?: string
         }
         Relationships: [
@@ -218,6 +238,33 @@ export type Database = {
             referencedColumns: ['id']
           },
         ]
+      }
+      client_errors: {
+        Row: {
+          context: string
+          created_at: string
+          id: number
+          message: string
+          metadata: Json | null
+          user_id: string | null
+        }
+        Insert: {
+          context: string
+          created_at?: string
+          id?: never
+          message: string
+          metadata?: Json | null
+          user_id?: string | null
+        }
+        Update: {
+          context?: string
+          created_at?: string
+          id?: never
+          message?: string
+          metadata?: Json | null
+          user_id?: string | null
+        }
+        Relationships: []
       }
       collection_item_events: {
         Row: {
@@ -1076,6 +1123,33 @@ export type Database = {
           },
         ]
       }
+      password_policy: {
+        Row: {
+          id: number
+          min_length: number
+          require_lowercase: boolean
+          require_number: boolean
+          require_special: boolean
+          require_uppercase: boolean
+        }
+        Insert: {
+          id?: number
+          min_length?: number
+          require_lowercase?: boolean
+          require_number?: boolean
+          require_special?: boolean
+          require_uppercase?: boolean
+        }
+        Update: {
+          id?: number
+          min_length?: number
+          require_lowercase?: boolean
+          require_number?: boolean
+          require_special?: boolean
+          require_uppercase?: boolean
+        }
+        Relationships: []
+      }
       price_cache: {
         Row: {
           data: Json
@@ -1761,6 +1835,7 @@ export type Database = {
         Row: {
           created_at: string | null
           onboarding_complete: boolean | null
+          profile_setup_complete: boolean
           push_opt_in: boolean | null
           updated_at: string | null
           user_id: string
@@ -1768,6 +1843,7 @@ export type Database = {
         Insert: {
           created_at?: string | null
           onboarding_complete?: boolean | null
+          profile_setup_complete?: boolean
           push_opt_in?: boolean | null
           updated_at?: string | null
           user_id: string
@@ -1775,6 +1851,7 @@ export type Database = {
         Update: {
           created_at?: string | null
           onboarding_complete?: boolean | null
+          profile_setup_complete?: boolean
           push_opt_in?: boolean | null
           updated_at?: string | null
           user_id?: string
@@ -1944,7 +2021,10 @@ export type Database = {
       }
     }
     Functions: {
-      _clamp_nonnegative: { Args: { val: number }; Returns: number }
+      _clamp_nonnegative: {
+        Args: { val: number }
+        Returns: number
+      }
       _collection_item_value_cents: {
         Args: {
           p_grade_condition_id: string
@@ -1992,6 +2072,30 @@ export type Database = {
           last_seen: string
         }[]
       }
+      citext: {
+        Args: { '': boolean } | { '': string } | { '': unknown }
+        Returns: string
+      }
+      citext_hash: {
+        Args: { '': string }
+        Returns: number
+      }
+      citextin: {
+        Args: { '': unknown }
+        Returns: string
+      }
+      citextout: {
+        Args: { '': string }
+        Returns: unknown
+      }
+      citextrecv: {
+        Args: { '': unknown }
+        Returns: string
+      }
+      citextsend: {
+        Args: { '': string }
+        Returns: string
+      }
       collection_item_query: {
         Args: {
           p_collection_id: string
@@ -2005,7 +2109,7 @@ export type Database = {
           collection_id: string
           collection_item_id: string
           collection_item_value: number
-          collection_ref: string | null
+          collection_ref: string
           created_at: string
           extras: string[]
           front_id: string
@@ -2071,12 +2175,6 @@ export type Database = {
           user_id: string
           variants: string[] | null
         }[]
-        SetofOptions: {
-          from: '*'
-          to: 'collection_items'
-          isOneToOne: false
-          isSetofReturn: true
-        }
       }
       collection_totals_for_user: {
         Args: { p_user_id?: string }
@@ -2128,11 +2226,17 @@ export type Database = {
         Args: { p_name: string; p_slug: string; p_weight?: number }
         Returns: string
       }
-      curated_tags_import: { Args: { payload: Json }; Returns: Json }
-      effective_user_id: { Args: never; Returns: string }
-      ensure_card_stub:
-        | {
-            Args: {
+      curated_tags_import: {
+        Args: { payload: Json }
+        Returns: Json
+      }
+      effective_user_id: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
+      ensure_card_stub: {
+        Args:
+          | {
               p_external_id?: string
               p_genre?: string
               p_grades_prices?: Json
@@ -2143,10 +2247,7 @@ export type Database = {
               p_provider?: string
               p_set_name?: string
             }
-            Returns: undefined
-          }
-        | {
-            Args: {
+          | {
               p_external_id?: string
               p_genre?: string
               p_id: string
@@ -2154,9 +2255,12 @@ export type Database = {
               p_provider?: string
               p_set_name?: string
             }
-            Returns: undefined
-          }
-      ensure_default_collections: { Args: never; Returns: undefined }
+        Returns: undefined
+      }
+      ensure_default_collections: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
       ensure_default_collections_for_user: {
         Args: { p_user_id: string }
         Returns: undefined
@@ -2206,7 +2310,30 @@ export type Database = {
           tag_slug: string
         }[]
       }
-      is_demo_user: { Args: never; Returns: boolean }
+      gtrgm_compress: {
+        Args: { '': unknown }
+        Returns: unknown
+      }
+      gtrgm_decompress: {
+        Args: { '': unknown }
+        Returns: unknown
+      }
+      gtrgm_in: {
+        Args: { '': unknown }
+        Returns: unknown
+      }
+      gtrgm_options: {
+        Args: { '': unknown }
+        Returns: undefined
+      }
+      gtrgm_out: {
+        Args: { '': unknown }
+        Returns: unknown
+      }
+      is_demo_user: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
       most_used_variants: {
         Args: { p_card_id: string; p_limit?: number; p_query?: string }
         Returns: {
@@ -2245,8 +2372,18 @@ export type Database = {
           snippet: string
         }[]
       }
-      show_limit: { Args: never; Returns: number }
-      show_trgm: { Args: { '': string }; Returns: string[] }
+      set_limit: {
+        Args: { '': number }
+        Returns: number
+      }
+      show_limit: {
+        Args: Record<PropertyKey, never>
+        Returns: number
+      }
+      show_trgm: {
+        Args: { '': string }
+        Returns: string[]
+      }
       suggest_tags: {
         Args: {
           category_ids?: string[]
@@ -2287,25 +2424,22 @@ export type Database = {
           score: number
         }[]
       }
-      touch_recent_view:
-        | {
-            Args: {
+      touch_recent_view: {
+        Args:
+          | {
               p_ctx?: Json
               p_source?: string
               p_target_id: string
               p_target_type: Database['public']['Enums']['view_target']
             }
-            Returns: undefined
-          }
-        | {
-            Args: {
+          | {
               p_item_id: string
               p_item_type: string
               p_meta?: Json
               p_user_id: string
             }
-            Returns: undefined
-          }
+        Returns: undefined
+      }
       upsert_collection_items: {
         Args: { p_collection_id: string; p_items: Json; p_owner: string }
         Returns: undefined
@@ -2314,7 +2448,10 @@ export type Database = {
         Args: { p_h: number; p_mime: string; p_url: string; p_w: number }
         Returns: string
       }
-      wishlist_recompute_total: { Args: never; Returns: number }
+      wishlist_recompute_total: {
+        Args: Record<PropertyKey, never>
+        Returns: number
+      }
       wishlist_set_grades: {
         Args: {
           p_delete_when_empty?: boolean
@@ -2343,7 +2480,10 @@ export type Database = {
           grades: string[]
         }[]
       }
-      wishlist_total: { Args: never; Returns: number }
+      wishlist_total: {
+        Args: Record<PropertyKey, never>
+        Returns: number
+      }
     }
     Enums: {
       item_kind: 'card'
@@ -2471,6 +2611,9 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {
       item_kind: ['card'],

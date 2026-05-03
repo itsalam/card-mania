@@ -33,6 +33,14 @@ export default function TabLayout() {
           contentStyle: { backgroundColor: 'transparent' },
         }}
       />
+      <Stack.Screen
+        name="edit"
+        options={{
+          presentation: 'modal',
+          animation: 'slide_from_right',
+          headerShown: false,
+        }}
+      />
       <Stack.Screen name="+not-found" />
     </Stack>
   )

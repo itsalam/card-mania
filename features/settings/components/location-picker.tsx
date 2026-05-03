@@ -19,8 +19,6 @@ import Animated, { FadeIn, FadeOut } from 'react-native-reanimated'
 import { BorderRadiuses, Colors } from 'react-native-ui-lib'
 import { useSetting } from '..'
 import { CitySuggestion, newSessionToken, useCitySuggestions } from '../client'
-import { SettingKey } from '../registry'
-import { SettingsDisplay } from '../types'
 
 function haversineDistance(lat1: number, lon1: number, lat2: number, lon2: number) {
   const R = 6371000 // meters
@@ -36,13 +34,7 @@ function haversineDistance(lat1: number, lon1: number, lat2: number, lon2: numbe
   return 2 * R * Math.asin(Math.sqrt(a))
 }
 
-const LocationPicker = ({
-  children,
-}: {
-  display: Extract<SettingsDisplay, { type: 'toggle' }>
-  settingKey: SettingKey
-  children?: ReactNode
-}) => {
+const LocationPicker = ({ children }: { children?: ReactNode }) => {
   const setting = useSetting('location')
   const mapRef = useRef<MapView>(null)
   const prevText = useRef('')
@@ -68,7 +60,7 @@ const LocationPicker = ({
 
   const onSelect = (item: CitySuggestion) => {
     setSelected(item)
-    setSessionToken(null) // end session
+    setSessionToken(null)
   }
 
   useEffect(() => {
@@ -116,58 +108,44 @@ const LocationPicker = ({
     })
   }, [confirmed])
 
+  const cityLabel = setting.value?.city
+    ? `${setting.value.city[0].toUpperCase()}${setting.value.city.slice(1)}`
+    : undefined
+
   return (
     <>
-      <View
+      {/* ── Trigger row ── */}
+      <TouchableOpacity
+        onPress={() => setShowModal(true)}
         style={{
           flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-between',
           paddingVertical: 10,
+          paddingHorizontal: 4,
         }}
       >
-        <TouchableOpacity
-          onPress={() => setShowModal(true)}
-          style={{
-            flex: 1,
-            alignItems: 'center',
-            display: 'flex',
-            flexDirection: 'row',
-            justifyContent: 'space-between',
-          }}
-        >
-          {children}
-          <View
-            style={{
-              marginLeft: 'auto',
-              marginRight: 12,
-              alignSelf: 'flex-end',
-              flexDirection: 'row',
-              gap: 12,
-            }}
-          >
-            <Text variant={'large'}>
-              {`${setting.value?.city?.toLocaleUpperCase()[0]}${setting.value?.city?.slice(1)}`}
+        {children}
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+          {cityLabel && (
+            <Text variant="large" style={{ color: Colors.$textDefault }}>
+              {cityLabel}
             </Text>
-            <ChevronRight
-              color={Colors.$iconDefault}
-              style={{
-                marginLeft: 'auto',
-                marginRight: 12,
-                alignSelf: 'flex-end',
-              }}
-            />
-          </View>
-        </TouchableOpacity>
-      </View>
+          )}
+          <ChevronRight size={18} color={Colors.$iconDefault} />
+        </View>
+      </TouchableOpacity>
+
       <Modal
         visible={showModal}
         onDismiss={() => setShowModal(false)}
         absoluteThumb
         style={{ paddingHorizontal: 0 }}
       >
+        {/* ── Search header ── */}
         <View
           style={{
             position: 'absolute',
-
             paddingTop: 20,
             top: 0,
             flexDirection: 'row',
@@ -179,8 +157,8 @@ const LocationPicker = ({
             gap: 8,
           }}
         >
-          <TouchableOpacity onPress={() => setShowModal(false)}>
-            <ChevronLeft size={30} strokeWidth={3} color={Colors.$iconDefault} />
+          <TouchableOpacity onPress={() => setShowModal(false)} style={{ padding: 4 }}>
+            <ChevronLeft size={26} strokeWidth={2} color={Colors.$iconDefault} />
           </TouchableOpacity>
           <View style={{ flex: 1 }}>
             <SearchBar
@@ -190,40 +168,37 @@ const LocationPicker = ({
               value={text}
               onChangeText={(value) => {
                 setText(value)
-                setSessionToken((text) => text ?? newSessionToken())
+                setSessionToken((t) => t ?? newSessionToken())
               }}
+              hideSideButton
               editable
             />
           </View>
         </View>
+
+        {/* ── Map + suggestions overlay ── */}
         <View
           style={{
-            opacity: 1,
             zIndex: 0,
             width: '100%',
             aspectRatio: 1,
             position: 'relative',
             borderRadius: BorderRadiuses.br20,
+            overflow: 'hidden',
           }}
         >
-          <MapView
-            style={{
-              width: '100%',
-              aspectRatio: 1,
-              zIndex: 0,
-            }}
-            ref={mapRef}
-          >
+          <MapView style={{ width: '100%', aspectRatio: 1, zIndex: 0 }} ref={mapRef}>
             {selected && <Marker coordinate={selected} />}
             {selected && previewCircleRadius && (
               <Circle
                 center={{ latitude: selected.latitude, longitude: selected.longitude }}
                 radius={previewCircleRadius}
-                strokeColor="rgba(0,0,255,0.5)"
-                fillColor="rgba(0,0,255,0.2)"
+                strokeColor={Colors.rgba(Colors.$backgroundPrimaryHeavy, 0.5)}
+                fillColor={Colors.rgba(Colors.$backgroundPrimaryHeavy, 0.15)}
               />
             )}
           </MapView>
+
           {sessionToken && (
             <Animated.View
               entering={FadeIn.duration(150)}
@@ -233,23 +208,16 @@ const LocationPicker = ({
                 aspectRatio: 1,
                 zIndex: 1,
                 position: 'absolute',
-                backgroundColor: Colors.rgba(Colors.$backgroundElevated, 0.8),
+                backgroundColor: Colors.rgba(Colors.$backgroundElevated, 0.92),
                 top: 0,
                 left: 0,
                 paddingTop: 80,
               }}
             >
               <FlatList
-                persistentScrollbar={true}
-                style={{
-                  padding: 12,
-                  height: '100%',
-                  flex: 1,
-                }}
-                contentContainerStyle={{
-                  gap: 12,
-                  minHeight: '100%',
-                }}
+                persistentScrollbar={false}
+                style={{ padding: 12, height: '100%', flex: 1 }}
+                contentContainerStyle={{ gap: 8, minHeight: '100%' }}
                 data={suggestions}
                 ListEmptyComponent={() => (
                   <View
@@ -264,60 +232,55 @@ const LocationPicker = ({
                       <Spinner />
                     ) : isTextEnabled ? (
                       <>
-                        <SearchX size={52} color={Colors.$iconDisabled} />
-                        <Text variant={'large'} style={{ color: Colors.$textDisabled }}>
+                        <SearchX size={44} color={Colors.$iconDisabled} />
+                        <Text variant="large" style={{ color: Colors.$textDisabled, marginTop: 8 }}>
                           No locations found.
                         </Text>
                       </>
                     ) : null}
                   </View>
                 )}
-                renderItem={({ item: suggestion, ...rest }) => (
+                renderItem={({ item: suggestion }) => (
                   <Animated.View
                     key={suggestion.slug}
-                    style={{
-                      alignSelf: 'stretch',
-                      marginHorizontal: 8,
-                    }}
-                    entering={FadeIn.duration(25)}
-                    exiting={FadeOut.duration(25)}
+                    style={{ alignSelf: 'stretch', marginHorizontal: 4 }}
+                    entering={FadeIn.duration(80)}
+                    exiting={FadeOut.duration(50)}
                   >
                     <TouchableOpacity
                       onPress={() => onSelect(suggestion)}
                       style={{
                         alignItems: 'center',
                         flexDirection: 'row',
+                        gap: 12,
                         backgroundColor: Colors.$backgroundElevated,
-                        borderRadius: BorderRadiuses.br50,
-                        borderWidth: 3,
+                        borderRadius: 16,
+                        borderWidth: 1,
                         borderColor: Colors.$outlineDefault,
+                        paddingHorizontal: 16,
+                        paddingVertical: 12,
                       }}
                     >
                       <View
                         style={{
-                          alignSelf: 'stretch',
-                          aspectRatio: 1,
+                          width: 36,
+                          height: 36,
+                          borderRadius: 18,
+                          backgroundColor: Colors.rgba(Colors.$backgroundPrimaryHeavy, 0.12),
                           alignItems: 'center',
                           justifyContent: 'center',
-                          borderRightWidth: 3,
-                          borderColor: Colors.$outlineDefault,
                         }}
                       >
-                        <MapPin size={36} color={Colors.$iconDefault} />
+                        <MapPin size={18} color={Colors.$backgroundPrimaryHeavy} />
                       </View>
-                      <View
-                        style={{
-                          padding: 8,
-                          paddingVertical: 12,
-                          flex: 1,
-                          gap: 2,
-                        }}
-                      >
-                        <Text variant={'h4'}>{suggestion.city}</Text>
+                      <View style={{ flex: 1, gap: 2 }}>
+                        <Text variant="h4">{suggestion.city}</Text>
                         <Text
-                          variant={'default'}
-                          style={{ fontSize: 16 }}
-                        >{`${suggestion.state ? `${suggestion.state}, ` : ''}${suggestion.country}`}</Text>
+                          variant="default"
+                          style={{ fontSize: 14, color: Colors.$textNeutralLight }}
+                        >
+                          {`${suggestion.state ? `${suggestion.state}, ` : ''}${suggestion.country}`}
+                        </Text>
                       </View>
                     </TouchableOpacity>
                   </Animated.View>
@@ -326,111 +289,80 @@ const LocationPicker = ({
             </Animated.View>
           )}
         </View>
-        <View style={{ flexDirection: 'row', padding: 12, paddingTop: 20 }}>
-          <View style={{ flexDirection: 'row', flex: 1 }}>
-            <View
-              style={{
-                flexDirection: 'row',
-                padding: 12,
-                borderTopLeftRadius: BorderRadiuses.br50,
-                borderBottomLeftRadius: BorderRadiuses.br50,
-                borderWidth: 3,
-                borderColor: Colors.$outlineDefault,
-              }}
-            >
-              <View>
-                <MapPinned
-                  size={44}
-                  color={selected ? Colors.$iconDefault : Colors.$outlineDefault}
-                />
-              </View>
-            </View>
-            <View
-              style={{
-                padding: 12,
-                borderTopRightRadius: BorderRadiuses.br50,
-                borderBottomRightRadius: BorderRadiuses.br50,
-                borderLeftWidth: 0,
-                borderWidth: 3,
-                borderColor: Colors.$outlineDefault,
-                flex: 1,
-                alignSelf: 'stretch',
-                flexDirection: 'row',
-                gap: 8,
-              }}
-            >
-              <View style={{ flex: 1 }}>
-                {selected ? (
-                  <View
-                    style={{
-                      flex: 1,
-                      gap: 2,
-                    }}
-                  >
-                    <Text ellipsizeMode="tail" numberOfLines={1} variant={'h4'}>
-                      {selected.city}
-                    </Text>
-                    <Text
-                      variant={'default'}
-                      style={{ fontSize: 16, textOverflow: '' }}
-                      ellipsizeMode="tail"
-                      numberOfLines={1}
-                    >{`${selected.state ? `${selected.state}, ` : ''}${selected.country}`}</Text>
-                  </View>
-                ) : (
-                  <>
-                    <Text
-                      variant={'lead'}
-                      style={{
-                        color: Colors.$iconDisabled,
-                        fontWeight: 700,
-                      }}
-                    >
-                      No location selected.
-                    </Text>
-                  </>
-                )}
-              </View>
+
+        {/* ── Confirmation bar ── */}
+        <View style={{ padding: 12, paddingTop: 20 }}>
+          <View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 12,
+              padding: 14,
+              borderRadius: 16,
+              borderWidth: 1,
+              borderColor: Colors.$outlineDefault,
+              backgroundColor: Colors.$backgroundElevated,
+            }}
+          >
+            <MapPinned
+              size={28}
+              color={selected ? Colors.$backgroundPrimaryHeavy : Colors.$iconDisabled}
+            />
+            <View style={{ flex: 1 }}>
               {selected ? (
                 <>
-                  <TouchableOpacity
-                    onPress={() => {
-                      setSelected(null)
-                      setSessionToken(newSessionToken())
-                    }}
-                    style={{
-                      alignSelf: 'stretch',
-                      aspectRatio: 1,
-                      padding: 12,
-                      borderRadius: BorderRadiuses.br50,
-                      borderWidth: 2,
-                      borderColor: Colors.$outlineNeutral,
-                      backgroundColor: Colors.$backgroundNeutralLight,
-                    }}
+                  <Text variant="h4" numberOfLines={1} ellipsizeMode="tail">
+                    {selected.city}
+                  </Text>
+                  <Text
+                    variant="default"
+                    style={{ fontSize: 14, color: Colors.$textNeutralLight }}
+                    numberOfLines={1}
+                    ellipsizeMode="tail"
                   >
-                    <Undo color={Colors.$outlineNeutral} />
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    onPress={() => setConfirmed(selected)}
-                    style={{
-                      alignSelf: 'stretch',
-                      aspectRatio: 1,
-                      padding: 12,
-                      borderRadius: BorderRadiuses.br50,
-                      borderWidth: 2,
-                      borderColor: Colors.$iconSuccessLight,
-                      backgroundColor: Colors.$backgroundSuccessLight,
-                    }}
-                  >
-                    {writingConfirmed ? <Spinner /> : <Check color={Colors.$iconSuccessLight} />}
-                  </TouchableOpacity>
+                    {`${selected.state ? `${selected.state}, ` : ''}${selected.country}`}
+                  </Text>
                 </>
-              ) : null}
+              ) : (
+                <Text variant="lead" style={{ color: Colors.$textNeutralLight }}>
+                  No location selected.
+                </Text>
+              )}
             </View>
+
+            {selected && (
+              <>
+                <TouchableOpacity
+                  onPress={() => {
+                    setSelected(null)
+                    setSessionToken(newSessionToken())
+                  }}
+                  style={{
+                    padding: 10,
+                    borderRadius: 20,
+                    backgroundColor: Colors.$backgroundNeutralLight,
+                  }}
+                >
+                  <Undo size={18} color={Colors.$iconNeutral} />
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() => setConfirmed(selected)}
+                  style={{
+                    padding: 10,
+                    borderRadius: 20,
+                    backgroundColor: Colors.$backgroundSuccessLight,
+                  }}
+                >
+                  {writingConfirmed ? (
+                    <Spinner />
+                  ) : (
+                    <Check size={18} color={Colors.$iconSuccessLight} />
+                  )}
+                </TouchableOpacity>
+              </>
+            )}
           </View>
         </View>
-
-        {/* </KeyboardAvoidingView> */}
       </Modal>
     </>
   )

@@ -5,9 +5,17 @@ import { SettingsStoreState } from './store'
 
 export type ProfileSettings = Record<string, SettingsLayoutSection>
 
-export type SettingsType = 'string' | 'boolean' | 'number' | 'page' | 'custom' | 'toggle' | 'select'
+export type SettingsType =
+  | 'string'
+  | 'boolean'
+  | 'number'
+  | 'page'
+  | 'custom'
+  | 'toggle'
+  | 'select'
+  | 'action'
 
-type NonBasicSettingType = Exclude<SettingsType, 'toggle' | 'select' | 'page'>
+type NonBasicSettingType = Exclude<SettingsType, 'toggle' | 'select' | 'page' | 'action'>
 
 type SelectDisplayValue = {
   Icon: LucideIcon
@@ -15,14 +23,15 @@ type SelectDisplayValue = {
 }
 
 export type SettingsDisplay = {
-  key: SettingKey
+  key: SettingKey | string
   label: string
   Icon: LucideIcon
   element?: ReactNode
 } & (
   | { type: 'toggle'; values: SelectDisplayValue[] }
   | { type: 'select'; values: SelectDisplayValue[] }
-  | { type: 'page'; page: SettingsLayoutSection }
+  | { type: 'page'; page: SettingsLayoutSection; route?: string }
+  | { type: 'action'; onPress: () => void }
   | { type: NonBasicSettingType }
 )
 

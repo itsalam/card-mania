@@ -1,14 +1,19 @@
 import { Text } from '@/components/ui/text/base-text'
+import { useRouter } from 'expo-router'
 import { ChevronRight } from 'lucide-react-native'
-import { View } from 'react-native'
+import { TouchableOpacity, View } from 'react-native'
 import { Colors } from 'react-native-ui-lib'
 import { SettingsDisplay } from '../types'
 
 export function SettingsPageItem({ display }: { display: SettingsDisplay }) {
   const { type, Icon, label } = display
+  const router = useRouter()
+  const route = type === 'page' ? display.route : undefined
 
   return (
-    <View
+    <TouchableOpacity
+      onPress={() => route && router.push(route as any)}
+      disabled={!route}
       style={{
         alignItems: 'center',
         display: 'flex',
@@ -17,6 +22,7 @@ export function SettingsPageItem({ display }: { display: SettingsDisplay }) {
         paddingVertical: 10,
       }}
     >
+      <Icon size={26} color={Colors.$iconDefault} />
       <Text variant={'large'} style={{ fontSize: 18 }}>
         {label}
       </Text>
@@ -33,9 +39,9 @@ export function SettingsPageItem({ display }: { display: SettingsDisplay }) {
             marginRight: 12,
             alignSelf: 'flex-end',
           }}
-          color={Colors.$iconDefault}
+          color={route ? Colors.$iconDefault : Colors.$iconDisabled}
         />
       </View>
-    </View>
+    </TouchableOpacity>
   )
 }
