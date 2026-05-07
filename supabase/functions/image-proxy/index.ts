@@ -198,7 +198,7 @@ Deno.serve(async (req) => {
       dbg('Serving by card binding:', { cardId, kind })
       const { data, error } = await supabase
         .from('card_images')
-        .select('image_cache(storage_path, width, height)')
+        .select('source_url, image_cache(storage_path, width, height)')
         .eq('card_id', cardId)
         .eq('kind', kind)
         .maybeSingle()
@@ -207,6 +207,22 @@ Deno.serve(async (req) => {
       dims = {
         width: data?.image_cache?.width ?? null,
         height: data?.image_cache?.height ?? null,
+      }
+
+      // Stub card: source_url set but image not yet downloaded to storage
+      if (!storagePath && data?.source_url) {
+        EdgeRuntime.waitUntil(
+          supabase.functions
+            .invoke('image-commit', {
+              method: 'POST',
+              body: { url: data.source_url, card_fields: { card_id: cardId, kind } },
+            })
+            .catch((e) => console.error('Image commit (stub) failed:', e))
+        )
+        return new Response(null, {
+          status: 302,
+          headers: { Location: data.source_url },
+        })
       }
     }
     if (!storagePath && queryHash) {

@@ -32,6 +32,14 @@ type ToastContextValue = {
 
 const ToastContext = createContext<ToastContextValue | undefined>(undefined)
 
+let _devToast: ((args: ShowToastArgs) => void) | null = null
+export function registerDevToast(fn: ((args: ShowToastArgs) => void) | null) {
+  _devToast = fn
+}
+export function imperativeDevToast(args: ShowToastArgs) {
+  _devToast?.(args)
+}
+
 type ToastOverlayProps = {
   visible: boolean
   toastProps: Partial<ShowToastArgs>
@@ -119,6 +127,13 @@ export const ToastProvider = ({ children }: { children: ReactNode }) => {
   }, [])
 
   const ctx = useMemo(() => ({ showToast, hideToast }), [showToast, hideToast])
+
+  React.useEffect(() => {
+    if (process.env.NODE_ENV !== 'production') {
+      registerDevToast(showToast)
+      return () => registerDevToast(null)
+    }
+  }, [showToast])
 
   React.useEffect(() => {
     if (!visible) return

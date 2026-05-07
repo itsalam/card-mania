@@ -1,4 +1,5 @@
 import { CollectionLike } from '@/client/collections/types'
+import { useUserStore } from '@/lib/store/useUserStore'
 import { useCloneMeasure } from '@/components/hooks/useCloneMeasure'
 import { Separator } from '@/components/ui/separator'
 import { Text } from '@/components/ui/text/base-text'
@@ -25,6 +26,8 @@ const BORDER_WIDTH = 1
 
 export function StorefrontPage() {
   const profile = useUserProfilePage((s) => s.user)
+  const { user: authUser } = useUserStore()
+  const isOwnProfile = !!authUser?.id && authUser.id === profile?.user_id
   const { data: collections } = useUserStorefront(profile?.user_id)
   const [activeCollection, setActiveCollection] = useState(collections?.[0])
 
@@ -45,7 +48,7 @@ export function StorefrontPage() {
           }
         />
       </View>
-      <StorefrontView collectionId={activeCollection?.id} />
+      <StorefrontView collectionId={activeCollection?.id} isOwnProfile={isOwnProfile} />
     </View>
   )
 }

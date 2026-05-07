@@ -978,7 +978,7 @@ export type Database = {
       offer_items: {
         Row: {
           card_snapshot: Json | null
-          collection_item_id: string
+          collection_item_id: string | null
           id: string
           offer_id: string
           offered_price_per_unit: number
@@ -986,7 +986,7 @@ export type Database = {
         }
         Insert: {
           card_snapshot?: Json | null
-          collection_item_id: string
+          collection_item_id?: string | null
           id?: string
           offer_id: string
           offered_price_per_unit: number
@@ -1753,6 +1753,7 @@ export type Database = {
       }
       transactions: {
         Row: {
+          buyer_shipping_address: Json | null
           created_at: string | null
           id: string
           offer_id: string
@@ -1760,6 +1761,7 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          buyer_shipping_address?: Json | null
           created_at?: string | null
           id?: string
           offer_id: string
@@ -1767,6 +1769,7 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          buyer_shipping_address?: Json | null
           created_at?: string | null
           id?: string
           offer_id?: string
@@ -1794,6 +1797,7 @@ export type Database = {
           last_seen_at: string | null
           location: string | null
           preferences: Json
+          shipping_address: Json | null
           timezone: string | null
           updated_at: string
           user_id: string
@@ -1809,6 +1813,7 @@ export type Database = {
           last_seen_at?: string | null
           location?: string | null
           preferences?: Json
+          shipping_address?: Json | null
           timezone?: string | null
           updated_at?: string
           user_id: string
@@ -1824,6 +1829,7 @@ export type Database = {
           last_seen_at?: string | null
           location?: string | null
           preferences?: Json
+          shipping_address?: Json | null
           timezone?: string | null
           updated_at?: string
           user_id?: string

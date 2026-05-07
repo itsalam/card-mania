@@ -6,14 +6,26 @@ import { thumbStyles } from '@/components/ui/modal'
 import { NumberTicker } from '@/components/ui/number-ticker'
 import { Separator } from '@/components/ui/separator'
 import { Text } from '@/components/ui/text'
-import { formatPrice } from '@/components/utils'
+import { centsToInputString, formatPrice, inputStringToCents } from '@/components/utils'
 import type { CartItem } from '@/features/cart/types'
 import { useEffectiveColorScheme } from '@/features/settings/hooks/effective-color-scheme'
-import { Ellipsis, Trash2 } from 'lucide-react-native'
-import { useEffect, useMemo } from 'react'
-import { Pressable, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native'
+import { useProfiles } from '@/features/users/client/load-user'
+import { UserContact } from '@/features/users/components/UserAvatars'
+import { UserDisplayInfo } from '@/features/users/types'
+import { useRouter } from 'expo-router'
+import { EllipsisVertical, Pencil, Trash2 } from 'lucide-react-native'
+import { PriceModifiedBadge } from '@/features/offers/ui'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import {
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  TextInput,
+  useWindowDimensions,
+  View,
+} from 'react-native'
 import { Gesture, GestureDetector } from 'react-native-gesture-handler'
-import { KeyboardAvoidingView } from 'react-native-keyboard-controller'
+import { useReanimatedKeyboardAnimation } from 'react-native-keyboard-controller'
 import Animated, {
   Easing,
   useAnimatedStyle,
@@ -32,6 +44,9 @@ import {
   useClearCart,
   useCloseCart,
   useRemoveFromCart,
+  useSetTotalOverride,
+  useTotalOverride,
+  useUpdateCartPrice,
   useUpdateCartQuantity,
 } from './hooks'
 
@@ -59,12 +74,35 @@ export function CartSheetInner() {
   )
   const closeCart = useCloseCart()
   const clearCart = useClearCart()
+  const router = useRouter()
   const items = useCartItems()
-  const total = useCartTotal()
+  const computedTotal = useCartTotal()
+  const totalOverride = useTotalOverride()
+  const setTotalOverride = useSetTotalOverride()
+  const total = totalOverride ?? computedTotal
+  const [editingTotal, setEditingTotal] = useState(false)
+  const [totalInput, setTotalInput] = useState('')
   const { showToast } = useToast()
+
+  const sellerIds = useMemo(
+    () => [...new Set(items.map((i) => i.data.user_id).filter(Boolean))],
+    [items]
+  )
+  const { data: profiles } = useProfiles(sellerIds)
+
+  const groupedBySeller = useMemo(() => {
+    const map = new Map<string, CartItem[]>()
+    for (const item of items) {
+      const sid = item.data.user_id
+      if (!map.has(sid)) map.set(sid, [])
+      map.get(sid)!.push(item)
+    }
+    return [...map.entries()]
+  }, [items])
   const { mutateAsync: submitOffer, isPending } = useSubmitOffer()
   const { height: screenHeight } = useWindowDimensions()
   const insets = useSafeAreaInsets()
+  const { height: kbHeight } = useReanimatedKeyboardAnimation()
 
   const translateY = useSharedValue(screenHeight)
   const backdropOpacity = useSharedValue(0)
@@ -101,6 +139,10 @@ export function CartSheetInner() {
     transform: [{ translateY: translateY.value }],
   }))
 
+  const kbContainerStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: kbHeight.value }],
+  }))
+
   const backdropStyle = useAnimatedStyle(() => ({
     opacity: backdropOpacity.value,
   }))
@@ -117,7 +159,7 @@ export function CartSheetInner() {
         <Pressable style={{ flex: 1 }} onPress={dismiss} />
       </Animated.View>
 
-      <KeyboardAvoidingView behavior="translate-with-padding" style={styles.keyboardAvoiding}>
+      <Animated.View style={[styles.keyboardAvoiding, kbContainerStyle]}>
         <GestureDetector gesture={panGesture}>
           <Animated.View
             style={[styles.sheet, { paddingBottom: Math.max(insets.bottom, 16) }, sheetStyle]}
@@ -168,31 +210,90 @@ export function CartSheetInner() {
                     contentContainerStyle={{ paddingVertical: 4 }}
                     showsVerticalScrollIndicator={false}
                   >
-                    {items.map((item, idx) => (
-                      <View key={`${item.data.id}_${item.cart.quantity}`}>
-                        <CartItemRow item={item} />
-                        {idx < items.length - 1 && <Separator orientation="horizontal" />}
-                      </View>
-                    ))}
+                    {groupedBySeller.map(([sellerId, sellerItems], groupIdx) => {
+                      const profile = profiles?.[sellerId]
+                      const user: UserDisplayInfo = {
+                        name: profile?.display_name ?? profile?.username ?? 'Unknown',
+                        handle: `@${profile?.username ?? 'unknown'}`,
+                        avatar: profile?.avatar_url ?? '',
+                      }
+                      return (
+                        <View key={sellerId}>
+                          {groupIdx > 0 && (
+                            <Separator orientation="horizontal" style={{ marginVertical: 8 }} />
+                          )}
+                          <TouchableOpacity
+                            onPress={() => router.push(`/user/${sellerId}` as any)}
+                            style={{
+                              paddingVertical: 8,
+                              flexDirection: 'row',
+                              alignItems: 'center',
+                            }}
+                          >
+                            <UserContact user={profile ? user : undefined} size="sm" />
+                          </TouchableOpacity>
+                          {sellerItems.map((item, idx) => (
+                            <View key={`${item.data.id}_${item.cart.quantity}`}>
+                              <CartItemRow item={item} />
+                              {idx < sellerItems.length - 1 && (
+                                <Separator orientation="horizontal" />
+                              )}
+                            </View>
+                          ))}
+                        </View>
+                      )
+                    })}
                   </ScrollView>
 
                   <Separator orientation="horizontal" />
 
                   <View style={{ paddingVertical: 12, gap: 12 }}>
-                    <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                      <Text variant="h4">Total</Text>
-                      <Text variant="h4">{formatPrice(total)}</Text>
+                    <View
+                      style={{
+                        flexDirection: 'row',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                      }}
+                    >
+                      <Text style={cartStyles.totalText}>Total</Text>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                        {editingTotal ? (
+                          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                            <Text style={cartStyles.totalText}>$</Text>
+                            <TextInput
+                              autoFocus
+                              value={totalInput}
+                              onChangeText={setTotalInput}
+                              onBlur={() => {
+                                const cents = inputStringToCents(totalInput)
+                                if (cents !== null) setTotalOverride(cents)
+                                setEditingTotal(false)
+                              }}
+                              keyboardType="decimal-pad"
+                              style={[cartStyles.priceInput, cartStyles.totalText]}
+                            />
+                          </View>
+                        ) : (
+                          <>
+                            <Text style={cartStyles.totalText}>{formatPrice(total)}</Text>
+                            {totalOverride != null && <PriceModifiedBadge />}
+                            <Pressable
+                              onPress={() => {
+                                setTotalInput(centsToInputString(total))
+                                setEditingTotal(true)
+                              }}
+                              hitSlop={8}
+                            >
+                              <Pencil size={16} color={Colors.$iconNeutral} />
+                            </Pressable>
+                          </>
+                        )}
+                      </View>
                     </View>
                     <Button
                       size="lg"
                       disabled={isPending}
                       onPress={async () => {
-                        // Group items by seller
-                        showToast({
-                          title: 'Offer sent!',
-                          message: 'Your offer has been submitted.',
-                          preset: 'general',
-                        })
                         const bySeller = new Map<string, CartItem[]>()
                         for (const item of items) {
                           const sellerId = item.data.user_id
@@ -201,11 +302,20 @@ export function CartSheetInner() {
                           bySeller.get(sellerId)!.push(item)
                         }
 
+                        // Total override only applies cleanly to a single-seller cart.
+                        // For multi-seller, each offer gets its own computed total.
+                        const isSingleSeller = bySeller.size === 1
+
                         try {
-                          await Promise.all([
-                            ...[...bySeller.entries()].map(([seller_id, sellerItems]) =>
-                              submitOffer({
+                          await Promise.all(
+                            [...bySeller.entries()].map(([seller_id, sellerItems]) => {
+                              const sellerTotal = sellerItems.reduce(
+                                (s, i) => s + i.cart.price * i.cart.quantity,
+                                0
+                              )
+                              return submitOffer({
                                 seller_id,
+                                total_amount: isSingleSeller ? total : sellerTotal,
                                 items: sellerItems.map((item) => ({
                                   collection_item_id: item.data.id,
                                   quantity: item.cart.quantity,
@@ -215,32 +325,27 @@ export function CartSheetInner() {
                                   },
                                 })),
                               })
-                            ),
-                          ]).then(() => {
-                            dismiss()
-                            setTimeout(
-                              () =>
-                                showToast({
-                                  autoDismiss: 5000,
-                                  title: 'Offer sent!',
-                                  message: 'Your offer has been submitted.',
-                                  preset: 'general',
-                                }),
-                              2000
-                            )
-                          })
-                        } catch (err) {
-                          console.error('[CartSheet] submitOffer error', err)
+                            })
+                          )
+                          dismiss()
                           setTimeout(
                             () =>
                               showToast({
                                 autoDismiss: 5000,
-                                title: 'Error',
-                                message: 'Failed to send offer. Please try again.',
-                                preset: 'failure',
+                                title: 'Offer sent!',
+                                message: 'Your offer has been submitted.',
+                                preset: 'general',
                               }),
                             2000
                           )
+                        } catch (err) {
+                          console.error('[CartSheet] submitOffer error', err)
+                          showToast({
+                            autoDismiss: 5000,
+                            title: 'Error',
+                            message: 'Failed to send offer. Please try again.',
+                            preset: 'failure',
+                          })
                         }
                       }}
                     >
@@ -252,7 +357,7 @@ export function CartSheetInner() {
             </View>
           </Animated.View>
         </GestureDetector>
-      </KeyboardAvoidingView>
+      </Animated.View>
     </View>
   )
 }
@@ -260,11 +365,22 @@ export function CartSheetInner() {
 function CartItemRow({ item }: { item: CartItem }) {
   const removeItem = useRemoveFromCart()
   const updateQuantity = useUpdateCartQuantity()
-  const { data: card } = useCardQuery(item.data.ref_id)
+  const updatePrice = useUpdateCartPrice()
+  const [editingPrice, setEditingPrice] = useState(false)
+  const [priceInput, setPriceInput] = useState('')
+  const priceInputRef = useRef('')
+  const { data: card, loading: cardLoading } = useCardQuery(item.data.ref_id)
   const displayData = useMemo(
     () => getCardDisplayData({ card, collectionItem: item.data }),
     [card, item.data]
   )
+
+  const handlePriceBlur = () => {
+    const cents = inputStringToCents(priceInputRef.current)
+    if (cents !== null) updatePrice(item.data.id, cents)
+    setEditingPrice(false)
+  }
+
   return (
     <View style={{ paddingVertical: 10, gap: 12 }}>
       <View
@@ -275,39 +391,86 @@ function CartItemRow({ item }: { item: CartItem }) {
           gap: 8,
         }}
       >
-        <CardImage displayData={displayData} isLoading={!card} />
+        <CardImage displayData={displayData} isLoading={cardLoading} />
         <View style={{ flex: 1, justifyContent: 'space-between' }}>
           <View
             style={{
               flexDirection: 'row',
               alignItems: 'flex-start',
+              alignSelf: 'stretch',
               flex: 1,
             }}
           >
-            <View style={{ flex: 1, gap: 0 }}>
-              <Text style={{ fontWeight: '600' }}>{card?.name ?? '—'}</Text>
+            <View style={{ flex: 1, gap: 0, alignSelf: 'stretch' }}>
+              <Text style={{ fontWeight: '600' }}>{card?.name ?? item.data.name ?? '—'}</Text>
+              {(card?.set_name ?? item.data.set_name) && (
+                <Text
+                  variant={'muted'}
+                  className="capitalize"
+                  style={{ color: Colors.$textNeutralLight, lineHeight: 16 }}
+                >
+                  {card?.set_name ?? item.data.set_name}
+                </Text>
+              )}
               {item.data.grade_condition && (
                 <Text variant="info" style={{ color: Colors.$textNeutralLight, lineHeight: 16 }}>
                   {getGradingDisplayString(item.data).slice(0, 2).join(' ')}
                 </Text>
               )}
             </View>
-            <TouchableOpacity onPress={() => removeItem(item.data.id)} style={{ padding: 4 }}>
-              <Ellipsis size={24} color={Colors.$textNeutralLight} />
-            </TouchableOpacity>
-            <TouchableOpacity onPress={() => removeItem(item.data.id)} style={{ padding: 4 }}>
-              <Trash2 size={24} color={Colors.$textDanger} />
-            </TouchableOpacity>
+            <View style={{ gap: 8 }}>
+              <TouchableOpacity onPress={() => removeItem(item.data.id)} style={{ padding: 4 }}>
+                <EllipsisVertical size={24} color={Colors.$textNeutralLight} />
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => removeItem(item.data.id)} style={{ padding: 4 }}>
+                <Trash2 size={24} color={Colors.$textDanger} />
+              </TouchableOpacity>
+            </View>
           </View>
           <View
             style={{
               width: '100%',
               flexDirection: 'row',
-              alignItems: 'flex-start',
+              alignItems: 'center',
               justifyContent: 'space-between',
             }}
           >
-            <Text style={{ fontSize: 30, lineHeight: 32 }}>{formatPrice(item.cart.price)}</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              {editingPrice ? (
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  <Text style={{ fontSize: 30, lineHeight: 32 }}>$</Text>
+                  <TextInput
+                    autoFocus
+                    value={priceInput}
+                    onChangeText={(text) => {
+                      priceInputRef.current = text
+                      setPriceInput(text)
+                    }}
+                    onBlur={handlePriceBlur}
+                    keyboardType="decimal-pad"
+                    style={[cartStyles.priceInput, { fontSize: 30, lineHeight: 32 }]}
+                  />
+                </View>
+              ) : (
+                <>
+                  <Text style={{ fontSize: 30, lineHeight: 32 }}>
+                    {formatPrice(item.cart.price)}
+                  </Text>
+                  {item.cart.price !== item.cart.originalPrice && <PriceModifiedBadge />}
+                  <Pressable
+                    onPress={() => {
+                      const initial = centsToInputString(item.cart.price)
+                      priceInputRef.current = initial
+                      setPriceInput(initial)
+                      setEditingPrice(true)
+                    }}
+                    hitSlop={8}
+                  >
+                    <Pencil size={14} color={Colors.$iconNeutral} />
+                  </Pressable>
+                </>
+              )}
+            </View>
             <View style={{ gap: 8, alignItems: 'flex-end' }}>
               <NumberTicker
                 key={`${item.data.id}_${item.cart.quantity}`}
@@ -330,3 +493,19 @@ function CartItemRow({ item }: { item: CartItem }) {
     </View>
   )
 }
+
+const cartStyles = StyleSheet.create({
+  priceInput: {
+    padding: 0,
+    margin: 0,
+    minWidth: 60,
+    color: Colors.$textDefault,
+    includeFontPadding: false,
+  },
+  totalText: {
+    fontSize: 28,
+    fontWeight: '700',
+    color: Colors.$textDefault,
+    lineHeight: 32,
+  },
+})

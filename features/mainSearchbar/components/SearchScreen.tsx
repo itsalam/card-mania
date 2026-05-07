@@ -5,8 +5,9 @@ import { AppStandaloneHeader } from '@/components/ui/headers'
 import { SearchBar } from '@/components/ui/search'
 import { Spinner } from '@/components/ui/spinner'
 import { ItemListViewProps } from '@/features/tcg-card-views/types'
+import { useRefresh } from '@/lib/hooks/useRefresh'
 import React, { RefObject, useEffect, useMemo, useRef, useState } from 'react'
-import { StyleProp, StyleSheet, View, ViewStyle } from 'react-native'
+import { RefreshControl, StyleProp, StyleSheet, View, ViewStyle } from 'react-native'
 import { FlatList } from 'react-native-gesture-handler'
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller'
 import Animated, {
@@ -74,8 +75,10 @@ export function SearchScreen({
   const {
     data: cardSearch,
     isLoading: isCardSearchLoading,
+    refetch: refetchSearch,
     ...cardSearchState
   } = useCardSearch({ q: searchText, filters: filterQuery })
+  const { refreshing, onRefresh } = useRefresh([refetchSearch])
 
   useEffect(() => {
     if (autoSuggestionsState.error) {
@@ -170,6 +173,7 @@ export function SearchScreen({
               className="flex-1"
               data={!isCardSearchLoading ? searchItems : []}
               ListEmptyComponent={Spinner}
+              refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
               renderItem={({ item }) => (
                 <SearchPreviewCard
                   key={item.id}

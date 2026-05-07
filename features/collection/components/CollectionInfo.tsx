@@ -1,25 +1,12 @@
 import { ToggleBadge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { Modal } from '@/components/ui/modal'
 import { Spinner } from '@/components/ui/spinner'
 import { Text } from '@/components/ui/text/base-text'
 import { VISIBILITY_OPTIONS } from '@/features/tcg-card-views/DetailCardView/components/ui'
-import { UserContact } from '@/features/users/components/UserAvatars'
-import { DUMMY_USERS } from '@/features/users/helpers'
 import { useRouter } from 'expo-router'
-import {
-  BanknoteX,
-  LayoutList,
-  LucideIcon,
-  Pencil,
-  Plus,
-  SeparatorHorizontal,
-  Store,
-  Trash,
-} from 'lucide-react-native'
+import { BanknoteX, LucideIcon, Pencil, Plus, Store, Trash } from 'lucide-react-native'
 import { MotiView } from 'moti'
 import { useState } from 'react'
-import { FlatList, TouchableOpacity, View } from 'react-native'
+import { FlatList, View } from 'react-native'
 import { Colors } from 'react-native-ui-lib'
 import { isDefaultCollection } from '../helpers'
 import { useGetCollection, useGetCollectionCountInfo } from '../hooks'
@@ -34,16 +21,9 @@ type Option = {
   backgroundColor?: string
 }
 
-const SortOptions = ['name', 'added_on', 'custom', 'set_name']
-
-const DisplayOptions = ['compact', 'list', 'grid']
-
 export const CollectionInfo = () => {
-  const { currentPage, setCurrentPage, preferenceState, showEditView, setShowEditView } =
-    useCollectionsPageStore()
+  const { currentPage, preferenceState, showEditView, setShowEditView } = useCollectionsPageStore()
 
-  const [showSortModal, setShowSortModal] = useState(false)
-  const [showDisplayModal, setShowDisplayModal] = useState(false)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
 
   const collectionId =
@@ -127,24 +107,6 @@ export const CollectionInfo = () => {
         setShowEditView(true)
       },
     },
-    sort: {
-      label: 'Sort',
-      icon: SeparatorHorizontal,
-      onClick() {
-        setShowSortModal(true)
-      },
-      backgroundColor: Colors.$backgroundDark,
-      //TODO
-    },
-    display: {
-      label: 'Display',
-      icon: LayoutList,
-      //TODO
-      onClick() {
-        setShowDisplayModal(true)
-      },
-      backgroundColor: Colors.$backgroundDark,
-    },
     delete: {
       label: 'Delete',
       icon: Trash,
@@ -167,8 +129,6 @@ export const CollectionInfo = () => {
   return (
     <>
       <MotiView
-        // entering={FadeInRight}
-        // exiting={FadeOutLeft}
         key={collection ? `loaded-${collection.id}` : collectionId}
         from={{ flex: 0 }}
         animate={{ flex: 1 }}
@@ -193,8 +153,6 @@ export const CollectionInfo = () => {
 
         <View style={{ display: 'flex', gap: 8 }}>
           <View style={{ display: 'flex', gap: 4 }}>
-            <UserContact user={DUMMY_USERS[0]} size="sm" />
-
             <FlatList
               horizontal
               data={Object.entries(attributes)}
@@ -225,47 +183,24 @@ export const CollectionInfo = () => {
               display: 'flex',
               flexDirection: 'row',
               gap: 8,
-              // overflow: 'visible',
             }}
             style={{ overflow: 'visible' }}
             renderItem={({ item }) => {
               const Icon = item[1].icon
               return (
-                <TouchableOpacity onPress={() => item[1].onClick?.()}>
-                  <ToggleBadge
-                    label={item[1].label}
-                    checked
-                    {...(item[1].backgroundColor
-                      ? { backgroundColor: item[1].backgroundColor }
-                      : {})}
-                    icon={Icon}
-                    // leftElement={
-                    //   <Icon
-                    //     color={item[1].iconColor ?? Colors.$iconDefaultLight}
-                    //     size={18}
-                    //     strokeWidth={2.5}
-                    //     style={{ marginLeft: 4 }}
-                    //   />
-                    //   iconS
-                  />
-                </TouchableOpacity>
+                <ToggleBadge
+                  onPress={() => {
+                    item[1].onClick?.()
+                  }}
+                  label={item[1].label}
+                  checked
+                  {...(item[1].backgroundColor ? { backgroundColor: item[1].backgroundColor } : {})}
+                  icon={Icon}
+                />
               )
             }}
           />
         </View>
-        <Modal visible={showSortModal} onDismiss={() => setShowSortModal(false)}>
-          {SortOptions.map((option) => (
-            <Button key={option}>
-              <Text>{option}</Text>
-            </Button>
-          ))}
-        </Modal>
-
-        <Modal visible={showDisplayModal} onDismiss={() => setShowDisplayModal(false)}>
-          {DisplayOptions.map((option) => (
-            <Text key={option}>{option}</Text>
-          ))}
-        </Modal>
         <DeleteModal
           showDeleteModal={showDeleteModal}
           setShowDeleteModal={setShowDeleteModal}

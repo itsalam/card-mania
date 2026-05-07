@@ -5,7 +5,6 @@ import { Separator } from '@/components/ui/separator'
 import { ModifyCollectionProvider } from '@/features/tcg-card-views/DetailCardView/provider'
 import { ChevronLeft } from 'lucide-react-native'
 import { TouchableOpacity } from 'react-native-ui-lib'
-import { FooterStyles as styles } from '../../../tcg-card-views/DetailCardView/footer/components/styles'
 import { useCollectionsPageStore } from '../../provider'
 import {
   CollectionsDescriptionInput,
@@ -25,8 +24,7 @@ export const ModifyCollectionView = ({
   onChange?: (c: CollectionLike) => void
   onSubmit?: (res: EditCollectionResult) => void
 }) => {
-  const { currentPage, setCurrentPage, preferenceState, showEditView, setShowEditView } =
-    useCollectionsPageStore()
+  const { currentPage, setCurrentPage, setShowEditView } = useCollectionsPageStore()
 
   return (
     //@ts-ignore
@@ -40,12 +38,7 @@ export const ModifyCollectionView = ({
           paddingVertical: 8,
         }}
       >
-        <View
-          style={[
-            styles.inputContainer,
-            { flexDirection: 'row', alignItems: 'center', paddingLeft: 12 },
-          ]}
-        >
+        <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12 }}>
           <TouchableOpacity
             onPress={() => {
               setShowEditView(false)
@@ -62,17 +55,8 @@ export const ModifyCollectionView = ({
           <CollectionsNameInput />
         </View>
         <Separator style={{ marginVertical: 8 }} orientation="horizontal" />
-        <View style={[{ paddingRight: 0, gap: 12, paddingBottom: 12 }]}>
-          <View
-            style={[
-              styles.formContainer,
-              styles.inputContainer,
-              {
-                flexDirection: 'row',
-                alignItems: 'center',
-              },
-            ]}
-          >
+        <View style={{ gap: 12, paddingBottom: 12 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20 }}>
             <CollectionsDescriptionInput />
           </View>
           <View
@@ -83,10 +67,7 @@ export const ModifyCollectionView = ({
           >
             <CreateCollectionChipInput />
           </View>
-          <Separator
-            style={{ marginLeft: 30, marginRight: 52, marginVertical: 8 }}
-            orientation="horizontal"
-          />
+          <Separator style={{ marginHorizontal: 20, marginVertical: 8 }} orientation="horizontal" />
           <View
             style={{
               gap: 16,

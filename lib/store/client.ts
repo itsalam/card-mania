@@ -3,6 +3,18 @@ import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import Constants from 'expo-constants'
 import { Database } from './supabase'
 
+// Resolves once getSession() completes in _providers.tsx, guaranteeing the
+// auth lock is released before any PostgREST/RPC request leaves the client.
+let _readyResolve: (() => void) | null = null
+const _clientReady = new Promise<void>((resolve) => {
+  _readyResolve = resolve
+})
+
+export function signalClientReady() {
+  _readyResolve?.()
+  _readyResolve = null
+}
+
 let client: SupabaseClient<Database> | null = null
 let fingerprint: string | null = null
 
@@ -27,14 +39,24 @@ export function initSupabase() {
         persistSession: true,
         detectSessionInUrl: false,
       },
+      global: {
+        // Gate all non-auth requests behind _clientReady so they wait until
+        // getSession() finishes. Auth endpoints (/auth/v1/) are excluded to
+        // avoid deadlocking token-refresh calls that happen during getSession.
+        fetch: async (url, options) => {
+          const urlStr = typeof url === 'string' ? url : (url as URL).href
+          if (!urlStr.includes('/auth/v1/')) {
+            await _clientReady
+          }
+          return fetch(url as RequestInfo, options)
+        },
+      },
     }
   )
   return client
 }
 
 export function getSupabase() {
-  // guarantees a client even if you forgot to init explicitly
-
   return client ?? initSupabase()
 }
 

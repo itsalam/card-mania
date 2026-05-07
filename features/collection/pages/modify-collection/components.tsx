@@ -1,4 +1,5 @@
 import { useEditCollection } from '@/client/collections/mutate'
+import { useToast } from '@/components/Toast'
 import { Text } from '@/components/ui/text/base-text'
 import {
   CircleQuestionMark,
@@ -202,6 +203,7 @@ export const SubmitCollectionButton = ({
   const visibility = useCreateNewCollections((s) => s.visibility)
   const validate = useCreateNewCollections((s) => s.validate)
   const submit = useEditCollection(collectionId)
+  const { showToast } = useToast()
   return (
     <FooterButton
       style={{
@@ -220,7 +222,13 @@ export const SubmitCollectionButton = ({
               hide_sold_items: hideSoldItems,
             })
             .then((res) => onSubmit?.(res))
-            .catch((e) => console.error('Error creating collection:', e))
+            .catch(() => {
+              showToast({
+                title: 'Error',
+                message: 'Failed to save collection. Please try again.',
+                preset: 'failure',
+              })
+            })
         } else {
           //TODO: Alert the improper state
         }

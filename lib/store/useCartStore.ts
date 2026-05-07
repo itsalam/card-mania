@@ -5,12 +5,15 @@ import { createJSONStorage, persist } from 'zustand/middleware'
 
 type CartState = {
   items: CartItem[]
+  totalOverride?: number
 }
 
 type CartActions = {
   addItem: (item: CartItem) => void
   removeItem: (collectionItemId: string) => void
   updateQuantity: (collectionItemId: string, quantity: number) => void
+  updateItemPrice: (collectionItemId: string, price: number) => void
+  setTotalOverride: (total: number | undefined) => void
   clear: () => void
 }
 
@@ -56,7 +59,17 @@ export const useCartStore = create<CartState & CartActions>()(
           ),
         })),
 
-      clear: () => set({ items: [] }),
+      updateItemPrice: (collectionItemId, price) =>
+        set((s) => ({
+          items: s.items.map((i) =>
+            i.data.id === collectionItemId ? { ...i, cart: { ...i.cart, price } } : i
+          ),
+          totalOverride: undefined,
+        })),
+
+      setTotalOverride: (total) => set({ totalOverride: total }),
+
+      clear: () => set({ items: [], totalOverride: undefined }),
     }),
     {
       name: 'cart-store',

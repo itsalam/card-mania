@@ -114,6 +114,9 @@ export const DefaultAccessories = ({
         renderButtons(props)
       ) : (
         <View className="absolute right-0 bottom-0 flex gap-1 items-center flex-col justify-center">
+          <TouchableOpacity style={[styles.button]}>
+            <EllipsisVertical size={24} color={Colors.$iconGeneral} />
+          </TouchableOpacity>
           <TouchableOpacity
             onPress={() => {
               item &&
@@ -136,9 +139,6 @@ export const DefaultAccessories = ({
               fill={isWishlisted ? Colors.$iconGeneral : 'transparent'}
               color={Colors.$iconGeneral}
             />
-          </TouchableOpacity>
-          <TouchableOpacity style={[styles.button]}>
-            <EllipsisVertical size={24} color={Colors.$iconGeneral} />
           </TouchableOpacity>
         </View>
       )}

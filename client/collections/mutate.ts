@@ -175,30 +175,44 @@ export const useEditCollection = (collectionId?: string) => {
 
 const mutateCollectionItemFn =
   (itemData: CollectionItem) =>
-  async (args: { delete?: boolean; item: EditCollectionArgsItem }) => {
-    const { delete: deleteRecord, item } = args
+  async (args: { delete?: boolean; item: EditCollectionArgsItem; card?: TCard }) => {
+    const { delete: deleteRecord, item, card } = args
     const user = await requireUser()
     const { grade_condition, ...parsedItem } = { ...itemData, ...item }
     const fullArgs = {
       ...parsedItem,
       user_id: item.user_id ?? user.id,
     }
-    console.log({ args, fullArgs })
     if (fullArgs.id && (deleteRecord || fullArgs.quantity === 0)) {
-      const { data, error } = await getSupabase()
-        .from('collection_items')
-        .delete()
-        .eq('id', fullArgs.id)
-        .select()
-        .single()
+      const { error } = await getSupabase().from('collection_items').delete().eq('id', fullArgs.id)
       if (error) throw error
-      return data as CollectionItem
+      return fullArgs as CollectionItem
     }
     const { id, collection_id } = fullArgs
     if (id && collection_id) {
       const { data, error } = await getSupabase()
         .from('collection_items')
         .upsert({ ...fullArgs, id, collection_id })
+        .select()
+        .single()
+      if (error) throw error
+      return data as CollectionItem
+    }
+    if (!id && collection_id && fullArgs.ref_id && (fullArgs.quantity ?? 0) > 0) {
+      if (card?.id) {
+        await getSupabase().rpc('ensure_card_stub', {
+          p_id: card.id as any,
+          p_name: card.name ?? '',
+          p_set_name: card.set_name ?? '',
+          p_genre: (card.genre ?? 'trading_card') as any,
+          p_grades_prices: (card.grades_prices ?? {}) as any,
+          p_latest_price: card.latest_price ?? null,
+          p_image_url: card.image?.url ?? null,
+        })
+      }
+      const { data, error } = await getSupabase()
+        .from('collection_items')
+        .insert({ ...fullArgs, collection_id, item_kind: fullArgs.item_kind ?? 'card' })
         .select()
         .single()
       if (error) throw error
@@ -226,7 +240,7 @@ export const useEditCollectionItem = (collectionId?: string, cardId?: string, it
   return useMutation<
     CollectionItem | undefined,
     unknown,
-    { item: EditCollectionArgsItem; delete?: boolean },
+    { item: EditCollectionArgsItem; delete?: boolean; card?: TCard },
     {
       prevItems: (CollectionItem & EditCollectionArgsItem)[] | undefined
       prevTotal: number | undefined
@@ -301,6 +315,7 @@ export const useEditCollectionItem = (collectionId?: string, cardId?: string, it
     },
     onSettled: () => {
       qc.invalidateQueries({ queryKey })
+      qc.invalidateQueries({ queryKey: qk.collectionItems(collectionId) })
       qc.invalidateQueries({ queryKey: totalsKey })
     },
   })
@@ -335,10 +350,11 @@ export const useDeleteCollection = () => {
 
       return { prevList }
     },
-    onError: (_err, _collectionId, ctx) => {
+    onError: (_err, collectionId, ctx) => {
       if (ctx?.prevList) {
         qc.setQueryData([...qk.userCollections], ctx.prevList)
       }
+      reportError({ context: 'useDeleteCollection', error: _err, metadata: { collectionId } })
     },
     onSettled: (_data, _err, collectionId) => {
       qc.invalidateQueries({ queryKey: [...qk.userCollections] })

@@ -3,15 +3,20 @@ import { Text } from '@/components/ui/text/base-text'
 import { getUserStoreFront } from '@/features/profile/client'
 import { StorefrontView } from '@/features/profile/components/storefront-view'
 import { getSupabase } from '@/lib/store/client'
+import { useRefresh } from '@/lib/hooks/useRefresh'
 import { useQuery } from '@tanstack/react-query'
 import { useLocalSearchParams } from 'expo-router'
-import { ActivityIndicator, ScrollView, View } from 'react-native'
+import { ActivityIndicator, RefreshControl, ScrollView, View } from 'react-native'
 import { Colors } from 'react-native-ui-lib'
 
 export default function PublicStorefrontPage() {
   const { username } = useLocalSearchParams<{ username: string }>()
 
-  const { data: profile, isLoading: isLoadingProfile } = useQuery({
+  const {
+    data: profile,
+    isLoading: isLoadingProfile,
+    refetch: refetchProfile,
+  } = useQuery({
     queryKey: ['public-storefront-profile', username],
     queryFn: async () => {
       if (!username) return null
@@ -25,13 +30,18 @@ export default function PublicStorefrontPage() {
     enabled: Boolean(username),
   })
 
-  const { data: collections, isLoading: isLoadingCollections } = useQuery({
+  const {
+    data: collections,
+    isLoading: isLoadingCollections,
+    refetch: refetchCollections,
+  } = useQuery({
     queryKey: ['public-storefront-collections', profile?.user_id],
     queryFn: () => getUserStoreFront(profile?.user_id),
     enabled: Boolean(profile?.user_id),
   })
 
   const isLoading = isLoadingProfile || (Boolean(profile?.user_id) && isLoadingCollections)
+  const { refreshing, onRefresh } = useRefresh([refetchProfile, refetchCollections])
 
   if (isLoading) {
     return (
@@ -55,7 +65,11 @@ export default function PublicStorefrontPage() {
   const initials = profile.display_name?.[0]?.toUpperCase() ?? '?'
 
   return (
-    <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 20, paddingBottom: 80 }}>
+    <ScrollView
+      style={{ flex: 1 }}
+      contentContainerStyle={{ padding: 20, paddingBottom: 80 }}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+    >
       {/* Profile header */}
       <View
         style={{

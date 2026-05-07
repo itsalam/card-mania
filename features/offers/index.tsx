@@ -4,6 +4,7 @@ import { useToast } from '@/components/Toast'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import { Text } from '@/components/ui/text/base-text'
+import { useRouter } from 'expo-router'
 import { ScrollView, View } from 'react-native'
 import { Colors } from 'react-native-ui-lib'
 import { EmptyState, LoadingSkeleton, OfferCardBase, styles } from './ui'
@@ -32,6 +33,7 @@ export function OfferInboxPage() {
 export function InboxOfferCard({ offer }: { offer: Offer }) {
   const { mutate: updateStatus, isPending } = useUpdateOfferStatus()
   const { showToast } = useToast()
+  const router = useRouter()
 
   const handleAction = (status: 'accepted' | 'declined') => {
     updateStatus(
@@ -79,6 +81,21 @@ export function InboxOfferCard({ offer }: { offer: Offer }) {
               style={styles.actionButton}
             >
               <Text>Accept</Text>
+            </Button>
+          </View>
+        </>
+      )}
+      {offer.status === 'accepted' && (
+        <>
+          <Separator orientation="horizontal" style={styles.separator} />
+          <View style={styles.actions}>
+            <Button
+              variant="outline"
+              size="sm"
+              style={styles.actionButton}
+              onPress={() => router.push(`/transactions/${offer.id}`)}
+            >
+              <Text>View Deal</Text>
             </Button>
           </View>
         </>

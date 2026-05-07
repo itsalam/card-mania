@@ -37,6 +37,13 @@ export function useOfferRealtime() {
               qc.invalidateQueries({ queryKey: ['offers', 'buyer'] })
             }
 
+            if (notification.category === 'transaction') {
+              const offerId = notification.payload?.offer_id as string | undefined
+              if (offerId) {
+                qc.invalidateQueries({ queryKey: ['transaction', offerId] })
+              }
+            }
+
             showToast({ title: notification.title, message: notification.body })
           }
         )

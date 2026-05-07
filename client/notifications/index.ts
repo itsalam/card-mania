@@ -69,12 +69,37 @@ export function useMarkRead(id: string) {
         .eq('id', id)
       if (error) throw error
     },
-    onSuccess: () => {
+    onMutate: async () => {
+      await qc.cancelQueries({ queryKey: ['notifications'] })
+      const prevListQueries = qc.getQueriesData<AppNotification[]>({
+        queryKey: ['notifications'],
+        predicate: (q) => q.queryKey[1] !== 'unread-count',
+      })
+      const prevCount = qc.getQueryData<number>(['notifications', 'unread-count'])
+
+      const wasUnread =
+        prevListQueries.flatMap(([, data]) => data ?? []).find((n) => n.id === id)?.read_at === null
+
+      const now = new Date().toISOString()
+      qc.setQueriesData<AppNotification[]>(
+        { queryKey: ['notifications'], predicate: (q) => q.queryKey[1] !== 'unread-count' },
+        (old) => old?.map((n) => (n.id === id ? { ...n, read_at: now } : n)) ?? old
+      )
+      if (wasUnread && prevCount !== undefined) {
+        qc.setQueryData(['notifications', 'unread-count'], Math.max(0, prevCount - 1))
+      }
+
+      return { prevListQueries, prevCount }
+    },
+    onError: (err, _vars, ctx) => {
+      ctx?.prevListQueries.forEach(([key, data]) => qc.setQueryData(key, data))
+      if (ctx?.prevCount !== undefined)
+        qc.setQueryData(['notifications', 'unread-count'], ctx.prevCount)
+      reportError({ context: 'useMarkRead', error: err, metadata: { id } })
+    },
+    onSettled: () => {
       qc.invalidateQueries({ queryKey: ['notifications'] })
       qc.invalidateQueries({ queryKey: ['notifications', 'unread-count'] })
-    },
-    onError: (err) => {
-      reportError({ context: 'useMarkRead', error: err, metadata: { id } })
     },
   })
 }
@@ -93,12 +118,32 @@ export function useMarkAllRead() {
         .is('read_at', null)
       if (error) throw error
     },
-    onSuccess: () => {
+    onMutate: async () => {
+      await qc.cancelQueries({ queryKey: ['notifications'] })
+      const prevListQueries = qc.getQueriesData<AppNotification[]>({
+        queryKey: ['notifications'],
+        predicate: (q) => q.queryKey[1] !== 'unread-count',
+      })
+      const prevCount = qc.getQueryData<number>(['notifications', 'unread-count'])
+
+      const now = new Date().toISOString()
+      qc.setQueriesData<AppNotification[]>(
+        { queryKey: ['notifications'], predicate: (q) => q.queryKey[1] !== 'unread-count' },
+        (old) => old?.map((n) => (n.read_at ? n : { ...n, read_at: now })) ?? old
+      )
+      qc.setQueryData(['notifications', 'unread-count'], 0)
+
+      return { prevListQueries, prevCount }
+    },
+    onError: (err, _vars, ctx) => {
+      ctx?.prevListQueries.forEach(([key, data]) => qc.setQueryData(key, data))
+      if (ctx?.prevCount !== undefined)
+        qc.setQueryData(['notifications', 'unread-count'], ctx.prevCount)
+      reportError({ context: 'useMarkAllRead', error: err })
+    },
+    onSettled: () => {
       qc.invalidateQueries({ queryKey: ['notifications'] })
       qc.invalidateQueries({ queryKey: ['notifications', 'unread-count'] })
-    },
-    onError: (err) => {
-      reportError({ context: 'useMarkAllRead', error: err })
     },
   })
 }
@@ -115,12 +160,36 @@ export function useDismissNotification(id: string) {
         .eq('id', id)
       if (error) throw error
     },
-    onSuccess: () => {
+    onMutate: async () => {
+      await qc.cancelQueries({ queryKey: ['notifications'] })
+      const prevListQueries = qc.getQueriesData<AppNotification[]>({
+        queryKey: ['notifications'],
+        predicate: (q) => q.queryKey[1] !== 'unread-count',
+      })
+      const prevCount = qc.getQueryData<number>(['notifications', 'unread-count'])
+
+      const wasUnread =
+        prevListQueries.flatMap(([, data]) => data ?? []).find((n) => n.id === id)?.read_at === null
+
+      qc.setQueriesData<AppNotification[]>(
+        { queryKey: ['notifications'], predicate: (q) => q.queryKey[1] !== 'unread-count' },
+        (old) => old?.filter((n) => n.id !== id) ?? old
+      )
+      if (wasUnread && prevCount !== undefined) {
+        qc.setQueryData(['notifications', 'unread-count'], Math.max(0, prevCount - 1))
+      }
+
+      return { prevListQueries, prevCount }
+    },
+    onError: (err, _vars, ctx) => {
+      ctx?.prevListQueries.forEach(([key, data]) => qc.setQueryData(key, data))
+      if (ctx?.prevCount !== undefined)
+        qc.setQueryData(['notifications', 'unread-count'], ctx.prevCount)
+      reportError({ context: 'useDismissNotification', error: err, metadata: { id } })
+    },
+    onSettled: () => {
       qc.invalidateQueries({ queryKey: ['notifications'] })
       qc.invalidateQueries({ queryKey: ['notifications', 'unread-count'] })
-    },
-    onError: (err) => {
-      reportError({ context: 'useDismissNotification', error: err, metadata: { id } })
     },
   })
 }

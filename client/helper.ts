@@ -12,7 +12,7 @@ export async function invokeFx<In extends FunctionInvokeOptions['body'], Out>(
     headers?: Record<string, string>
     useQueryParams?: boolean
   }
-): Promise<{ data: Out; response?: Response; error?: Error }> {
+): Promise<{ data: Out; response?: Response }> {
   const { parseOut, headers, useQueryParams, method = 'GET' } = options
   let body = undefined
   let url = name
@@ -59,6 +59,8 @@ export async function invokeFx<In extends FunctionInvokeOptions['body'], Out>(
     headers: invokeHeaders,
   })
 
+  if (error) throw error
+
   if (parseOut) {
     const result = parseOut.safeParse(data)
     if (!result.success) {
@@ -67,12 +69,11 @@ export async function invokeFx<In extends FunctionInvokeOptions['body'], Out>(
       console.warn('[invokeFx] Zod errors:', JSON.stringify(result.error.issues, null, 2))
       throw result.error
     }
-    return { data: result.data, response, error }
+    return { data: result.data, response }
   }
 
   return {
     data: data as Out,
     response,
-    error,
   }
 }

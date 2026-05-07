@@ -40,17 +40,14 @@ export async function viewCollectionItemsForCard(collectionId: string, cardId: s
       p_collection_id: collectionId,
     })
     .select('*, grade_condition:grade_condition_id(id, company_id, grade_value, label)')
-
   const formattedData = unwrap(data, error)
-  let records = Array.isArray(formattedData) ? formattedData : [formattedData]
-
-  const result = records.map((r) => ({
+  const records = Array.isArray(formattedData) ? formattedData : [formattedData]
+  return records.map((r) => ({
     ...r,
     grade_condition: r.grade_condition
       ? (r.grade_condition as unknown as Database['public']['Tables']['grade_conditions']['Row'])
       : null,
   }))
-  return result
 }
 
 export async function viewSingleCollectionItem(collectionItemId: string) {

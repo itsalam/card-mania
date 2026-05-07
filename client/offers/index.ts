@@ -11,10 +11,9 @@ async function submitOfferFn(payload: SubmitOfferPayload): Promise<Offer> {
   const user = await requireUser()
   const supabase = getSupabase()
 
-  const total_amount = payload.items.reduce(
-    (sum, item) => sum + item.offered_price_per_unit * item.quantity,
-    0
-  )
+  const total_amount =
+    payload.total_amount ??
+    payload.items.reduce((sum, item) => sum + item.offered_price_per_unit * item.quantity, 0)
 
   const { data: offer, error: offerError } = await supabase
     .from('offers')
@@ -103,11 +102,26 @@ export function useUpdateOfferStatus() {
 
       return offer as unknown as Offer
     },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['offers'] })
+    onMutate: async ({ offerId, status }) => {
+      await qc.cancelQueries({ queryKey: ['offers'] })
+      const prevBuyer = qc.getQueryData<Offer[]>(offersQk('buyer'))
+      const prevSeller = qc.getQueryData<Offer[]>(offersQk('seller'))
+
+      const patch = (old: Offer[] | undefined) =>
+        old?.map((o) => (o.id === offerId ? { ...o, status } : o))
+
+      qc.setQueryData<Offer[]>(offersQk('buyer'), patch)
+      qc.setQueryData<Offer[]>(offersQk('seller'), patch)
+
+      return { prevBuyer, prevSeller }
     },
-    onError: (err, vars) => {
+    onError: (err, vars, ctx) => {
+      if (ctx?.prevBuyer) qc.setQueryData(offersQk('buyer'), ctx.prevBuyer)
+      if (ctx?.prevSeller) qc.setQueryData(offersQk('seller'), ctx.prevSeller)
       reportError({ context: 'useUpdateOfferStatus', error: err, metadata: { vars } })
+    },
+    onSettled: () => {
+      qc.invalidateQueries({ queryKey: ['offers'] })
     },
   })
 }

@@ -1,3 +1,4 @@
+import { imperativeDevToast } from '@/components/Toast'
 import { getSupabase } from '@/lib/store/client'
 
 type ReportErrorOpts = {
@@ -7,10 +8,12 @@ type ReportErrorOpts = {
 }
 
 export async function reportError({ context, error, metadata }: ReportErrorOpts): Promise<void> {
-  const message = error instanceof Error ? error.message : String(error)
+  const message = JSON.stringify(error instanceof Error ? error.message : String(error), null, 2)
+  console.log({ message })
 
   if (process.env.NODE_ENV !== 'production') {
     console.error(`[${context}]`, message, metadata ?? '')
+    imperativeDevToast({ title: `[${context}]`, message, preset: 'failure', autoDismiss: 6000 })
     return
   }
 

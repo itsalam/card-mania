@@ -16,7 +16,7 @@ export type CardSnapshot = z.infer<typeof CardSnapshot>
 export const OfferItem = z.object({
   id: z.string().uuid(),
   offer_id: z.string().uuid(),
-  collection_item_id: z.string().uuid(),
+  collection_item_id: z.string().uuid().nullable(),
   quantity: z.number().int().positive(),
   offered_price_per_unit: z.number(),
   card_snapshot: CardSnapshot.nullable(),
@@ -40,16 +40,23 @@ export const Transaction = z.object({
   id: z.string().uuid(),
   offer_id: z.string().uuid(),
   status: TransactionStatus,
+  buyer_shipping_address: z.unknown().nullable().optional(),
   created_at: z.string(),
   updated_at: z.string(),
 })
 export type Transaction = z.infer<typeof Transaction>
 
+export const TransactionWithOffer = Transaction.extend({
+  offer: Offer.extend({ offer_items: z.array(OfferItem) }),
+})
+export type TransactionWithOffer = z.infer<typeof TransactionWithOffer>
+
 export type SubmitOfferPayload = {
   seller_id: string
   buyer_note?: string
+  total_amount?: number
   items: Array<{
-    collection_item_id: string
+    collection_item_id: string | null
     quantity: number
     offered_price_per_unit: number
     card_snapshot?: CardSnapshot

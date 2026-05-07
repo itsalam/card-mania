@@ -9,11 +9,13 @@ import { InboxOfferCard } from '@/features/offers/index'
 import { SkeletonCard } from '@/features/offers/ui'
 import { useProfiles } from '@/features/users/client/load-user'
 import { X } from 'lucide-react-native'
+import { useRefresh } from '@/lib/hooks/useRefresh'
 import { useRef, useState } from 'react'
 import {
   Dimensions,
   Modal,
   Pressable,
+  RefreshControl,
   ScrollView,
   StyleSheet,
   TouchableOpacity,
@@ -36,6 +38,7 @@ const STATUS_FILTERS: { value: OfferStatus | 'all'; label: string }[] = [
   { value: 'accepted', label: 'Accepted' },
   { value: 'declined', label: 'Declined' },
   { value: 'cancelled', label: 'Cancelled' },
+  { value: 'completed', label: 'Completed' },
 ]
 
 const SORT_OPTIONS: { value: SortOption; label: string }[] = [
@@ -75,8 +78,17 @@ export default function OffersRoute() {
   const sortButtonRef = useRef<View>(null)
   const insets = useSafeAreaInsets()
 
-  const { data: inboxOffers, isLoading: inboxLoading } = useMyOffers('seller')
-  const { data: myOffers, isLoading: myOffersLoading } = useMyOffers('buyer')
+  const {
+    data: inboxOffers,
+    isLoading: inboxLoading,
+    refetch: refetchInbox,
+  } = useMyOffers('seller')
+  const {
+    data: myOffers,
+    isLoading: myOffersLoading,
+    refetch: refetchMyOffers,
+  } = useMyOffers('buyer')
+  const { refreshing, onRefresh } = useRefresh([refetchInbox, refetchMyOffers])
 
   const isLoading = view === 'inbox' ? inboxLoading : myOffersLoading
   const baseOffers = view === 'inbox' ? (inboxOffers ?? []) : (myOffers ?? [])
@@ -192,21 +204,24 @@ export default function OffersRoute() {
         ))}
       </ChipRowContainer>
       {/* Offer list */}
-      {isLoading ? (
-        <LoadingSkeleton />
-      ) : filtered.length === 0 ? (
-        <EmptyState hasQuery={!!query} />
-      ) : (
-        <ScrollView contentContainerStyle={styles.list}>
-          {filtered.map((offer) =>
+      <ScrollView
+        contentContainerStyle={[styles.list, filtered.length === 0 && { flex: 1 }]}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+      >
+        {isLoading ? (
+          <LoadingSkeleton />
+        ) : filtered.length === 0 ? (
+          <EmptyState hasQuery={!!query} />
+        ) : (
+          filtered.map((offer) =>
             view === 'inbox' ? (
               <InboxOfferCard key={offer.id} offer={offer} />
             ) : (
               <BuyerOfferCard key={offer.id} offer={offer} />
             )
-          )}
-        </ScrollView>
-      )}
+          )
+        )}
+      </ScrollView>
 
       {/* Sort modal */}
       <Modal

@@ -77,6 +77,16 @@ export const formatPrice = (
   })}`
 }
 
+/** Converts a cents integer to a dollar string suitable for a price TextInput, e.g. 799 → "7.99" */
+export const centsToInputString = (cents: number): string => (cents / 100).toFixed(2)
+
+/** Parses a dollar string from a price TextInput back to cents, e.g. "7.99" → 799. Returns null on invalid input. */
+export const inputStringToCents = (input: string): number | null => {
+  const parsed = parseFloat(input)
+  if (isNaN(parsed) || parsed < 0) return null
+  return Math.round(parsed * 100)
+}
+
 export const formatCompactPrice = (
   price: number,
   {

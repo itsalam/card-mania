@@ -6,24 +6,46 @@ import { Separator } from '@/components/ui/separator'
 import { Skeleton } from '@/components/ui/skeleton'
 import { SkeletonText } from '@/components/ui/text'
 import { Text } from '@/components/ui/text/base-text'
+import { formatPrice } from '@/components/utils'
+import { useProfiles } from '@/features/users/client/load-user'
+import { UserContact } from '@/features/users/components/UserAvatars'
+import { UserDisplayInfo } from '@/features/users/types'
+import { Tag } from 'lucide-react-native'
 import { ReactNode } from 'react'
 import { StyleSheet, View } from 'react-native'
 import { Colors } from 'react-native-ui-lib'
 import { getGradingDisplayString } from '../collection/helpers'
-import { useGetCollection } from '../collection/hooks'
 import { CardImage } from '../tcg-card-views/card-image'
-import { getCardDisplayData } from '../tcg-card-views/helpers'
-import { UserAvatar } from '../users/components/UserAvatars'
+import { getCardDisplayData, getDisplayPrice } from '../tcg-card-views/helpers'
+
+export function PriceModifiedBadge() {
+  return (
+    <Badge
+      size={{ height: 20 }}
+      backgroundColor={Colors.rgba(Colors.$backgroundWarningLight, 0.15)}
+      borderRadius={4}
+      labelStyle={{ fontSize: 10, color: Colors.$outlineWarning, fontWeight: '600' }}
+      leftElement={<Tag size={12} color={Colors.$outlineWarning} />}
+      label="Modified"
+    />
+  )
+}
 
 export function OfferItemRow({ item, isLast }: { item: OfferItem; isLast: boolean }) {
-  const { data: collectionItem } = useViewSingleCollectionItem(item.collection_item_id)
-  const { data: card } = useCardQuery(item.card_snapshot?.card_id)
-  const title = card?.name ?? 'Unknown Card'
+  const { data: collectionItem } = useViewSingleCollectionItem(item.collection_item_id ?? undefined)
+  const { data: card, loading: cardLoading } = useCardQuery(item.card_snapshot?.card_id)
+  const title = card?.name ?? item.card_snapshot?.title ?? 'Unknown Card'
+  const setName = card?.set_name
   const displayData = getCardDisplayData({
     card,
     collectionItem,
-    isLoading: !Boolean(collectionItem) || !Boolean(card),
+    isLoading: cardLoading,
   })
+  const subtotal = item.offered_price_per_unit * item.quantity
+  const listingPrice = card
+    ? getDisplayPrice({ card, collectionItem: collectionItem as any })
+    : undefined
+  const isPriceModified = listingPrice != null && item.offered_price_per_unit !== listingPrice
 
   return (
     <View
@@ -33,19 +55,39 @@ export function OfferItemRow({ item, isLast }: { item: OfferItem; isLast: boolea
         { borderBottomColor: Colors.$outlineNeutralLight },
       ]}
     >
-      <CardImage displayData={displayData} width={48} />
-      <View style={{ flex: 1 }}>
+      <CardImage displayData={displayData} width={48} isLoading={cardLoading} />
+      <View style={{ flex: 1, gap: 2 }}>
         <Text variant="default" style={styles.itemTitle} numberOfLines={1} ellipsizeMode="tail">
           {title}
         </Text>
+        {setName ? (
+          <Text
+            variant="info"
+            className="capitalize"
+            style={{ color: Colors.$textNeutralLight, lineHeight: 16 }}
+          >
+            {setName}
+          </Text>
+        ) : null}
         <Text variant="info" style={{ color: Colors.$textNeutralLight, lineHeight: 16 }}>
           {getGradingDisplayString(collectionItem).slice(0, 2).join(' ')}
         </Text>
       </View>
 
-      <Text variant="default" style={[styles.itemMeta, { color: Colors.$textNeutral }]}>
-        x Qty:{item.quantity} · ${item.offered_price_per_unit.toFixed(2)}/ea
-      </Text>
+      <View style={{ alignItems: 'flex-end', gap: 4 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+          <Text variant="default" style={styles.itemPrice}>
+            {formatPrice(item.offered_price_per_unit)}
+          </Text>
+          {isPriceModified && <PriceModifiedBadge />}
+        </View>
+        <Text variant="info" style={{ color: Colors.$textNeutralLight }}>
+          Qty: {item.quantity}
+        </Text>
+        <Text variant="small" style={{ color: Colors.$textNeutralLight }}>
+          Subtotal: {formatPrice(subtotal)}
+        </Text>
+      </View>
     </View>
   )
 }
@@ -99,14 +141,31 @@ function StatusBadge({ status }: { status: OfferStatus }) {
   )
 }
 
-export function OfferCardBase({ offer, children }: { offer: Offer; children?: ReactNode }) {
-  const { data: collection } = useGetCollection({
-    collectionId: offer.title ?? offer?.offer_items?.[0] ?? undefined,
-  })
-
+export function OfferCardBase({
+  offer,
+  children,
+  counterpartyId,
+}: {
+  offer: Offer
+  children?: ReactNode
+  counterpartyId?: string
+}) {
   const items = offer.offer_items ?? []
+  const computedTotal = items.reduce(
+    (sum, item) => sum + item.offered_price_per_unit * item.quantity,
+    0
+  )
+  const isTotalModified = offer.total_amount != null && offer.total_amount !== computedTotal
+  // Default to buyer_id for the seller inbox; pass seller_id explicitly for the buyer view
+  const partyId = counterpartyId ?? offer.buyer_id
+  const { data: profiles } = useProfiles([partyId])
+  const profile = profiles?.[partyId]
+  const user: UserDisplayInfo = {
+    name: profile?.display_name ?? profile?.username ?? `${partyId.slice(0, 8)}…`,
+    handle: `@${profile?.username ?? partyId.slice(0, 8)}`,
+    avatar: profile?.avatar_url ?? '',
+  }
 
-  const title = collection?.name ?? `${offer.buyer_id.slice(0, 8)}...`
   return (
     <View
       style={[
@@ -117,16 +176,10 @@ export function OfferCardBase({ offer, children }: { offer: Offer; children?: Re
         },
       ]}
     >
-      {/* Header: summary + status */}
+      {/* Header: buyer info + date + status */}
       <View style={styles.cardHeader}>
         <View style={styles.buyerInfo}>
-          <UserAvatar
-            size={'md'}
-            // style={[styles.avatarPlaceholder, { backgroundColor: Colors.$backgroundPrimaryHeavy }]}
-          />
-          <Text variant="h3" style={styles.offerTitle}>
-            {title}
-          </Text>
+          <UserContact user={profile ? user : undefined} size="sm" />
           <Text variant="default" style={[styles.offerDate, { color: Colors.$textNeutral }]}>
             {offer.created_at ? formatDate(offer.created_at) : ''}
           </Text>
@@ -141,19 +194,36 @@ export function OfferCardBase({ offer, children }: { offer: Offer; children?: Re
         <OfferItemRow key={item.id} item={item} isLast={idx === items.length - 1} />
       ))}
 
-      {/* Note */}
-      {offer.buyer_note ? (
-        <View style={styles.noteContainer}>
-          <Text variant="default" style={[styles.noteLabel, { color: Colors.$textNeutral }]}>
-            Note:
-          </Text>
-          <Text variant="default" style={[styles.noteText, { color: Colors.$textNeutral }]}>
-            {offer.buyer_note}
+      {/* Total */}
+      <Separator orientation="horizontal" style={styles.separator} />
+      <View style={styles.totalRow}>
+        <Text variant="default" style={styles.totalLabel}>
+          Total
+        </Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+          {isTotalModified && <PriceModifiedBadge />}
+          <Text variant="default" style={styles.totalAmount}>
+            {formatPrice(offer.total_amount)}
           </Text>
         </View>
+      </View>
+
+      {/* Note */}
+      {offer.buyer_note ? (
+        <>
+          <Separator orientation="horizontal" style={styles.separator} />
+          <View style={styles.noteContainer}>
+            <Text variant="default" style={[styles.noteLabel, { color: Colors.$textNeutral }]}>
+              Note:
+            </Text>
+            <Text variant="default" style={[styles.noteText, { color: Colors.$textNeutral }]}>
+              {offer.buyer_note}
+            </Text>
+          </View>
+        </>
       ) : null}
 
-      {/* Cancel for pending offers */}
+      {/* Action buttons (cancel, accept/decline, etc.) */}
       {children}
     </View>
   )
@@ -172,10 +242,8 @@ export function SkeletonCard() {
     >
       <View style={styles.cardHeader}>
         <View style={styles.buyerInfo}>
-          <UserAvatar />
-          <SkeletonText variant="h3" style={styles.offerTitle}>
-            {'PlaceholderText'}
-          </SkeletonText>
+          <UserContact size="sm" />
+          <Skeleton style={{ height: 12, width: 60, borderRadius: 4 }} />
         </View>
 
         <Skeleton style={styles.skeletonBadge} />
@@ -184,7 +252,7 @@ export function SkeletonCard() {
       <Separator orientation="horizontal" style={styles.separator} />
 
       {/* Items list */}
-      {[0, 1].map((item, idx) => (
+      {[0, 1].map((_item, idx) => (
         <View
           key={idx}
           style={[
@@ -210,25 +278,29 @@ export function SkeletonCard() {
               {'PlaceHolder Grading'}
             </SkeletonText>
           </View>
-          <View style={{ flexDirection: 'row' }}>
-            <SkeletonText
-              variant="default"
-              style={[styles.itemMeta, { color: Colors.$textNeutral }]}
-            >
-              x Qty:xx
+          <View style={{ alignItems: 'flex-end', gap: 4 }}>
+            <SkeletonText variant="default" style={styles.itemPrice}>
+              $~~.~~
             </SkeletonText>
-            <Text variant="default" style={[styles.itemMeta, { color: Colors.$textNeutral }]}>
-              {' · '}
-            </Text>
-            <SkeletonText
-              variant="default"
-              style={[styles.itemMeta, { color: Colors.$textNeutral }]}
-            >
-              $~~.~~/ea
+            <SkeletonText variant="info" style={{ color: Colors.$textNeutralLight }}>
+              Qty: ~
+            </SkeletonText>
+            <SkeletonText variant="small" style={{ color: Colors.$textNeutralLight }}>
+              Subtotal: $~~.~~
             </SkeletonText>
           </View>
         </View>
       ))}
+
+      <Separator orientation="horizontal" style={styles.separator} />
+      <View style={styles.totalRow}>
+        <SkeletonText variant="default" style={styles.totalLabel}>
+          Total
+        </SkeletonText>
+        <SkeletonText variant="default" style={styles.totalAmount}>
+          $~~~.~~
+        </SkeletonText>
+      </View>
     </View>
   )
 }
@@ -264,26 +336,13 @@ export const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 10,
   },
-  avatarText: {
-    fontSize: 13,
-    fontWeight: '700',
-  },
-  buyerName: {
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  offerMeta: {
-    fontSize: 12,
-  },
   separator: {
     height: 1,
     marginHorizontal: 0,
   },
   itemRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    // paddingHorizontal: 12,
     padding: 10,
     gap: 10,
     borderBottomWidth: 1,
@@ -292,12 +351,31 @@ export const styles = StyleSheet.create({
     borderBottomWidth: 0,
   },
   itemTitle: {
-    // flex: 1,
-    fontSize: 17,
-    marginRight: 8,
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  itemPrice: {
+    fontSize: 20,
+    fontWeight: '700',
   },
   itemMeta: {
     fontSize: 14,
+  },
+  totalRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  totalLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: Colors.$textNeutral,
+  },
+  totalAmount: {
+    fontSize: 22,
+    fontWeight: '700',
   },
   noteContainer: {
     paddingHorizontal: 12,
@@ -341,10 +419,6 @@ export const styles = StyleSheet.create({
   },
   cancelText: {
     fontSize: 13,
-  },
-  offerTitle: {
-    fontSize: 14,
-    fontWeight: '600',
   },
   offerDate: {
     fontSize: 12,

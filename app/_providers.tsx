@@ -15,7 +15,7 @@ import React, { useEffect, useRef } from 'react'
 import { Platform } from 'react-native'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { KeyboardProvider } from 'react-native-keyboard-controller'
-import { getSupabase } from '../lib/store/client'
+import { getSupabase, signalClientReady } from '../lib/store/client'
 const qc = new QueryClient({
   defaultOptions: {
     queries: {
@@ -59,6 +59,8 @@ export default function Providers({ children }: { children: React.ReactNode }) {
         data: { session },
         error,
       } = await getSupabase().auth.getSession()
+      // Unblock all queued PostgREST/RPC calls — auth lock is now released.
+      signalClientReady()
 
       if (error) setStatus('error')
       await updateStatus(session)
@@ -149,12 +151,7 @@ function SearchPrefetchProvider() {
         }
 
         const cachedEnabled = await getCachedPrefetchEnabled()
-        console.log(
-          '[SearchPrefetch] enabled — cached:',
-          cachedEnabled,
-          'db:',
-          data.prefetch_enabled
-        )
+
         if (!cachedEnabled && !data.prefetch_enabled) return
 
         const q =
@@ -169,7 +166,6 @@ function SearchPrefetchProvider() {
         })
 
         await prefetchSuggestions(qc, q)
-        console.log('[SearchPrefetch] done')
       } catch (err: any) {
         console.warn('[SearchPrefetch] error:', err?.message ?? err)
       }

@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react'
+import React, { useEffect, useState } from 'react'
 import {
   Modal,
   Platform,
@@ -239,6 +239,19 @@ function OnboardingOverlayContent() {
 
 export function OnboardingOverlay() {
   const active = useOnboardingStore((s) => s.active)
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    if (active) {
+      setMounted(true)
+    } else {
+      // Keep mounted briefly so the 200ms fade-out animation can finish
+      const t = setTimeout(() => setMounted(false), 250)
+      return () => clearTimeout(t)
+    }
+  }, [active])
+
+  if (!mounted) return null
 
   const content = <OnboardingOverlayContent />
 

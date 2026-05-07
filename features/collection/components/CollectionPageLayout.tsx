@@ -11,10 +11,11 @@ import { Tabs } from '@/components/ui/tabs'
 import { Text } from '@/components/ui/text/base-text'
 import { CollectionCardItemEntries } from '@/features/tcg-card-views/DetailCardView/footer/pages/add-to-collections/components'
 import { CardListView } from '@/features/tcg-card-views/ListCard'
+import { useRefresh } from '@/lib/hooks/useRefresh'
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs'
 import { X } from 'lucide-react-native'
 import React, { useCallback, useMemo, useRef } from 'react'
-import { View } from 'react-native'
+import { RefreshControl, View } from 'react-native'
 import { FlatList, GestureDetector } from 'react-native-gesture-handler'
 import Animated, {
   FadeInLeft,
@@ -127,13 +128,19 @@ const DefaultCollectionView = ({ direction }: { direction: 'forward' | 'backward
     onListLayout,
     onContentSizeChange,
     onHeaderLayout,
+    virtualOffset,
   } = useCollaspableHeader()
 
   const {
     data: collections,
     error,
     isLoading: isLoadingCollections,
+    refetch,
   } = useViewCollectionForUser(true)
+
+  const { refreshing, onRefresh } = useRefresh([refetch], () => {
+    virtualOffset.value = 0
+  })
 
   const listData = useMemo<CollectionRow[]>(() => {
     if (isLoadingCollections) return Array(7).fill({ kind: 'collection' })
@@ -208,6 +215,7 @@ const DefaultCollectionView = ({ direction }: { direction: 'forward' | 'backward
                 paddingLeft: 12,
                 paddingTop: 18,
               }}
+              refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
               ListEmptyComponent={EmptyColelctionList}
               keyExtractor={keyExtractor}
               renderItem={renderItem}
@@ -245,7 +253,9 @@ const DetailCollectionView = ({ direction }: { direction: 'forward' | 'backward'
     { pageSize: 20 },
     true
   )
-  const { isLoading: isLoadingItems } = collectionItemsQuery
+  const { isLoading: isLoadingItems, refetch: refetchCollectionItems } = collectionItemsQuery
+  const { refreshing, onRefresh: handleRefresh } = useRefresh([refetchCollectionItems])
+
   const collectionItems = useMemo(() => {
     return collectionItemsQuery.data?.pages.flat() ?? []
   }, [collectionItemsQuery.data])
@@ -276,7 +286,6 @@ const DetailCollectionView = ({ direction }: { direction: 'forward' | 'backward'
   }, [collectionItems, isLoadingItems, collection?.is_selling, allCollections])
 
   const {
-    tabsExpanded,
     headerAnimatedStyle,
     composedGestures,
     scrollViewRef,
@@ -308,51 +317,59 @@ const DetailCollectionView = ({ direction }: { direction: 'forward' | 'backward'
   )
 
   const renderCardItem = useCallback(
-    (data: CollectionItemQueryView & TCard, isLast: boolean) => (
-      <View style={{ position: 'relative', marginLeft: 12 }}>
-        <View
-          style={{
-            position: 'absolute',
-            left: 4,
-            top: THUMBNAIL_HEIGHT,
-            bottom: 0,
-            width: 3,
-            marginTop: 8,
-            marginBottom: 20,
-            backgroundColor: Colors.$outlineNeutral,
-            opacity: 0.7,
-            borderRadius: 999,
-          }}
-        />
-        {isLast && (
+    (data: CollectionItemQueryView & TCard, isLast: boolean) => {
+      // The collection_item_query JOIN may return null card fields when the card row
+      // isn't in the DB yet (fetched only via edge function). Fall back to ref_id so
+      // CardListView / CollectionCardItemEntries can resolve the card via useCardQuery.
+      const cardId = data.id ?? data.ref_id
+      const card = { ...data, id: cardId } as CollectionItemQueryView & TCard
+
+      return (
+        <View style={{ position: 'relative', marginLeft: 12 }}>
           <View
             style={{
               position: 'absolute',
+              left: 4,
+              top: THUMBNAIL_HEIGHT,
               bottom: 0,
-              left: 0,
-              right: 0,
-              height: 0,
+              width: 3,
+              marginTop: 8,
+              marginBottom: 20,
               backgroundColor: Colors.$outlineNeutral,
+              opacity: 0.7,
+              borderRadius: 999,
             }}
           />
-        )}
-        <CardListView
-          card={data}
-          renderAccessories={({ isLoading }) => (
-            <CollectionCardItemEntries
-              key={collection?.id}
-              isLoading={isLoading}
-              card={data}
-              //@ts-ignore
-              collection={collection!}
-              isShown
-              editable
+          {isLast && (
+            <View
+              style={{
+                position: 'absolute',
+                bottom: 0,
+                left: 0,
+                right: 0,
+                height: 0,
+                backgroundColor: Colors.$outlineNeutral,
+              }}
             />
           )}
-          isLoading={isLoadingItems}
-        />
-      </View>
-    ),
+          <CardListView
+            card={card}
+            renderAccessories={({ isLoading }) => (
+              <CollectionCardItemEntries
+                key={`${collection?.id}-${cardId}`}
+                isLoading={isLoading}
+                card={card}
+                //@ts-ignore
+                collection={collection!}
+                isShown
+                editable
+              />
+            )}
+            isLoading={isLoadingItems}
+          />
+        </View>
+      )
+    },
     [collection, isLoadingItems]
   )
 
@@ -399,6 +416,7 @@ const DetailCollectionView = ({ direction }: { direction: 'forward' | 'backward'
         style={{
           paddingVertical: 16,
         }}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
       >
         <Animated.View
           key={`header-${currentPage}`}

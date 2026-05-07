@@ -182,6 +182,7 @@ export const CollectionInfoCard = (props: { collectionItemId: string; cardId: st
               data: collectionItem,
               cart: {
                 price,
+                originalPrice: price,
                 quantity: selectedQuantity,
                 maxQuantity: collectionItem.quantity ?? 1,
               },

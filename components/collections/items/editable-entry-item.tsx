@@ -123,6 +123,7 @@ export const CollectionItemEntry = ({
       quantity: collectionItem?.quantity ?? 0,
       grading_company: gradeFormat?.slug ?? null,
       grade_condition_id: collectionItem?.grade_condition?.id ?? grade?.id ?? null,
+      item_kind: 'card' as const,
     }
   }, [collection?.id, card?.id, collectionItem, gradeData])
 
@@ -155,11 +156,10 @@ export const CollectionItemEntry = ({
       const merged = { ...draft, ...patch }
       if (isEqualToInitial(merged)) return // don’t re-save same data
       editableItem.mutate(
-        { item: merged },
+        { item: merged, card: card ?? undefined },
         {
           onSuccess: (res) => {
-            // you can optionally mark clean here; depends on how parent refetches
-            setDraft(res)
+            if (res) setDraft(res as EditCollectionArgsItem)
           },
           onError: (...e) => {
             console.error({ e })
@@ -169,23 +169,20 @@ export const CollectionItemEntry = ({
         }
       )
     },
-    [editableItem]
+    [editableItem, card]
   )
 
   const mutateDebounce = useCallback(debounce(mutateEntry, 1000), [mutateEntry])
 
   const deleteEntry = useCallback(
     (draft: EditCollectionArgsItem) => {
-      console.log('cancelling')
       mutateDebounce.cancel()
       editableItem.mutate(
         { delete: true, item: { ...draft, quantity: 0 } },
         {
           onSettled: (...a) => {
-            console.log('done')
             setHide(true)
             onDelete?.()
-            console.log(a)
           },
           onError: (...a) => console.log(a),
         }
@@ -204,10 +201,11 @@ export const CollectionItemEntry = ({
   }
 
   const price = useMemo(() => {
-    if (cardData && gradeData) {
-      return getGradedPrice({ card: cardData, graders: gradeData, gradeId: currentGrade?.id })
+    const cardForPrice = card ?? cardData
+    if (cardForPrice && gradeData) {
+      return getGradedPrice({ card: cardForPrice, graders: gradeData, gradeId: currentGrade?.id })
     } else return null
-  }, [collectionItem, gradeData, currentGrade])
+  }, [card, cardData, gradeData, currentGrade])
   const scheme = useEffectiveColorScheme() // 'light' | 'dark' | null
   //TODO: Implement modal overriwte/selling options
 
@@ -242,7 +240,10 @@ export const CollectionItemEntry = ({
               color: Colors.$textNeutral,
               fontSize: 12,
             }}
-            loading={isLoading}
+            numberOfLines={1}
+            // adjustsFontSizeToFit
+            // minimumFontScale={0.9}
+            loading={isLoading ?? false}
           >
             {
               // @ts-ignore
@@ -270,7 +271,7 @@ export const CollectionItemEntry = ({
                     color: Colors.$textNeutralLight,
                   }
             }
-            loading={isLoading}
+            loading={isLoading ?? false}
           >
             {price ? formatPrice(price) : '--.--'}
           </SkeletonText>
@@ -338,7 +339,7 @@ export const CollectionItemEntry = ({
 }
 
 export const PriceChangeModal = ({
-  cardData,
+  cardData: _cardData,
   data,
   onDismiss,
   visible,

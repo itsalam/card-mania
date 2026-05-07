@@ -2,6 +2,7 @@
 import { CardImageFields } from '@types'
 import {
   commitCacheFromQueryHash,
+  commitCacheFromUrl,
   commitCardImageFromCacheUpsert,
   createSupabaseServiceClient,
   ImageCacheRow,
@@ -24,10 +25,31 @@ Deno.serve(async (req) => {
     })
   }
 
-  const cacheCommits = await commitCacheFromQueryHash(query_hash, Number(SAMPLE_SIZE))
+  // Direct URL commit (stub card flow: source_url known, no query_hash)
+  const isUrlCommit = Boolean(url && !query_hash)
+  const cacheCommits = isUrlCommit
+    ? await Promise.allSettled([commitCacheFromUrl(url, supabase)])
+    : await commitCacheFromQueryHash(query_hash, Number(SAMPLE_SIZE))
 
   console.log('Committed images', cacheCommits)
-  if (card_fields.card_id && card_fields.kind) {
+
+  if (isUrlCommit && card_fields.card_id && card_fields.kind) {
+    // Update the existing stub row in place — avoids duplicate card_images rows
+    // (the stub has image_cache_id = null; a generic upsert would insert a second row)
+    const successful = cacheCommits.find((c) => c.status === 'fulfilled') as PromiseFulfilledResult<
+      ImageCacheRow | undefined
+    >
+    if (successful?.value) {
+      const ic = successful.value
+      const { error } = await supabase
+        .from('card_images')
+        .update({ image_cache_id: ic.id, storage_path: ic.storage_path, status: 'READY' })
+        .eq('card_id', card_fields.card_id)
+        .eq('kind', card_fields.kind)
+        .is('image_cache_id', null)
+      if (error) console.error('Error updating stub card_images row:', error)
+    }
+  } else if (card_fields.card_id && card_fields.kind) {
     console.log('Committing card image', card_fields)
     const cardImageResult = await commitCardImageFromCacheUpsert(
       card_fields,

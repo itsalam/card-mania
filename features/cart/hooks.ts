@@ -20,4 +20,7 @@ export const useCloseCart = () => {
 export const useAddToCart = () => useCartStore((s) => s.addItem)
 export const useRemoveFromCart = () => useCartStore((s) => s.removeItem)
 export const useUpdateCartQuantity = () => useCartStore((s) => s.updateQuantity)
+export const useUpdateCartPrice = () => useCartStore((s) => s.updateItemPrice)
+export const useTotalOverride = () => useCartStore((s) => s.totalOverride)
+export const useSetTotalOverride = () => useCartStore((s) => s.setTotalOverride)
 export const useClearCart = () => useCartStore((s) => s.clear)

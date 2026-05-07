@@ -53,12 +53,10 @@ export function prefetchSuggestions(queryClient: QueryClient, q = ''): Promise<v
   return queryClient.prefetchQuery({
     queryKey: ['price-charting-suggestions', q],
     queryFn: async () => {
-      const { data, error } = await invokeFx<typeof payload, TSearchRes>(
-        'price-charting',
-        payload,
-        { parseOut: SearchResponse, useQueryParams: true }
-      )
-      if (error) throw error
+      const { data } = await invokeFx<typeof payload, TSearchRes>('price-charting', payload, {
+        parseOut: SearchResponse,
+        useQueryParams: true,
+      })
       return data
     },
     staleTime: 60_000,
@@ -142,12 +140,10 @@ export function useSuggestionsFixed() {
     enabled: true,
     queryFn: async () => {
       const payload = SearchRequest.parse({ q, limit: 8, commit_images: 'true' })
-      const { data, error } = await invokeFx<typeof payload, TSearchRes>(
-        'price-charting',
-        payload,
-        { parseOut: SearchResponse, useQueryParams: true }
-      )
-      if (error) throw error
+      const { data } = await invokeFx<typeof payload, TSearchRes>('price-charting', payload, {
+        parseOut: SearchResponse,
+        useQueryParams: true,
+      })
       return data
     },
     staleTime: 60_000,

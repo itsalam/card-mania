@@ -1,4 +1,4 @@
-export type NotificationCategory = 'offer' | 'social' | 'price' | 'system'
+export type NotificationCategory = 'offer' | 'transaction' | 'social' | 'price' | 'system'
 export type NotificationPriority = 'low' | 'normal' | 'high' | 'urgent'
 
 export type AppNotification = {

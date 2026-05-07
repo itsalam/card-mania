@@ -57,7 +57,7 @@ export function useCardQuery(
     select: (res) => (res.status === 206 ? undefined : res.data),
     // show prior data while refetching
     placeholderData: keepPreviousData,
-    retry: (failureCount, err) => true,
+    retry: 2,
     ...(opts.queryOptions ?? {}),
   })
 

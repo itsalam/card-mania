@@ -10,11 +10,12 @@ import { Spinner } from '@/components/ui/spinner'
 import { TCard } from '@/constants/types'
 import { CollectionItemRow } from '@/lib/store/functions/types'
 import { Plus, TriangleAlert, Undo2 } from 'lucide-react-native'
-import React, { useCallback, useEffect, useMemo, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { StyleProp, View, ViewStyle } from 'react-native'
 import { Colors } from 'react-native-ui-lib'
 
 import { useGradingConditions } from '@/client/card/grading'
+import { getGradedPrice } from '@/components/tcg-card/helpers'
 import { Button } from '@/components/ui/button'
 import { getContentInsets, Modal } from '@/components/ui/modal'
 import {
@@ -31,7 +32,7 @@ import { formatPrice } from '@/components/utils'
 import { sortCollectionItem } from '@/features/tcg-card-views/helpers'
 import { qk } from '@/lib/store/functions/helpers'
 import { InfiniteData, useQueryClient } from '@tanstack/react-query'
-import Animated, { LinearTransition } from 'react-native-reanimated'
+import Animated, { FadeIn, LinearTransition } from 'react-native-reanimated'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { v4 as uuidv4 } from 'uuid'
 // import { Label } from '@react-navigation/elements'
@@ -65,13 +66,28 @@ export const CollectionCardItemEntries = ({
     setShowModal(false)
   }, [refetch])
 
+  const knownEntryKeysRef = useRef(new Set<string>())
+  const isMountedRef = useRef(false)
+
+  const entryStableKey = (e: Partial<CollectionItemRow>) => {
+    const variants = ((e as any).variants ?? []).join(',')
+    return (e as any).grade_condition_id != null
+      ? `${(e as any).grade_condition_id}-${variants}`
+      : `ungraded-${variants}`
+  }
+
   const sortedEntries = useMemo(() => {
     const hasItems = loadedEntries.some((e) => e.quantity >= 1)
-    const baseEntries = hasItems ? loadedEntries : [{ quantity: 0 }, ...loadedEntries]
-
-    const sortedEntries = [...baseEntries].sort(sortCollectionItem)
-    return sortedEntries
+    const hasUngradedEntry = loadedEntries.some((e) => (e as any).grade_condition_id == null)
+    const needsPlaceholder = !hasItems && !hasUngradedEntry
+    const baseEntries = needsPlaceholder ? [{ quantity: 0 }, ...loadedEntries] : loadedEntries
+    return [...baseEntries].sort(sortCollectionItem)
   }, [loadedEntries])
+
+  useEffect(() => {
+    isMountedRef.current = true
+    sortedEntries.forEach((e) => knownEntryKeysRef.current.add(entryStableKey(e as any)))
+  }, [sortedEntries])
 
   return (
     <View
@@ -89,46 +105,51 @@ export const CollectionCardItemEntries = ({
         <Spinner />
       ) : (
         <View style={{ width: '100%' }}>
-          {sortedEntries.map((entry, index) => (
-            <Animated.View
-              key={entry.id ?? entry.grade_condition_id ?? `${index}-new`}
-              layout={LinearTransition}
-            >
-              <CollectionItemEntry
-                card={card}
-                collectionItem={entry}
-                collection={collection}
-                editable={editable}
-                isLoading={isLoadingOuter}
-                onPriceModalOpen={(data) => setPriceChangeEntry(data)}
-                onDelete={() => {
-                  qc.invalidateQueries({
-                    queryKey: [
-                      ...qk.collectionItems(collection?.id),
-                      ...(card?.id ? ['cardId', card?.id] : []),
-                    ],
-                  })
-                  if (card?.id) {
-                    qc.invalidateQueries({ queryKey: qk.collectionForCard(card.id) })
-                  }
-                  if (loadedEntries.length <= 1 && card?.id && collection?.id) {
-                    qc.setQueriesData<InfiniteData<{ ref_id: string }[]>>(
-                      { queryKey: [...qk.collectionItems(collection.id), 'infinite'] },
-                      (prev) => {
-                        if (!prev) return prev
-                        return {
-                          ...prev,
-                          pages: prev.pages.map((page) =>
-                            page.filter((item) => item.ref_id !== card.id)
-                          ),
+          {sortedEntries.map((entry) => {
+            const stableKey = entryStableKey(entry as any)
+            const isNew = isMountedRef.current && !knownEntryKeysRef.current.has(stableKey)
+            return (
+              <Animated.View
+                key={stableKey}
+                layout={LinearTransition}
+                entering={isNew ? FadeIn.duration(150) : undefined}
+              >
+                <CollectionItemEntry
+                  card={card}
+                  collectionItem={entry}
+                  collection={collection}
+                  editable={editable}
+                  isLoading={isLoadingOuter}
+                  onPriceModalOpen={(data) => setPriceChangeEntry(data)}
+                  onDelete={() => {
+                    qc.invalidateQueries({
+                      queryKey: [
+                        ...qk.collectionItems(collection?.id),
+                        ...(card?.id ? ['cardId', card?.id] : []),
+                      ],
+                    })
+                    if (card?.id) {
+                      qc.invalidateQueries({ queryKey: qk.collectionForCard(card.id) })
+                    }
+                    if (loadedEntries.length <= 1 && card?.id && collection?.id) {
+                      qc.setQueriesData<InfiniteData<{ ref_id: string }[]>>(
+                        { queryKey: [...qk.collectionItems(collection.id), 'infinite'] },
+                        (prev) => {
+                          if (!prev?.pages) return prev
+                          return {
+                            ...prev,
+                            pages: prev.pages.map((page) =>
+                              page.filter((item) => item.ref_id !== card.id)
+                            ),
+                          }
                         }
-                      }
-                    )
-                  }
-                }}
-              />
-            </Animated.View>
-          ))}
+                      )
+                    }
+                  }}
+                />
+              </Animated.View>
+            )
+          })}
         </View>
       )}
 
@@ -188,7 +209,7 @@ const AddVariantModal = ({
   onDismiss: () => void
 }) => {
   const qc = useQueryClient()
-  const { data: gradeData, error } = useGradingConditions()
+  const { data: gradeData } = useGradingConditions()
 
   const insets = useSafeAreaInsets()
   const contentInsets = getContentInsets(insets)
@@ -320,9 +341,6 @@ const AddVariantModal = ({
           </Select>
 
           <Select
-            onOpenChange={(open) => {
-              if (!draft.grading_company) return
-            }}
             style={{
               flex: 1,
             }}
@@ -356,10 +374,14 @@ const AddVariantModal = ({
                     alignContent: 'flex-end',
                   }}
                 >
-                  {company && draft.grade_condition && (
+                  {company && draft.grade_condition_id && (
                     <Text style={{ textAlign: 'right' }}>
                       {formatPrice(
-                        item.grades_prices[`${company.slug}${draft.grade_condition?.grade_value}`]
+                        getGradedPrice({
+                          card: item,
+                          graders: gradeData ?? [],
+                          gradeId: draft.grade_condition_id,
+                        }) ?? undefined
                       )}
                     </Text>
                   )}
@@ -384,7 +406,13 @@ const AddVariantModal = ({
                         }}
                       >
                         <Text style={{ textAlign: 'right' }}>
-                          {formatPrice(item.grades_prices[`${company.slug}${grade.grade_value}`])}
+                          {formatPrice(
+                            getGradedPrice({
+                              card: item,
+                              graders: gradeData ?? [],
+                              gradeId: grade.id,
+                            }) ?? undefined
+                          )}
                         </Text>
                       </View>
                     </SelectItem>

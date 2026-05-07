@@ -214,6 +214,7 @@ export function useCollaspableHeader(opts?: {
     blockHeaderMeasurement,
     measuredHeaderHeight,
     expandProgress,
+    virtualOffset,
   }
 }
 

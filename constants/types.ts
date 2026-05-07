@@ -46,7 +46,7 @@ export const Card = z.object({
   back_image_id: z.string().optional().nullable(),
   extra_image_ids: z.array(z.string()).optional().nullable(),
 
-  grades_prices: z.record(z.string(), z.number()).optional().default({}),
+  grades_prices: z.preprocess((v) => v ?? {}, z.record(z.string(), z.number())),
   release_date: z.string().optional().nullable(),
   genre: z.string().optional(),
   last_updated: z.string().optional(),

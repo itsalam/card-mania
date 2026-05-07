@@ -1,3 +1,4 @@
+import { ShippingAddress } from '@/client/transactions/types'
 import { GradientBackground } from '@/components/Background'
 import { Button } from '@/components/ui/button'
 import { TextField } from '@/components/ui/input/base-input'
@@ -11,7 +12,7 @@ import { useRef, useState } from 'react'
 import { TouchableOpacity, View } from 'react-native'
 import { Colors } from 'react-native-ui-lib'
 
-const TOTAL_STEPS = 4
+const TOTAL_STEPS = 5
 const isDev = process.env.NODE_ENV !== 'production'
 const PAGE_TRANSITION: MotiTransitionProp = {
   translateX: {
@@ -106,6 +107,14 @@ export function ProfileSetupWizard() {
   const [bio, setBio] = useState(profile?.bio ?? '')
   const [isHobbyist, setIsHobbyist] = useState(profile?.is_hobbyiest ?? false)
   const [isTrader, setIsTrader] = useState(profile?.is_seller ?? false)
+  const emptyAddr: ShippingAddress = {
+    street: '',
+    city: '',
+    state: '',
+    postal_code: '',
+    country: '',
+  }
+  const [address, setAddress] = useState<ShippingAddress>(emptyAddr)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -137,12 +146,14 @@ export function ProfileSetupWizard() {
   const handleFinish = async () => {
     setSaving(true)
     try {
+      const addrToSave = address.street.trim() ? (address as any) : null
       await updateProfile({
         display_name: displayName.trim(),
         username: username.trim().toLowerCase(),
         bio: bio.trim() || null,
         is_hobbyiest: isHobbyist,
         is_seller: isTrader,
+        shipping_address: addrToSave,
       })
       await setProfileSetupComplete(true)
       startTour()
@@ -289,6 +300,81 @@ export function ProfileSetupWizard() {
                   <Text className="text-white opacity-70">Location</Text>
                 </View>
               </LocationPicker>
+            </View>
+          </>
+        )}
+
+        {/* ── Step 5: Shipping address ── */}
+        {step === 4 && (
+          <>
+            <Text className="text-white text-2xl font-bold">Shipping address</Text>
+            <Text className="text-white opacity-70 leading-6">
+              {
+                "We\'ll pre-fill this when you confirm a trade. You can update or change it at any time before shipping."
+              }
+            </Text>
+
+            <TextField
+              placeholder="Street address"
+              value={address.street}
+              onChangeText={(v) => setAddress((a) => ({ ...a, street: v }))}
+              autoCapitalize="words"
+              floatingPlaceholder
+              containerStyle={fieldStyle}
+            />
+            <TextField
+              placeholder="Apt / Suite (optional)"
+              value={address.apt ?? ''}
+              onChangeText={(v) => setAddress((a) => ({ ...a, apt: v }))}
+              autoCapitalize="words"
+              floatingPlaceholder
+              containerStyle={fieldStyle}
+            />
+            <View style={{ flexDirection: 'row', gap: 10 }}>
+              <View style={{ flex: 2 }}>
+                <TextField
+                  placeholder="City"
+                  value={address.city}
+                  onChangeText={(v) => setAddress((a) => ({ ...a, city: v }))}
+                  autoCapitalize="words"
+                  floatingPlaceholder
+                  containerStyle={fieldStyle}
+                />
+              </View>
+              <View style={{ flex: 1 }}>
+                <TextField
+                  placeholder="State"
+                  value={address.state}
+                  onChangeText={(v) => setAddress((a) => ({ ...a, state: v }))}
+                  autoCapitalize="characters"
+                  autoCorrect={false}
+                  floatingPlaceholder
+                  containerStyle={fieldStyle}
+                />
+              </View>
+            </View>
+            <View style={{ flexDirection: 'row', gap: 10 }}>
+              <View style={{ flex: 1 }}>
+                <TextField
+                  placeholder="ZIP / Postal"
+                  value={address.postal_code}
+                  onChangeText={(v) => setAddress((a) => ({ ...a, postal_code: v }))}
+                  autoCorrect={false}
+                  keyboardType="numbers-and-punctuation"
+                  floatingPlaceholder
+                  containerStyle={fieldStyle}
+                />
+              </View>
+              <View style={{ flex: 2 }}>
+                <TextField
+                  placeholder="Country"
+                  value={address.country}
+                  onChangeText={(v) => setAddress((a) => ({ ...a, country: v }))}
+                  autoCapitalize="words"
+                  floatingPlaceholder
+                  containerStyle={fieldStyle}
+                />
+              </View>
             </View>
           </>
         )}

@@ -13,9 +13,10 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { SkeletonText } from '@/components/ui/text'
 import { Text } from '@/components/ui/text/base-text'
 import { useRouter } from 'expo-router'
-import { Bell, Inbox, TrendingDown, Users, X } from 'lucide-react-native'
+import { ArrowLeftRight, Bell, Inbox, TrendingDown, Users, X } from 'lucide-react-native'
+import { useRefresh } from '@/lib/hooks/useRefresh'
 import React, { useState } from 'react'
-import { FlatList, Pressable, StyleSheet, View } from 'react-native'
+import { FlatList, Pressable, RefreshControl, StyleSheet, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Colors } from 'react-native-ui-lib'
 
@@ -51,6 +52,7 @@ function dateSeparatorLabel(dateStr: string): string {
 
 const CATEGORY_COLORS: Record<NotificationCategory, string> = {
   offer: Colors.$backgroundPrimaryHeavy,
+  transaction: Colors.$backgroundSuccessHeavy,
   social: Colors.$backgroundSuccessHeavy,
   price: Colors.$backgroundWarningHeavy,
   system: Colors.$backgroundNeutralMedium,
@@ -60,6 +62,7 @@ function CategoryIcon({ category }: { category: NotificationCategory }) {
   const bg = CATEGORY_COLORS[category]
   const IconComponent = {
     offer: Inbox,
+    transaction: ArrowLeftRight,
     social: Users,
     price: TrendingDown,
     system: Bell,
@@ -200,7 +203,8 @@ export function NotificationsPage() {
   const [activeCategories, setActiveCategories] = useState<Set<NotificationCategory>>(new Set())
 
   const [readAll, setReadAll] = useState(false)
-  const { data: rawNotifications, isLoading } = useNotifications({ unread: !readAll })
+  const { data: rawNotifications, isLoading, refetch } = useNotifications({ unread: !readAll })
+  const { refreshing, onRefresh } = useRefresh([refetch])
 
   const notifications = (rawNotifications ?? []).filter(
     (n) => activeCategories.size === 0 || activeCategories.has(n.category)
@@ -310,6 +314,7 @@ export function NotificationsPage() {
           keyExtractor={(item) => item.key}
           renderItem={renderItem}
           contentContainerStyle={styles.listContent}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
           ListEmptyComponent={
             <View style={styles.emptyState}>
               <Bell size={40} color={Colors.$textNeutralLight} />

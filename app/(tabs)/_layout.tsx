@@ -6,10 +6,21 @@ import { useEffectiveColorScheme } from '@/features/settings/hooks/effective-col
 import { AuthGate } from '@/features/splash'
 import { BottomTabBarProps } from '@react-navigation/bottom-tabs'
 import { useTheme } from '@react-navigation/native'
+import { Colors } from 'react-native-ui-lib'
 import { PortalHost } from '@rn-primitives/portal'
 import * as Haptics from 'expo-haptics'
 import { Tabs } from 'expo-router'
-import { Bell, Compass, Home, Inbox, Layers, Scan, ShoppingCart, User } from 'lucide-react-native'
+import {
+  ArrowLeftRight,
+  Bell,
+  Compass,
+  Home,
+  Inbox,
+  Layers,
+  Scan,
+  ShoppingCart,
+  User,
+} from 'lucide-react-native'
 import React, { useEffect } from 'react'
 import { Platform, Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native'
 import { Gesture, GestureDetector } from 'react-native-gesture-handler'
@@ -25,18 +36,18 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 const CURSOR_WIDTH = '80%'
 const TAB_BAR_HEIGHT = 58
 const TAB_BAR_PADDING_TOP = 8
-const FLOAT_SIZE = 56
+const PILL_HEIGHT = 44
+const PILL_WIDTH = 148
 const FLOAT_MARGIN = 16
 
 function FloatingCartButton() {
   const count = useCartCount()
   const openCart = useOpenCart()
-  const { colors } = useTheme()
   const { width: screenW, height: screenH } = useWindowDimensions()
   const insets = useSafeAreaInsets()
 
-  const defaultX = screenW - FLOAT_SIZE - FLOAT_MARGIN
-  const defaultY = screenH - TAB_BAR_HEIGHT - insets.bottom - FLOAT_SIZE - FLOAT_MARGIN * 2
+  const defaultX = screenW - PILL_WIDTH - FLOAT_MARGIN
+  const defaultY = screenH - TAB_BAR_HEIGHT - insets.bottom - PILL_HEIGHT - FLOAT_MARGIN * 2
 
   const translateX = useSharedValue(defaultX)
   const translateY = useSharedValue(defaultY)
@@ -44,7 +55,7 @@ function FloatingCartButton() {
 
   const panGesture = Gesture.Pan()
     .onStart(() => {
-      scale.value = withSpring(1.08, { damping: 10 })
+      scale.value = withSpring(1.05, { damping: 10 })
     })
     .onChange((e) => {
       translateX.value += e.changeX
@@ -52,9 +63,9 @@ function FloatingCartButton() {
     })
     .onEnd(() => {
       scale.value = withSpring(1, { damping: 12 })
-      const snapRight = translateX.value + FLOAT_SIZE / 2 > screenW / 2
+      const snapRight = translateX.value + PILL_WIDTH / 2 > screenW / 2
       translateX.value = withSpring(
-        snapRight ? screenW - FLOAT_SIZE - FLOAT_MARGIN : FLOAT_MARGIN,
+        snapRight ? screenW - PILL_WIDTH - FLOAT_MARGIN : FLOAT_MARGIN,
         { damping: 20, stiffness: 200 }
       )
       translateY.value = withSpring(
@@ -77,7 +88,7 @@ function FloatingCartButton() {
     <Animated.View
       entering={FadeIn.springify().damping(14)}
       exiting={FadeOut.duration(150)}
-      style={[floatStyles.button, { backgroundColor: colors.primary }, animStyle]}
+      style={[floatStyles.button, animStyle]}
     >
       <GestureDetector gesture={panGesture}>
         <Pressable
@@ -91,9 +102,10 @@ function FloatingCartButton() {
           accessibilityLabel="Open cart"
           style={floatStyles.buttonInner}
         >
-          <ShoppingCart size={22} color="#fff" />
+          <ShoppingCart size={18} color={Colors.$iconDefault} />
+          <Text style={floatStyles.label}>View Cart</Text>
           <View style={floatStyles.floatBadge}>
-            <Text style={floatStyles.floatBadgeText}>{count > 99 ? '99+' : count}</Text>
+            <Text style={floatStyles.floatBadgeText}>{count > 9 ? '9+' : count}</Text>
           </View>
         </Pressable>
       </GestureDetector>
@@ -257,38 +269,41 @@ const floatStyles = StyleSheet.create({
     position: 'absolute',
     top: 0,
     left: 0,
-    width: FLOAT_SIZE,
-    height: FLOAT_SIZE,
-    borderRadius: FLOAT_SIZE / 2,
+    borderRadius: 999,
+    backgroundColor: Colors.$backgroundElevated,
+    borderWidth: 1,
+    borderColor: Colors.$outlineGeneral,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
-    elevation: 8,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    elevation: 4,
     zIndex: 100,
   },
   buttonInner: {
-    width: FLOAT_SIZE,
-    height: FLOAT_SIZE,
-    borderRadius: FLOAT_SIZE / 2,
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 12,
+    paddingHorizontal: 18,
+  },
+  label: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: Colors.$textDefault,
   },
   floatBadge: {
-    position: 'absolute',
-    top: 6,
-    right: 6,
-    minWidth: 16,
-    height: 16,
-    borderRadius: 8,
-    backgroundColor: '#ef4444',
+    backgroundColor: Colors.$outlinePrimary,
+    borderRadius: 99,
+    minWidth: 20,
+    height: 20,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 3,
+    paddingHorizontal: 4,
   },
   floatBadgeText: {
     color: '#fff',
-    fontSize: 9,
+    fontSize: 10,
     fontWeight: '700',
     lineHeight: 12,
   },
@@ -344,10 +359,18 @@ export default function TabLayout() {
           }}
         />
         <Tabs.Screen
+          name="transactions"
+          options={{
+            title: 'Trades',
+            tabBarIcon: ({ color }) => <ArrowLeftRight size={24} color={color} />,
+          }}
+        />
+        <Tabs.Screen
           name="notifications"
           options={{
             title: 'Notifications',
             tabBarIcon: ({ color }) => <NotificationTabIcon color={color} />,
+            tabBarItemStyle: { display: 'none' },
           }}
         />
         <Tabs.Screen

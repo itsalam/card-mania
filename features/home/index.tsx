@@ -1,23 +1,57 @@
 import Logo from '@/assets/images/logo.svg'
+import { useUnreadCount } from '@/client/notifications'
 import { Tabs, TabsContent, TabsLabel, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Text } from '@/components/ui/text/base-text'
 import { MainSearchBar } from '@/features/mainSearchbar'
 import { OnboardingTarget } from '@/features/onboarding'
+import { useRefresh } from '@/lib/hooks/useRefresh'
 import { useUserStore } from '@/lib/store/useUserStore'
+import { useQueryClient } from '@tanstack/react-query'
 import { useRouter } from 'expo-router'
-import { Compass, History, LucideIcon, Newspaper, SettingsIcon, Sheet } from 'lucide-react-native'
+import {
+  Bell,
+  Compass,
+  History,
+  LucideIcon,
+  Newspaper,
+  SettingsIcon,
+  Sheet,
+} from 'lucide-react-native'
 import React, { useCallback, useState } from 'react'
-import { ScrollView, TouchableOpacity, View } from 'react-native'
+import { RefreshControl, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native'
 import { GestureDetector } from 'react-native-gesture-handler'
 import Animated from 'react-native-reanimated'
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { BorderRadiuses, Colors } from 'react-native-ui-lib'
 import CollectionBreakdown from '../collection/components/CollectionBreakdown'
+
+import * as Sentry from '@sentry/react-native'
 import { useCollaspableHeader } from '../collection/ui'
 import { Graphs } from './Breakdowns'
 import { ExplorePage } from './ExplorePage'
 import { FeedPage } from './FeedPage'
 import { TabValue, tabValues, useHomePageStore } from './provider'
+
+const notifBadgeStyles = StyleSheet.create({
+  dot: {
+    position: 'absolute',
+    top: -4,
+    right: -6,
+    minWidth: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: '#ef4444',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 3,
+  },
+  dotText: {
+    color: '#fff',
+    fontSize: 10,
+    fontWeight: '700',
+    lineHeight: 12,
+  },
+})
 
 const tabIcons: Record<TabValue, LucideIcon> = {
   feed: Newspaper,
@@ -38,6 +72,7 @@ export default function HomeScreen() {
   const insets = useSafeAreaInsets()
   const router = useRouter()
   const { profile, user } = useUserStore()
+  const { data: unreadCount = 0 } = useUnreadCount()
 
   // Resolve the best available display name for the greeting
   const displayName =
@@ -54,6 +89,7 @@ export default function HomeScreen() {
       prev.includes(type) ? prev.filter((t) => t !== type) : [...prev, type]
     )
   }, [])
+  const qc = useQueryClient()
   const {
     tabsExpanded,
     headerAnimatedStyle,
@@ -62,21 +98,51 @@ export default function HomeScreen() {
     onListLayout,
     onContentSizeChange,
     onHeaderLayout,
+    virtualOffset,
   } = useCollaspableHeader({ disable: false, defaultHeight: GRAPH_SECTION_HEIGHT })
+
+  const { refreshing, onRefresh } = useRefresh(
+    [() => qc.refetchQueries({ type: 'active' })],
+    () => {
+      virtualOffset.value = 0
+    }
+  )
 
   return (
     <SafeAreaView className="flex-1 w-full h-full overflow-visible" style={{ paddingTop: 8 }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, gap: 12 }}>
         <Logo width={48} height={48} />
         <Text variant={'large'}>Welcome back, {displayName}</Text>
-        <OnboardingTarget id="settings-icon" style={{ marginLeft: 'auto' }}>
+        <View style={{ marginLeft: 'auto', flexDirection: 'row', alignItems: 'center', gap: 4 }}>
           <TouchableOpacity
-            onPress={() => router.push('/(tabs)/profile/settings')}
-            accessibilityLabel="Open settings"
+            onPress={() => {
+              console.log(Sentry.captureException(new Error('First error')))
+            }}
+            // onPress={() => router.push('/(tabs)/notifications')}
+            accessibilityLabel="Open notifications"
+            style={{ padding: 4 }}
           >
-            <SettingsIcon size={32} color={Colors.$iconDefault} />
+            <View>
+              <Bell size={26} color={Colors.$iconDefault} />
+              {unreadCount > 0 && (
+                <View style={notifBadgeStyles.dot}>
+                  <Text style={notifBadgeStyles.dotText}>
+                    {unreadCount > 99 ? '99+' : unreadCount}
+                  </Text>
+                </View>
+              )}
+            </View>
           </TouchableOpacity>
-        </OnboardingTarget>
+          <OnboardingTarget id="settings-icon">
+            <TouchableOpacity
+              onPress={() => router.push('/(tabs)/profile/settings')}
+              accessibilityLabel="Open settings"
+              style={{ padding: 4 }}
+            >
+              <SettingsIcon size={26} color={Colors.$iconDefault} />
+            </TouchableOpacity>
+          </OnboardingTarget>
+        </View>
       </View>
       <OnboardingTarget id="search-bar">
         <MainSearchBar />
@@ -166,6 +232,7 @@ export default function HomeScreen() {
               ref={scrollViewRef}
               onLayout={onListLayout}
               onContentSizeChange={onContentSizeChange}
+              refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
             >
               {tabValues.map((tab) => (
                 <TabsContent key={tab} value={tab} className="flex-1">

@@ -32,18 +32,22 @@ export const tabsRecords: Record<TabType, TabData> = {
 export const defaultTab: TabType[] = ['collections', 'posts']
 
 type ProfilePageStore = {
-  user?: UserProfile
+  user?: Partial<UserProfile>
   currentTab: TabType
   setCurrentTab: (page: TabType) => void
   setTabs: (tabs: TabType[]) => void
   tabs: TabType[]
 }
 
-export function makeTabs(_opts: { isHobbyist?: boolean; isTrader?: boolean }): TabType[] {
+export function makeTabs(opts: { isHobbyist?: boolean; isTrader?: boolean }): TabType[] {
+  if (opts.isTrader) return ['storefront', 'collections', 'posts']
   return ['collections', 'posts']
 }
 
-export function createUserProfilePageStore(initial: { tabs: TabType[]; user?: UserProfile }) {
+export function createUserProfilePageStore(initial: {
+  tabs: TabType[]
+  user?: Partial<UserProfile>
+}) {
   return createStore<ProfilePageStore>((set) => ({
     ...initial,
     currentTab: initial.tabs[0] ?? 'collections',
@@ -72,7 +76,6 @@ export function UserProfilePageStoreProvider({
     isTrader: user?.is_seller,
   })
 
-  console.log({ user, userId, error })
   // create store ONCE
   const storeRef = useRef<StoreApi<ProfilePageStore> | null>(null)
   if (!storeRef.current) {
@@ -82,18 +85,14 @@ export function UserProfilePageStoreProvider({
   // update tabs when profile loads/changes
   useEffect(() => {
     storeRef.current!.setState((s) => ({
-      ...s,
       tabs,
-      currentPage: tabs.includes(s.currentTab) ? s.currentTab : (tabs[0] ?? 'collections'),
+      currentTab: tabs.includes(s.currentTab) ? s.currentTab : (tabs[0] ?? 'collections'),
     }))
-  }, [tabs.join('|')]) // or use a stable hash
+  }, [tabs.join('|')])
 
   useEffect(() => {
-    storeRef.current!.setState((s) => ({
-      ...s,
-      user,
-    }))
-  }, [user]) // or use a stable hash
+    storeRef.current!.setState({ user })
+  }, [user])
 
   return <Ctx.Provider value={storeRef.current}>{children}</Ctx.Provider>
 }

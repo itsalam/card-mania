@@ -42,6 +42,7 @@ const VariantContext = createContext<Parameters<typeof avatarStyle>[0] | null>(n
 function Avatar({
   className,
   size,
+  style,
   ...props
 }: AvatarPrimitive.RootProps &
   React.RefAttributes<AvatarPrimitive.RootRef> &
@@ -54,6 +55,12 @@ function Avatar({
           avatarStyle({ size }),
           className
         )}
+        style={[
+          style,
+          {
+            backgroundColor: Colors.$backgroundElevated,
+          },
+        ]}
         {...props}
       />
     </VariantContext>
@@ -74,7 +81,7 @@ function AvatarFallback({
   return (
     <AvatarPrimitive.Fallback
       style={{
-        backgroundColor: Colors.$backgroundPrimaryMedium,
+        backgroundColor: Colors.$backgroundPrimaryHeav,
       }}
       className={cn('flex size-full flex-row items-center justify-center rounded-full', className)}
       {...props}

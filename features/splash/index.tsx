@@ -1,4 +1,4 @@
-import Logo from '@/assets/images/splash-logo.svg'
+import Logo from '@/assets/images/logo.svg'
 import { GradientBackground } from '@/components/Background'
 import { Button as AppButton } from '@/components/ui/button'
 import { TextField } from '@/components/ui/input/base-input'
@@ -12,13 +12,13 @@ import { AtSign, Eye, EyeOff, Lock, User } from 'lucide-react-native'
 import { MotiView } from 'moti'
 import { ComponentProps, useState } from 'react'
 import { TouchableOpacity, View } from 'react-native'
+import { KeyboardAvoidingView } from 'react-native-keyboard-controller'
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
   withSequence,
   withTiming,
 } from 'react-native-reanimated'
-import { KeyboardAvoidingView } from 'react-native-keyboard-controller'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import Svg, { G, Path } from 'react-native-svg'
 import { Colors } from 'react-native-ui-lib'
