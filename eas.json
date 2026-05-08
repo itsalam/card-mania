@@ -15,7 +15,9 @@
       },
       "ios": {
         "buildConfiguration": "Release"
-      }
+      },
+
+      "autoIncrement": true
     },
     "production": {
       "autoIncrement": true
