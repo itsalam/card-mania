@@ -65,8 +65,8 @@ const config = {
         '@sentry/react-native/expo',
         {
           url: 'https://sentry.io/',
-          project: 'react-native',
-          organization: 'vincentlamdev',
+          project: 'card-mania',
+          organization: 'vincent-lam-i6',
         },
       ],
     ],
@@ -78,6 +78,7 @@ const config = {
       eas: {
         projectId: '7cb44e39-440b-46be-b799-ba4b345ed43c',
       },
+      sentryDSN: process.env.EXPO_PUBLIC_SENTRY_DSN,
       supabaseUrl: process.env.EXPO_PUBLIC_SUPABASE_URL,
       supabaseKey: process.env.EXPO_PUBLIC_SUPABASE_KEY,
     },

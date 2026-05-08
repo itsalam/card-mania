@@ -25,7 +25,6 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { BorderRadiuses, Colors } from 'react-native-ui-lib'
 import CollectionBreakdown from '../collection/components/CollectionBreakdown'
 
-import * as Sentry from '@sentry/react-native'
 import { useCollaspableHeader } from '../collection/ui'
 import { Graphs } from './Breakdowns'
 import { ExplorePage } from './ExplorePage'
@@ -115,10 +114,7 @@ export default function HomeScreen() {
         <Text variant={'large'}>Welcome back, {displayName}</Text>
         <View style={{ marginLeft: 'auto', flexDirection: 'row', alignItems: 'center', gap: 4 }}>
           <TouchableOpacity
-            onPress={() => {
-              console.log(Sentry.captureException(new Error('First error')))
-            }}
-            // onPress={() => router.push('/(tabs)/notifications')}
+            onPress={() => router.push('/(tabs)/notifications')}
             accessibilityLabel="Open notifications"
             style={{ padding: 4 }}
           >
