@@ -11,7 +11,7 @@ const config = {
     slug: 'card-mania',
     version: '1.0.0',
     orientation: 'portrait',
-    icon: './assets/images/icon.png',
+    icon: './assets/images/CM_LOGO.png',
     scheme: 'cardmania',
     userInterfaceStyle: 'automatic',
     newArchEnabled: true,

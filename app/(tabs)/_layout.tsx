@@ -6,7 +6,6 @@ import { useEffectiveColorScheme } from '@/features/settings/hooks/effective-col
 import { AuthGate } from '@/features/splash'
 import { BottomTabBarProps } from '@react-navigation/bottom-tabs'
 import { useTheme } from '@react-navigation/native'
-import { Colors } from 'react-native-ui-lib'
 import { PortalHost } from '@rn-primitives/portal'
 import * as Haptics from 'expo-haptics'
 import { Tabs } from 'expo-router'
@@ -32,6 +31,7 @@ import Animated, {
   withSpring,
 } from 'react-native-reanimated'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { Colors } from 'react-native-ui-lib'
 
 const CURSOR_WIDTH = '80%'
 const TAB_BAR_HEIGHT = 58
@@ -88,7 +88,14 @@ function FloatingCartButton() {
     <Animated.View
       entering={FadeIn.springify().damping(14)}
       exiting={FadeOut.duration(150)}
-      style={[floatStyles.button, animStyle]}
+      style={[
+        floatStyles.button,
+        animStyle,
+        {
+          borderColor: Colors.$outlineGeneral,
+          backgroundColor: Colors.$backgroundElevated,
+        },
+      ]}
     >
       <GestureDetector gesture={panGesture}>
         <Pressable
@@ -103,8 +110,24 @@ function FloatingCartButton() {
           style={floatStyles.buttonInner}
         >
           <ShoppingCart size={18} color={Colors.$iconDefault} />
-          <Text style={floatStyles.label}>View Cart</Text>
-          <View style={floatStyles.floatBadge}>
+          <Text
+            style={[
+              floatStyles.label,
+              {
+                color: Colors.$textDefault,
+              },
+            ]}
+          >
+            View Cart
+          </Text>
+          <View
+            style={[
+              floatStyles.floatBadge,
+              {
+                backgroundColor: Colors.$outlinePrimary,
+              },
+            ]}
+          >
             <Text style={floatStyles.floatBadgeText}>{count > 9 ? '9+' : count}</Text>
           </View>
         </Pressable>
@@ -270,9 +293,7 @@ const floatStyles = StyleSheet.create({
     top: 0,
     left: 0,
     borderRadius: 999,
-    backgroundColor: Colors.$backgroundElevated,
     borderWidth: 1,
-    borderColor: Colors.$outlineGeneral,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.15,
@@ -290,10 +311,8 @@ const floatStyles = StyleSheet.create({
   label: {
     fontSize: 14,
     fontWeight: '600',
-    color: Colors.$textDefault,
   },
   floatBadge: {
-    backgroundColor: Colors.$outlinePrimary,
     borderRadius: 99,
     minWidth: 20,
     height: 20,
