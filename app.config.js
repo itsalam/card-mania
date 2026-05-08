@@ -78,9 +78,10 @@ const config = {
       eas: {
         projectId: '7cb44e39-440b-46be-b799-ba4b345ed43c',
       },
-      sentryDSN: process.env.EXPO_PUBLIC_SENTRY_DSN,
-      supabaseUrl: process.env.EXPO_PUBLIC_SUPABASE_URL,
-      supabaseKey: process.env.EXPO_PUBLIC_SUPABASE_KEY,
+      sentryDSN:
+        'https://6ece37dd94482fb17a990e2a444d190a@o4511347914637312.ingest.us.sentry.io/4511347916668928',
+      supabaseUrl: 'https://zijgqgpwmqrgnzcictcb.supabase.co',
+      supabaseKey: 'sb_publishable_pA4yv9B6SuKYjzKlIvnDDw_3R9J1ATm',
     },
     runtimeVersion: {
       policy: 'appVersion',
