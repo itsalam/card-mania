@@ -58,7 +58,7 @@ export const DefaultAccessories = ({
 
   return (
     <View
-      className="self-stretch flex-1 flex flex-col items-stretch justify-between pr-4 relative"
+      className="self-stretch flex-1 flex flex-col items-stretch justify-between px-4 relative"
       style={{ position: 'relative', alignSelf: 'stretch' }}
     >
       <View className="flex-1 flex flex-col justify-start">
@@ -81,7 +81,7 @@ export const DefaultAccessories = ({
                   color: Colors.$textDefault,
                 }}
               >
-                {formatPrice(displayData.displayPrice)}
+                {formatPrice(displayData.displayPrice * 100)}
               </Text>
             ) : (
               <Text
@@ -203,7 +203,7 @@ export const ItemListView = forwardRef<View, ItemListViewProps>(function ItemLis
     <View
       ref={ref}
       className={cn('items-start flex', vertical ? '' : 'flex-row w-full', className)}
-      style={style}
+      style={[style]}
     >
       <View
         style={{
@@ -243,8 +243,8 @@ export const ItemListView = forwardRef<View, ItemListViewProps>(function ItemLis
 function HorizontalAccessory(props: ItemListViewProps) {
   const { isLoading, displayData, renderAccessories } = props
   return (
-    <View className="flex flex-col h-full w-full items-start p-4 pr-0 flex-1 pt-2">
-      <View>
+    <View className="flex flex-col h-full w-full items-startpr-0 flex-1 pt-2">
+      <View className="px-4">
         {isLoading ? (
           <>
             <Skeleton style={{ height: 18, width: 190, marginBottom: 6 }} />

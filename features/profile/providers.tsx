@@ -50,7 +50,9 @@ export function createUserProfilePageStore(initial: {
 }) {
   return createStore<ProfilePageStore>((set) => ({
     ...initial,
-    currentTab: initial.tabs[0] ?? 'collections',
+    currentTab: initial.tabs.includes('storefront')
+      ? 'storefront'
+      : (initial.tabs[0] ?? 'collections'),
     setCurrentTab: (page) => set({ currentTab: page }),
     setTabs: (tabs) =>
       set((s) => ({
@@ -82,11 +84,15 @@ export function UserProfilePageStoreProvider({
     storeRef.current = createUserProfilePageStore({ user, tabs })
   }
 
-  // update tabs when profile loads/changes
+  // update tabs when profile loads/changes; prefer storefront when available
   useEffect(() => {
     storeRef.current!.setState((s) => ({
       tabs,
-      currentTab: tabs.includes(s.currentTab) ? s.currentTab : (tabs[0] ?? 'collections'),
+      currentTab: tabs.includes('storefront')
+        ? 'storefront'
+        : tabs.includes(s.currentTab)
+          ? s.currentTab
+          : (tabs[0] ?? 'collections'),
     }))
   }, [tabs.join('|')])
 

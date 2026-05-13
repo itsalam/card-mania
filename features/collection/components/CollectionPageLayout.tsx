@@ -325,7 +325,7 @@ const DetailCollectionView = ({ direction }: { direction: 'forward' | 'backward'
       const card = { ...data, id: cardId } as CollectionItemQueryView & TCard
 
       return (
-        <View style={{ position: 'relative', marginLeft: 12 }}>
+        <View style={{ position: 'relative', paddingLeft: 12 }}>
           <View
             style={{
               position: 'absolute',

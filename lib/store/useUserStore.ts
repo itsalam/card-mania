@@ -135,6 +135,7 @@ export const useUserStore = create<State & Actions>()(
       signIn: async (email, password) => {
         set({ status: 'loading', error: undefined })
         const { error } = await getSupabase().auth.signInWithPassword({ email, password })
+        console.log({ error })
         if (error) {
           set({ status: 'error', error: error.message })
           throw error

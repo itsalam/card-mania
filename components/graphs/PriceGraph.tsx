@@ -216,7 +216,10 @@ export function PriceGraph<
     if (!values.length) return undefined
     const min = Math.min(...values)
     const max = Math.max(...values)
-    const pad = (max - min) * 0.12
+    const range = max - min
+    // When all values are identical (single point or flat line), anchor to 0
+    if (range === 0) return [0, max * 1.15]
+    const pad = range * 0.12
     return [Math.max(0, min - pad), max + pad]
   }, [visibleData, yKeys])
 

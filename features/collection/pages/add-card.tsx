@@ -11,13 +11,21 @@ const AddCardToCollectionAccessories = ({
   collection,
   ...props
 }: ItemListViewProps & { collection: CollectionLike }) => {
-  return <CollectionCardItemEntries card={props.item as TCard} collection={collection} isShown />
+  return (
+    <CollectionCardItemEntries
+      card={props.item as TCard}
+      collection={collection}
+      isShown
+      isSearch
+    />
+  )
 }
 
 export default function AddCardToCollection({ collectionId }: { collectionId: string }) {
   const { data: collection } = useGetCollection({ collectionId })
   return (
     <SearchScreen
+      title={'Add to collection'}
       itemAccessories={(props) => (
         <AddCardToCollectionAccessories collection={collection} {...props} />
       )}

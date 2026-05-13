@@ -12,7 +12,7 @@ import { CollectionItemRow } from '@/lib/store/functions/types'
 import { Plus, TriangleAlert, Undo2 } from 'lucide-react-native'
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { StyleProp, View, ViewStyle } from 'react-native'
-import { Colors } from 'react-native-ui-lib'
+import { Colors, TouchableOpacity } from 'react-native-ui-lib'
 
 import { useGradingConditions } from '@/client/card/grading'
 import { getGradedPrice } from '@/components/tcg-card/helpers'
@@ -40,6 +40,7 @@ import { v4 as uuidv4 } from 'uuid'
 export const CollectionCardItemEntries = ({
   collection,
   isShown,
+  isSearch,
   card,
   style,
   editable,
@@ -47,6 +48,7 @@ export const CollectionCardItemEntries = ({
 }: {
   collection: CollectionLike
   isShown: boolean
+  isSearch?: boolean
   card: TCard
   style?: StyleProp<ViewStyle>
   editable?: boolean
@@ -70,10 +72,13 @@ export const CollectionCardItemEntries = ({
   const isMountedRef = useRef(false)
 
   const entryStableKey = (e: Partial<CollectionItemRow>) => {
-    const variants = ((e as any).variants ?? []).join(',')
-    return (e as any).grade_condition_id != null
-      ? `${(e as any).grade_condition_id}-${variants}`
-      : `ungraded-${variants}`
+    // Real rows use their DB id — guaranteed unique regardless of grade/variants.
+    if ((e as any).id) return String((e as any).id)
+    // Placeholder { quantity: 0 } has no id; fall back to a grade+variants fingerprint.
+    const rawVariants = (e as any).variants
+    const variants = Array.isArray(rawVariants) ? [...rawVariants].sort().join(',') : ''
+    const gradeId = (e as any).grade_condition_id
+    return gradeId != null ? `${gradeId}-${variants}` : `ungraded-${variants}`
   }
 
   const sortedEntries = useMemo(() => {
@@ -91,10 +96,11 @@ export const CollectionCardItemEntries = ({
 
   return (
     <View
+      // className="pl-2"
       style={[
         style,
         {
-          paddingRight: editable ? 0 : 12,
+          // paddingRight: editable ? 0 : 12,
           display: 'flex',
           flexDirection: 'column',
           alignSelf: 'stretch',
@@ -120,6 +126,7 @@ export const CollectionCardItemEntries = ({
                   collection={collection}
                   editable={editable}
                   isLoading={isLoadingOuter}
+                  showDelete={!isSearch}
                   onPriceModalOpen={(data) => setPriceChangeEntry(data)}
                   onDelete={() => {
                     qc.invalidateQueries({
@@ -153,29 +160,35 @@ export const CollectionCardItemEntries = ({
         </View>
       )}
 
-      <Button
-        variant={'primary'}
+      <TouchableOpacity
         disabled={isLoadingOuter}
         style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'center',
+          alignContent: 'center',
           flexGrow: 0,
           alignSelf: 'flex-end',
           marginTop: 8,
           width: 94,
-          height: 34,
-          marginRight: 36 + (editable ? 24 : 0),
+          height: 32,
+          paddingVertical: 2,
+          marginRight: 2 + (editable ? 16 : 8),
           opacity: isLoadingOuter ? 0.5 : 1,
           borderRadius: 9999,
+          gap: 2,
+          backgroundColor: Colors.$backgroundPrimaryMedium,
         }}
         onPress={() => {
           setShowModal(true)
           // setNewEntries((prev) => [...prev, {}])
         }}
       >
-        <Plus color={Colors.$iconDefault} />
+        <Plus color={Colors.$iconDefault} size={16} />
         <Text variant="large" style={{ color: Colors.$iconDefault, lineHeight: 0 }}>
-          Add
+          Grade
         </Text>
-      </Button>
+      </TouchableOpacity>
       {collection && (
         <AddVariantModal
           entries={sortedEntries}

@@ -17,19 +17,33 @@ export const ExpandableText = ({
   minNumLines: number
 }) => {
   const [expanded, setExpanded] = React.useState(false)
+  const [isTruncatable, setIsTruncatable] = React.useState(false)
 
   return (
-    <View style={containerStyle}>
+    <View style={[containerStyle, { overflow: 'hidden' }]}>
+      {/* Absolutely-positioned invisible text with no line limit — measures true line count */}
+      <Text
+        {...props}
+        numberOfLines={undefined}
+        style={[props.style, { position: 'absolute', opacity: 0, top: 0, left: 0, right: 0 }]}
+        onTextLayout={(e) => {
+          setIsTruncatable(e.nativeEvent.lines.length > minNumLines)
+        }}
+        importantForAccessibility="no-hide-descendants"
+        aria-hidden
+      />
       <Text
         ellipsizeMode="tail"
         {...props}
-        numberOfLines={!expanded ? minNumLines : numberOfLines}
+        numberOfLines={expanded ? numberOfLines : minNumLines}
       />
-      <TouchableOpacity onPress={() => setExpanded(!expanded)}>
-        <Text {...props} style={{ color: Colors.$textGeneral }}>
-          {expanded ? compressText : expandText}
-        </Text>
-      </TouchableOpacity>
+      {isTruncatable && (
+        <TouchableOpacity onPress={() => setExpanded(!expanded)}>
+          <Text {...props} style={{ color: Colors.$textGeneral }}>
+            {expanded ? compressText : expandText}
+          </Text>
+        </TouchableOpacity>
+      )}
     </View>
   )
 }

@@ -1,3 +1,4 @@
+import { useEffectiveColorScheme } from '@/features/settings/hooks/effective-color-scheme'
 import { SlidersHorizontal } from 'lucide-react-native'
 import { cssInterop } from 'nativewind'
 import React, {
@@ -34,7 +35,6 @@ import {
   View,
 } from 'react-native-ui-lib'
 import { ImageSourceType } from 'react-native-ui-lib/src/components/image'
-import { useEffectiveColorScheme } from '@/features/settings/hooks/effective-color-scheme'
 import { inputStyle, inputStyleSheet, InputVariantProps } from '../input'
 
 const ICON_SIZE = 24
@@ -139,6 +139,8 @@ const SearchInput = forwardRef<ComponentRef<typeof BaseSearchInput>, SearchInput
           componentContainer: {
             paddingHorizontal: Spacings.s4,
           },
+          icon: {},
+          leftIcon: {},
           inputContainer: {
             height: INPUT_HEIGHT,
             flex: 1,
@@ -382,11 +384,9 @@ const SearchInput = forwardRef<ComponentRef<typeof BaseSearchInput>, SearchInput
       onPress?: () => void,
       style?: StyleProp<ImageStyle>
     ) => {
-      const invertedColor = invertColors
-        ? {
-            tintColor: INVERTED_ICON_COLOR,
-          }
-        : undefined
+      const color = {
+        color: invertColors ? INVERTED_ICON_COLOR : Colors.$iconDefaultLight,
+      }
 
       return (
         <TouchableOpacity
@@ -396,7 +396,7 @@ const SearchInput = forwardRef<ComponentRef<typeof BaseSearchInput>, SearchInput
         >
           <Icon
             tintColor={Colors.$textDefault}
-            style={[styles.icon, invertedColor, left && styles.leftIcon, style]}
+            style={[styles.icon, color, left && styles.leftIcon, style]}
             source={icon}
             size={ICON_SIZE}
           />

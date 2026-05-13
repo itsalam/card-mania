@@ -13,6 +13,7 @@ import { BaseGesture } from 'react-native-gesture-handler/lib/typescript/handler
 import Animated, {
   clamp,
   interpolate,
+  runOnJS,
   scrollTo,
   useAnimatedReaction,
   useAnimatedRef,
@@ -44,6 +45,10 @@ export function useCollaspableHeader(opts?: {
   const virtualOffset = useSharedValue(0)
   const blockHeaderMeasurement = useSharedValue(false)
 
+  const PULL_THRESHOLD = 80
+  const pullDistance = useSharedValue(0)
+  const pullRefreshTrigger = useSharedValue(0)
+
   const toggleHeader = (toggle: boolean) => {
     !disable && setHeaderExpanded(toggle)
   }
@@ -63,7 +68,11 @@ export function useCollaspableHeader(opts?: {
     const scroll = Math.max(0, v - H)
     scrollOffset.value = scroll
 
-    if (isScrollViewMounted.value) {
+    // Only imperatively drive the scroll view when there's a real offset to
+    // apply. When v <= 0 the header is fully open and we must NOT call scrollTo
+    // so the native overscroll / RefreshControl gesture can accumulate
+    // undisturbed — calling scrollTo(0) every frame is what caused jitter.
+    if (isScrollViewMounted.value && v > 0) {
       scrollTo(scrollViewRef, 0, scroll, false)
     }
   }
@@ -105,9 +114,25 @@ export function useCollaspableHeader(opts?: {
           const dy = e.changeY // delta; positive when dragging down
           const drag = -dy // scrolling content up when dragging up
 
-          virtualOffset.value += drag // you can clamp later in withDecay
+          // At the top and pulling DOWN → accumulate pull indicator distance
+          if (virtualOffset.value <= 0 && drag < 0) {
+            pullDistance.value = Math.min(pullDistance.value + -drag, PULL_THRESHOLD * 1.5)
+            return
+          }
+          // Dragging up while mid-pull → cancel pull
+          if (drag > 0 && pullDistance.value > 0) {
+            pullDistance.value = 0
+          }
+
+          virtualOffset.value = Math.max(0, virtualOffset.value + drag)
         })
         .onEnd((e) => {
+          // Fire refresh if pulled far enough, then snap indicator back
+          if (pullDistance.value >= PULL_THRESHOLD) {
+            pullRefreshTrigger.value = pullRefreshTrigger.value + 1
+          }
+          pullDistance.value = withTiming(0, { duration: 200 })
+
           if (measuredHeaderHeight.value <= 0) return
 
           const H = measuredHeaderHeight.value || 1
@@ -215,6 +240,8 @@ export function useCollaspableHeader(opts?: {
     measuredHeaderHeight,
     expandProgress,
     virtualOffset,
+    pullDistance,
+    pullRefreshTrigger,
   }
 }
 

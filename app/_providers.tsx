@@ -41,7 +41,6 @@ export default function Providers({ children }: { children: React.ReactNode }) {
   }, [envFingerprint])
 
   const { setAuth, setStatus } = useUserStore.getState()
-  const { status } = useUserStore()
   const subOnce = useRef(false)
 
   useIsomorphicLayoutEffect(() => {
@@ -53,28 +52,51 @@ export default function Providers({ children }: { children: React.ReactNode }) {
     subOnce.current = true
 
     // 1) Load current session on mount
+    const GETSESSION_TIMEOUT_MS = 8_000
     ;(async () => {
       setStatus('loading')
-      const {
-        data: { session },
-        error,
-      } = await getSupabase().auth.getSession()
-      // Unblock all queued PostgREST/RPC calls — auth lock is now released.
-      signalClientReady()
-
-      if (error) setStatus('error')
-      await updateStatus(session)
+      console.log('[Auth] calling getSession')
+      try {
+        const result = await Promise.race([
+          getSupabase().auth.getSession(),
+          new Promise<never>((_, reject) =>
+            setTimeout(
+              () => reject(new Error('getSession timed out — Supabase project may be paused')),
+              GETSESSION_TIMEOUT_MS
+            )
+          ),
+        ])
+        const {
+          data: { session },
+          error,
+        } = result
+        console.log('[Auth] getSession completed', { hasSession: !!session, error })
+        if (error) setStatus('error')
+        await updateStatus(session)
+      } catch (e: any) {
+        console.warn('[Auth] getSession failed:', e?.message)
+        await updateStatus(null)
+      } finally {
+        // Unblock all queued PostgREST/RPC calls — always release even on error/throw.
+        signalClientReady()
+      }
     })()
 
-    // 2) Subscribe to future auth changes
-    const { data: sub } = getSupabase().auth.onAuthStateChange(async (_event, session) => {
-      await updateStatus(session)
+    // 2) Subscribe to future auth changes — must stay alive for the app lifetime.
+    // Workaround for supabase-js deadlock bug: _notifyAllSubscribers is called while
+    // the auth lock is held (during token refresh). If the callback awaits any Supabase
+    // call (e.g. a DB query via loadProfile), that call tries to re-acquire the same
+    // lock → deadlock. Deferring with setTimeout(0) lets the lock release first.
+    const { data: sub } = getSupabase().auth.onAuthStateChange((_event, session) => {
+      setTimeout(() => {
+        updateStatus(session).catch(console.error)
+      }, 0)
     })
 
     return () => {
       sub.subscription.unsubscribe()
     }
-  }, [status])
+  }, [])
 
   return (
     <QueryClientProvider client={qc}>

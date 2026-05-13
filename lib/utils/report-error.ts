@@ -8,7 +8,17 @@ type ReportErrorOpts = {
 }
 
 export async function reportError({ context, error, metadata }: ReportErrorOpts): Promise<void> {
-  const message = JSON.stringify(error instanceof Error ? error.message : String(error), null, 2)
+  let message: string
+  if (error instanceof Error) {
+    message = error.message
+  } else {
+    try {
+      message = JSON.stringify(error, null, 2)
+      if (!message || message === '{}') message = String(error)
+    } catch {
+      message = String(error)
+    }
+  }
   console.log({ message })
 
   if (process.env.NODE_ENV !== 'production') {

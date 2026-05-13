@@ -8,9 +8,17 @@ import { Database } from './supabase'
 let _readyResolve: (() => void) | null = null
 const _clientReady = new Promise<void>((resolve) => {
   _readyResolve = resolve
+  setTimeout(() => {
+    if (_readyResolve) {
+      console.warn('[Supabase] _clientReady timeout — force-unblocking all requests')
+      resolve()
+      _readyResolve = null
+    }
+  }, 10_000)
 })
 
 export function signalClientReady() {
+  console.log('[Supabase] signalClientReady called')
   _readyResolve?.()
   _readyResolve = null
 }
@@ -28,6 +36,7 @@ export function initSupabase() {
   if (client && fingerprint === fp) return client
 
   fingerprint = fp
+  console.log('[Supabase] initSupabase — url:', Constants.expoConfig?.extra?.supabaseUrl)
 
   client = createClient<Database>(
     Constants.expoConfig?.extra?.supabaseUrl ?? process.env.EXPO_PUBLIC_SUPABASE_URL!,
@@ -46,6 +55,7 @@ export function initSupabase() {
         fetch: async (url, options) => {
           const urlStr = typeof url === 'string' ? url : (url as URL).href
           if (!urlStr.includes('/auth/v1/')) {
+            if (_readyResolve) console.log('[Supabase] request queued until ready:', urlStr)
             await _clientReady
           }
           return fetch(url as RequestInfo, options)

@@ -8,15 +8,16 @@ import { Separator } from '@/components/ui/separator'
 import { Text } from '@/components/ui/text'
 import { centsToInputString, formatPrice, inputStringToCents } from '@/components/utils'
 import type { CartItem } from '@/features/cart/types'
+import { PriceModifiedBadge, pricesMatch } from '@/features/offers/ui'
 import { useEffectiveColorScheme } from '@/features/settings/hooks/effective-color-scheme'
 import { useProfiles } from '@/features/users/client/load-user'
 import { UserContact } from '@/features/users/components/UserAvatars'
 import { UserDisplayInfo } from '@/features/users/types'
 import { useRouter } from 'expo-router'
 import { EllipsisVertical, Pencil, Trash2 } from 'lucide-react-native'
-import { PriceModifiedBadge } from '@/features/offers/ui'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import {
+  Alert,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -52,6 +53,8 @@ import {
 
 export function CartSheetInner() {
   const colorScheme = useEffectiveColorScheme()
+
+  const insets = useSafeAreaInsets()
   const styles = useMemo(
     () =>
       StyleSheet.create({
@@ -60,9 +63,10 @@ export function CartSheetInner() {
           bottom: 0,
           left: 0,
           right: 0,
-          maxHeight: '80%',
+          height: screenHeight * 0.8,
         },
         sheet: {
+          flex: 1,
           backgroundColor: Colors.$backgroundDefault,
           borderTopLeftRadius: 24,
           borderTopRightRadius: 24,
@@ -70,7 +74,7 @@ export function CartSheetInner() {
           overflow: 'hidden',
         },
       }),
-    [colorScheme]
+    [colorScheme, screenHeight]
   )
   const closeCart = useCloseCart()
   const clearCart = useClearCart()
@@ -79,7 +83,9 @@ export function CartSheetInner() {
   const computedTotal = useCartTotal()
   const totalOverride = useTotalOverride()
   const setTotalOverride = useSetTotalOverride()
+  const updatePrice = useUpdateCartPrice()
   const total = totalOverride ?? computedTotal
+  const isTotalModified = totalOverride != null && !pricesMatch(totalOverride, computedTotal)
   const [editingTotal, setEditingTotal] = useState(false)
   const [totalInput, setTotalInput] = useState('')
   const { showToast } = useToast()
@@ -101,7 +107,6 @@ export function CartSheetInner() {
   }, [items])
   const { mutateAsync: submitOffer, isPending } = useSubmitOffer()
   const { height: screenHeight } = useWindowDimensions()
-  const insets = useSafeAreaInsets()
   const { height: kbHeight } = useReanimatedKeyboardAnimation()
 
   const translateY = useSharedValue(screenHeight)
@@ -161,9 +166,7 @@ export function CartSheetInner() {
 
       <Animated.View style={[styles.keyboardAvoiding, kbContainerStyle]}>
         <GestureDetector gesture={panGesture}>
-          <Animated.View
-            style={[styles.sheet, { paddingBottom: Math.max(insets.bottom, 16) }, sheetStyle]}
-          >
+          <Animated.View style={[styles.sheet, sheetStyle]}>
             <View style={thumbStyles.thumbContainer}>
               <View
                 style={[
@@ -185,7 +188,7 @@ export function CartSheetInner() {
                   paddingBottom: 12,
                 }}
               >
-                <Text variant="h3">Cart ({items.length})</Text>
+                <Text variant="h2">Cart ({items.length})</Text>
                 {items.length > 0 && (
                   <TouchableOpacity onPress={clearCart}>
                     <Text variant="small" style={{ color: Colors.$textDanger }}>
@@ -247,16 +250,18 @@ export function CartSheetInner() {
 
                   <Separator orientation="horizontal" />
 
-                  <View style={{ paddingVertical: 12, gap: 12 }}>
-                    <View
-                      style={{
-                        flexDirection: 'row',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                      }}
-                    >
-                      <Text style={cartStyles.totalText}>Total</Text>
-                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                  <View
+                    style={{ paddingTop: 12, paddingBottom: Math.max(insets.bottom, 16), gap: 12 }}
+                  >
+                    <View style={{ gap: 4 }}>
+                      <View
+                        style={{
+                          flexDirection: 'row',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                        }}
+                      >
+                        <Text style={cartStyles.totalText}>Total</Text>
                         {editingTotal ? (
                           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                             <Text style={cartStyles.totalText}>$</Text>
@@ -266,17 +271,63 @@ export function CartSheetInner() {
                               onChangeText={setTotalInput}
                               onBlur={() => {
                                 const cents = inputStringToCents(totalInput)
-                                if (cents !== null) setTotalOverride(cents)
                                 setEditingTotal(false)
+                                if (cents !== null) {
+                                  setTotalOverride(cents)
+                                  const modifiedItems = items.filter(
+                                    (i) => !pricesMatch(i.cart.price, i.cart.originalPrice)
+                                  )
+                                  if (modifiedItems.length > 0) {
+                                    Alert.alert(
+                                      'Reset item prices?',
+                                      'Some items have custom per-unit prices. Reset all to their original listed prices?',
+                                      [
+                                        { text: 'Keep custom prices', style: 'cancel' },
+                                        {
+                                          text: 'Reset all',
+                                          onPress: () => {
+                                            for (const item of modifiedItems) {
+                                              updatePrice(item.data.id, item.cart.originalPrice)
+                                            }
+                                          },
+                                        },
+                                      ]
+                                    )
+                                  }
+                                }
                               }}
                               keyboardType="decimal-pad"
                               style={[cartStyles.priceInput, cartStyles.totalText]}
                             />
                           </View>
                         ) : (
-                          <>
-                            <Text style={cartStyles.totalText}>{formatPrice(total)}</Text>
-                            {totalOverride != null && <PriceModifiedBadge />}
+                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                            <View
+                              style={[
+                                {
+                                  paddingHorizontal: 8,
+                                  paddingVertical: 4,
+                                  borderRadius: 6,
+                                  borderWidth: isTotalModified ? 1 : 0,
+                                  borderColor: Colors.rgba(Colors.$outlineDefault, 0.35),
+                                },
+                                isTotalModified && {
+                                  backgroundColor: Colors.rgba(
+                                    Colors.$backgroundPrimaryLight,
+                                    0.18
+                                  ),
+                                },
+                              ]}
+                            >
+                              <Text
+                                style={[
+                                  cartStyles.totalText,
+                                  isTotalModified && { color: Colors.$outlinePrimary },
+                                ]}
+                              >
+                                {formatPrice(total)}
+                              </Text>
+                            </View>
                             <Pressable
                               onPress={() => {
                                 setTotalInput(centsToInputString(total))
@@ -284,11 +335,21 @@ export function CartSheetInner() {
                               }}
                               hitSlop={8}
                             >
-                              <Pencil size={16} color={Colors.$iconNeutral} />
+                              <Pencil
+                                size={16}
+                                color={
+                                  isTotalModified ? Colors.$outlinePrimary : Colors.$iconNeutral
+                                }
+                              />
                             </Pressable>
-                          </>
+                          </View>
                         )}
                       </View>
+                      {isTotalModified && (
+                        <View style={{ alignSelf: 'flex-end' }}>
+                          <PriceModifiedBadge originalPrice={computedTotal} label="From:" />
+                        </View>
+                      )}
                     </View>
                     <Button
                       size="lg"
@@ -322,6 +383,9 @@ export function CartSheetInner() {
                                   offered_price_per_unit: item.cart.price,
                                   card_snapshot: {
                                     card_id: item.data.ref_id ?? undefined,
+                                    title: item.data.name ?? undefined,
+                                    set_name: item.data.set_name ?? undefined,
+                                    listing_price: item.cart.originalPrice,
                                   },
                                 })),
                               })
@@ -369,15 +433,27 @@ function CartItemRow({ item }: { item: CartItem }) {
   const [editingPrice, setEditingPrice] = useState(false)
   const [priceInput, setPriceInput] = useState('')
   const priceInputRef = useRef('')
+  const committedRef = useRef(false)
   const { data: card, loading: cardLoading } = useCardQuery(item.data.ref_id)
   const displayData = useMemo(
     () => getCardDisplayData({ card, collectionItem: item.data }),
     [card, item.data]
   )
+  const isPriceModified = !pricesMatch(item.cart.price, item.cart.originalPrice)
+
+  const handlePriceSubmit = () => {
+    const cents = inputStringToCents(priceInputRef.current)
+    if (cents !== null) {
+      committedRef.current = true
+      updatePrice(item.data.id, cents)
+    }
+  }
 
   const handlePriceBlur = () => {
-    const cents = inputStringToCents(priceInputRef.current)
-    if (cents !== null) updatePrice(item.data.id, cents)
+    if (!committedRef.current) {
+      updatePrice(item.data.id, item.cart.originalPrice)
+    }
+    committedRef.current = false
     setEditingPrice(false)
   }
 
@@ -429,13 +505,15 @@ function CartItemRow({ item }: { item: CartItem }) {
           </View>
           <View
             style={{
-              width: '100%',
+              flex: 1,
+              alignSelf: 'stretch',
               flexDirection: 'row',
               alignItems: 'center',
               justifyContent: 'space-between',
+              gap: 8,
             }}
           >
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            <View style={{ flex: 1, minWidth: 0 }}>
               {editingPrice ? (
                 <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                   <Text style={{ fontSize: 30, lineHeight: 32 }}>$</Text>
@@ -446,17 +524,24 @@ function CartItemRow({ item }: { item: CartItem }) {
                       priceInputRef.current = text
                       setPriceInput(text)
                     }}
+                    onSubmitEditing={handlePriceSubmit}
                     onBlur={handlePriceBlur}
                     keyboardType="decimal-pad"
+                    returnKeyType="done"
                     style={[cartStyles.priceInput, { fontSize: 30, lineHeight: 32 }]}
                   />
                 </View>
               ) : (
-                <>
-                  <Text style={{ fontSize: 30, lineHeight: 32 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                  <Text
+                    style={{
+                      fontSize: 30,
+                      lineHeight: 32,
+                      color: isPriceModified ? Colors.$outlinePrimary : Colors.$textDefault,
+                    }}
+                  >
                     {formatPrice(item.cart.price)}
                   </Text>
-                  {item.cart.price !== item.cart.originalPrice && <PriceModifiedBadge />}
                   <Pressable
                     onPress={() => {
                       const initial = centsToInputString(item.cart.price)
@@ -466,12 +551,15 @@ function CartItemRow({ item }: { item: CartItem }) {
                     }}
                     hitSlop={8}
                   >
-                    <Pencil size={14} color={Colors.$iconNeutral} />
+                    <Pencil
+                      size={14}
+                      color={isPriceModified ? Colors.$outlinePrimary : Colors.$iconNeutral}
+                    />
                   </Pressable>
-                </>
+                </View>
               )}
             </View>
-            <View style={{ gap: 8, alignItems: 'flex-end' }}>
+            <View style={{ gap: 4, alignItems: 'flex-end' }}>
               <NumberTicker
                 key={`${item.data.id}_${item.cart.quantity}`}
                 min={1}
@@ -480,12 +568,38 @@ function CartItemRow({ item }: { item: CartItem }) {
                 onChangeNumber={(n) => updateQuantity(item.data.id, n)}
                 containerStyle={{ height: 32 }}
               />
-              <Text
-                variant="small"
-                style={{ color: Colors.$textNeutralLight, alignSelf: 'flex-end' }}
-              >
-                Subtotal: {formatPrice(item.cart.price * item.cart.quantity)}
-              </Text>
+              <View style={{ gap: isPriceModified ? 4 : 0 }}>
+                <Text
+                  variant="small"
+                  style={[
+                    {
+                      color: Colors.$textNeutralLight,
+                      alignSelf: 'flex-end',
+                      paddingHorizontal: 6,
+                      paddingVertical: 4,
+                      fontSize: 12,
+                      borderWidth: isPriceModified ? 1 : 0,
+                      borderRadius: 6,
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      borderColor: 'transparent',
+                    },
+                    isPriceModified && {
+                      backgroundColor: Colors.rgba(Colors.$backgroundPrimaryLight, 0.18),
+                      color: Colors.$outlinePrimary,
+                      borderColor: Colors.rgba(Colors.$outlineDefault, 0.35),
+                    },
+                  ]}
+                >
+                  Subtotal: {formatPrice(item.cart.price * item.cart.quantity)}
+                </Text>
+                {isPriceModified && (
+                  <PriceModifiedBadge
+                    originalPrice={item.cart.originalPrice * item.cart.quantity}
+                    label="From:"
+                  />
+                )}
+              </View>
             </View>
           </View>
         </View>

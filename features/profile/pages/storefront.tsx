@@ -1,11 +1,11 @@
 import { CollectionLike } from '@/client/collections/types'
-import { useUserStore } from '@/lib/store/useUserStore'
 import { useCloneMeasure } from '@/components/hooks/useCloneMeasure'
 import { Separator } from '@/components/ui/separator'
 import { Text } from '@/components/ui/text/base-text'
 import { useRegisterGestureBlocker } from '@/features/collection/ui'
+import { useUserStore } from '@/lib/store/useUserStore'
 import { ChevronDown } from 'lucide-react-native'
-import { ComponentProps, useEffect, useState } from 'react'
+import { ComponentProps, ReactNode, useEffect, useState } from 'react'
 import { useWindowDimensions, View, ViewProps } from 'react-native'
 import { Gesture, GestureDetector } from 'react-native-gesture-handler'
 import Animated, {
@@ -28,7 +28,7 @@ export function StorefrontPage() {
   const profile = useUserProfilePage((s) => s.user)
   const { user: authUser } = useUserStore()
   const isOwnProfile = !!authUser?.id && authUser.id === profile?.user_id
-  const { data: collections } = useUserStorefront(profile?.user_id)
+  const { data: collections, isPending, ...rest } = useUserStorefront(profile?.user_id)
   const [activeCollection, setActiveCollection] = useState(collections?.[0])
 
   useEffect(() => {
@@ -36,6 +36,8 @@ export function StorefrontPage() {
       setActiveCollection(collections[0])
     }
   }, [activeCollection, collections])
+
+  const isEmpty = !isPending && !collections?.length
 
   return (
     <View>
@@ -46,9 +48,36 @@ export function StorefrontPage() {
           onSelect={(selectedId) =>
             setActiveCollection(collections?.find((collection) => collection.id === selectedId))
           }
+          disabled={isEmpty || isPending}
         />
       </View>
-      <StorefrontView collectionId={activeCollection?.id} isOwnProfile={isOwnProfile} />
+      {isEmpty ? (
+        <StorefrontEmptyState isOwnProfile={isOwnProfile} />
+      ) : (
+        <StorefrontView collectionId={activeCollection?.id} isOwnProfile={isOwnProfile} />
+      )}
+    </View>
+  )
+}
+
+function StorefrontEmptyState({ isOwnProfile }: { isOwnProfile: boolean }) {
+  return (
+    <View
+      style={{
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingVertical: 48,
+        paddingHorizontal: 32,
+      }}
+    >
+      <Text variant="h3" style={{ color: Colors.$textNeutral, marginBottom: 8 }}>
+        No storefront yet
+      </Text>
+      <Text variant="default" style={{ color: Colors.$textNeutralLight, textAlign: 'center' }}>
+        {isOwnProfile
+          ? 'Add items to a collection to start selling.'
+          : 'This seller has no items listed.'}
+      </Text>
     </View>
   )
 }
@@ -66,7 +95,8 @@ function DropdownContainer({
   collection?: CollectionLike
   index?: number
   selected?: boolean
-} & ComponentProps<typeof ATouchableOpacity>) {
+  children?: ReactNode
+} & Omit<ComponentProps<typeof ATouchableOpacity>, 'children'>) {
   return (
     <ATouchableOpacity
       style={[
@@ -145,10 +175,12 @@ function StoreFrontDropdown({
   collections,
   activeCollection,
   onSelect,
+  disabled,
 }: {
   collections?: CollectionLike[]
   activeCollection?: CollectionLike
   onSelect?: (collectionId: string) => void
+  disabled?: boolean
 }) {
   const MAX_DROPDOWN_HEIGHT = 400
   const [focus, setFocus] = useState(false)
@@ -225,7 +257,10 @@ function StoreFrontDropdown({
   )
 
   return (
-    <View style={{ position: 'relative', zIndex: 100 }}>
+    <View
+      style={{ position: 'relative', zIndex: 100, opacity: disabled ? 0.4 : 1 }}
+      pointerEvents={disabled ? 'none' : 'auto'}
+    >
       {Clone}
       <Animated.View style={{ height: measuredButtonHeight }} />
       <DropdownContainer

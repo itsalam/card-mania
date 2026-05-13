@@ -4,7 +4,7 @@ import { SearchBar, SearchBarProps } from '@/components/ui/search'
 import { motify, MotiView } from 'moti'
 import React, { useEffect, useState } from 'react'
 import { View } from 'react-native'
-import { Colors } from 'react-native-ui-lib'
+import { BorderRadiuses, Colors } from 'react-native-ui-lib'
 import { useGetCollection } from '../hooks'
 import { DefaultPageTypes, getCollectionIdArgs, useCollectionsPageStore } from '../provider'
 
@@ -35,6 +35,9 @@ export const ExpandableSearchBar = (props: SearchBarProps & { expanded: boolean 
         }}
         animate={{
           flex: expanded ? 1 : 0.0,
+          borderColor: Colors.rgba(Colors.$iconNeutral, expanded ? 1 : 0),
+          borderRadius: expanded ? BorderRadiuses.br100 : BorderRadiuses.br40,
+          borderWidth: 1,
         }}
       >
         <SearchBar
@@ -117,6 +120,7 @@ export const ScreenHeader = () => {
       <ExpandableSearchBar
         onLeftIconPress={() => setExpandSearch(!expandSearch)}
         expanded={Boolean(expandSearch)}
+        variant={'ghost'}
         // style={{ position: 'absolute', right: 12 }}
       />
     </MView>

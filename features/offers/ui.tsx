@@ -10,7 +10,6 @@ import { formatPrice } from '@/components/utils'
 import { useProfiles } from '@/features/users/client/load-user'
 import { UserContact } from '@/features/users/components/UserAvatars'
 import { UserDisplayInfo } from '@/features/users/types'
-import { Tag } from 'lucide-react-native'
 import { ReactNode } from 'react'
 import { StyleSheet, View } from 'react-native'
 import { Colors } from 'react-native-ui-lib'
@@ -18,16 +17,37 @@ import { getGradingDisplayString } from '../collection/helpers'
 import { CardImage } from '../tcg-card-views/card-image'
 import { getCardDisplayData, getDisplayPrice } from '../tcg-card-views/helpers'
 
-export function PriceModifiedBadge() {
+/** Compare two cent-integer prices tolerantly (handles float drift from Postgres numeric). */
+export function pricesMatch(a: number | null | undefined, b: number | null | undefined): boolean {
+  if (a == null || b == null) return false
+  return Math.round(a) === Math.round(b)
+}
+
+export function PriceModifiedBadge({
+  originalPrice,
+  label = 'From:',
+}: {
+  originalPrice: number
+  label?: string
+}) {
   return (
-    <Badge
-      size={{ height: 20 }}
-      backgroundColor={Colors.rgba(Colors.$backgroundWarningLight, 0.15)}
-      borderRadius={4}
-      labelStyle={{ fontSize: 10, color: Colors.$outlineWarning, fontWeight: '600' }}
-      leftElement={<Tag size={12} color={Colors.$outlineWarning} />}
-      label="Modified"
-    />
+    <View
+      style={{
+        backgroundColor: Colors.rgba(Colors.$backgroundWarningLight, 0.08),
+        borderWidth: 1,
+        borderColor: Colors.rgba(Colors.$outlineWarning, 0.35),
+        borderRadius: 6,
+        paddingHorizontal: 6,
+        paddingVertical: 4,
+        flexDirection: 'row',
+        alignItems: 'center',
+        alignSelf: 'flex-start',
+      }}
+    >
+      <Text variant="small" style={{ color: Colors.$outlineWarning, fontSize: 12 }}>
+        {label} {formatPrice(originalPrice)}
+      </Text>
+    </View>
   )
 }
 
@@ -35,17 +55,20 @@ export function OfferItemRow({ item, isLast }: { item: OfferItem; isLast: boolea
   const { data: collectionItem } = useViewSingleCollectionItem(item.collection_item_id ?? undefined)
   const { data: card, loading: cardLoading } = useCardQuery(item.card_snapshot?.card_id)
   const title = card?.name ?? item.card_snapshot?.title ?? 'Unknown Card'
-  const setName = card?.set_name
+  const setName = card?.set_name ?? item.card_snapshot?.set_name
   const displayData = getCardDisplayData({
     card,
     collectionItem,
     isLoading: cardLoading,
   })
   const subtotal = item.offered_price_per_unit * item.quantity
-  const listingPrice = card
-    ? getDisplayPrice({ card, collectionItem: collectionItem as any })
-    : undefined
-  const isPriceModified = listingPrice != null && item.offered_price_per_unit !== listingPrice
+  // Use the listing price stored at offer time (reliable on both buyer and seller sides).
+  // Fall back to live card data for older offers that predate the snapshot field.
+  const listingPrice =
+    item.card_snapshot?.listing_price ??
+    (card ? getDisplayPrice({ card, collectionItem: collectionItem as any }) : undefined)
+  const isPriceModified =
+    listingPrice != null && !pricesMatch(item.offered_price_per_unit, listingPrice)
 
   return (
     <View
@@ -74,19 +97,19 @@ export function OfferItemRow({ item, isLast }: { item: OfferItem; isLast: boolea
         </Text>
       </View>
 
-      <View style={{ alignItems: 'flex-end', gap: 4 }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-          <Text variant="default" style={styles.itemPrice}>
-            {formatPrice(item.offered_price_per_unit)}
-          </Text>
-          {isPriceModified && <PriceModifiedBadge />}
-        </View>
+      <View style={{ alignItems: 'flex-end', justifyContent: 'flex-end', gap: 4 }}>
+        <Text variant="default" style={styles.itemPrice}>
+          {formatPrice(item.offered_price_per_unit)}
+        </Text>
         <Text variant="info" style={{ color: Colors.$textNeutralLight }}>
           Qty: {item.quantity}
         </Text>
         <Text variant="small" style={{ color: Colors.$textNeutralLight }}>
           Subtotal: {formatPrice(subtotal)}
         </Text>
+        <View style={{ alignSelf: 'flex-end' }}>
+          {isPriceModified && <PriceModifiedBadge originalPrice={listingPrice ?? 0} />}
+        </View>
       </View>
     </View>
   )
@@ -155,7 +178,8 @@ export function OfferCardBase({
     (sum, item) => sum + item.offered_price_per_unit * item.quantity,
     0
   )
-  const isTotalModified = offer.total_amount != null && offer.total_amount !== computedTotal
+  const isTotalModified =
+    offer.total_amount != null && !pricesMatch(offer.total_amount, computedTotal)
   // Default to buyer_id for the seller inbox; pass seller_id explicitly for the buyer view
   const partyId = counterpartyId ?? offer.buyer_id
   const { data: profiles } = useProfiles([partyId])
@@ -200,11 +224,11 @@ export function OfferCardBase({
         <Text variant="default" style={styles.totalLabel}>
           Total
         </Text>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-          {isTotalModified && <PriceModifiedBadge />}
+        <View style={{ alignItems: 'flex-end', gap: 4 }}>
           <Text variant="default" style={styles.totalAmount}>
             {formatPrice(offer.total_amount)}
           </Text>
+          {isTotalModified && <PriceModifiedBadge originalPrice={computedTotal} label="From:" />}
         </View>
       </View>
 

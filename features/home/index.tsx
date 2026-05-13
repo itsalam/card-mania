@@ -4,9 +4,7 @@ import { Tabs, TabsContent, TabsLabel, TabsList, TabsTrigger } from '@/component
 import { Text } from '@/components/ui/text/base-text'
 import { MainSearchBar } from '@/features/mainSearchbar'
 import { OnboardingTarget } from '@/features/onboarding'
-import { useRefresh } from '@/lib/hooks/useRefresh'
 import { useUserStore } from '@/lib/store/useUserStore'
-import { useQueryClient } from '@tanstack/react-query'
 import { useRouter } from 'expo-router'
 import {
   Bell,
@@ -17,10 +15,17 @@ import {
   SettingsIcon,
   Sheet,
 } from 'lucide-react-native'
-import React, { useCallback, useState } from 'react'
-import { RefreshControl, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native'
+import React, { useCallback, useEffect, useState } from 'react'
+import { ActivityIndicator, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native'
 import { GestureDetector } from 'react-native-gesture-handler'
-import Animated from 'react-native-reanimated'
+import Animated, {
+  interpolate,
+  runOnJS,
+  SharedValue,
+  useAnimatedReaction,
+  useAnimatedStyle,
+  useSharedValue,
+} from 'react-native-reanimated'
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { BorderRadiuses, Colors } from 'react-native-ui-lib'
 import CollectionBreakdown from '../collection/components/CollectionBreakdown'
@@ -30,6 +35,7 @@ import { Graphs } from './Breakdowns'
 import { ExplorePage } from './ExplorePage'
 import { FeedPage } from './FeedPage'
 import { TabValue, tabValues, useHomePageStore } from './provider'
+import { HomeRefreshProvider, useHomeRefreshControl } from './refresh-provider'
 
 const notifBadgeStyles = StyleSheet.create({
   dot: {
@@ -68,12 +74,9 @@ const AnimatedScrollView = Animated.createAnimatedComponent(ScrollView)
 
 export default function HomeScreen() {
   const { currentPage, setCurrentPage } = useHomePageStore()
-  const insets = useSafeAreaInsets()
   const router = useRouter()
   const { profile, user } = useUserStore()
   const { data: unreadCount = 0 } = useUnreadCount()
-
-  // Resolve the best available display name for the greeting
   const displayName =
     profile?.display_name ?? profile?.username ?? user?.email?.split('@')[0] ?? 'there'
 
@@ -88,9 +91,7 @@ export default function HomeScreen() {
       prev.includes(type) ? prev.filter((t) => t !== type) : [...prev, type]
     )
   }, [])
-  const qc = useQueryClient()
   const {
-    tabsExpanded,
     headerAnimatedStyle,
     composedGestures,
     scrollViewRef,
@@ -98,17 +99,13 @@ export default function HomeScreen() {
     onContentSizeChange,
     onHeaderLayout,
     virtualOffset,
+    pullDistance,
+    pullRefreshTrigger,
   } = useCollaspableHeader({ disable: false, defaultHeight: GRAPH_SECTION_HEIGHT })
-
-  const { refreshing, onRefresh } = useRefresh(
-    [() => qc.refetchQueries({ type: 'active' })],
-    () => {
-      virtualOffset.value = 0
-    }
-  )
 
   return (
     <SafeAreaView className="flex-1 w-full h-full overflow-visible" style={{ paddingTop: 8 }}>
+      {/* Logo row and search bar — outside gesture area */}
       <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, gap: 12 }}>
         <Logo width={48} height={48} />
         <Text variant={'large'}>Welcome back, {displayName}</Text>
@@ -144,101 +141,186 @@ export default function HomeScreen() {
         <MainSearchBar />
       </OnboardingTarget>
 
-      <OnboardingTarget id="collection-breakdown">
-        <CollectionBreakdown
-          style={{
-            paddingTop: 12,
-            marginBottom: 20,
-            marginHorizontal: 12,
-          }}
+      <HomeRefreshProvider
+        onStart={() => {
+          virtualOffset.value = 0
+        }}
+      >
+        <HomeGestureContent
+          composedGestures={composedGestures}
+          scrollViewRef={scrollViewRef}
+          onListLayout={onListLayout}
+          onContentSizeChange={onContentSizeChange}
+          onHeaderLayout={onHeaderLayout}
+          headerAnimatedStyle={headerAnimatedStyle}
           selectedCollections={selectedCollections}
           onToggleCollection={toggleCollection}
+          currentPage={currentPage}
+          setCurrentPage={setCurrentPage}
+          graphHeight={GRAPH_SECTION_HEIGHT}
+          pullDistance={pullDistance}
+          pullRefreshTrigger={pullRefreshTrigger}
         />
-      </OnboardingTarget>
-      <GestureDetector gesture={composedGestures}>
-        <View style={{ height: 500 }}>
-          <Animated.View
-            style={[
-              {
-                // backgroundColor: Colors.$backgroundNeutral,
-                margin: 8,
-                borderColor: Colors.$outlineDefault,
-                borderWidth: 2,
-                // borderBottomColor: Colors.$outlineDefault,
-                // borderBottomWidth: 2,
-                overflow: 'hidden',
-                borderRadius: BorderRadiuses.br40,
-              },
-              headerAnimatedStyle,
-            ]}
-            onLayout={onHeaderLayout}
-          >
-            <OnboardingTarget id="collection-graphs">
-              <Graphs height={GRAPH_SECTION_HEIGHT} selectedCollections={selectedCollections} />
-            </OnboardingTarget>
-          </Animated.View>
-          <Tabs
-            className="flex-1"
-            value={currentPage}
-            onValueChange={setCurrentPage}
-            style={{ height: 400, width: '100%' }}
-          >
-            <View style={{ flexDirection: 'row' }}>
-              <OnboardingTarget id="tab-list">
-                <TabsList className="ml-4" style={{ height: 48 }}>
-                  {tabValues.map((tab) => (
-                    <TabsTrigger key={tab} value={tab}>
-                      <TabsLabel
-                        label={tab}
-                        value={tab}
-                        leftElement={(isCurrent) =>
-                          React.createElement(tabIcons[tab], {
-                            size: 16,
-                            color: isCurrent ? Colors.$textPrimary : Colors.$textDefault,
-                          })
-                        }
-                      />
-                    </TabsTrigger>
-                  ))}
-
-                  {/* <TabOptions currentTab={currentPage} /> */}
-                </TabsList>
-              </OnboardingTarget>
-
-              <TabsList style={{ height: 48 }}>
-                <TabsTrigger key={'Recents'} value={'Recents'} style={{}}>
-                  <TabsLabel
-                    value={'Recents'}
-                    leftElement={(isCurrent) =>
-                      React.createElement(History, {
-                        size: 24,
-                        color: isCurrent ? Colors.$textPrimary : Colors.$textDefault,
-                      })
-                    }
-                  />
-                </TabsTrigger>
-              </TabsList>
-            </View>
-            <AnimatedScrollView
-              className="flex-grow"
-              style={{ paddingBottom: insets.bottom }}
-              contentContainerStyle={{
-                flexGrow: 1,
-              }}
-              ref={scrollViewRef}
-              onLayout={onListLayout}
-              onContentSizeChange={onContentSizeChange}
-              refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-            >
-              {tabValues.map((tab) => (
-                <TabsContent key={tab} value={tab} className="flex-1">
-                  {tabContent[tab]}
-                </TabsContent>
-              ))}
-            </AnimatedScrollView>
-          </Tabs>
-        </View>
-      </GestureDetector>
+      </HomeRefreshProvider>
     </SafeAreaView>
+  )
+}
+
+const PULL_THRESHOLD = 80
+
+function HomeGestureContent({
+  composedGestures,
+  scrollViewRef,
+  onListLayout,
+  onContentSizeChange,
+  onHeaderLayout,
+  headerAnimatedStyle,
+  selectedCollections,
+  onToggleCollection,
+  currentPage,
+  setCurrentPage,
+  graphHeight,
+  pullDistance,
+  pullRefreshTrigger,
+}: {
+  composedGestures: any
+  scrollViewRef: any
+  onListLayout: (e: any) => void
+  onContentSizeChange: (w: number, h: number) => void
+  onHeaderLayout: (e: any) => void
+  headerAnimatedStyle: any
+  selectedCollections: string[]
+  onToggleCollection: (type: string) => void
+  currentPage: string
+  setCurrentPage: (v: string) => void
+  graphHeight: number
+  pullDistance: SharedValue<number>
+  pullRefreshTrigger: SharedValue<number>
+}) {
+  const insets = useSafeAreaInsets()
+  const { refreshing, onRefresh } = useHomeRefreshControl()
+  const isRefreshingShared = useSharedValue(false)
+
+  useEffect(() => {
+    isRefreshingShared.value = refreshing
+  }, [refreshing])
+
+  useAnimatedReaction(
+    () => pullRefreshTrigger.value,
+    (curr, prev) => {
+      if (curr > (prev ?? 0)) runOnJS(onRefresh)()
+    }
+  )
+
+  const INDICATOR_HEIGHT = 40
+
+  const pullIndicatorStyle = useAnimatedStyle(() => {
+    const progress = Math.min(pullDistance.value / PULL_THRESHOLD, 1)
+    const height = isRefreshingShared.value
+      ? INDICATOR_HEIGHT
+      : interpolate(progress, [0, 1], [0, INDICATOR_HEIGHT])
+    return {
+      height,
+      opacity: isRefreshingShared.value ? 1 : progress,
+      overflow: 'hidden',
+    }
+  })
+
+  return (
+    <GestureDetector gesture={composedGestures}>
+      <View style={{ flex: 1 }}>
+        {/* Pull-to-refresh indicator — in flow so content shifts down */}
+        <Animated.View
+          style={[{ alignItems: 'center', justifyContent: 'center' }, pullIndicatorStyle]}
+        >
+          <ActivityIndicator size="small" color={Colors.$iconDefault} />
+        </Animated.View>
+
+        <OnboardingTarget id="collection-breakdown">
+          <CollectionBreakdown
+            style={{
+              paddingTop: 12,
+              marginBottom: 8,
+              marginHorizontal: 12,
+            }}
+            selectedCollections={selectedCollections}
+            onToggleCollection={onToggleCollection}
+          />
+        </OnboardingTarget>
+
+        <Animated.View
+          style={[
+            {
+              margin: 8,
+              borderColor: Colors.$outlineDefault,
+              borderWidth: 2,
+              overflow: 'hidden',
+              borderRadius: BorderRadiuses.br40,
+            },
+            headerAnimatedStyle,
+          ]}
+          onLayout={onHeaderLayout}
+        >
+          <OnboardingTarget id="collection-graphs">
+            <Graphs height={graphHeight} selectedCollections={selectedCollections} />
+          </OnboardingTarget>
+        </Animated.View>
+        <Tabs
+          className="flex-1"
+          value={currentPage}
+          onValueChange={setCurrentPage}
+          style={{ width: '100%' }}
+        >
+          <View style={{ flexDirection: 'row' }}>
+            <OnboardingTarget id="tab-list">
+              <TabsList className="ml-4" style={{ height: 48 }}>
+                {tabValues.map((tab) => (
+                  <TabsTrigger key={tab} value={tab}>
+                    <TabsLabel
+                      label={tab}
+                      value={tab}
+                      leftElement={(isCurrent) =>
+                        React.createElement(tabIcons[tab], {
+                          size: 16,
+                          color: isCurrent ? Colors.$textPrimary : Colors.$textDefault,
+                        })
+                      }
+                    />
+                  </TabsTrigger>
+                ))}
+              </TabsList>
+            </OnboardingTarget>
+
+            <TabsList style={{ height: 48 }}>
+              <TabsTrigger key={'Recents'} value={'Recents'} style={{}}>
+                <TabsLabel
+                  value={'Recents'}
+                  leftElement={(isCurrent) =>
+                    React.createElement(History, {
+                      size: 24,
+                      color: isCurrent ? Colors.$textPrimary : Colors.$textDefault,
+                    })
+                  }
+                />
+              </TabsTrigger>
+            </TabsList>
+          </View>
+          <AnimatedScrollView
+            className="flex-grow"
+            style={{ paddingBottom: insets.bottom }}
+            contentContainerStyle={{ flexGrow: 1 }}
+            ref={scrollViewRef}
+            onLayout={onListLayout}
+            onContentSizeChange={onContentSizeChange}
+          >
+            {tabValues.map((tab) => (
+              <TabsContent key={tab} value={tab} className="flex-1">
+                {tabContent[tab]}
+              </TabsContent>
+            ))}
+          </AnimatedScrollView>
+        </Tabs>
+      </View>
+    </GestureDetector>
   )
 }

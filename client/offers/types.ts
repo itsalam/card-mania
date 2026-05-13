@@ -8,8 +8,10 @@ export type TransactionStatus = z.infer<typeof TransactionStatus>
 
 export const CardSnapshot = z.object({
   title: z.string().optional(),
+  set_name: z.string().optional(),
   image_url: z.string().optional(),
   card_id: z.string().optional(),
+  listing_price: z.number().optional(),
 })
 export type CardSnapshot = z.infer<typeof CardSnapshot>
 

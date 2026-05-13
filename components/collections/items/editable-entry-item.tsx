@@ -26,10 +26,21 @@ import { useEffectiveColorScheme } from '@/features/settings/hooks/effective-col
 import { CollectionItemRow } from '@/lib/store/functions/types'
 import { useQueryClient } from '@tanstack/react-query'
 import { debounce } from 'lodash'
-import { Check, DollarSign, EllipsisVertical, Tag, X, XCircle } from 'lucide-react-native'
-import React, { useCallback, useEffect, useMemo, useState } from 'react'
+import {
+  Check,
+  DollarSign,
+  EllipsisVertical,
+  GripVertical,
+  Tag,
+  Trash2,
+  X,
+} from 'lucide-react-native'
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { View } from 'react-native'
-import Animated, { FadeOutRight } from 'react-native-reanimated'
+import ReanimatedSwipeable, {
+  SwipeableMethods,
+} from 'react-native-gesture-handler/ReanimatedSwipeable'
+import Animated, { FadeOutRight, SharedValue } from 'react-native-reanimated'
 import { Colors, TouchableOpacity, Typography } from 'react-native-ui-lib'
 
 const ATag = Animated.createAnimatedComponent(Tag)
@@ -79,6 +90,7 @@ export const VariantsSelect = ({
 export type PriceModalPayload = {
   draft: EditCollectionArgsItem
   updateDraft: (patch: Partial<EditCollectionArgsItem>) => void
+  onDelete: () => void
   price: number | null
   currentGrade: { grade_value: number; label: string; id: string } | undefined
   currentGrader: Graders | undefined
@@ -92,7 +104,9 @@ export const CollectionItemEntry = ({
   editable,
   isLoading,
   onPriceModalOpen,
+  showDelete,
 }: {
+  showDelete: boolean
   collection?: CollectionLike
   collectionItem?: Partial<CollectionItemRow>
   onDelete?: () => void
@@ -146,49 +160,61 @@ export const CollectionItemEntry = ({
     setDraft(initialDraft)
   }, [initialDraft])
 
-  const isEqualToInitial = (draft: EditCollectionArgsItem) =>
-    draft.quantity === initialDraft.quantity &&
-    draft.grading_company === initialDraft.grading_company &&
-    draft.grade_condition_id === initialDraft.grade_condition_id
+  // Refs so the stable debounce below always calls the latest logic without
+  // being recreated (useMutation returns a new object reference every render,
+  // which was causing a new debounce instance per render — old timers were
+  // never cancelled, firing stale INSERTs and producing duplicate rows).
+  const editableItemRef = useRef(editableItem)
+  editableItemRef.current = editableItem
+  const cardRef = useRef(card)
+  cardRef.current = card
+  const initialDraftRef = useRef(initialDraft)
+  initialDraftRef.current = initialDraft
 
-  const mutateEntry = useCallback(
-    (draft: EditCollectionArgsItem, patch: Partial<EditCollectionArgsItem>) => {
-      const merged = { ...draft, ...patch }
-      if (isEqualToInitial(merged)) return // don’t re-save same data
-      editableItem.mutate(
-        { item: merged, card: card ?? undefined },
-        {
-          onSuccess: (res) => {
-            if (res) setDraft(res as EditCollectionArgsItem)
-          },
-          onError: (...e) => {
-            console.error({ e })
-            setHide(false)
-            setDraft(draft)
-          },
-        }
-      )
-    },
-    [editableItem, card]
+  // Created once — never recreated, so its internal timer is always the same.
+  const mutateDebounce = useMemo(
+    () =>
+      debounce((draft: EditCollectionArgsItem, patch: Partial<EditCollectionArgsItem>) => {
+        const merged = { ...draft, ...patch }
+        const id = initialDraftRef.current
+        if (
+          merged.quantity === id.quantity &&
+          merged.grading_company === id.grading_company &&
+          merged.grade_condition_id === id.grade_condition_id
+        )
+          return
+        editableItemRef.current.mutate(
+          { item: merged, card: cardRef.current ?? undefined },
+          {
+            onSuccess: (res) => {
+              if (res) setDraft(res as EditCollectionArgsItem)
+            },
+            onError: (...e) => {
+              console.error({ e })
+              setHide(false)
+              setDraft(draft)
+            },
+          }
+        )
+      }, 1000),
+    [] // intentionally empty — stable for component lifetime
   )
-
-  const mutateDebounce = useCallback(debounce(mutateEntry, 1000), [mutateEntry])
 
   const deleteEntry = useCallback(
     (draft: EditCollectionArgsItem) => {
       mutateDebounce.cancel()
-      editableItem.mutate(
+      editableItemRef.current.mutate(
         { delete: true, item: { ...draft, quantity: 0 } },
         {
-          onSettled: (...a) => {
+          onSettled: () => {
             setHide(true)
             onDelete?.()
           },
-          onError: (...a) => console.log(a),
+          onError: (a) => console.log(a),
         }
       )
     },
-    [editableItem, mutateDebounce]
+    [mutateDebounce, onDelete]
   )
 
   const updateDraft = (patch: Partial<typeof initialDraft>) => {
@@ -207,133 +233,216 @@ export const CollectionItemEntry = ({
     } else return null
   }, [card, cardData, gradeData, currentGrade])
   const scheme = useEffectiveColorScheme() // 'light' | 'dark' | null
+  const swipeableRef = useRef<SwipeableMethods>(null)
   //TODO: Implement modal overriwte/selling options
 
-  return !hide ? (
-    <Animated.View
-      exiting={FadeOutRight}
-      key={scheme + (!hide ? 'show' : '')}
-      style={{
-        position: 'relative',
-        width: '100%',
-        borderBottomColor: Colors.$outlineDefault,
-        borderBottomWidth: 1,
-        paddingVertical: 6,
-        display: 'flex',
-      }}
-    >
-      <View
-        style={{
-          position: 'relative',
-          width: '100%',
-          alignItems: 'center',
-          display: 'flex',
-          flexDirection: 'row',
-          gap: 8,
-        }}
-      >
-        <View style={{ flex: 1, justifyContent: 'flex-end' }}>
-          <SkeletonText
-            className="text-base uppercase font-spaceMono"
-            defaultDimensions={{ height: 12, width: 50 }}
-            style={{
-              color: Colors.$textNeutral,
-              fontSize: 12,
-            }}
-            numberOfLines={1}
-            // adjustsFontSizeToFit
-            // minimumFontScale={0.9}
-            loading={isLoading ?? false}
-          >
-            {
-              // @ts-ignore
-              getGradingDisplayString(collectionItem as CollectionItemRow)
-                .slice(0, 2)
-                .join(' ')
-            }
-          </SkeletonText>
-        </View>
-        <View
+  const renderRightActions = useCallback(
+    (_progress: SharedValue<number>, _translation: SharedValue<number>) => (
+      <View style={{ flexDirection: 'row', marginLeft: 12 }}>
+        <TouchableOpacity
+          onPress={() => {
+            swipeableRef.current?.close()
+            deleteEntry(draft)
+          }}
+          disabled={isLoading}
           style={{
+            backgroundColor: Colors.$backgroundDangerHeavy ?? '#d9534f',
+            justifyContent: 'center',
             alignItems: 'center',
-            display: 'flex',
-            flexDirection: 'row',
-            gap: 10,
+            width: 48,
+            opacity: isLoading ? 0.4 : 1,
           }}
         >
-          <SkeletonText
-            className="text-base uppercase font-spaceMono"
-            defaultDimensions={{ height: 15, width: 66 }}
-            style={
-              price
-                ? null
-                : {
-                    color: Colors.$textNeutralLight,
-                  }
-            }
-            loading={isLoading ?? false}
-          >
-            {price ? formatPrice(price) : '--.--'}
-          </SkeletonText>
-
-          <X size={8} color={Colors.$iconDefault} />
-          <NumberTicker
+          <Trash2 size={20} color={'white'} />
+        </TouchableOpacity>
+        {editable && (
+          <TouchableOpacity
+            onPress={() => {
+              swipeableRef.current?.close()
+              onPriceModalOpen?.({
+                draft,
+                updateDraft,
+                onDelete: () => deleteEntry(draft),
+                price,
+                currentGrade,
+                currentGrader,
+              })
+            }}
             disabled={isLoading}
-            containerStyle={{ opacity: isLoading ? 0.6 : 1 }}
-            stepperProps={{ small: true }}
-            min={0}
-            max={999}
-            initialNumber={isLoading ? undefined : (draft.quantity ?? 0)}
-            onChangeNumber={(n) => updateDraft({ quantity: n })}
-          />
+            style={{
+              backgroundColor: Colors.$backgroundNeutralLight,
+              justifyContent: 'center',
+              alignItems: 'center',
+              width: 32,
+              opacity: isLoading ? 0.4 : 1,
+            }}
+          >
+            <EllipsisVertical size={20} color={Colors.$iconDefault} />
+          </TouchableOpacity>
+        )}
+      </View>
+    ),
+    [
+      deleteEntry,
+      draft,
+      isLoading,
+      editable,
+      onPriceModalOpen,
+      updateDraft,
+      price,
+      currentGrade,
+      currentGrader,
+    ]
+  )
 
+  return !hide ? (
+    <Animated.View exiting={FadeOutRight} key={scheme + (!hide ? 'show' : '')}>
+      <ReanimatedSwipeable
+        ref={swipeableRef}
+        enabled={showDelete && !isLoading}
+        renderRightActions={showDelete ? renderRightActions : undefined}
+        rightThreshold={40}
+        overshootRight={false}
+        containerStyle={{
+          borderBottomColor: Colors.$outlineDefault,
+          borderBottomWidth: 1,
+        }}
+        childrenContainerStyle={{
+          zIndex: 1,
+          backgroundColor: Colors.$backgroundElevatedLight,
+        }}
+      >
+        <View
+          style={{
+            position: 'relative',
+            width: '100%',
+            paddingVertical: 6,
+            paddingLeft: 16,
+            display: 'flex',
+            flexDirection: 'column',
+            paddingRight: editable ? 0 : 8,
+          }}
+        >
           <View
             style={{
+              width: '100%',
               alignItems: 'center',
               display: 'flex',
               flexDirection: 'row',
-              gap: 0,
+              gap: 8,
+              flexWrap: 'wrap',
             }}
           >
-            <TouchableOpacity
-              onPress={() => deleteEntry(draft)}
-              disabled={isLoading}
-              style={{ opacity: isLoading ? 0.4 : 1 }}
-            >
-              <XCircle color={Colors.$iconDefault} />
-            </TouchableOpacity>
-            {editable && (
-              <TouchableOpacity
-                onPress={() =>
-                  onPriceModalOpen?.({ draft, updateDraft, price, currentGrade, currentGrader })
-                }
-                disabled={isLoading}
-                style={{ opacity: isLoading ? 0.4 : 1 }}
+            <View style={{ flexShrink: 0, justifyContent: 'flex-end' }}>
+              <SkeletonText
+                className="text-base uppercase font-spaceMono"
+                defaultDimensions={{ height: 12, width: 50 }}
+                style={{
+                  color: Colors.$textNeutral,
+                  fontSize: 12,
+                  flexWrap: 'nowrap',
+                }}
+                numberOfLines={1}
+                loading={isLoading ?? false}
               >
-                <EllipsisVertical color={Colors.$iconDefault} />
-              </TouchableOpacity>
-            )}
-          </View>
-        </View>
-      </View>
-      {collectionItem?.variants?.length ? (
-        <View style={{ flexDirection: 'row', paddingTop: 2 }}>
-          {collectionItem.variants?.map((v) => (
-            <Badge
-              key={v}
-              label={String(v)}
-              size={{ height: 10 }}
-              leftElement={<AccessoryTag size={14} />}
-              labelStyle={{
-                ...Typography.text100,
-                lineHeight: 0,
-                padding: 0,
+                {
+                  // @ts-ignore
+                  getGradingDisplayString(collectionItem as CollectionItemRow)
+                    .slice(0, 2)
+                    .join(' ')
+                }
+              </SkeletonText>
+            </View>
+            <View
+              style={{
+                alignItems: 'center',
+                display: 'flex',
+                flexDirection: 'row',
+                flex: 1,
+                justifyContent: 'flex-end',
               }}
-              containerStyle={{ padding: 3, paddingLeft: 8, paddingRight: 0, borderWidth: 0 }}
-            />
-          ))}
+            >
+              <SkeletonText
+                className="text-base uppercase font-spaceMono"
+                defaultDimensions={{ height: 15, width: 66 }}
+                style={
+                  price
+                    ? null
+                    : {
+                        color: Colors.$textNeutralLight,
+                      }
+                }
+                loading={isLoading ?? false}
+              >
+                {price ? formatPrice(price) : '--.--'}
+              </SkeletonText>
+              <View
+                style={{
+                  flex: 1,
+                  maxWidth: 20,
+                  minWidth: 15,
+                  alignItems: 'center',
+                }}
+              >
+                <X size={8} color={Colors.$iconDefault} />
+              </View>
+              <NumberTicker
+                disabled={isLoading}
+                containerStyle={{ opacity: isLoading ? 0.6 : 1 }}
+                stepperProps={{ small: true }}
+                min={0}
+                max={999}
+                initialNumber={isLoading ? undefined : (draft.quantity ?? 0)}
+                onChangeNumber={(n) => updateDraft({ quantity: n })}
+              />
+
+              {showDelete && (
+                <TouchableOpacity
+                  onPress={
+                    editable
+                      ? () =>
+                          onPriceModalOpen?.({
+                            draft,
+                            updateDraft,
+                            onDelete: () => deleteEntry(draft),
+                            price,
+                            currentGrade,
+                            currentGrader,
+                          })
+                      : undefined
+                  }
+                  disabled={isLoading}
+                  style={{ opacity: isLoading ? 0.4 : 1 }}
+                >
+                  <GripVertical
+                    size={16}
+                    color={Colors.$iconNeutral ?? Colors.$iconDefault}
+                    strokeWidth={1.5}
+                  />
+                </TouchableOpacity>
+              )}
+            </View>
+          </View>
+          {collectionItem?.variants?.length ? (
+            <View style={{ flexDirection: 'row', paddingTop: 2 }}>
+              {collectionItem.variants?.map((v) => (
+                <Badge
+                  key={v}
+                  label={String(v)}
+                  size={{ height: 10 }}
+                  leftElement={<AccessoryTag size={14} />}
+                  labelStyle={{
+                    ...Typography.text100,
+                    lineHeight: 0,
+                    padding: 0,
+                  }}
+                  containerStyle={{ padding: 3, paddingLeft: 8, paddingRight: 0, borderWidth: 0 }}
+                />
+              ))}
+            </View>
+          ) : null}
         </View>
-      ) : null}
+      </ReanimatedSwipeable>
     </Animated.View>
   ) : null
 }
@@ -351,14 +460,13 @@ export const PriceChangeModal = ({
 }) => {
   if (!data) return
 
-  const { currentGrader, currentGrade, price, draft, updateDraft } = data
+  const { currentGrader, currentGrade, price, draft, updateDraft, onDelete } = data
   return (
     <Modal visible={visible} onDismiss={onDismiss}>
       <View className="pt-4" style={{ paddingRight: 1, width: '100%', height: '100%' }}>
         <Separator orientation="horizontal" />
-
-        <Separator orientation="horizontal" />
         <View className="flex flex-col flex-1 py-4" style={{ width: '100%' }}>
+          {/* Header */}
           <View
             style={{
               flexDirection: 'row',
@@ -369,7 +477,7 @@ export const PriceChangeModal = ({
             }}
           >
             <Text variant={'h3'} style={{ fontSize: 24, lineHeight: 26 }}>
-              Sell Quanity -{' '}
+              Sell Quantity -{' '}
               <Text
                 className="text-base uppercase font-spaceMono"
                 style={{
@@ -383,6 +491,8 @@ export const PriceChangeModal = ({
               </Text>
             </Text>
           </View>
+
+          {/* Fields */}
           <View
             style={{
               flexDirection: 'row',
@@ -399,7 +509,7 @@ export const PriceChangeModal = ({
                 paddingTop: 2,
               }}
             >
-              <Label style={[styles.floatingPlaceholderTextStyle]}>Quanity</Label>
+              <Label style={[styles.floatingPlaceholderTextStyle]}>Quantity</Label>
               <NumberTicker
                 min={0}
                 max={999}
@@ -410,13 +520,7 @@ export const PriceChangeModal = ({
             </View>
 
             <X size={20} color={Colors.$outlineDefault} style={{ alignSelf: 'center' }} />
-            <View
-              style={{
-                paddingVertical: 8,
-                flex: 1,
-                marginLeft: 8,
-              }}
-            >
+            <View style={{ paddingVertical: 8, flex: 1, marginLeft: 8 }}>
               <TextField
                 leadingAccessory={<DollarSign color={Colors.$textDefault} />}
                 validate={'number'}
@@ -427,20 +531,48 @@ export const PriceChangeModal = ({
               />
             </View>
           </View>
-          <TouchableOpacity
-            style={{ width: '30%', alignSelf: 'flex-end', margin: 4 }}
-            onPress={() => updateDraft(draft)}
-          >
-            <Button size={'lg'} style={{ width: '100%', marginRight: 4 }}>
-              <Text>Save</Text>
-              <Check
-                color={Colors.$iconDefault}
-                size={16}
-                strokeWidth={2}
-                style={{ marginRight: 4 }}
-              />
-            </Button>
-          </TouchableOpacity>
+
+          <Separator orientation="horizontal" style={{ marginVertical: 12 }} />
+
+          {/* Actions */}
+          <View style={{ flexDirection: 'row', gap: 8, justifyContent: 'flex-end' }}>
+            <TouchableOpacity
+              style={{ flex: 1 }}
+              onPress={() => {
+                onDelete()
+                onDismiss()
+              }}
+            >
+              <Button
+                size={'lg'}
+                style={{
+                  width: '100%',
+                  backgroundColor: Colors.$backgroundDangerHeavy ?? '#d9534f',
+                }}
+              >
+                <Trash2 color={'white'} size={16} strokeWidth={2} style={{ marginRight: 4 }} />
+                <Text style={{ color: 'white' }}>Delete</Text>
+              </Button>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={{ flex: 1 }}
+              onPress={() => {
+                updateDraft(draft)
+                onDismiss()
+              }}
+            >
+              <Button size={'lg'} style={{ width: '100%' }}>
+                <Check
+                  color={Colors.$iconDefault}
+                  size={16}
+                  strokeWidth={2}
+                  style={{ marginRight: 4 }}
+                />
+                <Text>Save</Text>
+              </Button>
+            </TouchableOpacity>
+          </View>
         </View>
       </View>
     </Modal>

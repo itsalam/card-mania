@@ -109,7 +109,6 @@ export function SubHeader() {
   const { showToast } = useToast()
 
   const isOwnProfile = !!authUser?.id && authUser.id === user?.user_id
-
   const storefrontUrl = user?.username
     ? `https://${STOREFRONT_DOMAIN}/storefront/${user.username}`
     : null
@@ -228,7 +227,7 @@ export function SubHeader() {
         </ExpandableText>
       ) : null}
 
-      {!isOwnProfile && storefrontUrl ? (
+      {isOwnProfile && storefrontUrl ? (
         <TouchableOpacity
           onPress={handleShareStorefront}
           style={{

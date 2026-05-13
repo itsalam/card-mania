@@ -13,7 +13,7 @@ import { Colors } from 'react-native-ui-lib'
 
 const buttonVariants = cva(
   cn(
-    'group shrink-0 flex-row items-center justify-center gap-2 rounded-md shadow-none',
+    'group shrink-0 flex-row items-center justify-center gap-1 rounded-md shadow-none',
     Platform.select({
       web: "whitespace-nowrap outline-none transition-all focus-visible:ring-[3px] disabled:pointer-events-none [&_svg:not([class*='size-'])]:size-4 [&_svg]:pointer-events-none [&_svg]:shrink-0",
     })
@@ -30,7 +30,7 @@ const buttonVariants = cva(
         link: '',
       },
       size: {
-        default: cn('min-h-10 px-4 py-2 sm:h-9', Platform.select({ web: 'has-[>svg]:px-3' })),
+        default: cn('min-h-10 px-4 py-1.5', Platform.select({ web: 'has-[>svg]:px-3' })),
         sm: cn(
           'min-h-9 gap-1.5 rounded-md px-3 sm:h-8',
           Platform.select({ web: 'has-[>svg]:px-2.5' })

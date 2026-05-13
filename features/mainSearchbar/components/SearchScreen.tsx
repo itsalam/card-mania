@@ -184,7 +184,7 @@ export function SearchScreen({
               contentContainerStyle={{
                 display: 'flex',
                 gap: 18,
-                paddingHorizontal: 12,
+                paddingLeft: 12,
                 paddingTop: 18,
               }}
             />

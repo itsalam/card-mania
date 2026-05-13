@@ -35,8 +35,18 @@ type CollectionPreviewItemProps = { collection: CollectionLike; isOwnProfile?: b
 
 function StorefrontPreviewItems({ collection, isOwnProfile }: CollectionPreviewItemProps) {
   const { query } = useGetCollectionItems({ collectionId: collection?.id }, undefined, false)
-  const { data } = query
+  const { data, isPending } = query
   const flatData = data?.pages.flat() ?? []
+
+  if (!isPending && flatData.length === 0) {
+    return (
+      <View style={{ alignItems: 'center', paddingVertical: 40, paddingHorizontal: 24 }}>
+        <Text variant="default" style={{ color: Colors.$textNeutralLight, textAlign: 'center' }}>
+          No items in this collection.
+        </Text>
+      </View>
+    )
+  }
 
   return (
     <View>
@@ -145,7 +155,7 @@ function StorefrontAccessories(props: ItemListViewProps) {
 
   return (
     <View
-      className="self-stretch flex-1 flex flex-col items-stretch justify-between pr-4 relative"
+      className="self-stretch flex-1 flex flex-col items-stretch justify-between px-4 relative"
       style={{ position: 'relative', alignSelf: 'stretch' }}
     >
       {/* Price + metadata — mirrors DefaultAccessories layout */}
