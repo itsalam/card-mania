@@ -52,6 +52,9 @@ export type ItemListViewProps = ItemListingProps & {
   ) => ReactNode
   onPress?: () => void
   navigateTo?: AppPathname
+  /** Custom node rendered in the bottom-right corner of the card image.
+   *  Pass `null` to suppress the default Maximize icon. */
+  imageAccessory?: ReactNode
 }
 
 export type CardItemListProps = Omit<ItemListViewProps, 'item' | 'displayData'>

@@ -12,15 +12,14 @@
  *  - No `PortalHost`         (rn-primitives portal not needed on web)
  */
 import '@/components/icons'
+import '@expo/metro-runtime'
 import '../global.css'
 
 import { Stack } from 'expo-router/stack'
 import React from 'react'
 import WebProviders from './_providers.web'
 
-export {
-  ErrorBoundary,
-} from 'expo-router'
+export { ErrorBoundary } from 'expo-router'
 
 export default function WebRootLayout() {
   return (
@@ -35,6 +34,11 @@ export default function WebRootLayout() {
         <Stack.Screen name="index" options={{ headerShown: false }} />
         <Stack.Screen name="[username]" options={{ headerShown: false }} />
         <Stack.Screen name="storefront/[username]" options={{ headerShown: false }} />
+        {/* Authenticated web routes */}
+        <Stack.Screen name="offers" options={{ headerShown: false }} />
+        <Stack.Screen name="cart" options={{ headerShown: false }} />
+        <Stack.Screen name="transactions" options={{ headerShown: false }} />
+        <Stack.Screen name="transactions/[offerId]" options={{ headerShown: false }} />
         <Stack.Screen name="+not-found" />
       </Stack>
     </WebProviders>

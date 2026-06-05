@@ -452,3 +452,8 @@ entrypoint = "./functions/search-warmup/index.ts"
 enabled = true
 verify_jwt = false
 entrypoint = "./functions/report-search-perf/index.ts"
+
+[functions.cleanup-anon-users]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/cleanup-anon-users/index.ts"

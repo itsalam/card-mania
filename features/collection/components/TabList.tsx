@@ -1,5 +1,4 @@
 import { CollectionIdArgs } from '@/client/collections/types'
-import { Separator } from '@/components/ui/separator'
 import { TabsLabel, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import MaskedView from '@react-native-masked-view/masked-view'
 import { Coins, Heart, Layers, LucideIcon, Plus, Vault, X } from 'lucide-react-native'
@@ -33,7 +32,8 @@ export const CollectionTabList = () => {
   const scrollViewRef = useRef<FlatList>(null)
   const [listWidth, setListWidth] = useState(0)
   const [lastTabWidth, setLastTabWidth] = useState(0)
-  const leftPadding = 12
+  const [scrollX, setScrollX] = useState(0)
+  const leftPadding = 4
   const trailingSpace = listWidth ? Math.max(listWidth - (lastTabWidth + leftPadding * 2), 0) : 20
   const tabs = useMemo(() => {
     const tabs = [...defaultPages.slice(1), ...(preferences?.tabs ?? [])]
@@ -66,7 +66,7 @@ export const CollectionTabList = () => {
   }, [tabs, currentPage])
 
   return (
-    <View className="mx-3 pb-2 overflow-hidden mr-5" style={{ borderRadius: BorderRadiuses.br30 }}>
+    <View className="mx-3 overflow-hidden mr-5" style={{ borderRadius: BorderRadiuses.br30 }}>
       <TabsList className="p-px pl-0 overflow-visible w-full items-start justify-start">
         <TabsTrigger
           key={defaultPages[0]}
@@ -74,24 +74,29 @@ export const CollectionTabList = () => {
           style={{
             zIndex: 2,
             backgroundColor: Colors.$backgroundElevated,
+            borderTopRightRadius: 0,
+            borderBottomRightRadius: 0,
+            borderRightWidth: 1,
+            borderWidth: 0,
+            paddingLeft: 14,
+            paddingRight: 10,
+            borderColor: Colors.$outlineDefault,
             height: '100%',
             padding: 0,
           }}
         >
           <TabsLabel
             value={defaultPages[0]}
-            className="text-xl"
             style={{ color: Colors.$textDefault }}
             leftElement={(current) =>
               React.createElement(tabIcons[defaultPages[0]], {
-                size: 24,
-                color: current ? Colors.$textPrimary : Colors.$textDefault,
+                size: 13,
+                color: current ? Colors.$backgroundPrimaryHeavy : Colors.$textNeutral,
                 style: { marginBottom: 0 },
               })
             }
           />
         </TabsTrigger>
-        <Separator orientation="vertical" className="mb-2 pb-2 z-10" />
         <MaskedView
           style={[
             { flex: 1.0, position: 'relative' },
@@ -99,11 +104,14 @@ export const CollectionTabList = () => {
           ]}
           maskElement={
             <LinearGradient
-              // MaskedView uses the alpha channel: solid shows content, transparent hides it.
-              colors={['transparent', 'black', 'black', 'transparent']}
+              colors={
+                scrollX > 0
+                  ? ['transparent', 'black', 'black', 'transparent']
+                  : ['black', 'black', 'black', 'transparent']
+              }
               start={{ x: 0.0, y: 0.5 }}
               end={{ x: 1, y: 0.5 }}
-              locations={[0, 0.025, 0.95, 1]}
+              locations={scrollX > 0 ? [0, 0.025, 0.95, 1] : [0, 0, 0.95, 1]}
               style={{
                 position: 'absolute',
                 height: '100%',
@@ -138,11 +146,14 @@ export const CollectionTabList = () => {
             contentContainerStyle={{
               paddingLeft: leftPadding,
               paddingRight: leftPadding,
+              marginLeft: -leftPadding / 2,
               display: 'flex',
               flexDirection: 'row',
               gap: 0,
               zIndex: -1,
             }}
+            onScroll={(e) => setScrollX(e.nativeEvent.contentOffset.x)}
+            scrollEventThrottle={16}
             onLayout={(event) => {
               const width = Math.round(event.nativeEvent.layout.width)
               if (width && width !== listWidth) setListWidth(width)
@@ -259,27 +270,27 @@ const CollectionTab = ({ collectionKey, onLayout }: CollectionTabProps) => {
 
   return (
     <View style={{ flexGrow: 0, flexShrink: 0 }} onLayout={onLayout}>
-      <TabsTrigger key={key} value={key} className="pt-px p-0">
+      <TabsTrigger
+        key={key}
+        value={key}
+        style={{
+          flex: 1,
+          marginVertical: 3,
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
         <TabsLabel
           label={label}
           value={key}
-          className="text-xl"
           style={{
-            color: Colors.$textDefault,
-          }}
-          containerStyle={{
-            padding: 6,
-            paddingHorizontal: 12,
-            borderRadius: BorderRadiuses.br30,
-            ...(isCurrent
-              ? { borderColor: Colors.$outlineGeneral, borderWidth: 2 }
-              : { padding: 8 }),
+            color: isCurrent ? Colors.$textDefault : Colors.$textNeutral,
           }}
           leftElement={(current: boolean) =>
             label?.length ? (
               React.createElement(tabIcons[key as keyof typeof tabIcons] ?? tabIcons['default'], {
-                size: 20,
-                color: current ? Colors.$textPrimary : Colors.$textDefault,
+                size: 13,
+                color: current ? Colors.$textDefault : Colors.$textNeutral,
               })
             ) : (
               <Spinner />
@@ -301,7 +312,7 @@ const CollectionTab = ({ collectionKey, onLayout }: CollectionTabProps) => {
                     .then(() => setCurrentPage('default'))
                 }
               >
-                <X size={16} color={current ? Colors.$textPrimary : Colors.$textDefault} />
+                <X size={13} color={Colors.$backgroundPrimaryHeavy} />
               </TouchableOpacity>
             ) : !label?.length ? (
               <Skeleton style={{ borderRadius: 999, width: 48, height: 18 }} />

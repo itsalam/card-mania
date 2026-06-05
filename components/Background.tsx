@@ -23,17 +23,6 @@ type OptionalColorValueArray = (string | undefined)[]
 
 const ABlur = Animated.createAnimatedComponent(BlurView)
 
-// const S = StyleSheet.create({
-//   root: {
-//     flex: 1,
-//     justifyContent: 'center',
-//     alignItems: 'center',
-//     width: '100%',
-//     height: '100%',
-//     opacity: 1,
-//   },
-// })
-
 // ---- shallow/value equality helpers ----
 const arrEq = (a?: readonly any[], b?: readonly any[]) =>
   a === b || (!!a && !!b && a.length === b.length && a.every((v, i) => v === b[i]))

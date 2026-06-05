@@ -4,15 +4,17 @@ import { Button } from '@/components/ui/button'
 import { TextField } from '@/components/ui/input/base-input'
 import { Text } from '@/components/ui/text/base-text'
 import { useOnboardingStore } from '@/features/onboarding/OnboardingProvider'
+import { PasswordStrengthGauge } from '@/features/splash/PasswordStrengthGauge'
+import { DEFAULT_POLICY, policyError } from '@/features/splash/usePasswordPolicy'
 import LocationPicker from '@/features/settings/components/location-picker'
 import { useUserStore } from '@/lib/store/useUserStore'
-import { MapPin, Star, TrendingUp } from 'lucide-react-native'
+import { Eye, EyeOff, Lock, MapPin, Star, TrendingUp } from 'lucide-react-native'
 import { MotiTransitionProp, MotiView } from 'moti'
 import { useRef, useState } from 'react'
 import { TouchableOpacity, View } from 'react-native'
 import { Colors } from 'react-native-ui-lib'
 
-const TOTAL_STEPS = 5
+const TOTAL_STEPS = 6
 const isDev = process.env.NODE_ENV !== 'production'
 const PAGE_TRANSITION: MotiTransitionProp = {
   translateX: {
@@ -96,10 +98,18 @@ function CollectorChip({ label, description, icon, active, onPress }: CollectorC
 // ── Wizard ────────────────────────────────────────────────────────────────────
 
 export function ProfileSetupWizard() {
-  const { profile, updateProfile, setProfileSetupComplete } = useUserStore()
+  const { profile, updateProfile, setProfileSetupComplete, setPassword } = useUserStore()
 
   const [step, setStep] = useState(0)
   const direction = useRef<1 | -1>(1)
+
+  // Step 0 — password
+  const [password, setPasswordValue] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
+  const [passwordFocused, setPasswordFocused] = useState(false)
+
+  // Steps 1–5 — profile
   const [displayName, setDisplayName] = useState(profile?.display_name ?? '')
   const [username, setUsername] = useState(
     profile?.username ? profile.username.replace(/^@/, '') : ''
@@ -125,8 +135,23 @@ export function ProfileSetupWizard() {
     startTour()
   }
 
-  const handleNext = () => {
+  const handleNext = async () => {
     if (step === 0) {
+      const pwErr = policyError(password, DEFAULT_POLICY)
+      if (pwErr) return setError(pwErr)
+      if (password !== confirmPassword) return setError('Passwords do not match.')
+      setSaving(true)
+      try {
+        await setPassword(password)
+      } catch (err: any) {
+        setError(err?.message ?? 'Failed to set password. Please try again.')
+        setSaving(false)
+        return
+      } finally {
+        setSaving(false)
+      }
+    }
+    if (step === 1) {
       if (!displayName.trim()) return setError('Please enter a display name.')
       if (!username.trim()) return setError('Please enter a handle.')
       if (!/^[a-z0-9_]+$/.test(username.trim()))
@@ -192,8 +217,68 @@ export function ProfileSetupWizard() {
             <Text className="text-white opacity-50 text-xs">Skip setup</Text>
           </TouchableOpacity>
         )}
-        {/* ── Step 1: Identity ── */}
+        {/* ── Step 0: Password ── */}
         {step === 0 && (
+          <>
+            <Text className="text-white text-2xl font-bold">Secure your account</Text>
+            <Text className="text-white opacity-70 leading-6">
+              Set a password so you can sign in with email next time.
+            </Text>
+
+            <View style={{ gap: 8 }}>
+              <TextField
+                leadingAccessory={<Lock size={20} color={Colors.$textPrimary} />}
+                trailingAccessory={
+                  <TouchableOpacity
+                    onPress={() => setShowPassword((v) => !v)}
+                    accessibilityLabel={showPassword ? 'Hide password' : 'Show password'}
+                    style={{ justifyContent: 'center', paddingHorizontal: 4 }}
+                  >
+                    {showPassword ? (
+                      <EyeOff size={20} color={Colors.$textPrimary} />
+                    ) : (
+                      <Eye size={20} color={Colors.$textPrimary} />
+                    )}
+                  </TouchableOpacity>
+                }
+                placeholder="Password"
+                value={password}
+                onChangeText={(v) => {
+                  setError(null)
+                  setPasswordValue(v)
+                }}
+                onFocus={() => setPasswordFocused(true)}
+                onBlur={() => setPasswordFocused(false)}
+                secureTextEntry={!showPassword}
+                autoCapitalize="none"
+                floatingPlaceholder
+                containerStyle={fieldStyle}
+              />
+              <PasswordStrengthGauge
+                password={password}
+                policy={DEFAULT_POLICY}
+                focused={passwordFocused}
+              />
+            </View>
+
+            <TextField
+              leadingAccessory={<Lock size={20} color={Colors.$textPrimary} />}
+              placeholder="Confirm password"
+              value={confirmPassword}
+              onChangeText={(v) => {
+                setError(null)
+                setConfirmPassword(v)
+              }}
+              secureTextEntry={!showPassword}
+              autoCapitalize="none"
+              floatingPlaceholder
+              containerStyle={fieldStyle}
+            />
+          </>
+        )}
+
+        {/* ── Step 1: Identity ── */}
+        {step === 1 && (
           <>
             <Text className="text-white text-2xl font-bold">Your identity</Text>
             <Text className="text-white opacity-70 leading-6">
@@ -228,7 +313,7 @@ export function ProfileSetupWizard() {
         )}
 
         {/* ── Step 2: Bio ── */}
-        {step === 1 && (
+        {step === 2 && (
           <>
             <Text className="text-white text-2xl font-bold">About you</Text>
             <Text className="text-white opacity-70 leading-6">
@@ -248,7 +333,7 @@ export function ProfileSetupWizard() {
         )}
 
         {/* ── Step 3: Collector type ── */}
-        {step === 2 && (
+        {step === 3 && (
           <>
             <Text className="text-white text-2xl font-bold">How you collect</Text>
             <Text className="text-white opacity-70 leading-6">
@@ -275,7 +360,7 @@ export function ProfileSetupWizard() {
         )}
 
         {/* ── Step 4: Location ── */}
-        {step === 3 && (
+        {step === 4 && (
           <>
             <Text className="text-white text-2xl font-bold">Your location</Text>
             <Text className="text-white opacity-70 leading-6">
@@ -305,7 +390,7 @@ export function ProfileSetupWizard() {
         )}
 
         {/* ── Step 5: Shipping address ── */}
-        {step === 4 && (
+        {step === 5 && (
           <>
             <Text className="text-white text-2xl font-bold">Shipping address</Text>
             <Text className="text-white opacity-70 leading-6">
@@ -394,8 +479,8 @@ export function ProfileSetupWizard() {
           <StepDots current={step} />
 
           <View style={{ flexDirection: 'row', gap: 10, alignItems: 'center' }}>
-            {/* Skip link for optional steps */}
-            {step > 0 && (
+            {/* Skip link — not available on step 0 (password is required) */}
+            {step > 1 && (
               <TouchableOpacity
                 onPress={step === TOTAL_STEPS - 1 ? handleFinish : handleNext}
                 accessibilityLabel="Skip this step"

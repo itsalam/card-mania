@@ -82,7 +82,7 @@ export function FolderTabsContainer({
       style={[
         {
           borderColor: Colors.$outlineNeutral,
-          backgroundColor: Colors.$backgroundElevatedLight,
+          // backgroundColor: Colors.$backgroundElevatedLight,
           height: '100%',
         },
         style,

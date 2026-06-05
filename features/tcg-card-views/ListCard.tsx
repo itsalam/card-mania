@@ -171,7 +171,7 @@ export function CardListView({ card, collectionItem, ...props }: CardListViewPro
 }
 
 export const ItemListView = forwardRef<View, ItemListViewProps>(function ItemListView(
-  { renderAccessories, navigateTo, ...props },
+  { renderAccessories, navigateTo, imageAccessory, ...props },
   ref
 ) {
   const {
@@ -206,28 +206,43 @@ export const ItemListView = forwardRef<View, ItemListViewProps>(function ItemLis
       style={[style]}
     >
       <View
-        style={{
-          position: 'relative',
-          overflow: 'visible',
-        }}
+        style={[
+          {
+            position: 'relative',
+            overflow: 'visible',
+            alignSelf: 'stretch',
+            alignContent: 'center',
+            justifyContent: 'center',
+          },
+          vertical ? { padding: 8, paddingBottom: 0 } : {},
+        ]}
       >
-        <CardImage
-          displayData={displayData}
-          imageProps={{ onPress: onPress ?? handlePress, ref: cardElement }}
-        />
-        <View
-          style={{
-            aspectRatio: 1,
-            borderRadius: 999,
-            backgroundColor: Colors.rgba(Colors.$backgroundElevatedLight, 0.8),
-            position: 'absolute',
-            right: 0,
-            bottom: 0,
-            transform: [{ translateX: '25%' }, { translateY: '25%' }],
-            padding: 8,
-          }}
-        >
-          <Maximize size={18} color={Colors.$iconDefault} />
+        <View style={vertical ? { marginHorizontal: 'auto' } : {}}>
+          <CardImage
+            displayData={displayData}
+            imageProps={{
+              onPress: onPress ?? (navigateTo ? handlePress : undefined),
+              ref: cardElement,
+            }}
+          />
+          {imageAccessory !== undefined
+            ? imageAccessory
+            : (navigateTo || onPress) && (
+                <View
+                  style={{
+                    aspectRatio: 1,
+                    borderRadius: 999,
+                    backgroundColor: Colors.rgba(Colors.$backgroundElevatedLight, 0.8),
+                    position: 'absolute',
+                    right: 0,
+                    bottom: 0,
+                    transform: [{ translateX: '12.5%' }, { translateY: '12.5%' }],
+                    padding: 8,
+                  }}
+                >
+                  <Maximize size={18} color={Colors.$iconDefault} />
+                </View>
+              )}
         </View>
       </View>
 

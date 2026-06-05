@@ -1,4 +1,4 @@
-import Logo from '@/assets/images/logo.svg'
+import Logo from '@/assets/images/logo-min.svg'
 import { GradientBackground } from '@/components/Background'
 import { Button as AppButton } from '@/components/ui/button'
 import { TextField } from '@/components/ui/input/base-input'
@@ -11,9 +11,13 @@ import { cn } from '@/lib/utils'
 import { AtSign, Eye, EyeOff, Lock, User } from 'lucide-react-native'
 import { MotiView } from 'moti'
 import { ComponentProps, useState } from 'react'
-import { TouchableOpacity, View } from 'react-native'
-import { KeyboardAvoidingView } from 'react-native-keyboard-controller'
+import { Dimensions, TouchableOpacity, View } from 'react-native'
+import {
+  KeyboardAvoidingView,
+  useReanimatedKeyboardAnimation,
+} from 'react-native-keyboard-controller'
 import Animated, {
+  interpolate,
   useAnimatedStyle,
   useSharedValue,
   withSequence,
@@ -56,7 +60,7 @@ const BaseButton = ({ className, ...props }: ComponentProps<typeof AppButton>) =
 // ── OAuth stubs ───────────────────────────────────────────────────────────────
 
 const GoogleSignInButton = () => (
-  <BaseButton variant="secondary">
+  <BaseButton variant="secondary" disabled>
     <View className="w-5 h-5">
       <Svg viewBox="0 0 48 48">
         <Path
@@ -83,7 +87,7 @@ const GoogleSignInButton = () => (
 )
 
 const FacebookSignInButton = () => (
-  <BaseButton variant="secondary">
+  <BaseButton variant="secondary" disabled>
     <View className="w-5 h-5">
       <Svg viewBox="0 0 48 48" fill="#000000">
         <G id="SVGRepo_iconCarrier">
@@ -133,6 +137,11 @@ function friendlySignInError(message: string): string {
 export function SplashPage() {
   const { signInAnonymously, signIn } = useUserStore()
   const isDev = process.env.NODE_ENV !== 'production'
+  const { height } = Dimensions.get('screen')
+  const { height: kbHeight, progress: kbProgress } = useReanimatedKeyboardAnimation()
+  const logoKbStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: interpolate(kbProgress.value, [0, 1], [1, 0.6]) }],
+  }))
 
   const [view, setView] = useState<'login' | 'signup'>('login')
   const [email, setEmail] = useState('')
@@ -180,26 +189,43 @@ export function SplashPage() {
     }
   }
 
+  // Shared logo node — flex:1 keeps it in the keyboard-avoiding flow so it moves with the form;
+  // maxHeight caps the area so both screens place the logo at the same position.
+  const logoNode = (
+    <Animated.View
+      style={[
+        {
+          flex: 1,
+          alignItems: 'center',
+          justifyContent: 'flex-end',
+          paddingBottom: 24,
+        },
+        logoKbStyle,
+      ]}
+    >
+      <MotiView
+        from={{ opacity: 0, translateY: 60 }}
+        animate={{ opacity: 1, translateY: 0 }}
+        transition={{ type: 'spring', damping: 100, stiffness: 300, overshootClamping: true }}
+      >
+        <Logo width={192} height={192} />
+      </MotiView>
+    </Animated.View>
+  )
+
   // ── Sign-up view ─────────────────────────────────────────────────────────
   if (view === 'signup') {
     return (
       <KeyboardAvoidingView behavior="padding" style={{ flex: 1 }}>
-        <GradientBackground style={{ justifyContent: 'center', gap: 16 }}>
-          <MotiView
-            style={{ alignItems: 'center' }}
-            from={{ opacity: 0, translateY: 100 }}
-            animate={{ opacity: 1, translateY: 0 }}
-            transition={{
-              type: 'spring',
-              damping: 100,
-              stiffness: 300,
-              mass: 0.9,
-              overshootClamping: true,
+        <GradientBackground style={{ flex: 1 }}>
+          {logoNode}
+          <View
+            style={{
+              height: '50%',
             }}
           >
-            <Logo width={128} height={128} />
-          </MotiView>
-          <SignUpForm onBack={() => setView('login')} />
+            <SignUpForm onBack={() => setView('login')} />
+          </View>
         </GradientBackground>
       </KeyboardAvoidingView>
     )
@@ -208,38 +234,32 @@ export function SplashPage() {
   // ── Login view ────────────────────────────────────────────────────────────
   return (
     <KeyboardAvoidingView behavior="padding" style={{ flex: 1 }}>
-      <GradientBackground style={{ justifyContent: 'center', gap: 16 }}>
-        <MotiView
-          style={{ alignItems: 'center' }}
-          from={{ opacity: 0, translateY: 100 }}
-          animate={{ opacity: 1, translateY: 0 }}
-          transition={{
-            type: 'spring',
-            damping: 100,
-            stiffness: 300,
-            mass: 0.9,
-            overshootClamping: true,
-          }}
-        >
-          <Logo width={256} height={256} />
-        </MotiView>
+      <GradientBackground style={{ flex: 1, justifyContent: 'space-between' }}>
+        {logoNode}
 
+        {/* Form — sits at the bottom */}
         <MotiView
-          from={{ opacity: 0, translateY: 100 }}
+          from={{ opacity: 0, translateY: 60 }}
           animate={{ opacity: 1, translateY: 0 }}
           transition={{
             delay: 100,
             type: 'spring',
             damping: 100,
             stiffness: 300,
-            mass: 0.9,
             overshootClamping: true,
           }}
-          className="flex flex-col items-center justify-center px-8 gap-4 w-full"
+          style={{
+            alignItems: 'center',
+            paddingHorizontal: 32,
+            gap: 16,
+            width: '100%',
+            paddingBottom: 32,
+            height: '50%',
+          }}
         >
           {/* Header row */}
           <View className="w-full px-4 flex flex-row justify-between items-center">
-            <Text className="text-white text-2xl">Log in to CardMania</Text>
+            <Text className="text-white text-xl">Log in to CardMania</Text>
             <AppButton
               variant="outline"
               size="sm"
@@ -307,25 +327,32 @@ export function SplashPage() {
           </Animated.View>
 
           {/* Inline error — space always reserved to avoid layout shift */}
-          <MotiView
-            animate={{ opacity: error ? 1 : 0, translateY: error ? 0 : -6 }}
-            transition={{ type: 'timing', duration: 180 }}
-            style={{ minHeight: 20, width: '100%', justifyContent: 'center' }}
-            pointerEvents="none"
+          <View
+            style={{
+              alignItems: 'center',
+              width: '100%',
+            }}
           >
-            <Text className="text-red-400 text-sm text-center w-full px-4">{error ?? ''}</Text>
-          </MotiView>
+            <MotiView
+              animate={{ opacity: error ? 1 : 0, translateY: error ? 0 : -6 }}
+              transition={{ type: 'timing', duration: 180 }}
+              style={{ minHeight: 20, width: '100%', justifyContent: 'center' }}
+              pointerEvents="none"
+            >
+              <Text className="text-red-400 text-sm text-center w-full px-4">{error ?? ''}</Text>
+            </MotiView>
 
-          {/* Sign in button */}
-          <BaseButton onPress={handleSignIn} disabled={loading}>
-            {loading ? 'Signing in…' : 'Sign in'}
-          </BaseButton>
+            {/* Sign in button */}
+            <BaseButton onPress={handleSignIn} disabled={loading}>
+              {loading ? 'Signing in…' : 'Sign in'}
+            </BaseButton>
+          </View>
 
           {/* Divider */}
           <View className="w-full flex flex-row items-center gap-6 justify-center">
-            <Separator orientation="horizontal" className="flex-1 background-white" />
+            <Separator orientation="horizontal" className="flex-1 bg-white" />
             <Text className="text-white">or</Text>
-            <Separator orientation="horizontal" className="flex-1 background-white" />
+            <Separator orientation="horizontal" className="flex-1 bg-white" />
           </View>
 
           <GoogleSignInButton />

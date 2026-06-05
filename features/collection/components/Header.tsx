@@ -1,54 +1,19 @@
 import { Text } from '@/components/ui/text/base-text'
 
-import { SearchBar, SearchBarProps } from '@/components/ui/search'
-import { motify, MotiView } from 'moti'
+import { ExpandableSearchBar, SearchBarProps } from '@/components/ui/search'
+import { motify } from 'moti'
 import React, { useEffect, useState } from 'react'
 import { View } from 'react-native'
-import { BorderRadiuses, Colors } from 'react-native-ui-lib'
+import { Colors } from 'react-native-ui-lib'
 import { useGetCollection } from '../hooks'
 import { DefaultPageTypes, getCollectionIdArgs, useCollectionsPageStore } from '../provider'
 
 const MView = motify(View)()
-const MSearchBar = motify(SearchBar)()
 
-export const ExpandableSearchBar = (props: SearchBarProps & { expanded: boolean }) => {
-  const { expanded, style, ...rest } = props
+export const CollectionsSearchBar = (props: SearchBarProps & { expanded: boolean }) => {
   const { searchQuery, setSearchQuery } = useCollectionsPageStore()
 
-  return (
-    <MotiView
-      style={{
-        position: 'relative',
-        width: '100%',
-        height: '100%',
-        display: 'flex',
-        flexDirection: 'row-reverse',
-        marginVertical: 'auto',
-        paddingHorizontal: 12,
-        top: 0,
-        right: 0,
-      }}
-    >
-      <MotiView
-        style={{
-          overflow: 'visible',
-        }}
-        animate={{
-          flex: expanded ? 1 : 0.0,
-          borderColor: Colors.rgba(Colors.$iconNeutral, expanded ? 1 : 0),
-          borderRadius: expanded ? BorderRadiuses.br100 : BorderRadiuses.br40,
-          borderWidth: 1,
-        }}
-      >
-        <SearchBar
-          value={searchQuery}
-          style={[{ flexShrink: 0 }, style]}
-          {...rest}
-          onChangeText={setSearchQuery}
-        />
-      </MotiView>
-    </MotiView>
-  )
+  return <ExpandableSearchBar value={searchQuery} onChangeText={setSearchQuery} {...props} />
 }
 
 export const ScreenHeader = () => {
@@ -117,7 +82,7 @@ export const ScreenHeader = () => {
         </Text>
       </MView>
 
-      <ExpandableSearchBar
+      <CollectionsSearchBar
         onLeftIconPress={() => setExpandSearch(!expandSearch)}
         expanded={Boolean(expandSearch)}
         variant={'ghost'}

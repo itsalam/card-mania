@@ -465,10 +465,10 @@ const STATUS_LABEL: Record<TransactionStatus, string> = {
 }
 
 const STATUS_COLOR: Record<TransactionStatus, string> = {
-  pending: Colors.$backgroundNeutralMedium,
+  pending: Colors.$outlineWarning,
   shipped: Colors.$backgroundPrimaryHeavy,
   completed: Colors.$backgroundSuccessHeavy,
-  disputed: Colors.$outlineWarning,
+  disputed: '#EF4444',
 }
 
 export function TransactionListCard({
@@ -530,11 +530,12 @@ const listCardStyles = StyleSheet.create({
   row: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
     gap: 12,
   },
   meta: {
-    flex: 1,
     gap: 4,
+    alignItems: 'flex-end',
   },
   statusRow: {
     flexDirection: 'row',

@@ -15,7 +15,7 @@ import React, {
   useImperativeHandle,
   useMemo,
 } from 'react'
-import { TextInput, View } from 'react-native'
+import { Platform, TextInput, View } from 'react-native'
 import { Colors } from 'react-native-ui-lib'
 import { DynamicBorderBox } from '../border-label/border'
 import FloatingPlaceholder from '../border-label/placeholder'
@@ -213,6 +213,7 @@ export const Input = forwardRef<TextInput, InputProps>((props, ref) => {
             { color: Colors.$textDefault },
             isMultiline && styles.inputBodyMultiline,
             inputStyle,
+            Platform.OS === 'web' && ({ outline: 'none' } as any),
           ]}
           onFocus={context.onFocus}
           onBlur={context.onBlur}

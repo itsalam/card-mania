@@ -1,10 +1,3 @@
-const dotenv = require('dotenv')
-
-// Load environment variables from the chosen file (defaults to .env.local)
-const ENVFILE =
-  process.env.ENVFILE || process.env.NODE_ENV ? `.env.${process.env.NODE_ENV}` : `.env.local`
-dotenv.config({ path: ENVFILE })
-
 const config = {
   expo: {
     name: 'card-mania',
@@ -37,6 +30,8 @@ const config = {
     },
     plugins: [
       'expo-router',
+      '@sentry/react-native',
+      'expo-image',
       [
         'expo-splash-screen',
         {

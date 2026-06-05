@@ -22,7 +22,7 @@ const avatarStyle = cva(
 )
 
 const avatarFallbackTextStyle = cva(
-  'text-typography-0 font-semibold overflow-hidden text-transform:uppercase web:cursor-default',
+  'text-typography-0 font-semibold overflow-hidden uppercase web:cursor-default',
   {
     variants: {
       size: {
@@ -51,7 +51,7 @@ function Avatar({
     <VariantContext value={{ size }}>
       <AvatarPrimitive.Root
         className={cn(
-          'relative flex size-8 shrink-0 overflow-hidden rounded-full',
+          'relative flex size-8 shrink-0 overflow-hidden rounded-full bg-red-500',
           avatarStyle({ size }),
           className
         )}

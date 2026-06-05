@@ -281,8 +281,8 @@ function HomeGestureContent({
                       value={tab}
                       leftElement={(isCurrent) =>
                         React.createElement(tabIcons[tab], {
-                          size: 16,
-                          color: isCurrent ? Colors.$textPrimary : Colors.$textDefault,
+                          size: 13,
+                          color: isCurrent ? Colors.$backgroundPrimaryHeavy : Colors.$textNeutral,
                         })
                       }
                     />
@@ -297,8 +297,8 @@ function HomeGestureContent({
                   value={'Recents'}
                   leftElement={(isCurrent) =>
                     React.createElement(History, {
-                      size: 24,
-                      color: isCurrent ? Colors.$textPrimary : Colors.$textDefault,
+                      size: 13,
+                      color: isCurrent ? Colors.$backgroundPrimaryHeavy : Colors.$textNeutral,
                     })
                   }
                 />

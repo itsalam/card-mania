@@ -4,14 +4,36 @@ import { qk } from '@/lib/store/functions/helpers'
 import { useQuery } from '@tanstack/react-query'
 
 export const getUserStoreFront = async (userId?: string) => {
-  let q = getSupabase()
+  const { data: session } = await getSupabase().auth.getSession()
+  console.log('[Storefront] getUserStoreFront — userId:', userId)
+  console.log('[Storefront] auth session at collections fetch:', {
+    hasSession: Boolean(session.session),
+    callerId: session.session?.user?.id ?? null,
+    role: session.session?.user?.role ?? null,
+    aud: session.session?.user?.aud ?? null,
+  })
+
+  const { data, error } = await getSupabase()
     .from('collections')
     .select('*')
     .eq('user_id', userId ?? '')
     .eq('is_storefront', true)
-  const { data, error } = await q
 
-  if (error) throw error
+  if (error) {
+    console.error('[Storefront] collections query error:', {
+      code: error.code,
+      message: error.message,
+      details: error.details,
+      hint: error.hint,
+    })
+    throw error
+  }
+
+  console.log('[Storefront] collections result:', {
+    count: data?.length ?? 0,
+    ids: data?.map((c) => c.id) ?? [],
+  })
+
   return data as CollectionLike[]
 }
 
