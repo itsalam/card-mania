@@ -6,25 +6,15 @@ module.exports = (() => {
   // 1. Base config — includes Expo's transformer chain and context-module support
   let config = getSentryExpoConfig(__dirname)
 
-  config.resolver.assetExts = assetExts.filter((ext) => ext !== 'svg')
-  config.resolver.sourceExts = [...sourceExts, 'svg']
-  config.transformer.assetPlugins = ['expo-asset/tools/hashAssetFiles']
-  config.transformer.babelTransformerPath = require.resolve('react-native-svg-transformer/expo')
-
-  // Belt-and-suspenders: explicitly enable context modules so the Expo Router
-  // require.context() call works even if getSentryExpoConfig doesn't inherit
-  // unstable_allowRequireContext from @expo/metro-config's getDefaultConfig.
-  config.transformer.unstable_allowRequireContext = true
-
+  // Set getTransformOptions BEFORE withNativeWind so NativeWind's CSS-processing
+  // wrapper can chain through it. Setting it after withNativeWind overwrites
+  // NativeWind's wrapper entirely, which skips Tailwind CSS compilation.
   config.transformer.getTransformOptions = async () => ({
     transform: {
       experimentalImportSupport: false,
       inlineRequires: true,
     },
   })
-
-  // 2. Let NativeWind modify it first
-  config = withNativeWind(config, { input: './global.css' })
 
   // 2. Let NativeWind modify it first
   config = withNativeWind(config, { input: './global.css' })

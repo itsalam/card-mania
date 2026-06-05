@@ -18,7 +18,7 @@ import { StoreProvider } from '@/lib/store/provider'
 import { AuthStatus, useUserStore } from '@/lib/store/useUserStore'
 import { Session } from '@supabase/supabase-js'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import React, { useEffect, useRef } from 'react'
+import React, { useEffect } from 'react'
 import { getSupabase, signalClientReady } from '../lib/store/client'
 
 const qc = new QueryClient({
@@ -31,13 +31,9 @@ const qc = new QueryClient({
 })
 
 export default function WebProviders({ children }: { children: React.ReactNode }) {
-  const { setAuth, setStatus } = useUserStore.getState()
-  const { status } = useUserStore()
-  const subOnce = useRef(false)
-
   useEffect(() => {
-    if (subOnce.current) return
-    subOnce.current = true
+    const { setAuth, setStatus } = useUserStore.getState()
+
     const updateStatus = async (session: Session | null) => {
       await setAuth(session ?? null)
       setStatus(session ? AuthStatus.AUTHENTICATED : AuthStatus.IDLE)
@@ -98,7 +94,7 @@ export default function WebProviders({ children }: { children: React.ReactNode }
     return () => {
       sub.subscription.unsubscribe()
     }
-  }, [status])
+  }, [])
 
   return (
     <QueryClientProvider client={qc}>
