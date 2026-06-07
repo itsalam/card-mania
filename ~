@@ -1,0 +1,163 @@
+  feat: web storefront, anon auth/RLS, collection UI, skeleton sizing
+
+  ## Web platform (new)
+  - WebNav: sticky nav bar with search, user avatar dropdown, cart
+  badge
+  - SellerSidebar: collapsible collection filter panel for storefront
+  views
+  - StorefrontCatalog: browsable card grid with collection filtering
+  - CartPanel: slide-in cart drawer with quantity/price editing
+  - WebCartPage, WebOffersPage, WebTransactionsPage,
+  WebTransactionDetailPage: full web page layouts
+  - BrowserStorefront: root-level /:username clean URL route
+  - AuthModal: sign-in / sign-up modal overlay for unauthenticated web
+  visitors
+  - NavSearchDropdown: real-time user/card search results dropdown
+  - LandingPage: updated with CTA, suggested sellers, hero sections
+  - Web-specific UI overrides: Badge, BorderLabel, SearchBar,
+  Background
+  - Web store layer: client.web.ts, useCartStore.web.ts,
+  useCartPanelStore
+  - app layout: _layout.web.tsx, _providers.web.tsx (anon auto-sign-in,
+   web routing)
+  - lib/stubs: react-native-skia and react-native-worklets stubs for
+  web bundling
+
+  ## Supabase / security
+  - Migration: grant SELECT on user_profile + collection_stats to anon
+  role
+  - Migration: tighten storefront RLS to authenticated-only (anon JWT
+  still allowed)
+  - Migration: enable RLS on user_profile and demo_user_map with
+  public-read policies
+  - Migration: pg_cron job to purge expired anonymous users (daily
+  03:00 UTC)
+  - Migration: pg_cron job to clean up stale notifications
+  - Edge function: cleanup-anon-users (invoked by cron)
+  - image-proxy: updated CORS / auth handling
+
+  ## Collection UI
+  - Group CollectionInfo + items FlatList in a rounded-top card
+  - Animate divider borderTopWidth 0→2 via expandProgress on header
+  collapse
+  - Fix scroll bottom padding (paddingVertical → contentContainerStyle)
+  - CollectionGroupContainer, CollectionInfo, Header, TabList
+  refinements
+
+  ## UI components
+  - base-text: export VARIANT_FONT_STYLES (fontSize/lineHeight per
+  variant)
+  - skeleton-text: use VARIANT_FONT_STYLES as fallback when no explicit
+   style passed
+  - Mobile tab bar: redesigned as floating pill with compact icons
+  - settings: web color-scheme adapters (local-adapter.web,
+  system-adapter.web)
+
+  ## Build / config
+  - metro.config.js: web bundle config, SVG transformer, worklets stub
+  aliases
+  - app.config.js: migrated from app.json, EAS env vars
+  - package.json: added web dependencies (react-dom, expo-router web,
+  etc.)
+# Please enter the commit message for your changes. Lines starting
+# with '#' will be ignored, and an empty message aborts the commit.
+#
+# On branch feat/web-landing-storefront
+# Your branch is ahead of 'origin/feat/web-landing-storefront' by 4 commits.
+#   (use "git push" to publish your local commits)
+#
+# Changes to be committed:
+#	deleted:    .env.test
+#	modified:   .gitignore
+#	modified:   app.config.js
+#	modified:   app/(tabs)/_layout.tsx
+#	modified:   app/[username].tsx
+#	modified:   app/_layout.web.tsx
+#	modified:   app/_providers.web.tsx
+#	modified:   app/cart.tsx
+#	new file:   app/cart.web.tsx
+#	modified:   app/index.tsx
+#	new file:   app/offers.tsx
+#	new file:   app/offers.web.tsx
+#	modified:   app/storefront/[username].tsx
+#	new file:   app/transactions.tsx
+#	new file:   app/transactions.web.tsx
+#	new file:   app/transactions/[offerId].web.tsx
+#	new file:   assets/images/logo-min.svg
+#	modified:   components/Background.tsx
+#	new file:   components/Background.web.tsx
+#	modified:   components/tabs/FolderTabs.tsx
+#	modified:   components/ui/avatar.tsx
+#	new file:   components/ui/badge.web.tsx
+#	modified:   components/ui/border-label/border.tsx
+#	new file:   components/ui/border-label/border.web.tsx
+#	modified:   components/ui/button.tsx
+#	modified:   components/ui/input/base-input.tsx
+#	modified:   components/ui/input/index.tsx
+#	modified:   components/ui/input/styles.ts
+#	modified:   components/ui/search/index.tsx
+#	new file:   components/ui/search/index.web.tsx
+#	modified:   components/ui/tabs/index.tsx
+#	modified:   components/ui/text/base-text.tsx
+#	modified:   components/ui/text/skeleton-text.tsx
+#	modified:   components/ui/theme/index.tsx
+#	modified:   eas.json
+#	modified:   features/collection/components/CollectionGroupContainer.tsx
+#	modified:   features/collection/components/CollectionInfo.tsx
+#	modified:   features/collection/components/CollectionPageLayout.tsx
+#	modified:   features/collection/components/Header.tsx
+#	modified:   features/collection/components/TabList.tsx
+#	modified:   features/collection/hooks.tsx
+#	modified:   features/home/index.tsx
+#	modified:   features/offers/ui.tsx
+#	modified:   features/onboarding/ProfileSetupWizard.tsx
+#	modified:   features/profile/client.ts
+#	modified:   features/profile/pages/storefront.tsx
+#	modified:   features/profile/providers.tsx
+#	new file:   features/settings/adapters/local-adapter.web.ts
+#	new file:   features/settings/adapters/system-adapter.web.ts
+#	modified:   features/settings/client.ts
+#	new file:   features/settings/hooks/effective-color-scheme.web.tsx
+#	modified:   features/splash/PasswordStrengthGauge.tsx
+#	modified:   features/splash/SignUpForm.tsx
+#	modified:   features/splash/index.tsx
+#	modified:   features/tcg-card-views/GalleryCard.tsx
+#	modified:   features/tcg-card-views/ListCard.tsx
+#	modified:   features/tcg-card-views/types.ts
+#	modified:   features/transactions/ui.tsx
+#	new file:   features/web/AuthModal.tsx
+#	new file:   features/web/BrowserStorefront.tsx
+#	new file:   features/web/CartPanel.tsx
+#	modified:   features/web/LandingPage.tsx
+#	new file:   features/web/NavSearchDropdown.tsx
+#	new file:   features/web/SellerSidebar.tsx
+#	new file:   features/web/StorefrontCTA.tsx
+#	new file:   features/web/StorefrontCatalog.tsx
+#	new file:   features/web/WebCartPage.tsx
+#	new file:   features/web/WebNav.tsx
+#	new file:   features/web/WebOffersPage.tsx
+#	new file:   features/web/WebTransactionDetailPage.tsx
+#	new file:   features/web/WebTransactionsPage.tsx
+#	new file:   features/web/hooks/useSampleStorefronts.ts
+#	new file:   features/web/hooks/useSuggestedSellers.ts
+#	new file:   features/web/hooks/useUserSearch.ts
+#	new file:   features/web/hooks/useWebUser.ts
+#	new file:   features/web/layout-constants.ts
+#	deleted:    index.js
+#	new file:   lib/store/client.web.ts
+#	new file:   lib/store/useCartPanelStore.ts
+#	new file:   lib/store/useCartStore.web.ts
+#	modified:   lib/store/useUserStore.ts
+#	new file:   lib/stubs/react-native-skia.js
+#	new file:   lib/stubs/react-native-worklets.js
+#	modified:   metro.config.js
+#	modified:   package-lock.json
+#	modified:   package.json
+#	modified:   supabase/config.toml
+#	new file:   supabase/functions/cleanup-anon-users/index.ts
+#	modified:   supabase/functions/image-proxy/index.ts
+#	new file:   supabase/migrations/20260519000000_storefront_anon_grants.sql
+#	new file:   supabase/migrations/20260519000001_require_jwt_for_storefront.sql
+#	new file:   supabase/migrations/20260519000002_cleanup_anon_users_cron.sql
+#	new file:   supabase/migrations/20260519000003_notifications_cleanup_cron.sql
+#

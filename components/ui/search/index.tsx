@@ -1,5 +1,6 @@
 import { useEffectiveColorScheme } from '@/features/settings/hooks/effective-color-scheme'
 import { SlidersHorizontal } from 'lucide-react-native'
+import { MotiView } from 'moti'
 import { cssInterop } from 'nativewind'
 import React, {
   ComponentProps,
@@ -37,10 +38,10 @@ import {
 import { ImageSourceType } from 'react-native-ui-lib/src/components/image'
 import { inputStyle, inputStyleSheet, InputVariantProps } from '../input'
 
-const ICON_SIZE = 24
-const INPUT_HEIGHT = 60
-const TOP_INPUT_HEIGHT = Constants.isIOS ? 40 : 56
-const PROMINENT_INPUT_HEIGHT = 48
+const ICON_SIZE = 18
+const INPUT_HEIGHT = 44
+const TOP_INPUT_HEIGHT = Constants.isIOS ? 38 : 44
+const PROMINENT_INPUT_HEIGHT = 44
 const HIT_SLOP_VALUE = 20
 
 const OptionsButton = ({ onPress, color }: { onPress?: () => void; color: string }) => {
@@ -128,6 +129,39 @@ export const SearchBar = forwardRef<SearchBarRef, SearchBarProps>(
   }
 )
 
+export const ExpandableSearchBar = (props: SearchBarProps & { expanded: boolean }) => {
+  const { expanded, style, ...rest } = props
+  return (
+    <MotiView
+      style={{
+        position: 'relative',
+        width: '100%',
+        height: '100%',
+        display: 'flex',
+        flexDirection: 'row-reverse',
+        marginVertical: 'auto',
+        paddingHorizontal: 12,
+        top: 0,
+        right: 0,
+      }}
+    >
+      <MotiView
+        style={{
+          overflow: 'visible',
+        }}
+        animate={{
+          flex: expanded ? 1 : 0.0,
+          borderColor: Colors.rgba(Colors.$iconNeutral, expanded ? 1 : 0),
+          borderRadius: expanded ? BorderRadiuses.br100 : BorderRadiuses.br40,
+          borderWidth: 1,
+        }}
+      >
+        <SearchBar style={[{ flexShrink: 0 }, style]} {...rest} />
+      </MotiView>
+    </MotiView>
+  )
+}
+
 const SearchInput = forwardRef<ComponentRef<typeof BaseSearchInput>, SearchInputProps>(
   (props, ref) => {
     const colorScheme = useEffectiveColorScheme()
@@ -137,7 +171,7 @@ const SearchInput = forwardRef<ComponentRef<typeof BaseSearchInput>, SearchInput
       () =>
         StyleSheet.create({
           componentContainer: {
-            paddingHorizontal: Spacings.s4,
+            paddingHorizontal: Spacings.s3,
           },
           icon: {},
           leftIcon: {},

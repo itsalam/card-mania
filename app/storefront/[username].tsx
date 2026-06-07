@@ -2,8 +2,8 @@ import { Avatar, AvatarFallback, AvatarFallbackText, AvatarImage } from '@/compo
 import { Text } from '@/components/ui/text/base-text'
 import { getUserStoreFront } from '@/features/profile/client'
 import { StorefrontView } from '@/features/profile/components/storefront-view'
-import { getSupabase } from '@/lib/store/client'
 import { useRefresh } from '@/lib/hooks/useRefresh'
+import { getSupabase } from '@/lib/store/client'
 import { useQuery } from '@tanstack/react-query'
 import { useLocalSearchParams } from 'expo-router'
 import { ActivityIndicator, RefreshControl, ScrollView, View } from 'react-native'
@@ -20,11 +20,37 @@ export default function PublicStorefrontPage() {
     queryKey: ['public-storefront-profile', username],
     queryFn: async () => {
       if (!username) return null
-      const { data } = await getSupabase()
+
+      const { data: session } = await getSupabase().auth.getSession()
+      console.log('[Storefront] profile lookup — username:', username)
+      console.log('[Storefront] auth session:', {
+        hasSession: Boolean(session.session),
+        userId: session.session?.user?.id ?? null,
+        role: session.session?.user?.role ?? null,
+        aud: session.session?.user?.aud ?? null,
+        expiresAt: session.session?.expires_at ?? null,
+      })
+
+      const { data, error } = await getSupabase()
         .from('user_profile')
         .select('user_id, username, display_name, avatar_url, bio')
         .eq('username', username)
         .single()
+
+      if (error) {
+        console.error('[Storefront] user_profile query error:', {
+          code: error.code,
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+        })
+      } else {
+        console.log('[Storefront] user_profile result:', {
+          found: Boolean(data),
+          userId: data?.user_id ?? null,
+        })
+      }
+
       return data ?? null
     },
     enabled: Boolean(username),
@@ -67,7 +93,7 @@ export default function PublicStorefrontPage() {
   return (
     <ScrollView
       style={{ flex: 1 }}
-      contentContainerStyle={{ padding: 20, paddingBottom: 80 }}
+      contentContainerStyle={{ padding: 20, paddingBottom: 80, paddingTop: 0 }}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
     >
       {/* Profile header */}
@@ -75,6 +101,7 @@ export default function PublicStorefrontPage() {
         style={{
           alignItems: 'center',
           paddingVertical: 32,
+          paddingTop: 0,
           gap: 12,
           borderBottomWidth: 1,
           borderBottomColor: Colors.$outlineNeutralLight,

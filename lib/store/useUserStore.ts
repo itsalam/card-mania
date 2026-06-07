@@ -25,7 +25,8 @@ type Actions = {
   setProfileSetupComplete: (v: boolean) => Promise<void>
   verifySignUpOtp: (email: string, token: string) => Promise<void>
   signIn: (email: string, password: string) => Promise<void>
-  signUp: (email: string, password: string) => Promise<{ needsEmailConfirmation: boolean }>
+  signUp: (email: string) => Promise<{ needsEmailConfirmation: boolean }>
+  setPassword: (password: string) => Promise<void>
   signOut: () => Promise<void>
   signInAnonymously: () => Promise<void>
   signInWithGoogle: () => Promise<void>
@@ -65,22 +66,24 @@ export const useUserStore = create<State & Actions>()(
 
         if (user) {
           await get().loadProfile(user.id)
-          // Subscribe to live profile changes
-          getSupabase()
-            .channel(`public:user_profile:user_id=eq.${user.id}`)
-            .on(
-              'postgres_changes',
-              {
-                event: '*',
-                schema: 'public',
-                table: 'user_profile',
-                filter: `user_id=eq.${user.id}`,
-              },
-              async () => {
-                await get().loadProfile(user.id)
-              }
-            )
-            .subscribe()
+          // Only subscribe to live profile changes for real (non-anonymous) users.
+          if (!user.is_anonymous) {
+            getSupabase()
+              .channel(`public:user_profile:user_id=eq.${user.id}`)
+              .on(
+                'postgres_changes',
+                {
+                  event: '*',
+                  schema: 'public',
+                  table: 'user_profile',
+                  filter: `user_id=eq.${user.id}`,
+                },
+                async () => {
+                  await get().loadProfile(user.id)
+                }
+              )
+              .subscribe()
+          }
         } else {
           set({ profile: null, profileSetupComplete: null })
         }
@@ -134,17 +137,30 @@ export const useUserStore = create<State & Actions>()(
 
       signIn: async (email, password) => {
         set({ status: 'loading', error: undefined })
-        const { error } = await getSupabase().auth.signInWithPassword({ email, password })
-        console.log({ error })
+        const { data, error } = await getSupabase().auth.signInWithPassword({ email, password })
         if (error) {
           set({ status: 'error', error: error.message })
           throw error
         }
-        // onAuthStateChange in _providers.tsx drives the rest of the state update
+        // Fire setAuth without awaiting so signIn() returns as soon as the credential
+        // check succeeds. setAuth() synchronously sets session/user/status, then
+        // awaits loadProfile() — blocking on that would keep the caller (AuthModal)
+        // waiting with the modal open even though auth already succeeded.
+        if (data.session) {
+          get().setAuth(data.session).catch(console.error)
+        }
       },
 
-      signUp: async (email, password) => {
-        const { data, error } = await getSupabase().auth.signUp({ email, password })
+      signUp: async (email) => {
+        // Generate a random temp password; the user sets their real password in the setup wizard.
+        const tmp = Array.from(
+          { length: 32 },
+          () =>
+            'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'[
+              Math.floor(Math.random() * 62)
+            ]
+        ).join('')
+        const { data, error } = await getSupabase().auth.signUp({ email, password: tmp })
         if (error) throw error
 
         const user = data.user
@@ -158,19 +174,36 @@ export const useUserStore = create<State & Actions>()(
         return { needsEmailConfirmation: !data.session }
       },
 
+      setPassword: async (password) => {
+        const { error } = await getSupabase().auth.updateUser({ password })
+        if (error) throw error
+      },
+
       signOut: async () => {
+        // Clear state synchronously first so the UI re-renders immediately.
+        // auth.signOut() and signInAnonymously() are async and may wait on the
+        // Supabase auth lock — deferring the set() to their finally/callback
+        // would leave the UI stale for the full duration of those awaits.
+        set({
+          session: null,
+          user: null,
+          profile: null,
+          profileSetupComplete: null,
+          status: 'signed_out',
+        })
+        // scope: 'local' clears the session in storage without a server roundtrip.
+        // The access token expires server-side on its own TTL.
         try {
-          await getSupabase().auth.signOut()
+          await getSupabase().auth.signOut({ scope: 'local' })
         } catch (error) {
-          console.error(error)
-        } finally {
-          set({
-            session: null,
-            user: null,
-            profile: null,
-            profileSetupComplete: null,
-            status: 'signed_out',
-          })
+          console.error('[signOut]', error)
+        }
+        // Re-establish an anon session so RLS-gated storefront reads continue to
+        // work for unauthenticated browsing.
+        try {
+          await getSupabase().auth.signInAnonymously()
+        } catch (err) {
+          console.warn('[signOut] anonymous re-sign-in failed:', err)
         }
       },
 

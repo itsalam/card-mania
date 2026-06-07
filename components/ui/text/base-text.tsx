@@ -3,7 +3,7 @@ import { cn } from '@/lib/utils/index'
 import * as Slot from '@rn-primitives/slot'
 import { cva, type VariantProps } from 'class-variance-authority'
 import * as React from 'react'
-import { Platform, Text as RNText, type Role } from 'react-native'
+import { Platform, Text as RNText, TextStyle, type Role } from 'react-native'
 import { Colors } from 'react-native-ui-lib'
 
 const textVariants = cva(
@@ -34,15 +34,14 @@ const textVariants = cva(
         ),
         p: 'mt-3 leading-7 sm:mt-6',
         blockquote: 'mt-4 border-l-2 pl-3 italic sm:mt-6 sm:pl-6',
-        code: cn(
-          'bg-muted relative rounded px-[0.3rem] py-[0.2rem] font-mono text-sm font-semibold'
-        ),
-        lead: 'text-muted-foreground text-xl',
+        code: 'relative rounded px-[0.3rem] py-[0.2rem] font-mono text-sm font-semibold',
+        lead: 'text-xl',
         large: 'text-lg font-bold text-wrap leading-none',
         small: 'text-sm font-medium leading-none',
-        muted: 'text-muted-foreground text-base',
+        muted: 'text-base',
         info: 'text-base uppercase font-spaceMono',
         badge: 'font-semibold',
+        stats: 'font-spaceMono text-xs',
       },
     },
     defaultVariants: {
@@ -54,6 +53,33 @@ const textVariants = cva(
 type TextVariantProps = VariantProps<typeof textVariants>
 
 type TextVariant = NonNullable<TextVariantProps['variant']>
+
+type VariantStyle = Pick<TextStyle, 'color' | 'backgroundColor'>
+
+const VARIANT_STYLES: Partial<Record<TextVariant, VariantStyle>> = {
+  lead: { color: Colors.$textNeutralLight },
+  muted: { color: Colors.$textNeutralLight },
+  code: { backgroundColor: Colors.$backgroundNeutralLight },
+}
+
+export const VARIANT_FONT_STYLES: Partial<
+  Record<TextVariant, Pick<TextStyle, 'fontSize' | 'lineHeight'>>
+> = {
+  h1: { fontSize: 36, lineHeight: 40 },
+  h2: { fontSize: 30, lineHeight: 36 },
+  h3: { fontSize: 24, lineHeight: 32 },
+  h4: { fontSize: 20, lineHeight: 28 },
+  lead: { fontSize: 20, lineHeight: 28 },
+  large: { fontSize: 18, lineHeight: 18 },
+  small: { fontSize: 14, lineHeight: 14 },
+  muted: { fontSize: 16, lineHeight: 24 },
+  info: { fontSize: 16, lineHeight: 24 },
+  code: { fontSize: 14, lineHeight: 20 },
+  stats: { fontSize: 12, lineHeight: 16 },
+  badge: { fontSize: 16, lineHeight: 24 },
+  p: { fontSize: 16, lineHeight: 28 },
+  default: { fontSize: 16, lineHeight: 24 },
+}
 
 const ROLE: Partial<Record<TextVariant, Role>> = {
   h1: 'heading',
@@ -95,15 +121,10 @@ function Text({
   return (
     <Component
       key={`${String(key)}-${scheme}`}
-      className={cn('text-foreground text-base', textClass, textVariants({ variant }), className)}
+      className={cn('text-base', textClass, textVariants({ variant }), className)}
       role={variant ? ROLE[variant] : undefined}
       aria-level={variant ? ARIA_LEVEL[variant] : undefined}
-      style={[
-        {
-          color: Colors.$textDefault,
-        },
-        style,
-      ]}
+      style={[{ color: Colors.$textDefault }, variant ? VARIANT_STYLES[variant] : undefined, style]}
       {...props}
     />
   )

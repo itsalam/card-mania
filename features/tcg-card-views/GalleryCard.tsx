@@ -64,10 +64,7 @@ export function AnimatedGalleryItem({
 function Titles(props: GalleryListingProps) {
   const { isLoading, displayData } = props
   return (
-    <View
-      className="flex flex-col h-full w-full items-start p-4 pr-0 flex-1 pt-2"
-      // style={{ backgroundColor: 'red' }}
-    >
+    <View className="flex flex-col h-full w-full items-start p-4 pr-0 flex-1 pt-2">
       {isLoading ? (
         <View>
           <Skeleton style={{ height: 32, width: 190, marginBottom: 6 }} />

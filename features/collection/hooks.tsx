@@ -236,7 +236,8 @@ function getCollectionItemsArgs<T extends CollectionItemRow>(
         return (data ?? []) as unknown as T[]
       },
       getNextPageParam(lastPage) {
-        return lastPage?.length ? lastPage[lastPage.length - 1].created_at : null
+        if (!lastPage?.length || lastPage.length < pageSize) return null
+        return lastPage[lastPage.length - 1].created_at
       },
       initialPageParam: null as string | null,
     }
@@ -373,7 +374,9 @@ function getDefaultCollectionPageQueryArgs<T extends CollectionItemRow>(
   const args = {
     queryKey,
     getNextPageParam: (lastPage) =>
-      lastPage?.length ? lastPage[lastPage.length - 1].created_at : null,
+      lastPage?.length && lastPage.length >= pageSize
+        ? lastPage[lastPage.length - 1].created_at
+        : null,
     queryFn: async ({ pageParam }) => {
       const collectionId = await collecitonIdPromise?.()
       if (!collectionId) return []

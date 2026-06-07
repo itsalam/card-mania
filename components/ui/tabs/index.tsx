@@ -4,7 +4,7 @@ import * as TabsPrimitive from '@rn-primitives/tabs'
 import { LucideIcon } from 'lucide-react-native'
 import { ReactNode } from 'react'
 import { Platform, StyleProp, TextProps, View, ViewStyle } from 'react-native'
-import { BorderRadiuses, Colors } from 'react-native-ui-lib'
+import { Colors } from 'react-native-ui-lib'
 
 function Tabs({
   className,
@@ -21,13 +21,19 @@ function TabsList({
   return (
     <TabsPrimitive.List
       className={cn(
-        'flex flex-row items-center justify-center rounded-lg p-2',
+        'flex flex-row items-center justify-center rounded-lg',
         Platform.select({ web: 'inline-flex w-fit', native: 'mr-auto' }),
         className
       )}
       style={[
         {
-          backgroundColor: Colors.$backgroundElevated,
+          backgroundColor: Colors.rgba(Colors.$backgroundDefault, 0.92),
+          borderWidth: 1,
+          borderColor: Colors.rgba(Colors.$outlineNeutral, 0.4),
+          borderRadius: 999,
+          paddingVertical: 0,
+          // paddingHorizontal: 6,
+          gap: 4,
         },
         style,
       ]}
@@ -52,7 +58,7 @@ function TabsTrigger({
     >
       <TabsPrimitive.Trigger
         className={cn(
-          'flex flex-row items-center justify-center gap-1.5 rounded-md border border-transparent px-3 py-1.5 shadow-none shadow-black/5',
+          'flex flex-row items-center justify-center rounded-full border border-transparent',
           Platform.select({
             web: 'focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:outline-ring inline-flex cursor-default whitespace-nowrap transition-[color,box-shadow] focus-visible:outline-1 focus-visible:ring-[3px] disabled:pointer-events-none [&_svg]:pointer-events-none [&_svg]:shrink-0',
           }),
@@ -61,15 +67,16 @@ function TabsTrigger({
           className
         )}
         style={[
-          { borderRadius: BorderRadiuses.br50 },
-          props.value === value
-            ? {
-                backgroundColor: Colors.$backgroundElevatedLight,
-              }
-            : {
-                backgroundColor: Colors.$backgroundElevated,
-              },
+          {
+            borderRadius: 999,
+            paddingHorizontal: 12,
+            paddingVertical: 6,
+            alignSelf: 'stretch',
+          },
           style,
+          props.value === value && {
+            backgroundColor: Colors.rgba(Colors.$backgroundPrimaryHeavy, 0.35),
+          },
         ]}
         {...props}
       />
@@ -109,15 +116,18 @@ function TabsLabel({
   iconLeft?: LucideIcon
   containerStyle?: StyleProp<ViewStyle>
 }) {
-  const TAB_ICON_HEIGHT = 20
+  const TAB_ICON_HEIGHT = 13
   const { value: currentValue } = TabsPrimitive.useRootContext()
   const isCurrent = currentValue === value
   return (
-    <View className="flex flex-row items-center justify-center gap-2" style={containerStyle}>
+    <View
+      className="flex flex-row items-center justify-center"
+      style={[{ gap: 5 }, containerStyle]}
+    >
       {IconLeft ? (
         <IconLeft
           size={TAB_ICON_HEIGHT}
-          color={Colors.$textDefault}
+          color={isCurrent ? Colors.$backgroundPrimaryHeavy : Colors.$textNeutral}
           strokeWidth={2.5}
           style={{ marginLeft: 4 }}
         />
@@ -135,10 +145,12 @@ function TabsLabel({
               flexDirection: 'row',
               alignItems: 'center',
               justifyContent: 'center',
-              fontSize: 20,
+              fontSize: 15,
+              lineHeight: 18,
+              color: Colors.$textNeutral,
             },
             style,
-            isCurrent ? { color: Colors.$textPrimary } : { color: Colors.$textDefault },
+            // isCurrent ? { color: Colors.$backgroundPrimaryHeavy } : { color: Colors.$textNeutral },
           ]}
           {...props}
         >
@@ -148,7 +160,7 @@ function TabsLabel({
       {IconRight ? (
         <IconRight
           size={TAB_ICON_HEIGHT}
-          color={Colors.$textDefault}
+          color={isCurrent ? Colors.$backgroundPrimaryHeavy : Colors.$textNeutral}
           strokeWidth={2.5}
           style={{ marginLeft: 4 }}
         />

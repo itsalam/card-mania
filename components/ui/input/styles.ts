@@ -23,8 +23,8 @@ export const styles = StyleSheet.create({
     paddingBottom: 6,
   },
   inputTextStyle: {
-    fontSize: 20,
-    lineHeight: 24,
+    fontSize: 16,
+    lineHeight: 20,
   },
   inputBody: {
     flex: 1,

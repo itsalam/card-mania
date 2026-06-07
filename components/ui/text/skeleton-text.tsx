@@ -1,8 +1,8 @@
 import { cn } from '@/lib/utils/index'
 import * as React from 'react'
-import { StyleSheet, View } from 'react-native'
+import { StyleSheet, TextLayoutEvent, View } from 'react-native'
 import { Colors } from 'react-native-ui-lib'
-import { Text, TextProps } from './base-text'
+import { Text, TextProps, VARIANT_FONT_STYLES } from './base-text'
 
 export const SkeletonText = ({
   loading = true,
@@ -11,6 +11,7 @@ export const SkeletonText = ({
   onLayout,
   defaultDimensions,
   placeholderTextLength,
+  variant,
   ...props
 }: TextProps & {
   loading?: boolean
@@ -26,32 +27,43 @@ export const SkeletonText = ({
 
   const isLoading = loading !== undefined ? loading : !Boolean(children)
 
-  const effectiveHeight = Math.max(lineHeight ?? 0)
-  const effectivePadding = Math.max(lineHeight - fontSize, 0)
+  const effectiveHeight = React.useMemo(() => Math.max(lineHeight ?? 0), [lineHeight])
+  const effectivePadding = React.useMemo(
+    () => Math.max(lineHeight - fontSize, 2),
+    [lineHeight, fontSize]
+  )
 
   const styleHeights = React.useMemo(() => {
-    if (!style) return []
-    const sheet = StyleSheet.flatten(style)
-    setFontSize(sheet.fontSize ?? 0)
-    return [sheet.lineHeight, sheet.fontSize].filter(Boolean) as number[]
-  }, [style])
+    const sheet = style ? StyleSheet.flatten(style) : {}
+    const variantDefaults = VARIANT_FONT_STYLES[variant ?? 'default'] ?? {}
+    const resolvedFontSize = sheet.fontSize ?? variantDefaults.fontSize ?? 0
+    const resolvedLineHeight = sheet.lineHeight ?? variantDefaults.lineHeight ?? 0
+    setFontSize(resolvedFontSize)
+    return [resolvedLineHeight, resolvedFontSize].filter(Boolean) as number[]
+  }, [style, variant])
+
+  const onTextLayout = React.useCallback(
+    (e: TextLayoutEvent) => {
+      if (e.nativeEvent.lines.length > 0) {
+        setLineHeight(Math.max(...e.nativeEvent.lines.map((l) => l.height), ...styleHeights))
+        setLineWidths(e.nativeEvent.lines.map((l) => l.width))
+      }
+      props.onTextLayout?.(e)
+    },
+    [styleHeights]
+  )
 
   return (
     <View style={{ minHeight: layout?.height }}>
       <Text
         {...props}
+        variant={variant}
         style={[style, isLoading ? { opacity: 0 } : undefined]}
         onLayout={(e) => {
           setLayout(e.nativeEvent.layout)
           onLayout?.(e)
         }}
-        onTextLayout={(e) => {
-          if (e.nativeEvent.lines.length > 0) {
-            setLineHeight(Math.max(...e.nativeEvent.lines.map((l) => l.height, ...styleHeights)))
-            setLineWidths(e.nativeEvent.lines.map((l) => l.width))
-          }
-          props.onTextLayout?.(e)
-        }}
+        onTextLayout={onTextLayout}
       >
         {children
           ? children

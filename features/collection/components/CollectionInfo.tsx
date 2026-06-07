@@ -1,5 +1,5 @@
 import { ToggleBadge } from '@/components/ui/badge'
-import { Spinner } from '@/components/ui/spinner'
+import { SkeletonText } from '@/components/ui/text'
 import { Text } from '@/components/ui/text/base-text'
 import { VISIBILITY_OPTIONS } from '@/features/tcg-card-views/DetailCardView/components/ui'
 import { useRouter } from 'expo-router'
@@ -135,21 +135,22 @@ export const CollectionInfo = () => {
         style={{
           paddingBottom: 16,
           paddingHorizontal: 20,
+          paddingTop: 20,
           display: 'flex',
           gap: 4,
         }}
       >
-        {collection?.description ? (
-          <View
-            style={{
-              paddingBottom: 8,
-            }}
-          >
-            <Text variant={'small'}>{collection.description}</Text>
-          </View>
-        ) : (
-          <Spinner />
-        )}
+        <SkeletonText loading={!collection?.name} variant={'h3'} placeholderTextLength={24}>
+          {collection?.name}
+        </SkeletonText>
+        <SkeletonText
+          loading={!collection?.description}
+          variant={'small'}
+          placeholderTextLength={104}
+          numberOfLines={2}
+        >
+          {collection?.description}
+        </SkeletonText>
 
         <View style={{ display: 'flex', gap: 8 }}>
           <View style={{ display: 'flex', gap: 4 }}>

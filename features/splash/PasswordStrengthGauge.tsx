@@ -1,6 +1,6 @@
 import { Text } from '@/components/ui/text/base-text'
 import { Check, X } from 'lucide-react-native'
-import React, { useEffect, useState } from 'react'
+import React, { useEffect } from 'react'
 import { View } from 'react-native'
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated'
 import { type PasswordPolicy, type RuleResult, evaluatePassword } from './usePasswordPolicy'
@@ -19,67 +19,39 @@ export function PasswordStrengthGauge({ password, policy, focused }: Props) {
   const { score, label, rules } = evaluatePassword(password, policy)
   const visible = !!password.length || !!focused
 
-  const [contentHeight, setContentHeight] = useState(0)
-  const [measured, setMeasured] = useState(false)
-  const heightSv = useSharedValue(0)
-  const opacitySv = useSharedValue(0)
+  // Animate a 0→1 progress value; derive maxHeight and opacity from it.
+  // Using maxHeight avoids measuring the content — the container simply
+  // reveals/hides its children without needing to know their exact height.
+  const progress = useSharedValue(visible ? 1 : 0)
 
   useEffect(() => {
-    const target = visible ? contentHeight : 0
-    heightSv.value = withTiming(target, { duration: 220 })
-    opacitySv.value = withTiming(visible ? 1 : 0, { duration: 180 })
-  }, [visible, contentHeight, password, focused])
-
-  useEffect(() => {
-    if (!contentHeight) return
-    heightSv.value = withTiming(focused ? contentHeight : 0, { duration: 220 })
-  }, [focused, contentHeight])
+    progress.value = withTiming(visible ? 1 : 0, { duration: 220 })
+  }, [visible])
 
   const containerStyle = useAnimatedStyle(() => ({
-    height: heightSv.value,
-    opacity: opacitySv.value,
+    maxHeight: progress.value * 400,
+    opacity: progress.value,
     overflow: 'hidden',
   }))
 
   const activeColor = score > 0 ? SEGMENT_COLORS[score - 1] : EMPTY_COLOR
 
-  const GaugeContent = () => (
-    <>
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-        <View style={{ flex: 1, flexDirection: 'row', gap: 4 }}>
-          {([1, 2, 3, 4] as const).map((seg) => (
-            <Segment key={seg} filled={score >= seg && visible} color={activeColor} />
-          ))}
-        </View>
-        <Text style={{ fontSize: 12, fontWeight: '600', color: activeColor, minWidth: 36 }}>
-          {label}
-        </Text>
-      </View>
-      {rules.map((rule) => (
-        <RuleRow key={rule.label} {...rule} />
-      ))}
-    </>
-  )
-
   return (
     <Animated.View style={containerStyle}>
-      {!measured && (
-        <View
-          pointerEvents="none"
-          style={{ position: 'absolute', opacity: 0, left: 0, right: 0 }}
-          onLayout={(e) => {
-            const h = e.nativeEvent.layout.height
-            if (h > 0) {
-              setContentHeight(h)
-              setMeasured(true)
-            }
-          }}
-        >
-          <GaugeContent />
-        </View>
-      )}
       <View style={{ gap: 10, width: '100%' }}>
-        <GaugeContent />
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+          <View style={{ flex: 1, flexDirection: 'row', gap: 4 }}>
+            {([1, 2, 3, 4] as const).map((seg) => (
+              <Segment key={seg} filled={score >= seg && visible} color={activeColor} />
+            ))}
+          </View>
+          <Text style={{ fontSize: 12, fontWeight: '600', color: activeColor, minWidth: 36 }}>
+            {label}
+          </Text>
+        </View>
+        {rules.map((rule) => (
+          <RuleRow key={rule.label} {...rule} />
+        ))}
       </View>
     </Animated.View>
   )

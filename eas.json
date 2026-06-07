@@ -11,11 +11,15 @@
     "preview": {
       "distribution": "store",
       "env": {
-        "SENTRY_AUTH_TOKEN": "$SENTRY_AUTH_TOKEN"
+        "SENTRY_AUTH_TOKEN": "$SENTRY_AUTH_TOKEN",
+        "EXPO_PUBLIC_SUPABASE_URL": "https://your-project.supabase.co",
+        "EXPO_PUBLIC_SUPABASE_KEY": "your-anon-key"
       },
       "ios": {
         "buildConfiguration": "Release"
-      }
+      },
+
+      "autoIncrement": true
     },
     "production": {
       "autoIncrement": true

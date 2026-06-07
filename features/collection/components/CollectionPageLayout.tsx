@@ -22,9 +22,11 @@ import Animated, {
   FadeInRight,
   FadeOutLeft,
   FadeOutRight,
+  interpolate,
+  useAnimatedStyle,
 } from 'react-native-reanimated'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { Colors } from 'react-native-ui-lib'
+import { BorderRadiuses, Colors } from 'react-native-ui-lib'
 import { shallow } from 'zustand/shallow'
 import { useDefaultCollectionIds, useGetCollection, useGetCollectionItems } from '../hooks'
 import { ModifyCollectionView } from '../pages/modify-collection'
@@ -206,7 +208,7 @@ const DefaultCollectionView = ({ direction }: { direction: 'forward' | 'backward
               onLayout={onListLayout}
               onContentSizeChange={onContentSizeChange}
               scrollEnabled={false}
-              style={{ flex: 1 }}
+              style={{ flex: 1, marginBottom: 24 }}
               bounces={false}
               data={listData}
               contentContainerStyle={{
@@ -214,6 +216,7 @@ const DefaultCollectionView = ({ direction }: { direction: 'forward' | 'backward
                 gap: 18,
                 paddingLeft: 12,
                 paddingTop: 18,
+                paddingBottom: 24,
               }}
               refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
               ListEmptyComponent={EmptyColelctionList}
@@ -292,10 +295,15 @@ const DetailCollectionView = ({ direction }: { direction: 'forward' | 'backward'
     onListLayout,
     onContentSizeChange,
     onHeaderLayout,
+    expandProgress,
   } = useCollaspableHeader({
     disable: collectionItems.length > 0,
     resetKeys: [currentPage, collection?.id],
   })
+
+  const borderAnimatedStyle = useAnimatedStyle(() => ({
+    borderTopWidth: interpolate(expandProgress.value, [0, 1], [2, 0]),
+  }))
 
   const navigateToCollection = useCallback(
     (collectionRef: string | null) => {
@@ -413,48 +421,57 @@ const DetailCollectionView = ({ direction }: { direction: 'forward' | 'backward'
         onContentSizeChange={onContentSizeChange}
         entering={direction === 'forward' ? FadeInRight.duration(200) : FadeInLeft.duration(200)}
         exiting={direction === 'forward' ? FadeOutLeft.duration(180) : FadeOutRight.duration(180)}
-        style={{
+        contentContainerStyle={{
           paddingVertical: 16,
         }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
       >
-        <Animated.View
-          key={`header-${currentPage}`}
-          style={[
-            headerAnimatedStyle,
-            {
-              overflowY: 'hidden',
-            },
-          ]}
-        >
-          <View onLayout={onHeaderLayout}>
-            <CollectionInfo />
-          </View>
-        </Animated.View>
-        <Animated.View
+        <View
           style={{
+            backgroundColor: Colors.$backgroundElevatedLight,
+            borderRadius: BorderRadiuses.br60,
+            borderTopRightRadius: BorderRadiuses.br60,
+            overflow: 'hidden',
             borderTopWidth: 2,
             borderColor: Colors.$outlineNeutral,
+            borderWidth: 2,
+            marginHorizontal: -2,
           }}
         >
-          <FolderTabsContainer>
-            <AnimatedCollectionItemList
-              initialNumToRender={10}
-              scrollEnabled={false}
-              style={{ flex: 1 }}
-              bounces={false}
-              data={listData}
-              contentContainerStyle={{
-                display: 'flex',
-                gap: 18,
-                paddingTop: collection?.is_selling ? 0 : 18,
-              }}
-              ListEmptyComponent={EmptyColelctionList}
-              keyExtractor={keyExtractor}
-              renderItem={renderItem}
-            />
-          </FolderTabsContainer>
-        </Animated.View>
+          <Animated.View
+            key={`header-${currentPage}`}
+            style={[
+              headerAnimatedStyle,
+              {
+                overflow: 'hidden',
+              },
+            ]}
+          >
+            <View onLayout={onHeaderLayout}>
+              <CollectionInfo />
+            </View>
+          </Animated.View>
+          <Animated.View style={[borderAnimatedStyle, { borderColor: Colors.$outlineNeutral }]}>
+            <FolderTabsContainer>
+              <AnimatedCollectionItemList
+                initialNumToRender={10}
+                scrollEnabled={false}
+                style={{ flex: 1 }}
+                bounces={false}
+                data={listData}
+                contentContainerStyle={{
+                  display: 'flex',
+                  gap: 18,
+                  paddingTop: collection?.is_selling ? 0 : 18,
+                  paddingBottom: 20,
+                }}
+                ListEmptyComponent={EmptyColelctionList}
+                keyExtractor={keyExtractor}
+                renderItem={renderItem}
+              />
+            </FolderTabsContainer>
+          </Animated.View>
+        </View>
       </Animated.ScrollView>
     </GestureDetector>
   )

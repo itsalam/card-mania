@@ -20,9 +20,7 @@ export const CollectionGroupContainer = ({
       <View
         style={{
           borderColor: Colors.$outlineNeutral,
-          backgroundColor: Colors.$backgroundNeutral,
           borderRadius: BorderRadiuses.br30,
-          marginLeft: -12,
         }}
       >
         <View
@@ -30,7 +28,7 @@ export const CollectionGroupContainer = ({
             flexDirection: 'row',
             alignItems: 'center',
             padding: 12,
-            paddingVertical: 12,
+            paddingTop: 8,
           }}
         >
           {/* Left zone: navigates to the collection */}
@@ -38,13 +36,13 @@ export const CollectionGroupContainer = ({
             onPress={onNavigate}
             disabled={!onNavigate}
             style={{
-              borderRadius: BorderRadiuses.br30,
+              borderRadius: BorderRadiuses.br60,
               backgroundColor: Colors.rgba(Colors.$backgroundElevated, 0.4),
               flexDirection: 'row',
               alignItems: 'center',
-              gap: 10,
+              gap: 4,
+              padding: 4,
               paddingHorizontal: 12,
-              paddingVertical: 12,
             }}
           >
             <Layers size={16} color={Colors.$iconDefault} />
@@ -52,14 +50,14 @@ export const CollectionGroupContainer = ({
               variant={'h4'}
               style={{
                 color: Colors.$textDefault,
-                // fontSize: 16,
+                fontSize: 16,
                 fontWeight: '600',
-                letterSpacing: 0.2,
+                letterSpacing: 0,
               }}
             >
               {name}
             </Text>
-            {onNavigate && <ChevronRight size={16} color={Colors.$iconNeutral} />}
+            {onNavigate && <ChevronRight size={12} color={Colors.$iconNeutral} />}
           </TouchableOpacity>
 
           {/* Right zone: collapse / expand */}
@@ -77,7 +75,7 @@ export const CollectionGroupContainer = ({
           </TouchableOpacity>
         </View>
 
-        {!collapsed && children}
+        <View style={{ gap: 18 }}>{!collapsed && children}</View>
       </View>
     </View>
   )

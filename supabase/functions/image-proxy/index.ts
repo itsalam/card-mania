@@ -158,7 +158,41 @@ function json(data: unknown, init: ResponseInit = {}) {
   })
 }
 
+// Origins allowed to call this function from a browser.
+// Production domain is set via the WEB_ORIGIN secret in Supabase dashboard.
+// Localhost entries cover local dev — they are not sensitive since they only
+// reach this server from someone's own machine.
+const ALLOWED_ORIGINS = new Set(
+  [
+    Deno.env.get('WEB_ORIGIN') ?? '',
+    'http://localhost:8081',
+    'http://localhost:19006',
+    'http://127.0.0.1:8081',
+  ].filter(Boolean)
+)
+
+function corsHeaders(origin: string): Record<string, string> {
+  if (!ALLOWED_ORIGINS.has(origin)) return {}
+  return {
+    'Access-Control-Allow-Origin': origin,
+    'Access-Control-Allow-Methods': 'GET, OPTIONS',
+    'Access-Control-Allow-Headers': 'authorization, content-type, x-client-info, x-internal',
+    'Access-Control-Max-Age': '86400',
+    Vary: 'Origin',
+  }
+}
+
 Deno.serve(async (req) => {
+  const origin = req.headers.get('origin') ?? ''
+
+  if (req.method === 'OPTIONS') {
+    const headers = corsHeaders(origin)
+    return new Response(null, {
+      status: Object.keys(headers).length ? 204 : 403,
+      headers,
+    })
+  }
+
   const startTime = Date.now()
   const url = new URL(req.url)
   const imageId = url.searchParams.get('image_id')

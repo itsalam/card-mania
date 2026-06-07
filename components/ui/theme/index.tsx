@@ -64,10 +64,14 @@ const ThemeProvider = ({ children }: { children: ReactNode }) => {
 
   const colorScheme = useEffectiveColorScheme()
 
-  // Apply scheme when preference changes
-  useIsomorphicLayoutEffect(() => {
-    Colors.setScheme(colorScheme)
-  }, [colorScheme])
+  // Synchronously update Colors before any child renders.
+  // useLayoutEffect fires too late — children can read Colors.* before the
+  // effect runs when colorScheme changes mid-session.
+  Colors.setScheme(colorScheme)
+
+  if (Platform.OS === 'web' && typeof document !== 'undefined') {
+    document.documentElement.classList.toggle('dark', colorScheme === 'dark')
+  }
 
   const [loaded] = useFonts({
     SpaceMono: require('@/assets/fonts/SpaceMono-Regular.ttf'),

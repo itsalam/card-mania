@@ -273,18 +273,28 @@ function HomeGestureContent({
         >
           <View style={{ flexDirection: 'row' }}>
             <OnboardingTarget id="tab-list">
-              <TabsList className="ml-4" style={{ height: 48 }}>
+              <TabsList className="ml-4 p-px pl-0 overflow-visible w-full items-start justify-start">
                 {tabValues.map((tab) => (
-                  <TabsTrigger key={tab} value={tab}>
+                  <TabsTrigger
+                    key={tab}
+                    value={tab}
+                    style={{
+                      flex: 1,
+                      marginVertical: 3,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
                     <TabsLabel
                       label={tab}
                       value={tab}
                       leftElement={(isCurrent) =>
                         React.createElement(tabIcons[tab], {
-                          size: 16,
-                          color: isCurrent ? Colors.$textPrimary : Colors.$textDefault,
+                          size: 13,
+                          color: isCurrent ? Colors.$backgroundPrimaryHeavy : Colors.$textNeutral,
                         })
                       }
+                      style={{}}
                     />
                   </TabsTrigger>
                 ))}
@@ -297,8 +307,8 @@ function HomeGestureContent({
                   value={'Recents'}
                   leftElement={(isCurrent) =>
                     React.createElement(History, {
-                      size: 24,
-                      color: isCurrent ? Colors.$textPrimary : Colors.$textDefault,
+                      size: 13,
+                      color: isCurrent ? Colors.$backgroundPrimaryHeavy : Colors.$textNeutral,
                     })
                   }
                 />

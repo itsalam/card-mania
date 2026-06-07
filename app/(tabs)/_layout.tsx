@@ -5,7 +5,6 @@ import { useCartCount, useOpenCart } from '@/features/cart/hooks'
 import { useEffectiveColorScheme } from '@/features/settings/hooks/effective-color-scheme'
 import { AuthGate } from '@/features/splash'
 import { BottomTabBarProps } from '@react-navigation/bottom-tabs'
-import { useTheme } from '@react-navigation/native'
 import { PortalHost } from '@rn-primitives/portal'
 import * as Haptics from 'expo-haptics'
 import { Tabs } from 'expo-router'
@@ -20,7 +19,7 @@ import {
   ShoppingCart,
   User,
 } from 'lucide-react-native'
-import React, { useEffect } from 'react'
+import React from 'react'
 import { Platform, Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native'
 import { Gesture, GestureDetector } from 'react-native-gesture-handler'
 import Animated, {
@@ -33,9 +32,7 @@ import Animated, {
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Colors } from 'react-native-ui-lib'
 
-const CURSOR_WIDTH = '80%'
 const TAB_BAR_HEIGHT = 58
-const TAB_BAR_PADDING_TOP = 8
 const PILL_HEIGHT = 44
 const PILL_WIDTH = 148
 const FLOAT_MARGIN = 16
@@ -152,115 +149,89 @@ function NotificationTabIcon({ color }: { color: string }) {
 }
 
 function CustomTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
-  const { colors } = useTheme()
   const insets = useSafeAreaInsets()
-  const { width: screenWidth } = useWindowDimensions()
 
   const visibleRoutes = state.routes.filter(
     (route) => (descriptors[route.key].options.tabBarItemStyle as any)?.display !== 'none'
   )
 
-  const numSlots = visibleRoutes.length
-  const tabWidth = screenWidth / numSlots
-
-  const focusedVisibleIndex = visibleRoutes.findIndex(
-    (r) => r.key === state.routes[state.index]?.key
-  )
-
-  const cursorX = useSharedValue(focusedVisibleIndex * tabWidth)
-
-  useEffect(() => {
-    cursorX.value = withSpring(focusedVisibleIndex * tabWidth, {
-      damping: 24,
-      stiffness: 300,
-      mass: 0.6,
-    })
-  }, [focusedVisibleIndex, tabWidth])
-
-  const cursorStyle = useAnimatedStyle(() => ({
-    transform: [{ translateX: cursorX.value }],
-  }))
-
   return (
     <View
-      style={[
-        styles.tabBar,
-        {
-          backgroundColor: colors.card,
-          borderTopColor: colors.border,
-          paddingBottom: insets.bottom,
-          height: TAB_BAR_HEIGHT + insets.bottom,
-          zIndex: 10,
-        },
-      ]}
+      style={{
+        position: 'absolute',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        paddingBottom: insets.bottom - 8,
+        paddingHorizontal: 12,
+        paddingTop: 8,
+        backgroundColor: 'transparent',
+      }}
     >
-      {/* Sliding cursor */}
-      <Animated.View style={[styles.cursorTrack, cursorStyle, { width: tabWidth }]}>
-        <View style={[styles.cursor, { backgroundColor: colors.primary }]} />
-      </Animated.View>
+      <View
+        style={{
+          flexDirection: 'row',
+          gap: 2,
+          paddingHorizontal: 6,
+          paddingVertical: 5,
+          borderRadius: 999,
+          borderWidth: 1,
+          borderColor: Colors.rgba(Colors.$outlineNeutral, 0.4),
+          backgroundColor: Colors.rgba(Colors.$backgroundDefault, 0.92),
+        }}
+      >
+        {visibleRoutes.map((route) => {
+          const { options } = descriptors[route.key]
+          const routeIndex = state.routes.indexOf(route)
+          const isFocused = state.index === routeIndex
+          const iconColor = isFocused ? Colors.$backgroundPrimaryHeavy : Colors.$textNeutral
 
-      {visibleRoutes.map((route) => {
-        const { options } = descriptors[route.key]
-        const routeIndex = state.routes.indexOf(route)
-        const isFocused = state.index === routeIndex
-        const color = isFocused ? colors.primary : colors.text
-
-        const onPress = () => {
-          const event = navigation.emit({
-            type: 'tabPress',
-            target: route.key,
-            canPreventDefault: true,
-          })
-          if (!isFocused && !event.defaultPrevented) {
-            navigation.navigate(route.name, route.params)
+          const onPress = () => {
+            const event = navigation.emit({
+              type: 'tabPress',
+              target: route.key,
+              canPreventDefault: true,
+            })
+            if (!isFocused && !event.defaultPrevented) {
+              navigation.navigate(route.name, route.params)
+            }
           }
-        }
 
-        const onLongPress = () => {
-          navigation.emit({ type: 'tabLongPress', target: route.key })
-        }
+          const onLongPress = () => {
+            navigation.emit({ type: 'tabLongPress', target: route.key })
+          }
 
-        return (
-          <HapticTab
-            key={route.key}
-            accessibilityRole="button"
-            accessibilityState={{ selected: isFocused }}
-            accessibilityLabel={options.tabBarAccessibilityLabel}
-            onPress={onPress}
-            onLongPress={onLongPress}
-            style={styles.tabButton}
-          >
-            {options.tabBarIcon?.({ focused: isFocused, color, size: 24 })}
-            <Text style={[styles.tabLabel, { color }]}>{options.title}</Text>
-          </HapticTab>
-        )
-      })}
+          return (
+            <HapticTab
+              key={route.key}
+              accessibilityRole="button"
+              accessibilityState={{ selected: isFocused }}
+              accessibilityLabel={options.tabBarAccessibilityLabel}
+              onPress={onPress}
+              onLongPress={onLongPress}
+              style={{
+                flex: 1,
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 2,
+                paddingVertical: 6,
+              }}
+            >
+              {options.tabBarIcon?.({ focused: isFocused, color: iconColor, size: 20 })}
+              <Text
+                style={{ fontSize: 9, color: iconColor, fontWeight: isFocused ? '600' : '400' }}
+              >
+                {options.title}
+              </Text>
+            </HapticTab>
+          )
+        })}
+      </View>
     </View>
   )
 }
 
 const styles = StyleSheet.create({
-  tabBar: {
-    flexDirection: 'row',
-    borderTopWidth: StyleSheet.hairlineWidth,
-    paddingTop: TAB_BAR_PADDING_TOP,
-  },
-  cursorTrack: {
-    position: 'absolute',
-    top: 0,
-    alignItems: 'center',
-  },
-  cursor: {
-    width: CURSOR_WIDTH,
-    height: 3,
-    borderRadius: 2,
-  },
-  tabButton: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 2,
-  },
   cartIconWrapper: {
     position: 'relative',
   },
@@ -281,9 +252,6 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: '700',
     lineHeight: 12,
-  },
-  tabLabel: {
-    fontSize: 10,
   },
 })
 

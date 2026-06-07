@@ -124,7 +124,7 @@ export const DynamicBorderBox = forwardRef<View, DynamicBorderBoxProps>(
           {children}
           {hasLayout && (
             <Canvas
-              style={[StyleSheet.absoluteFill, { zIndex: -1 }]}
+              style={StyleSheet.flatten([StyleSheet.absoluteFill, { zIndex: -1 }])}
               onSize={size}
               pointerEvents="none"
             >

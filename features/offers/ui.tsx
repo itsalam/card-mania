@@ -87,29 +87,40 @@ export function OfferItemRow({ item, isLast }: { item: OfferItem; isLast: boolea
           <Text
             variant="info"
             className="capitalize"
-            style={{ color: Colors.$textNeutralLight, lineHeight: 16 }}
+            style={{ color: Colors.$textNeutralLight, fontSize: 11, lineHeight: 14 }}
           >
             {setName}
           </Text>
         ) : null}
-        <Text variant="info" style={{ color: Colors.$textNeutralLight, lineHeight: 16 }}>
+        <Text
+          variant="info"
+          style={{ color: Colors.$textNeutralLight, fontSize: 11, lineHeight: 14 }}
+        >
           {getGradingDisplayString(collectionItem).slice(0, 2).join(' ')}
         </Text>
       </View>
 
-      <View style={{ alignItems: 'flex-end', justifyContent: 'flex-end', gap: 4 }}>
-        <Text variant="default" style={styles.itemPrice}>
+      <View style={{ alignItems: 'flex-end', justifyContent: 'flex-end', gap: 2 }}>
+        <Text variant="default" style={[styles.itemPrice]}>
           {formatPrice(item.offered_price_per_unit)}
         </Text>
-        <Text variant="info" style={{ color: Colors.$textNeutralLight }}>
+        <Text
+          variant="info"
+          style={{ color: Colors.$textNeutralLight, fontSize: 11, lineHeight: 14 }}
+        >
           Qty: {item.quantity}
         </Text>
-        <Text variant="small" style={{ color: Colors.$textNeutralLight }}>
+        <Text
+          variant="info"
+          style={{ color: Colors.$textNeutralLight, fontSize: 11, lineHeight: 14 }}
+        >
           Subtotal: {formatPrice(subtotal)}
         </Text>
-        <View style={{ alignSelf: 'flex-end' }}>
-          {isPriceModified && <PriceModifiedBadge originalPrice={listingPrice ?? 0} />}
-        </View>
+        {isPriceModified && (
+          <View style={{ alignSelf: 'flex-end' }}>
+            <PriceModifiedBadge originalPrice={listingPrice ?? 0} />
+          </View>
+        )}
       </View>
     </View>
   )
@@ -379,7 +390,7 @@ export const styles = StyleSheet.create({
     fontWeight: '600',
   },
   itemPrice: {
-    fontSize: 20,
+    fontSize: 15,
     fontWeight: '700',
   },
   itemMeta: {

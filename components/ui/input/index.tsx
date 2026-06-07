@@ -47,7 +47,7 @@ export const inputStyleSheet = (variants: Parameters<typeof inputStyle>[0]) => {
 
   if (variant === 'outline' || variant === 'rounded') {
     containerStyle.borderWidth = 1
-    containerStyle.borderColor = Colors.$iconNeutral
+    containerStyle.borderColor = Colors.$outlineDefault
   }
 
   return { containerStyle }
