@@ -273,9 +273,18 @@ function HomeGestureContent({
         >
           <View style={{ flexDirection: 'row' }}>
             <OnboardingTarget id="tab-list">
-              <TabsList className="ml-4" style={{ height: 48 }}>
+              <TabsList className="ml-4 p-px pl-0 overflow-visible w-full items-start justify-start">
                 {tabValues.map((tab) => (
-                  <TabsTrigger key={tab} value={tab}>
+                  <TabsTrigger
+                    key={tab}
+                    value={tab}
+                    style={{
+                      flex: 1,
+                      marginVertical: 3,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
                     <TabsLabel
                       label={tab}
                       value={tab}
@@ -285,6 +294,7 @@ function HomeGestureContent({
                           color: isCurrent ? Colors.$backgroundPrimaryHeavy : Colors.$textNeutral,
                         })
                       }
+                      style={{}}
                     />
                   </TabsTrigger>
                 ))}

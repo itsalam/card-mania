@@ -45,7 +45,7 @@ export const CollectionTabList = () => {
       index,
       animated: true,
       viewPosition: 0,
-      viewOffset: leftPadding,
+      viewOffset: leftPadding * 1.5,
     })
 
   const scrollToTabKey = (key: string) => {
