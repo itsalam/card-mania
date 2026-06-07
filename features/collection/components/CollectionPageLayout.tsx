@@ -429,7 +429,7 @@ const DetailCollectionView = ({ direction }: { direction: 'forward' | 'backward'
         <View
           style={{
             backgroundColor: Colors.$backgroundElevatedLight,
-            borderTopLeftRadius: BorderRadiuses.br60,
+            borderRadius: BorderRadiuses.br60,
             borderTopRightRadius: BorderRadiuses.br60,
             overflow: 'hidden',
             borderTopWidth: 2,
