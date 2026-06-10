@@ -25,7 +25,6 @@ const config = {
     },
     web: {
       bundler: 'metro',
-      output: 'static',
       favicon: './assets/images/CM_LOGO.png',
     },
     plugins: [

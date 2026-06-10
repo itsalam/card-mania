@@ -8,10 +8,11 @@ import { Text } from '@/components/ui/text/base-text'
 import { ProfileSetupWizard } from '@/features/onboarding'
 import { useUserStore } from '@/lib/store/useUserStore'
 import { cn } from '@/lib/utils'
-import { AtSign, Eye, EyeOff, Lock, User } from 'lucide-react-native'
+import AsyncStorage from '@react-native-async-storage/async-storage'
+import { AtSign, ChevronLeft, Eye, EyeOff, Lock, Phone, RefreshCw, User } from 'lucide-react-native'
 import { MotiView } from 'moti'
-import { ComponentProps, useState } from 'react'
-import { Dimensions, TouchableOpacity, View } from 'react-native'
+import { ComponentProps, useEffect, useRef, useState } from 'react'
+import { TouchableOpacity, View } from 'react-native'
 import {
   KeyboardAvoidingView,
   useReanimatedKeyboardAnimation,
@@ -26,7 +27,45 @@ import Animated, {
 import { SafeAreaView } from 'react-native-safe-area-context'
 import Svg, { G, Path } from 'react-native-svg'
 import { Colors } from 'react-native-ui-lib'
+import { CountryPicker } from './CountryPicker'
+import { OtpInput } from './OtpInput'
 import { SignUpForm } from './SignUpForm'
+import { COUNTRIES, Country, formatLocalNumber, isValidE164, toE164 } from './phoneUtils'
+
+function friendlyPhoneError(message: string): string {
+  const msg = message.toLowerCase()
+  if (msg.includes('invalid') && (msg.includes('phone') || msg.includes('number')))
+    return 'Please enter a valid phone number.'
+  if (msg.includes('rate') || msg.includes('too many'))
+    return 'Too many attempts. Please wait before requesting another code.'
+  if (msg.includes('not enabled') || msg.includes('phone provider') || msg.includes('sms'))
+    return 'Phone sign-in is not yet configured. Please use email instead.'
+  if (msg.includes('network') || msg.includes('fetch'))
+    return 'Network error. Please check your connection.'
+  return message
+}
+
+function friendlyOtpError(message: string): string {
+  const msg = message.toLowerCase()
+  if (msg.includes('invalid') || msg.includes('expired') || msg.includes('token'))
+    return 'Incorrect or expired code. Please try again.'
+  if (msg.includes('network') || msg.includes('fetch'))
+    return 'Network error. Please check your connection.'
+  return message
+}
+
+function isBlockingPhoneError(message: string): boolean {
+  const msg = message.toLowerCase()
+  return (
+    msg.includes('rate') ||
+    msg.includes('too many') ||
+    msg.includes('not enabled') ||
+    msg.includes('phone provider') ||
+    msg.includes('sms') ||
+    msg.includes('network') ||
+    msg.includes('fetch')
+  )
+}
 
 // ── Auth gate ─────────────────────────────────────────────────────────────────
 
@@ -36,7 +75,6 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
   const user = useUserStore((s) => s.user)
   const profileSetupComplete = useUserStore((s) => s.profileSetupComplete)
 
-  // Spin while: store not hydrated, auth loading, or profile settings not yet fetched
   const initializing =
     !hydrated || status === 'loading' || (!!user && profileSetupComplete === null)
 
@@ -46,18 +84,16 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
         <Spinner />
       </SafeAreaView>
     )
-  if (!user) return <SplashPage />
+  if (!user || user.is_anonymous) return <SplashPage />
   if (!profileSetupComplete) return <ProfileSetupWizard />
   return <>{children}</>
 }
 
-// ── Shared button primitive ────────────────────────────────────────────────────
+// ── Shared primitives ─────────────────────────────────────────────────────────
 
 const BaseButton = ({ className, ...props }: ComponentProps<typeof AppButton>) => (
   <AppButton variant="primary" size="lg" className={cn('w-full', className)} {...props} />
 )
-
-// ── OAuth stubs ───────────────────────────────────────────────────────────────
 
 const GoogleSignInButton = () => (
   <BaseButton variant="secondary" disabled>
@@ -93,20 +129,7 @@ const FacebookSignInButton = () => (
         <G id="SVGRepo_iconCarrier">
           <G fill="none" fillRule="evenodd">
             <G transform="translate(-200.000000, -160.000000)" fill="#4460A0">
-              <Path
-                d="M225.638355,208 L202.649232,208 C201.185673,208 200,206.813592 200,205.350603
-                 L200,162.649211 C200,161.18585 201.185859,160 202.649232,160 L245.350955,160
-                 C246.813955,160 248,161.18585 248,162.649211 L248,205.350603
-                 C248,206.813778 246.813769,208 245.350955,208 L233.119305,208
-                 L233.119305,189.411755 L239.358521,189.411755 L240.292755,182.167586
-                 L233.119305,182.167586 L233.119305,177.542641
-                 C233.119305,175.445287 233.701712,174.01601 236.70929,174.01601
-                 L240.545311,174.014333 L240.545311,167.535091
-                 C239.881886,167.446808 237.604784,167.24957 234.955552,167.24957
-                 C229.424834,167.24957 225.638355,170.625526 225.638355,176.825209
-                 L225.638355,182.167586 L219.383122,182.167586 L219.383122,189.411755
-                 L225.638355,189.411755 L225.638355,208 Z"
-              />
+              <Path d="M225.638355,208 L202.649232,208 C201.185673,208 200,206.813592 200,205.350603 L200,162.649211 C200,161.18585 201.185859,160 202.649232,160 L245.350955,160 C246.813955,160 248,161.18585 248,162.649211 L248,205.350603 C248,206.813778 246.813769,208 245.350955,208 L233.119305,208 L233.119305,189.411755 L239.358521,189.411755 L240.292755,182.167586 L233.119305,182.167586 L233.119305,177.542641 C233.119305,175.445287 233.701712,174.01601 236.70929,174.01601 L240.545311,174.014333 L240.545311,167.535091 C239.881886,167.446808 237.604784,167.24957 234.955552,167.24957 C229.424834,167.24957 225.638355,170.625526 225.638355,176.825209 L225.638355,182.167586 L219.383122,182.167586 L219.383122,189.411755 L225.638355,189.411755 L225.638355,208 Z" />
             </G>
           </G>
         </G>
@@ -115,8 +138,6 @@ const FacebookSignInButton = () => (
     <Text>Sign in with Facebook</Text>
   </BaseButton>
 )
-
-// ── Error helper ──────────────────────────────────────────────────────────────
 
 function friendlySignInError(message: string): string {
   const msg = message.toLowerCase()
@@ -135,24 +156,50 @@ function friendlySignInError(message: string): string {
 // ── Splash / login page ───────────────────────────────────────────────────────
 
 export function SplashPage() {
-  const { signInAnonymously, signIn } = useUserStore()
+  const { signInAnonymously, signIn, signInWithPhone, verifyPhoneOtp } = useUserStore()
+  const [hasEverSignedIn, setHasEverSignedIn] = useState(false)
+  useEffect(() => {
+    AsyncStorage.getItem('cardmania:hasEverSignedIn').then((v: string | null) => {
+      if (v) setHasEverSignedIn(true)
+    })
+  }, [])
   const isDev = process.env.NODE_ENV !== 'production'
-  const { height } = Dimensions.get('screen')
-  const { height: kbHeight, progress: kbProgress } = useReanimatedKeyboardAnimation()
+  const { progress: kbProgress } = useReanimatedKeyboardAnimation()
   const logoKbStyle = useAnimatedStyle(() => ({
     transform: [{ scale: interpolate(kbProgress.value, [0, 1], [1, 0.6]) }],
   }))
 
-  const [view, setView] = useState<'login' | 'signup'>('login')
+  // 'phone' is the primary / default view
+  const [view, setView] = useState<'phone' | 'phone-otp' | 'phone-signup' | 'signup'>('phone')
+
+  // Main page tab + inline states
+  const [mainTab, setMainTab] = useState<'phone' | 'email'>('phone')
+  const [phoneOtpSent, setPhoneOtpSent] = useState(false)
+  const [emailSignupContext, setEmailSignupContext] = useState<string | null>(null)
+
+  // Phone state
+  const [phoneMode, setPhoneMode] = useState<'signin' | 'signup'>('signin')
+  const [country, setCountry] = useState<Country>(COUNTRIES[0])
+  const [localNumber, setLocalNumber] = useState('')
+  const [phoneCode, setPhoneCode] = useState('')
+  const [resendCooldown, setResendCooldown] = useState(0)
+
+  // Email state
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
+
+  // Shared
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const direction = useRef<1 | -1>(1)
+  const tabSwitchDir = useRef<1 | -1>(1)
+
+  const maxDigits = country.format.split('').filter((c) => c === 'X').length
+  const e164 = toE164(country.dial, localNumber)
 
   const shakeX = useSharedValue(0)
   const shakeStyle = useAnimatedStyle(() => ({ transform: [{ translateX: shakeX.value }] }))
-
   const triggerShake = () => {
     shakeX.value = withSequence(
       withTiming(-10, { duration: 45 }),
@@ -163,6 +210,23 @@ export function SplashPage() {
     )
   }
 
+  useEffect(() => {
+    if (resendCooldown <= 0) return
+    const id = setInterval(() => setResendCooldown((n) => n - 1), 1000)
+    return () => clearInterval(id)
+  }, [resendCooldown])
+
+  const goTo = (v: typeof view, dir: 1 | -1 = 1) => {
+    direction.current = dir
+    setError(null)
+    if (v !== 'phone' && v !== 'phone-otp' && v !== 'phone-signup') setPhoneMode('signin')
+    if (v !== 'phone') {
+      setPhoneOtpSent(false)
+      setPhoneCode('')
+    }
+    setView(v)
+  }
+
   const handleAnonSignIn = async () => {
     try {
       isDev && (await signInAnonymously())
@@ -171,10 +235,97 @@ export function SplashPage() {
     }
   }
 
+  const handleSendCode = async () => {
+    setError(null)
+    if (!isValidE164(e164)) {
+      console.warn('[handleSendCode] invalid E.164', { raw: localNumber, dial: country.dial, e164 })
+      setError('Please enter a valid phone number.')
+      return
+    }
+    console.log('[handleSendCode] initiating sign-in OTP', { e164 })
+    setLoading(true)
+    try {
+      await signInWithPhone(e164, false)
+      setResendCooldown(60)
+      setPhoneOtpSent(true)
+    } catch (err: any) {
+      const msg = err?.message ?? ''
+      console.error('[handleSendCode] caught error', {
+        message: msg,
+        isBlocking: isBlockingPhoneError(msg),
+      })
+      if (isBlockingPhoneError(msg)) {
+        setError(friendlyPhoneError(msg || 'Failed to send code. Please try again.'))
+      } else {
+        goTo('phone-signup')
+      }
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleCreatePhoneAccount = async () => {
+    setError(null)
+    console.log('[handleCreatePhoneAccount] creating account + sending OTP', { e164 })
+    setLoading(true)
+    try {
+      console.log({ e164 }, 'FU')
+      await signInWithPhone(e164, true)
+      setPhoneMode('signup')
+      setResendCooldown(60)
+      goTo('phone-otp')
+    } catch (err: any) {
+      console.error('[handleCreatePhoneAccount] error', { message: err?.message })
+      setError(friendlyPhoneError(err?.message ?? 'Failed to send code. Please try again.'))
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleVerifyPhoneOtp = async (token: string) => {
+    setError(null)
+    console.log('[handleVerifyPhoneOtp] verifying', { e164, tokenLength: token.length })
+    setLoading(true)
+    try {
+      await verifyPhoneOtp(e164, token)
+    } catch (err: any) {
+      console.error('[handleVerifyPhoneOtp] error', { message: err?.message })
+      setPhoneCode('')
+      setError(friendlyOtpError(err?.message ?? 'Verification failed.'))
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleResendPhoneOtp = async () => {
+    if (resendCooldown > 0) return
+    console.log('[handleResendPhoneOtp] resending OTP', { e164, mode: phoneMode })
+    try {
+      await signInWithPhone(e164, phoneMode === 'signup')
+      setResendCooldown(60)
+      setPhoneCode('')
+      setError(null)
+    } catch (err: any) {
+      console.error('[handleResendPhoneOtp] error', { message: err?.message })
+      setError(friendlyPhoneError(err?.message ?? 'Could not resend code. Please try again.'))
+    }
+  }
+
+  const handleResetPhoneOtp = () => {
+    setPhoneOtpSent(false)
+    setPhoneCode('')
+    setError(null)
+  }
+
   const handleSignIn = async () => {
     setError(null)
-    if (!email.trim() || !password) {
-      setError('Please enter your email and password.')
+    if (!email.trim()) {
+      setError('Please enter your email.')
+      triggerShake()
+      return
+    }
+    if (!password) {
+      setError('Please enter your password.')
       triggerShake()
       return
     }
@@ -182,24 +333,27 @@ export function SplashPage() {
     try {
       await signIn(email.trim(), password)
     } catch (err: any) {
-      setError(friendlySignInError(err?.message ?? 'Sign in failed.'))
-      triggerShake()
+      const msg = err?.message ?? ''
+      const isCredentialsError =
+        msg.toLowerCase().includes('invalid login') ||
+        msg.toLowerCase().includes('invalid credentials') ||
+        msg.toLowerCase().includes('wrong password')
+      if (isCredentialsError) {
+        setEmailSignupContext(email.trim())
+        goTo('signup', 1)
+      } else {
+        setError(friendlySignInError(msg || 'Sign in failed.'))
+        triggerShake()
+      }
     } finally {
       setLoading(false)
     }
   }
 
-  // Shared logo node — flex:1 keeps it in the keyboard-avoiding flow so it moves with the form;
-  // maxHeight caps the area so both screens place the logo at the same position.
   const logoNode = (
     <Animated.View
       style={[
-        {
-          flex: 1,
-          alignItems: 'center',
-          justifyContent: 'flex-end',
-          paddingBottom: 24,
-        },
+        { flex: 1, alignItems: 'center', justifyContent: 'flex-end', paddingBottom: 24 },
         logoKbStyle,
       ]}
     >
@@ -213,57 +367,227 @@ export function SplashPage() {
     </Animated.View>
   )
 
-  // ── Sign-up view ─────────────────────────────────────────────────────────
+  const formWrapStyle = {
+    alignItems: 'center' as const,
+    paddingHorizontal: 32,
+    gap: 16,
+    width: '100%' as const,
+    paddingBottom: 32,
+    height: '50%' as const,
+  }
+
+  // ── Sign-up ──────────────────────────────────────────────────────────────────
   if (view === 'signup') {
     return (
       <KeyboardAvoidingView behavior="padding" style={{ flex: 1 }}>
         <GradientBackground style={{ flex: 1 }}>
           {logoNode}
-          <View
-            style={{
-              height: '50%',
-            }}
-          >
-            <SignUpForm onBack={() => setView('login')} />
+          <View style={{ height: '50%' }}>
+            <SignUpForm
+              initialEmail={emailSignupContext ?? undefined}
+              onBack={() => {
+                setEmailSignupContext(null)
+                goTo('phone', -1)
+              }}
+              onPhone={(phoneE164) => {
+                const matched =
+                  COUNTRIES.reduce<Country | null>((best, c) => {
+                    if (phoneE164.startsWith(c.dial)) {
+                      if (!best || c.dial.length > best.dial.length) return c
+                    }
+                    return best
+                  }, null) ?? COUNTRIES[0]
+                setCountry(matched)
+                setLocalNumber(phoneE164.slice(matched.dial.length))
+                goTo('phone-signup', 1)
+              }}
+            />
           </View>
         </GradientBackground>
       </KeyboardAvoidingView>
     )
   }
 
-  // ── Login view ────────────────────────────────────────────────────────────
+  // ── Phone sign-up ────────────────────────────────────────────────────────────
+  if (view === 'phone-signup') {
+    return (
+      <KeyboardAvoidingView behavior="padding" style={{ flex: 1 }}>
+        <GradientBackground style={{ flex: 1 }}>
+          {logoNode}
+          <MotiView
+            from={{ opacity: 0, translateX: direction.current * 40 }}
+            animate={{ opacity: 1, translateX: 0 }}
+            transition={{ type: 'spring', damping: 20, stiffness: 260, mass: 0.9 }}
+            style={{ ...formWrapStyle, gap: 24 }}
+          >
+            <View
+              style={{
+                width: '100%',
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+              }}
+            >
+              <TouchableOpacity
+                onPress={() => goTo('phone', -1)}
+                style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}
+                accessibilityLabel="Back to phone input"
+              >
+                <ChevronLeft size={16} color="white" />
+                <Text style={{ color: 'white', fontSize: 14 }}>Back</Text>
+              </TouchableOpacity>
+              <View style={{ width: 56 }} />
+            </View>
+
+            <View style={{ width: '100%', gap: 8 }}>
+              <Text style={{ color: 'white', fontSize: 24, lineHeight: 26, fontWeight: 'bold' }}>
+                {"Looks like you're new here"}
+              </Text>
+              <Text style={{ color: 'rgba(255,255,255,0.6)', lineHeight: 22 }}>
+                {"We'll create an account for"}
+                {'\n'}
+                <Text style={{ color: 'white', fontWeight: '600' }}>
+                  {country.dial} {formatLocalNumber(localNumber, country.format)}
+                </Text>
+              </Text>
+            </View>
+
+            {error ? (
+              <Text style={{ color: '#f87171', fontSize: 14, textAlign: 'center', width: '100%' }}>
+                {error}
+              </Text>
+            ) : null}
+
+            <BaseButton onPress={handleCreatePhoneAccount} disabled={loading}>
+              {loading ? 'Sending code…' : 'Create account'}
+            </BaseButton>
+          </MotiView>
+        </GradientBackground>
+      </KeyboardAvoidingView>
+    )
+  }
+
+  // ── Phone OTP ────────────────────────────────────────────────────────────────
+  if (view === 'phone-otp') {
+    return (
+      <KeyboardAvoidingView behavior="padding" style={{ flex: 1 }}>
+        <GradientBackground style={{ flex: 1 }}>
+          {logoNode}
+          <MotiView
+            from={{ opacity: 0, translateX: direction.current * 40 }}
+            animate={{ opacity: 1, translateX: 0 }}
+            transition={{ type: 'spring', damping: 20, stiffness: 260, mass: 0.9 }}
+            style={{ ...formWrapStyle, gap: 24 }}
+          >
+            <View
+              style={{
+                width: '100%',
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+              }}
+            >
+              <TouchableOpacity
+                onPress={() => {
+                  goTo('phone', -1)
+                  setPhoneCode('')
+                }}
+                style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}
+                accessibilityLabel="Back to phone input"
+              >
+                <ChevronLeft size={16} color="white" />
+                <Text style={{ color: 'white', fontSize: 14 }}>Back</Text>
+              </TouchableOpacity>
+              <Text style={{ color: 'white', fontSize: 20 }}>
+                {phoneMode === 'signup' ? "Looks like you're new here" : 'Verify phone'}
+              </Text>
+              <View style={{ width: 56 }} />
+            </View>
+
+            <Text style={{ color: 'white', textAlign: 'center', opacity: 0.7, lineHeight: 24 }}>
+              Enter the 6-digit code sent to{'\n'}
+              <Text style={{ color: 'white', fontWeight: '600', opacity: 1 }}>{e164}</Text>
+            </Text>
+
+            <OtpInput value={phoneCode} onChange={setPhoneCode} onComplete={handleVerifyPhoneOtp} />
+
+            {error ? (
+              <Text style={{ color: '#f87171', fontSize: 14, textAlign: 'center', width: '100%' }}>
+                {error}
+              </Text>
+            ) : null}
+
+            <AppButton
+              variant="primary"
+              size="lg"
+              onPress={() => phoneCode.length === 6 && handleVerifyPhoneOtp(phoneCode)}
+              disabled={loading || phoneCode.length < 6}
+              className="w-full"
+            >
+              {loading ? 'Verifying…' : 'Verify'}
+            </AppButton>
+
+            <TouchableOpacity
+              onPress={handleResendPhoneOtp}
+              disabled={resendCooldown > 0}
+              style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}
+            >
+              <RefreshCw size={14} color={resendCooldown > 0 ? 'rgba(255,255,255,0.3)' : 'white'} />
+              <Text
+                style={{
+                  color: resendCooldown > 0 ? 'rgba(255,255,255,0.3)' : 'white',
+                  fontSize: 13,
+                }}
+              >
+                {resendCooldown > 0 ? `Resend code in ${resendCooldown}s` : 'Resend code'}
+              </Text>
+            </TouchableOpacity>
+          </MotiView>
+        </GradientBackground>
+      </KeyboardAvoidingView>
+    )
+  }
+
+  // ── Main page (phone + email inline) ─────────────────────────────────────────
   return (
     <KeyboardAvoidingView behavior="padding" style={{ flex: 1 }}>
       <GradientBackground style={{ flex: 1, justifyContent: 'space-between' }}>
         {logoNode}
 
-        {/* Form — sits at the bottom */}
         <MotiView
-          from={{ opacity: 0, translateY: 60 }}
-          animate={{ opacity: 1, translateY: 0 }}
-          transition={{
-            delay: 100,
-            type: 'spring',
-            damping: 100,
-            stiffness: 300,
-            overshootClamping: true,
-          }}
-          style={{
-            alignItems: 'center',
-            paddingHorizontal: 32,
-            gap: 16,
-            width: '100%',
-            paddingBottom: 32,
-            height: '50%',
-          }}
+          from={{ opacity: 0, translateX: direction.current * 40 }}
+          animate={{ opacity: 1, translateX: 0 }}
+          transition={{ type: 'spring', damping: 20, stiffness: 260, mass: 0.9 }}
+          style={formWrapStyle}
         >
-          {/* Header row */}
-          <View className="w-full px-4 flex flex-row justify-between items-center">
-            <Text className="text-white text-xl">Log in to CardMania</Text>
+          {/* Header */}
+          <View
+            style={{
+              width: '100%',
+              flexDirection: 'row',
+              justifyContent: 'space-between',
+              alignItems: 'flex-start',
+            }}
+          >
+            <View style={{ gap: 2 }}>
+              <Text
+                style={{
+                  color: Colors.$textDefault,
+                  fontSize: 24,
+                  lineHeight: 26,
+                  fontWeight: 'bold',
+                }}
+              >
+                {hasEverSignedIn ? 'Welcome back,' : 'Welcome to CardMania'}
+              </Text>
+              <Text style={{ color: Colors.$textNeutral, fontSize: 13 }}>
+                {hasEverSignedIn ? 'Sign in to continue.' : 'Enter your preferred sign-in method.'}
+              </Text>
+            </View>
             <AppButton
               variant="outline"
               size="sm"
-              onPress={() => setView('signup')}
+              onPress={() => goTo('signup', 1)}
               accessibilityLabel="Create a new account"
             >
               <AtSign size={14} color="white" />
@@ -271,68 +595,210 @@ export function SplashPage() {
             </AppButton>
           </View>
 
-          {/* Email + Password */}
-          <Animated.View style={[{ width: '100%', gap: 8 }, shakeStyle]}>
-            <TextField
-              leadingAccessory={
-                <User size={20} onPress={handleAnonSignIn} color={Colors.$textPrimary} />
-              }
-              placeholder="Email"
-              value={email}
-              onChangeText={(t) => {
-                setEmail(t)
-                if (error) setError(null)
-              }}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              autoCorrect={false}
-              showClearButton
-              floatingPlaceholder
-              accentColor={error ? Colors.$textDanger : undefined}
-              containerStyle={{
-                backgroundColor: Colors.rgba(Colors.$backgroundElevated, 0.4),
-                minHeight: 60,
-              }}
-            />
-            <TextField
-              leadingAccessory={<Lock size={20} color={Colors.$textPrimary} />}
-              trailingAccessory={
-                <TouchableOpacity
-                  onPress={() => setShowPassword((v) => !v)}
-                  accessibilityLabel={showPassword ? 'Hide password' : 'Show password'}
-                  style={{ alignContent: 'center', justifyContent: 'center', paddingHorizontal: 4 }}
-                >
-                  {showPassword ? (
-                    <EyeOff size={20} color={Colors.$textPrimary} />
-                  ) : (
-                    <Eye size={20} color={Colors.$textPrimary} />
-                  )}
-                </TouchableOpacity>
-              }
-              placeholder="Password"
-              value={password}
-              onChangeText={(t) => {
-                setPassword(t)
-                if (error) setError(null)
-              }}
-              secureTextEntry={!showPassword}
-              autoCapitalize="none"
-              floatingPlaceholder
-              accentColor={error ? Colors.$textDanger : undefined}
-              containerStyle={{
-                backgroundColor: Colors.rgba(Colors.$backgroundElevated, 0.4),
-                minHeight: 60,
-              }}
-            />
-          </Animated.View>
-
-          {/* Inline error — space always reserved to avoid layout shift */}
+          {/* Pill toggle */}
           <View
             style={{
-              alignItems: 'center',
-              width: '100%',
+              flexDirection: 'row',
+              backgroundColor: 'rgba(255,255,255,0.12)',
+              borderRadius: 20,
+              padding: 3,
+              alignSelf: 'flex-start',
             }}
           >
+            {(['phone', 'email'] as const).map((tab) => {
+              const active = mainTab === tab
+              const color = active ? '#000' : 'rgba(255,255,255,0.6)'
+              return (
+                <TouchableOpacity
+                  key={tab}
+                  onPress={() => {
+                    tabSwitchDir.current = tab === 'email' ? 1 : -1
+                    setMainTab(tab)
+                    setError(null)
+                    setPhoneOtpSent(false)
+                    setPhoneCode('')
+                  }}
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: 5,
+                    paddingVertical: 5,
+                    paddingHorizontal: 14,
+                    borderRadius: 17,
+                    backgroundColor: active ? 'white' : 'transparent',
+                  }}
+                  accessibilityRole="tab"
+                  accessibilityState={{ selected: active }}
+                >
+                  {tab === 'phone' ? (
+                    <Phone size={12} color={color} />
+                  ) : (
+                    <AtSign size={12} color={color} />
+                  )}
+                  <Text style={{ color, fontWeight: '600', fontSize: 12 }}>
+                    {tab === 'phone' ? 'Phone' : 'Email'}
+                  </Text>
+                </TouchableOpacity>
+              )
+            })}
+          </View>
+
+          {/* ── Tab content (animates on tab switch) ── */}
+          <MotiView
+            key={mainTab}
+            from={{ opacity: 0, translateX: tabSwitchDir.current * 30 }}
+            animate={{ opacity: 1, translateX: 0 }}
+            transition={{ type: 'spring', damping: 22, stiffness: 270, mass: 0.9 }}
+            style={{ width: '100%', gap: 8 }}
+          >
+            {mainTab === 'phone' && !phoneOtpSent && (
+              <TextField
+                leadingAccessory={
+                  <CountryPicker
+                    selected={country}
+                    onSelect={(c) => {
+                      setCountry(c)
+                      setLocalNumber('')
+                    }}
+                  />
+                }
+                placeholder="Phone number"
+                value={formatLocalNumber(localNumber, country.format)}
+                onChangeText={(v) => {
+                  setError(null)
+                  setLocalNumber(v.replace(/\D/g, '').slice(0, maxDigits))
+                }}
+                keyboardType="phone-pad"
+                autoCapitalize="none"
+                autoCorrect={false}
+                floatingPlaceholder
+                containerStyle={{
+                  backgroundColor: Colors.rgba(Colors.$backgroundElevated, 0.4),
+                  minHeight: 60,
+                  width: '100%',
+                }}
+              />
+            )}
+
+            {mainTab === 'phone' && phoneOtpSent && (
+              <MotiView
+                from={{ opacity: 0, translateX: 20 }}
+                animate={{ opacity: 1, translateX: 0 }}
+                transition={{ type: 'spring', damping: 20, stiffness: 260, mass: 0.9 }}
+                style={{ width: '100%', gap: 16, alignItems: 'center' }}
+              >
+                <View
+                  style={{
+                    width: '100%',
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                  }}
+                >
+                  <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 13 }}>
+                    Code sent to <Text style={{ color: 'white', fontWeight: '600' }}>{e164}</Text>
+                  </Text>
+                  <TouchableOpacity onPress={handleResetPhoneOtp}>
+                    <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 13 }}>Change</Text>
+                  </TouchableOpacity>
+                </View>
+                <OtpInput
+                  value={phoneCode}
+                  onChange={setPhoneCode}
+                  onComplete={handleVerifyPhoneOtp}
+                />
+                <TouchableOpacity
+                  onPress={handleResendPhoneOtp}
+                  disabled={resendCooldown > 0}
+                  style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}
+                >
+                  <RefreshCw
+                    size={14}
+                    color={resendCooldown > 0 ? 'rgba(255,255,255,0.3)' : 'white'}
+                  />
+                  <Text
+                    style={{
+                      color: resendCooldown > 0 ? 'rgba(255,255,255,0.3)' : 'white',
+                      fontSize: 13,
+                    }}
+                  >
+                    {resendCooldown > 0 ? `Resend code in ${resendCooldown}s` : 'Resend code'}
+                  </Text>
+                </TouchableOpacity>
+              </MotiView>
+            )}
+
+            {mainTab === 'email' && (
+              <Animated.View style={[{ width: '100%', gap: 8 }, shakeStyle]}>
+                <TextField
+                  leadingAccessory={
+                    <User size={20} onPress={handleAnonSignIn} color={Colors.$textPrimary} />
+                  }
+                  placeholder="Email"
+                  value={email}
+                  onChangeText={(t) => {
+                    setEmail(t)
+                    if (error) setError(null)
+                  }}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  showClearButton
+                  floatingPlaceholder
+                  accentColor={error ? Colors.$textDanger : undefined}
+                  containerStyle={{
+                    backgroundColor: Colors.rgba(Colors.$backgroundElevated, 0.4),
+                    minHeight: 60,
+                  }}
+                />
+                {email.trim().length > 0 && (
+                  <MotiView
+                    from={{ opacity: 0, translateY: -8 }}
+                    animate={{ opacity: 1, translateY: 0 }}
+                    transition={{ type: 'spring', damping: 20, stiffness: 260, mass: 0.9 }}
+                  >
+                    <TextField
+                      leadingAccessory={<Lock size={20} color={Colors.$textPrimary} />}
+                      trailingAccessory={
+                        <TouchableOpacity
+                          onPress={() => setShowPassword((v) => !v)}
+                          accessibilityLabel={showPassword ? 'Hide password' : 'Show password'}
+                          style={{
+                            alignContent: 'center',
+                            justifyContent: 'center',
+                            paddingHorizontal: 4,
+                          }}
+                        >
+                          {showPassword ? (
+                            <EyeOff size={20} color={Colors.$textPrimary} />
+                          ) : (
+                            <Eye size={20} color={Colors.$textPrimary} />
+                          )}
+                        </TouchableOpacity>
+                      }
+                      placeholder="Password"
+                      value={password}
+                      onChangeText={(t) => {
+                        setPassword(t)
+                        if (error) setError(null)
+                      }}
+                      secureTextEntry={!showPassword}
+                      autoCapitalize="none"
+                      floatingPlaceholder
+                      accentColor={error ? Colors.$textDanger : undefined}
+                      containerStyle={{
+                        backgroundColor: Colors.rgba(Colors.$backgroundElevated, 0.4),
+                        minHeight: 60,
+                      }}
+                    />
+                  </MotiView>
+                )}
+              </Animated.View>
+            )}
+          </MotiView>
+
+          {/* Error + CTA */}
+          <View style={{ alignItems: 'center', width: '100%' }}>
             <MotiView
               animate={{ opacity: error ? 1 : 0, translateY: error ? 0 : -6 }}
               transition={{ type: 'timing', duration: 180 }}
@@ -341,11 +807,24 @@ export function SplashPage() {
             >
               <Text className="text-red-400 text-sm text-center w-full px-4">{error ?? ''}</Text>
             </MotiView>
-
-            {/* Sign in button */}
-            <BaseButton onPress={handleSignIn} disabled={loading}>
-              {loading ? 'Signing in…' : 'Sign in'}
-            </BaseButton>
+            {mainTab === 'phone' && !phoneOtpSent && (
+              <BaseButton onPress={handleSendCode} disabled={loading || !localNumber.trim()}>
+                {loading ? 'Sending code…' : 'Send code'}
+              </BaseButton>
+            )}
+            {mainTab === 'phone' && phoneOtpSent && (
+              <BaseButton
+                onPress={() => phoneCode.length === 6 && handleVerifyPhoneOtp(phoneCode)}
+                disabled={loading || phoneCode.length < 6}
+              >
+                {loading ? 'Verifying…' : 'Verify'}
+              </BaseButton>
+            )}
+            {mainTab === 'email' && (
+              <BaseButton onPress={handleSignIn} disabled={loading}>
+                {loading ? 'Signing in…' : 'Sign in'}
+              </BaseButton>
+            )}
           </View>
 
           {/* Divider */}
