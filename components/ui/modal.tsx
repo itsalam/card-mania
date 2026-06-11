@@ -124,7 +124,7 @@ export function Modal({
                 ]}
               />
             </View>
-            <View style={{ flex: 1 }}>{children}</View>
+            <View style={{ alignSelf: 'stretch' }}>{children}</View>
           </Animated.View>
         </GestureDetector>
       </KeyboardAvoidingView>
@@ -132,7 +132,7 @@ export function Modal({
   )
 }
 
-const { width: W, height: H } = Dimensions.get('window')
+const { width: W } = Dimensions.get('window')
 export const thumbStyles = StyleSheet.create({
   modalContainer: {
     width: '100%',

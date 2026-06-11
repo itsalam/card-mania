@@ -4,16 +4,23 @@ import { Separator } from '@/components/ui/separator'
 import { Text } from '@/components/ui/text/base-text'
 import { getSupabase } from '@/lib/store/client'
 import { useUserStore } from '@/lib/store/useUserStore'
-import { AtSign, ChevronLeft, RefreshCw } from 'lucide-react-native'
+import { AtSign, ChevronLeft, Phone, RefreshCw } from 'lucide-react-native'
 import { MotiView } from 'moti'
 import { useEffect, useRef, useState } from 'react'
-import { Pressable, TextInput, TouchableOpacity, View } from 'react-native'
+import { TouchableOpacity, View } from 'react-native'
 import Svg, { G, Path } from 'react-native-svg'
 import { Colors } from 'react-native-ui-lib'
+import { CountryPicker } from './CountryPicker'
+import { OtpInput } from './OtpInput'
+import { COUNTRIES, Country, formatLocalNumber, isValidE164, toE164 } from './phoneUtils'
+
+type TabMode = 'email' | 'phone'
 
 type Props = {
   onBack: () => void
   onSuccess?: () => void
+  onPhone?: (e164: string) => void
+  initialEmail?: string
 }
 
 function friendlyAuthError(message: string): string {
@@ -40,84 +47,76 @@ function friendlyOtpError(message: string): string {
   return message
 }
 
-// ── OTP digit input ───────────────────────────────────────────────────────────
+// ── Pill toggle ────────────────────────────────────────────────────────────────
 
-const CODE_LENGTH = 6
-
-type OtpInputProps = {
-  value: string
-  onChange: (v: string) => void
-  onComplete: (v: string) => void
-}
-
-function OtpInput({ value, onChange, onComplete }: OtpInputProps) {
-  const ref = useRef<TextInput>(null)
-
-  useEffect(() => {
-    const t = setTimeout(() => ref.current?.focus(), 150)
-    return () => clearTimeout(t)
-  }, [])
-
+function PillToggle({ value, onChange }: { value: TabMode; onChange: (v: TabMode) => void }) {
   return (
-    <Pressable
-      onPress={() => ref.current?.focus()}
-      style={{ flexDirection: 'row', gap: 8, justifyContent: 'center' }}
+    <View
+      style={{
+        flexDirection: 'row',
+        backgroundColor: 'rgba(255,255,255,0.12)',
+        borderRadius: 20,
+        padding: 3,
+        alignSelf: 'flex-start',
+      }}
     >
-      {Array.from({ length: CODE_LENGTH }, (_, i) => {
-        const char = value[i]
-        const isActive = i === value.length
+      {(['email', 'phone'] as TabMode[]).map((tab) => {
+        const active = value === tab
+        const color = active ? '#000' : 'rgba(255,255,255,0.6)'
         return (
-          <View
-            key={i}
+          <TouchableOpacity
+            key={tab}
+            onPress={() => onChange(tab)}
             style={{
-              width: 44,
-              height: 54,
-              borderRadius: 10,
-              backgroundColor: Colors.rgba(Colors.$backgroundElevated, 0.4),
-              borderWidth: 1.5,
-              borderColor: isActive
-                ? Colors.$textPrimary
-                : char
-                  ? 'rgba(255,255,255,0.35)'
-                  : 'rgba(255,255,255,0.15)',
-              justifyContent: 'center',
+              flexDirection: 'row',
               alignItems: 'center',
+              gap: 5,
+              paddingVertical: 5,
+              paddingHorizontal: 14,
+              borderRadius: 17,
+              backgroundColor: active ? 'white' : 'transparent',
             }}
+            accessibilityRole="tab"
+            accessibilityState={{ selected: active }}
           >
-            <Text style={{ color: 'white', fontSize: 22, fontWeight: '600' }}>{char ?? ''}</Text>
-          </View>
+            {tab === 'email' ? (
+              <AtSign size={12} color={color} />
+            ) : (
+              <Phone size={12} color={color} />
+            )}
+            <Text style={{ color, fontWeight: '600', fontSize: 12 }}>
+              {tab === 'email' ? 'Email' : 'Phone'}
+            </Text>
+          </TouchableOpacity>
         )
       })}
-      <TextInput
-        ref={ref}
-        value={value}
-        onChangeText={(v) => {
-          const digits = v.replace(/\D/g, '').slice(0, CODE_LENGTH)
-          onChange(digits)
-          if (digits.length === CODE_LENGTH) onComplete(digits)
-        }}
-        keyboardType="number-pad"
-        maxLength={CODE_LENGTH}
-        caretHidden
-        style={{ position: 'absolute', width: 0, height: 0, opacity: 0 }}
-      />
-    </Pressable>
+    </View>
   )
 }
 
-// ── Main form ─────────────────────────────────────────────────────────────────
+// ── Main form ──────────────────────────────────────────────────────────────────
 
-export function SignUpForm({ onBack, onSuccess }: Props) {
+export function SignUpForm({ onBack, onSuccess, onPhone, initialEmail }: Props) {
   const { signUp, verifySignUpOtp } = useUserStore()
 
-  const [step, setStep] = useState<'form' | 'otp'>('form')
-  const [email, setEmail] = useState('')
+  const [tabMode, setTabMode] = useState<TabMode>('email')
 
+  // Email state
+  const [step, setStep] = useState<'form' | 'otp'>('form')
+  const [email, setEmail] = useState(initialEmail ?? '')
   const [code, setCode] = useState('')
   const [resendCooldown, setResendCooldown] = useState(0)
 
+  // Phone tab state
+  const [country, setCountry] = useState<Country>(COUNTRIES[0])
+  const [localNumber, setLocalNumber] = useState('')
+
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const tabSwitchDir = useRef<1 | -1>(1)
+
+  const maxDigits = country.format.split('').filter((c) => c === 'X').length
+  const phoneE164 = toE164(country.dial, localNumber)
 
   useEffect(() => {
     if (resendCooldown <= 0) return
@@ -127,8 +126,14 @@ export function SignUpForm({ onBack, onSuccess }: Props) {
 
   const handleSubmitForm = async () => {
     setError(null)
-    if (!email.trim()) return setError('Please enter your email.')
 
+    if (tabMode === 'phone') {
+      if (!isValidE164(phoneE164)) return setError('Please enter a valid phone number.')
+      onPhone?.(phoneE164)
+      return
+    }
+
+    if (!email.trim()) return setError('Please enter your email.')
     setLoading(true)
     try {
       await signUp(email.trim())
@@ -176,7 +181,7 @@ export function SignUpForm({ onBack, onSuccess }: Props) {
     setError(null)
   }
 
-  // ── OTP step ────────────────────────────────────────────────────────────────
+  // ── OTP step ──────────────────────────────────────────────────────────────────
   if (step === 'otp') {
     return (
       <MotiView
@@ -228,8 +233,8 @@ export function SignUpForm({ onBack, onSuccess }: Props) {
         <AppButton
           variant="primary"
           size="lg"
-          onPress={() => code.length === CODE_LENGTH && handleVerifyOtp(code)}
-          disabled={loading || code.length < CODE_LENGTH}
+          onPress={() => code.length === 6 && handleVerifyOtp(code)}
+          disabled={loading || code.length < 6}
           className="w-full"
         >
           {loading ? 'Verifying…' : 'Verify'}
@@ -251,18 +256,12 @@ export function SignUpForm({ onBack, onSuccess }: Props) {
     )
   }
 
-  // ── Form step ───────────────────────────────────────────────────────────────
+  // ── Form step ──────────────────────────────────────────────────────────────────
   return (
     <MotiView
-      from={{ opacity: 0, translateY: 40 }}
-      animate={{ opacity: 1, translateY: 0 }}
-      transition={{
-        type: 'spring',
-        damping: 100,
-        stiffness: 300,
-        mass: 0.9,
-        overshootClamping: true,
-      }}
+      from={{ opacity: 0, translateX: 40 }}
+      animate={{ opacity: 1, translateX: 0 }}
+      transition={{ type: 'spring', damping: 20, stiffness: 260, mass: 0.9 }}
       style={{
         gap: 16,
         alignItems: 'center',
@@ -271,38 +270,103 @@ export function SignUpForm({ onBack, onSuccess }: Props) {
         paddingBottom: 32,
       }}
     >
-      <View
+      {/* ← Sign in button — compact, left aligned */}
+      <TouchableOpacity
+        onPress={onBack}
         style={{
-          width: '100%',
           flexDirection: 'row',
-          justifyContent: 'space-between',
           alignItems: 'center',
+          gap: 3,
+          paddingVertical: 6,
+          paddingHorizontal: 10,
+          borderRadius: 8,
+          borderWidth: 1,
+          borderColor: 'rgba(255,255,255,0.25)',
+          alignSelf: 'flex-start',
         }}
+        accessibilityLabel="Back to sign in"
       >
-        <Text style={{ color: 'white', fontSize: 20 }}>Create account</Text>
-        <TouchableOpacity
-          onPress={onBack}
-          style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}
-          accessibilityLabel="Back to sign in"
-        >
-          <Text style={{ color: 'white', fontSize: 14, opacity: 0.7 }}>Sign in</Text>
-        </TouchableOpacity>
-      </View>
+        <ChevronLeft size={13} color="white" />
+        <Text style={{ color: 'white', fontSize: 13 }}>Sign in</Text>
+      </TouchableOpacity>
 
-      <TextField
-        leadingAccessory={<AtSign size={20} color={Colors.$textPrimary} />}
-        placeholder="Email"
-        value={email}
-        onChangeText={setEmail}
-        keyboardType="email-address"
-        autoCapitalize="none"
-        autoCorrect={false}
-        floatingPlaceholder
-        containerStyle={{
-          backgroundColor: Colors.rgba(Colors.$backgroundElevated, 0.4),
-          width: '100%',
+      {/* Heading — matches phone-signup style */}
+      <Text
+        style={{ color: 'white', fontSize: 24, lineHeight: 26, fontWeight: 'bold', width: '100%' }}
+      >
+        {initialEmail ? "Looks like you're new here" : 'Create account'}
+      </Text>
+      {initialEmail ? (
+        <Text style={{ color: 'rgba(255,255,255,0.6)', width: '100%', lineHeight: 22 }}>
+          {"We'll create an account for "}
+          <Text style={{ color: 'white', fontWeight: '600' }}>{initialEmail}</Text>
+        </Text>
+      ) : null}
+
+      {/* Pill toggle */}
+      <PillToggle
+        value={tabMode}
+        onChange={(t) => {
+          tabSwitchDir.current = t === 'phone' ? 1 : -1
+          setTabMode(t)
+          setError(null)
         }}
       />
+
+      {/* Input — animates on tab switch */}
+      <MotiView
+        key={tabMode}
+        from={{ opacity: 0, translateX: tabSwitchDir.current * 30 }}
+        animate={{ opacity: 1, translateX: 0 }}
+        transition={{ type: 'spring', damping: 22, stiffness: 270, mass: 0.9 }}
+        style={{ width: '100%' }}
+      >
+        {tabMode === 'email' ? (
+          <TextField
+            leadingAccessory={<AtSign size={20} color={Colors.$textPrimary} />}
+            placeholder="Email"
+            value={email}
+            onChangeText={(v) => {
+              setEmail(v)
+              if (error) setError(null)
+            }}
+            keyboardType="email-address"
+            autoCapitalize="none"
+            autoCorrect={false}
+            floatingPlaceholder
+            containerStyle={{
+              backgroundColor: Colors.rgba(Colors.$backgroundElevated, 0.4),
+              width: '100%',
+            }}
+          />
+        ) : (
+          <TextField
+            leadingAccessory={
+              <CountryPicker
+                selected={country}
+                onSelect={(c) => {
+                  setCountry(c)
+                  setLocalNumber('')
+                }}
+              />
+            }
+            placeholder="Phone number"
+            value={formatLocalNumber(localNumber, country.format)}
+            onChangeText={(v) => {
+              setError(null)
+              setLocalNumber(v.replace(/\D/g, '').slice(0, maxDigits))
+            }}
+            keyboardType="phone-pad"
+            autoCapitalize="none"
+            autoCorrect={false}
+            floatingPlaceholder
+            containerStyle={{
+              backgroundColor: Colors.rgba(Colors.$backgroundElevated, 0.4),
+              width: '100%',
+            }}
+          />
+        )}
+      </MotiView>
 
       {error ? (
         <Text style={{ color: '#f87171', fontSize: 14, textAlign: 'center', width: '100%' }}>
@@ -314,7 +378,7 @@ export function SignUpForm({ onBack, onSuccess }: Props) {
         variant="primary"
         size="lg"
         onPress={handleSubmitForm}
-        disabled={loading}
+        disabled={loading || (tabMode === 'phone' && !localNumber.trim())}
         className="w-full"
       >
         {loading ? 'Sending code…' : 'Continue'}

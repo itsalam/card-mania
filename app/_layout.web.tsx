@@ -34,6 +34,8 @@ export default function WebRootLayout() {
         <Stack.Screen name="index" options={{ headerShown: false }} />
         <Stack.Screen name="[username]" options={{ headerShown: false }} />
         <Stack.Screen name="storefront/[username]" options={{ headerShown: false }} />
+        <Stack.Screen name="policy" options={{ headerShown: false }} />
+        <Stack.Screen name="terms" options={{ headerShown: false }} />
         {/* Authenticated web routes */}
         <Stack.Screen name="offers" options={{ headerShown: false }} />
         <Stack.Screen name="cart" options={{ headerShown: false }} />

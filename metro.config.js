@@ -60,8 +60,9 @@ module.exports = (() => {
         return { filePath: skiaNativeStub, type: 'sourceFile' }
       }
       if (
-        moduleName === 'react-native-worklets' ||
-        moduleName.startsWith('react-native-worklets/')
+        (moduleName === 'react-native-worklets' ||
+          moduleName.startsWith('react-native-worklets/')) &&
+        moduleName !== 'react-native-worklets/package.json'
       ) {
         const workletsStub = path.resolve(__dirname, 'lib/stubs/react-native-worklets.js')
         return { filePath: workletsStub, type: 'sourceFile' }

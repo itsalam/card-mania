@@ -25,13 +25,12 @@ const config = {
     },
     web: {
       bundler: 'metro',
-      output: 'static',
       favicon: './assets/images/CM_LOGO.png',
     },
     plugins: [
       'expo-router',
       '@sentry/react-native',
-      'expo-image',
+      // 'expo-image',
       [
         'expo-splash-screen',
         {

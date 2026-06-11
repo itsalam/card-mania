@@ -24,6 +24,8 @@ type Actions = {
   updateProfile: (patch: Partial<Profile>) => Promise<void>
   setProfileSetupComplete: (v: boolean) => Promise<void>
   verifySignUpOtp: (email: string, token: string) => Promise<void>
+  signInWithPhone: (phone: string, shouldCreateUser?: boolean) => Promise<void>
+  verifyPhoneOtp: (phone: string, token: string) => Promise<void>
   signIn: (email: string, password: string) => Promise<void>
   signUp: (email: string) => Promise<{ needsEmailConfirmation: boolean }>
   setPassword: (password: string) => Promise<void>
@@ -132,7 +134,48 @@ export const useUserStore = create<State & Actions>()(
       verifySignUpOtp: async (email, token) => {
         const { data, error } = await getSupabase().auth.verifyOtp({ email, token, type: 'signup' })
         if (error) throw error
-        if (data.session) await get().setAuth(data.session)
+        if (data.session) {
+          AsyncStorage.setItem('cardmania:hasEverSignedIn', '1').catch(() => {})
+          await get().setAuth(data.session)
+        }
+      },
+
+      signInWithPhone: async (phone, shouldCreateUser = false) => {
+        console.log('[signInWithPhone] sending OTP', { phone, shouldCreateUser })
+        const { error } = await getSupabase().auth.signInWithOtp({
+          phone,
+          options: { shouldCreateUser },
+        })
+        if (error) {
+          console.error('[signInWithPhone] error', {
+            code: error.code,
+            status: error.status,
+            message: error.message,
+          })
+          throw error
+        }
+        console.log('[signInWithPhone] OTP sent successfully')
+      },
+
+      verifyPhoneOtp: async (phone, token) => {
+        console.log('[verifyPhoneOtp] verifying OTP', { phone, tokenLength: token.length })
+        const { data, error } = await getSupabase().auth.verifyOtp({ phone, token, type: 'sms' })
+        if (error) {
+          console.error('[verifyPhoneOtp] error', {
+            code: error.code,
+            status: error.status,
+            message: error.message,
+          })
+          throw error
+        }
+        console.log('[verifyPhoneOtp] success', {
+          hasSession: !!data.session,
+          userId: data.user?.id,
+        })
+        if (data.session) {
+          AsyncStorage.setItem('cardmania:hasEverSignedIn', '1').catch(() => {})
+          await get().setAuth(data.session)
+        }
       },
 
       signIn: async (email, password) => {
@@ -147,6 +190,7 @@ export const useUserStore = create<State & Actions>()(
         // awaits loadProfile() — blocking on that would keep the caller (AuthModal)
         // waiting with the modal open even though auth already succeeded.
         if (data.session) {
+          AsyncStorage.setItem('cardmania:hasEverSignedIn', '1').catch(() => {})
           get().setAuth(data.session).catch(console.error)
         }
       },
