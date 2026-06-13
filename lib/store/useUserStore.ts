@@ -26,8 +26,9 @@ type Actions = {
   verifySignUpOtp: (email: string, token: string) => Promise<void>
   signInWithPhone: (phone: string, shouldCreateUser?: boolean) => Promise<void>
   verifyPhoneOtp: (phone: string, token: string) => Promise<void>
+  checkEmailRegistered: (email: string) => Promise<boolean>
   signIn: (email: string, password: string) => Promise<void>
-  signUp: (email: string) => Promise<{ needsEmailConfirmation: boolean }>
+  signUp: (email: string, password?: string) => Promise<{ needsEmailConfirmation: boolean }>
   setPassword: (password: string) => Promise<void>
   signOut: () => Promise<void>
   signInAnonymously: () => Promise<void>
@@ -178,6 +179,14 @@ export const useUserStore = create<State & Actions>()(
         }
       },
 
+      checkEmailRegistered: async (email) => {
+        const { data, error } = await (getSupabase() as any).rpc('check_email_registered', {
+          p_email: email,
+        })
+        if (error) throw error
+        return !!data
+      },
+
       signIn: async (email, password) => {
         set({ status: 'loading', error: undefined })
         const { data, error } = await getSupabase().auth.signInWithPassword({ email, password })
@@ -195,15 +204,17 @@ export const useUserStore = create<State & Actions>()(
         }
       },
 
-      signUp: async (email) => {
-        // Generate a random temp password; the user sets their real password in the setup wizard.
-        const tmp = Array.from(
-          { length: 32 },
-          () =>
-            'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'[
-              Math.floor(Math.random() * 62)
-            ]
-        ).join('')
+      signUp: async (email, password) => {
+        // If no password provided, generate a random temp one — user sets real password in onboarding.
+        const tmp =
+          password ??
+          Array.from(
+            { length: 32 },
+            () =>
+              'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'[
+                Math.floor(Math.random() * 62)
+              ]
+          ).join('')
         const { data, error } = await getSupabase().auth.signUp({ email, password: tmp })
         if (error) throw error
 

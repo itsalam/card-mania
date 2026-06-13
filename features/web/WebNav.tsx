@@ -13,7 +13,7 @@ import { Text } from '@/components/ui/text/base-text'
 import { useCartPanelStore } from '@/lib/store/useCartPanelStore'
 import { useCartStore } from '@/lib/store/useCartStore'
 import { useUserStore } from '@/lib/store/useUserStore'
-import { Link, usePathname } from 'expo-router'
+import { Link, usePathname, useRouter } from 'expo-router'
 import { ArrowLeftRight, Home, LogOut, Menu, ShoppingCart, Tag } from 'lucide-react-native'
 import { MotiView } from 'moti'
 import { useEffect, useRef, useState } from 'react'
@@ -42,7 +42,13 @@ export function WebNav({
   onSignInPress,
 }: WebNavProps) {
   const { signOut } = useUserStore()
+  const router = useRouter()
   const pathname = usePathname()
+
+  const handleSignOut = async () => {
+    await signOut()
+    router.replace('/')
+  }
   const cartCount = useCartStore((s) => s.items.reduce((n, i) => n + i.cart.quantity, 0))
   const openCartPanel = useCartPanelStore((s) => s.setOpen)
   const { width } = useWindowDimensions()
@@ -318,7 +324,7 @@ export function WebNav({
                     <DropdownMenuLabelText>{displayName}</DropdownMenuLabelText>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onPress={signOut}>
+                  <DropdownMenuItem onPress={handleSignOut}>
                     <LogOut size={14} color={Colors.$textNeutral} />
                     <Text style={{ fontSize: 14 }}>Sign out</Text>
                   </DropdownMenuItem>
@@ -347,7 +353,7 @@ export function WebNav({
                 <DropdownMenuLabelText>{displayName}</DropdownMenuLabelText>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onPress={signOut}>
+              <DropdownMenuItem onPress={handleSignOut}>
                 <LogOut size={14} color={Colors.$textNeutral} />
                 <Text style={{ fontSize: 14 }}>Sign out</Text>
               </DropdownMenuItem>

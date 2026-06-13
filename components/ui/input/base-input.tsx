@@ -229,7 +229,13 @@ export const Input = forwardRef<TextInput, InputProps>((props, ref) => {
           clearButtonStyle={clearButtonStyle}
         />
       )}
-      {trailingAccessory}
+      {Platform.OS === 'web' && trailingAccessory ? (
+        <View {...({ onMouseDown: (e: any) => e.preventDefault() } as any)}>
+          {trailingAccessory}
+        </View>
+      ) : (
+        trailingAccessory
+      )}
     </DynamicBorderBox>
   )
 })

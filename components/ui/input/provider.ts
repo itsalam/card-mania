@@ -220,10 +220,10 @@ export const useInputColors = () => {
 }
 
 export const useAnimatedColors = (ctxColor: string, ctxOpacity: number) => {
-  const ctxOpacityValue = useDerivedValue(
-    () => withTiming(ctxOpacity, { duration: DURATION / 2 }),
-    [ctxOpacity]
-  )
+  const ctxOpacityValue = useSharedValue(ctxOpacity)
+  useEffect(() => {
+    ctxOpacityValue.value = withTiming(ctxOpacity, { duration: DURATION / 2 })
+  }, [ctxOpacity])
 
   const colorT = useSharedValue(1)
   const fromColor = useSharedValue(ctxColor)

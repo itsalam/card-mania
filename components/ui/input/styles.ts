@@ -21,6 +21,7 @@ export const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingTop: GAP_PADDING,
     paddingBottom: 6,
+    minHeight: 60,
   },
   inputTextStyle: {
     fontSize: 16,

@@ -15,16 +15,16 @@ github.com/itsalam/card-mania
 
 ## Stack
 
-| Layer | Library |
-|---|---|
-| App framework | Expo 55, Expo Router 55, React Native 0.83 |
-| Styling | NativeWind 4, Tailwind CSS (`darkMode: 'class'`) |
-| UI components | `react-native-ui-lib`, `@gluestack-ui` |
-| Animations | React Native Reanimated 4, `@shopify/react-native-skia` (stubbed on web) |
-| State | Zustand 5 |
-| Server state | TanStack Query 5 |
-| Backend | Supabase (Auth, Postgres, Realtime) |
-| Monitoring | Sentry (`@sentry/react-native`) |
+| Layer         | Library                                                                  |
+| ------------- | ------------------------------------------------------------------------ |
+| App framework | Expo 55, Expo Router 55, React Native 0.83                               |
+| Styling       | NativeWind 4, Tailwind CSS (`darkMode: 'class'`)                         |
+| UI components | `react-native-ui-lib`, `@gluestack-ui`                                   |
+| Animations    | React Native Reanimated 4, `@shopify/react-native-skia` (stubbed on web) |
+| State         | Zustand 5                                                                |
+| Server state  | TanStack Query 5                                                         |
+| Backend       | Supabase (Auth, Postgres, Realtime)                                      |
+| Monitoring    | Sentry (`@sentry/react-native`)                                          |
 
 ## Routing
 
@@ -54,21 +54,21 @@ The web build shares the same Expo Router tree as native. Key conventions:
 
 ## Features map
 
-| Directory | Responsibility |
-|---|---|
-| `features/splash` | Login / sign-up gate |
-| `features/home` | Home tab |
-| `features/collection` | User's card collection |
-| `features/marketplace` | Browse/search listings |
-| `features/offers` | Buying and selling offers |
-| `features/cart` | Cart and checkout |
-| `features/transactions` | Transaction history |
-| `features/profile` | Profile view and edit |
-| `features/settings` | App settings, theme, preferences |
-| `features/onboarding` | First-run onboarding wizard |
-| `features/users` | Public user/storefront pages |
-| `features/tcg-card-views` | Card detail views |
-| `features/mainSearchbar` | Global search bar |
-| `features/navigation` | Navigation helpers |
-| `features/notifications` | Notifications tab |
-| `features/web` | Web-only layout components |
+| Directory                 | Responsibility                   |
+| ------------------------- | -------------------------------- |
+| `features/splash`         | Login / sign-up gate             |
+| `features/home`           | Home tab                         |
+| `features/collection`     | User's card collection           |
+| `features/marketplace`    | Browse/search listings           |
+| `features/offers`         | Buying and selling offers        |
+| `features/cart`           | Cart and checkout                |
+| `features/transactions`   | Transaction history              |
+| `features/profile`        | Profile view and edit            |
+| `features/settings`       | App settings, theme, preferences |
+| `features/onboarding`     | First-run onboarding wizard      |
+| `features/users`          | Public user/storefront pages     |
+| `features/tcg-card-views` | Card detail views                |
+| `features/mainSearchbar`  | Global search bar                |
+| `features/navigation`     | Navigation helpers               |
+| `features/notifications`  | Notifications tab                |
+| `features/web`            | Web-only layout components       |

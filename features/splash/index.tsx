@@ -1,7 +1,7 @@
 import Logo from '@/assets/images/logo-min.svg'
 import { GradientBackground } from '@/components/Background'
 import { Button as AppButton } from '@/components/ui/button'
-import { TextField } from '@/components/ui/input/base-input'
+import { TextField, TextFieldHandle } from '@/components/ui/input/base-input'
 import { Separator } from '@/components/ui/separator'
 import { Spinner } from '@/components/ui/spinner'
 import { Text } from '@/components/ui/text/base-text'
@@ -31,6 +31,7 @@ import { CountryPicker } from './CountryPicker'
 import { OtpInput } from './OtpInput'
 import { SignUpForm } from './SignUpForm'
 import { COUNTRIES, Country, formatLocalNumber, isValidE164, toE164 } from './phoneUtils'
+import { useEmailAuthFlow } from './useEmailAuthFlow'
 
 function friendlyPhoneError(message: string): string {
   const msg = message.toLowerCase()
@@ -139,24 +140,10 @@ const FacebookSignInButton = () => (
   </BaseButton>
 )
 
-function friendlySignInError(message: string): string {
-  const msg = message.toLowerCase()
-  if (
-    msg.includes('invalid login') ||
-    msg.includes('invalid credentials') ||
-    msg.includes('email not confirmed') ||
-    msg.includes('wrong password')
-  )
-    return 'Invalid email or password.'
-  if (msg.includes('network') || msg.includes('fetch'))
-    return 'Network error. Please check your connection.'
-  return message
-}
-
 // ── Splash / login page ───────────────────────────────────────────────────────
 
 export function SplashPage() {
-  const { signInAnonymously, signIn, signInWithPhone, verifyPhoneOtp } = useUserStore()
+  const { signInAnonymously, signInWithPhone, verifyPhoneOtp } = useUserStore()
   const [hasEverSignedIn, setHasEverSignedIn] = useState(false)
   useEffect(() => {
     AsyncStorage.getItem('cardmania:hasEverSignedIn').then((v: string | null) => {
@@ -172,10 +159,9 @@ export function SplashPage() {
   // 'phone' is the primary / default view
   const [view, setView] = useState<'phone' | 'phone-otp' | 'phone-signup' | 'signup'>('phone')
 
-  // Main page tab + inline states
+  // Main page tab
   const [mainTab, setMainTab] = useState<'phone' | 'email'>('phone')
   const [phoneOtpSent, setPhoneOtpSent] = useState(false)
-  const [emailSignupContext, setEmailSignupContext] = useState<string | null>(null)
 
   // Phone state
   const [phoneMode, setPhoneMode] = useState<'signin' | 'signup'>('signin')
@@ -184,16 +170,15 @@ export function SplashPage() {
   const [phoneCode, setPhoneCode] = useState('')
   const [resendCooldown, setResendCooldown] = useState(0)
 
-  // Email state
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [showPassword, setShowPassword] = useState(false)
+  // Email auth — shared hook
+  const emailFlow = useEmailAuthFlow()
 
   // Shared
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const direction = useRef<1 | -1>(1)
   const tabSwitchDir = useRef<1 | -1>(1)
+  const passwordFieldRef = useRef<TextFieldHandle>(null)
 
   const maxDigits = country.format.split('').filter((c) => c === 'X').length
   const e164 = toE164(country.dial, localNumber)
@@ -226,6 +211,14 @@ export function SplashPage() {
     }
     setView(v)
   }
+
+  // When the email flow detects a new user, navigate to the signup view
+  useEffect(() => {
+    if (emailFlow.signupEmail) {
+      direction.current = 1
+      setView('signup')
+    }
+  }, [emailFlow.signupEmail])
 
   const handleAnonSignIn = async () => {
     try {
@@ -317,37 +310,8 @@ export function SplashPage() {
     setError(null)
   }
 
-  const handleSignIn = async () => {
-    setError(null)
-    if (!email.trim()) {
-      setError('Please enter your email.')
-      triggerShake()
-      return
-    }
-    if (!password) {
-      setError('Please enter your password.')
-      triggerShake()
-      return
-    }
-    setLoading(true)
-    try {
-      await signIn(email.trim(), password)
-    } catch (err: any) {
-      const msg = err?.message ?? ''
-      const isCredentialsError =
-        msg.toLowerCase().includes('invalid login') ||
-        msg.toLowerCase().includes('invalid credentials') ||
-        msg.toLowerCase().includes('wrong password')
-      if (isCredentialsError) {
-        setEmailSignupContext(email.trim())
-        goTo('signup', 1)
-      } else {
-        setError(friendlySignInError(msg || 'Sign in failed.'))
-        triggerShake()
-      }
-    } finally {
-      setLoading(false)
-    }
+  const handleSignIn = () => {
+    emailFlow.handleSignIn()
   }
 
   // Shared logo node — flex:1 keeps it in the keyboard-avoiding flow so it moves with the form;
@@ -389,11 +353,12 @@ export function SplashPage() {
       <KeyboardAvoidingView behavior="padding" style={{ flex: 1 }}>
         <GradientBackground style={{ flex: 1 }}>
           {logoNode}
-          <View style={{ height: '50%' }}>
+          <View style={{ height: '50%', paddingHorizontal: 24 }}>
             <SignUpForm
-              initialEmail={emailSignupContext ?? undefined}
+              initialEmail={emailFlow.signupEmail ?? undefined}
               onBack={() => {
-                setEmailSignupContext(null)
+                emailFlow.clearSignupEmail()
+                emailFlow.resetToEmailStep()
                 goTo('phone', -1)
               }}
               onPhone={(phoneE164) => {
@@ -592,15 +557,6 @@ export function SplashPage() {
                 {hasEverSignedIn ? 'Sign in to continue.' : 'Enter your preferred sign-in method.'}
               </Text>
             </View>
-            <AppButton
-              variant="outline"
-              size="sm"
-              onPress={() => goTo('signup', 1)}
-              accessibilityLabel="Create a new account"
-            >
-              <AtSign size={14} color="white" />
-              <Text className="text-sm">Sign up</Text>
-            </AppButton>
           </View>
 
           {/* Pill toggle */}
@@ -625,6 +581,7 @@ export function SplashPage() {
                     setError(null)
                     setPhoneOtpSent(false)
                     setPhoneCode('')
+                    emailFlow.resetToEmailStep()
                   }}
                   style={{
                     flexDirection: 'row',
@@ -743,41 +700,60 @@ export function SplashPage() {
                     <User size={20} onPress={handleAnonSignIn} color={Colors.$textPrimary} />
                   }
                   placeholder="Email"
-                  value={email}
+                  value={emailFlow.email}
                   onChangeText={(t) => {
-                    setEmail(t)
-                    if (error) setError(null)
+                    emailFlow.setEmail(t)
+                    if (emailFlow.error) emailFlow.setError(null)
                   }}
                   keyboardType="email-address"
                   autoCapitalize="none"
                   autoCorrect={false}
                   showClearButton
                   floatingPlaceholder
-                  accentColor={error ? Colors.$textDanger : undefined}
+                  returnKeyType={emailFlow.emailStep === 'password' ? 'next' : 'done'}
+                  onSubmitEditing={() => {
+                    if (emailFlow.emailStep === 'password') {
+                      passwordFieldRef.current?.focus()
+                    } else {
+                      emailFlow.handleContinue()
+                    }
+                  }}
+                  accentColor={emailFlow.error ? Colors.$textDanger : undefined}
                   containerStyle={{
                     backgroundColor: Colors.rgba(Colors.$backgroundElevated, 0.4),
-                    minHeight: 60,
                   }}
                 />
-                {email.trim().length > 0 && (
+                {emailFlow.emailStep === 'password' && (
                   <MotiView
                     from={{ opacity: 0, translateY: -8 }}
                     animate={{ opacity: 1, translateY: 0 }}
                     transition={{ type: 'spring', damping: 20, stiffness: 260, mass: 0.9 }}
+                    style={{ gap: 8 }}
                   >
+                    <TouchableOpacity
+                      onPress={emailFlow.resetToEmailStep}
+                      style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}
+                    >
+                      <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 13 }}>
+                        ← Change email
+                      </Text>
+                    </TouchableOpacity>
                     <TextField
+                      ref={passwordFieldRef}
                       leadingAccessory={<Lock size={20} color={Colors.$textPrimary} />}
                       trailingAccessory={
                         <TouchableOpacity
-                          onPress={() => setShowPassword((v) => !v)}
-                          accessibilityLabel={showPassword ? 'Hide password' : 'Show password'}
+                          onPress={() => emailFlow.setShowPassword(!emailFlow.showPassword)}
+                          accessibilityLabel={
+                            emailFlow.showPassword ? 'Hide password' : 'Show password'
+                          }
                           style={{
                             alignContent: 'center',
                             justifyContent: 'center',
                             paddingHorizontal: 4,
                           }}
                         >
-                          {showPassword ? (
+                          {emailFlow.showPassword ? (
                             <EyeOff size={20} color={Colors.$textPrimary} />
                           ) : (
                             <Eye size={20} color={Colors.$textPrimary} />
@@ -785,15 +761,17 @@ export function SplashPage() {
                         </TouchableOpacity>
                       }
                       placeholder="Password"
-                      value={password}
+                      value={emailFlow.password}
                       onChangeText={(t) => {
-                        setPassword(t)
-                        if (error) setError(null)
+                        emailFlow.setPassword(t)
+                        if (emailFlow.error) emailFlow.setError(null)
                       }}
-                      secureTextEntry={!showPassword}
+                      secureTextEntry={!emailFlow.showPassword}
                       autoCapitalize="none"
                       floatingPlaceholder
-                      accentColor={error ? Colors.$textDanger : undefined}
+                      returnKeyType="done"
+                      onSubmitEditing={handleSignIn}
+                      accentColor={emailFlow.error ? Colors.$textDanger : undefined}
                       containerStyle={{
                         backgroundColor: Colors.rgba(Colors.$backgroundElevated, 0.4),
                         minHeight: 60,
@@ -806,14 +784,20 @@ export function SplashPage() {
           </MotiView>
 
           {/* Error + CTA */}
-          <View style={{ alignItems: 'center', width: '100%' }}>
+          <View style={{ alignItems: 'center', width: '100%', backgroundColor: 'red' }}>
             <MotiView
-              animate={{ opacity: error ? 1 : 0, translateY: error ? 0 : -6 }}
+              animate={{
+                opacity: (mainTab === 'email' ? emailFlow.error : error) ? 1 : 0,
+                translateY: (mainTab === 'email' ? emailFlow.error : error) ? 0 : -6,
+                minHeight: (mainTab === 'email' ? emailFlow.error : error) ? 20 : 0,
+              }}
               transition={{ type: 'timing', duration: 180 }}
-              style={{ minHeight: 20, width: '100%', justifyContent: 'center' }}
+              style={{ width: '100%', justifyContent: 'center', backgroundColor: 'blue' }}
               pointerEvents="none"
             >
-              <Text className="text-red-400 text-sm text-center w-full px-4">{error ?? ''}</Text>
+              <Text className="text-red-400 text-sm text-center w-full px-4">
+                {mainTab === 'email' ? (emailFlow.error ?? '') : (error ?? '')}
+              </Text>
             </MotiView>
             {mainTab === 'phone' && !phoneOtpSent && (
               <BaseButton onPress={handleSendCode} disabled={loading || !localNumber.trim()}>
@@ -828,9 +812,24 @@ export function SplashPage() {
                 {loading ? 'Verifying…' : 'Verify'}
               </BaseButton>
             )}
-            {mainTab === 'email' && (
-              <BaseButton onPress={handleSignIn} disabled={loading}>
-                {loading ? 'Signing in…' : 'Sign in'}
+            {mainTab === 'email' && emailFlow.emailStep === 'email' && (
+              <BaseButton
+                onPress={() => {
+                  if (!emailFlow.email.trim()) {
+                    emailFlow.setError('Please enter your email.')
+                    triggerShake()
+                    return
+                  }
+                  emailFlow.handleContinue()
+                }}
+                disabled={emailFlow.loading}
+              >
+                {emailFlow.loading ? 'Checking…' : 'Continue'}
+              </BaseButton>
+            )}
+            {mainTab === 'email' && emailFlow.emailStep === 'password' && (
+              <BaseButton onPress={() => handleSignIn()} disabled={emailFlow.loading}>
+                {emailFlow.loading ? 'Signing in…' : 'Sign in'}
               </BaseButton>
             )}
           </View>

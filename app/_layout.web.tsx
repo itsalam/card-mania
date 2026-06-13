@@ -15,6 +15,7 @@ import '@/components/icons'
 import '@expo/metro-runtime'
 import '../global.css'
 
+import { WebRouteGuard } from '@/features/web/WebRouteGuard'
 import { Stack } from 'expo-router/stack'
 import React from 'react'
 import WebProviders from './_providers.web'
@@ -24,25 +25,27 @@ export { ErrorBoundary } from 'expo-router'
 export default function WebRootLayout() {
   return (
     <WebProviders>
-      <Stack
-        screenOptions={{
-          headerShown: false,
-          animation: 'none',
-        }}
-      >
-        {/* Public web routes — no auth gate */}
-        <Stack.Screen name="index" options={{ headerShown: false }} />
-        <Stack.Screen name="[username]" options={{ headerShown: false }} />
-        <Stack.Screen name="storefront/[username]" options={{ headerShown: false }} />
-        <Stack.Screen name="policy" options={{ headerShown: false }} />
-        <Stack.Screen name="terms" options={{ headerShown: false }} />
-        {/* Authenticated web routes */}
-        <Stack.Screen name="offers" options={{ headerShown: false }} />
-        <Stack.Screen name="cart" options={{ headerShown: false }} />
-        <Stack.Screen name="transactions" options={{ headerShown: false }} />
-        <Stack.Screen name="transactions/[offerId]" options={{ headerShown: false }} />
-        <Stack.Screen name="+not-found" />
-      </Stack>
+      <WebRouteGuard>
+        <Stack
+          screenOptions={{
+            headerShown: false,
+            animation: 'none',
+          }}
+        >
+          {/* Public web routes — no auth gate */}
+          <Stack.Screen name="index" options={{ headerShown: false }} />
+          <Stack.Screen name="[username]" options={{ headerShown: false }} />
+          <Stack.Screen name="storefront/[username]" options={{ headerShown: false }} />
+          <Stack.Screen name="policy" options={{ headerShown: false }} />
+          <Stack.Screen name="terms" options={{ headerShown: false }} />
+          {/* Authenticated web routes — see lib/auth/protectedRoutes.ts */}
+          <Stack.Screen name="offers" options={{ headerShown: false }} />
+          <Stack.Screen name="cart" options={{ headerShown: false }} />
+          <Stack.Screen name="transactions" options={{ headerShown: false }} />
+          <Stack.Screen name="transactions/[offerId]" options={{ headerShown: false }} />
+          <Stack.Screen name="+not-found" />
+        </Stack>
+      </WebRouteGuard>
     </WebProviders>
   )
 }

@@ -1,10 +1,10 @@
 import { Button as AppButton } from '@/components/ui/button'
-import { TextField } from '@/components/ui/input/base-input'
+import { TextField, TextFieldHandle } from '@/components/ui/input/base-input'
 import { Separator } from '@/components/ui/separator'
 import { Text } from '@/components/ui/text/base-text'
 import { getSupabase } from '@/lib/store/client'
 import { useUserStore } from '@/lib/store/useUserStore'
-import { AtSign, ChevronLeft, Phone, RefreshCw } from 'lucide-react-native'
+import { AtSign, ChevronLeft, Eye, EyeOff, Lock, Phone, RefreshCw } from 'lucide-react-native'
 import { MotiView } from 'moti'
 import { useEffect, useRef, useState } from 'react'
 import { TouchableOpacity, View } from 'react-native'
@@ -12,7 +12,9 @@ import Svg, { G, Path } from 'react-native-svg'
 import { Colors } from 'react-native-ui-lib'
 import { CountryPicker } from './CountryPicker'
 import { OtpInput } from './OtpInput'
+import { PasswordStrengthGauge } from './PasswordStrengthGauge'
 import { COUNTRIES, Country, formatLocalNumber, isValidE164, toE164 } from './phoneUtils'
+import { DEFAULT_POLICY, policyError } from './usePasswordPolicy'
 
 type TabMode = 'email' | 'phone'
 
@@ -104,7 +106,13 @@ export function SignUpForm({ onBack, onSuccess, onPhone, initialEmail }: Props) 
   // Email state
   const [step, setStep] = useState<'form' | 'otp'>('form')
   const [email, setEmail] = useState(initialEmail ?? '')
+  const [confirmEmail, setConfirmEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
+  const [passwordFocused, setPasswordFocused] = useState(false)
   const [code, setCode] = useState('')
+  const confirmEmailRef = useRef<TextFieldHandle>(null)
+  const passwordRef = useRef<TextFieldHandle>(null)
   const [resendCooldown, setResendCooldown] = useState(0)
 
   // Phone tab state
@@ -134,11 +142,20 @@ export function SignUpForm({ onBack, onSuccess, onPhone, initialEmail }: Props) 
     }
 
     if (!email.trim()) return setError('Please enter your email.')
+    if (email.trim().toLowerCase() !== confirmEmail.trim().toLowerCase())
+      return setError('Emails do not match.')
+    if (!password) return setError('Please enter a password.')
+    const pwErr = policyError(password, DEFAULT_POLICY)
+    if (pwErr) return setError(pwErr)
+
     setLoading(true)
     try {
-      await signUp(email.trim())
-      setResendCooldown(60)
-      setStep('otp')
+      const { needsEmailConfirmation } = await signUp(email.trim(), password)
+      if (needsEmailConfirmation) {
+        setResendCooldown(60)
+        setStep('otp')
+      }
+      // If no confirmation needed, onAuthStateChange will close the gate automatically
     } catch (err: any) {
       setError(friendlyAuthError(err?.message ?? 'Sign up failed. Please try again.'))
     } finally {
@@ -265,12 +282,12 @@ export function SignUpForm({ onBack, onSuccess, onPhone, initialEmail }: Props) 
       style={{
         gap: 16,
         alignItems: 'center',
-        paddingHorizontal: 32,
+        // paddingHorizontal: 32,
         width: '100%',
         paddingBottom: 32,
       }}
     >
-      {/* ← Sign in button — compact, left aligned */}
+      {/* ← Sign in button */}
       <TouchableOpacity
         onPress={onBack}
         style={{
@@ -290,55 +307,118 @@ export function SignUpForm({ onBack, onSuccess, onPhone, initialEmail }: Props) 
         <Text style={{ color: 'white', fontSize: 13 }}>Sign in</Text>
       </TouchableOpacity>
 
-      {/* Heading — matches phone-signup style */}
       <Text
         style={{ color: 'white', fontSize: 24, lineHeight: 26, fontWeight: 'bold', width: '100%' }}
       >
         {initialEmail ? "Looks like you're new here" : 'Create account'}
       </Text>
-      {initialEmail ? (
-        <Text style={{ color: 'rgba(255,255,255,0.6)', width: '100%', lineHeight: 22 }}>
-          {"We'll create an account for "}
-          <Text style={{ color: 'white', fontWeight: '600' }}>{initialEmail}</Text>
-        </Text>
-      ) : null}
 
-      {/* Pill toggle */}
-      <PillToggle
-        value={tabMode}
-        onChange={(t) => {
-          tabSwitchDir.current = t === 'phone' ? 1 : -1
-          setTabMode(t)
-          setError(null)
-        }}
-      />
+      {/* Pill toggle — only shown when not coming from an email redirect */}
+      {!initialEmail && (
+        <PillToggle
+          value={tabMode}
+          onChange={(t) => {
+            tabSwitchDir.current = t === 'phone' ? 1 : -1
+            setTabMode(t)
+            setError(null)
+          }}
+        />
+      )}
 
-      {/* Input — animates on tab switch */}
+      {/* Input fields — animate on tab switch */}
       <MotiView
         key={tabMode}
         from={{ opacity: 0, translateX: tabSwitchDir.current * 30 }}
         animate={{ opacity: 1, translateX: 0 }}
         transition={{ type: 'spring', damping: 22, stiffness: 270, mass: 0.9 }}
-        style={{ width: '100%' }}
+        style={{ width: '100%', gap: 10 }}
       >
         {tabMode === 'email' ? (
-          <TextField
-            leadingAccessory={<AtSign size={20} color={Colors.$textPrimary} />}
-            placeholder="Email"
-            value={email}
-            onChangeText={(v) => {
-              setEmail(v)
-              if (error) setError(null)
-            }}
-            keyboardType="email-address"
-            autoCapitalize="none"
-            autoCorrect={false}
-            floatingPlaceholder
-            containerStyle={{
-              backgroundColor: Colors.rgba(Colors.$backgroundElevated, 0.4),
-              width: '100%',
-            }}
-          />
+          <>
+            <TextField
+              leadingAccessory={<AtSign size={20} color={Colors.$textPrimary} />}
+              placeholder="Email"
+              value={email}
+              onChangeText={(v) => {
+                setEmail(v)
+                if (error) setError(null)
+              }}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              autoCorrect={false}
+              floatingPlaceholder
+              returnKeyType="next"
+              onSubmitEditing={() => confirmEmailRef.current?.focus()}
+              containerStyle={{
+                backgroundColor: Colors.rgba(Colors.$backgroundElevated, 0.4),
+                width: '100%',
+              }}
+            />
+            <TextField
+              ref={confirmEmailRef}
+              leadingAccessory={<AtSign size={20} color={Colors.$textPrimary} />}
+              placeholder="Confirm email"
+              value={confirmEmail}
+              onChangeText={(v) => {
+                setConfirmEmail(v)
+                if (error) setError(null)
+              }}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              autoCorrect={false}
+              floatingPlaceholder
+              returnKeyType="next"
+              onSubmitEditing={() => passwordRef.current?.focus()}
+              accentColor={
+                confirmEmail && email.trim().toLowerCase() !== confirmEmail.trim().toLowerCase()
+                  ? Colors.$textDanger
+                  : undefined
+              }
+              containerStyle={{
+                backgroundColor: Colors.rgba(Colors.$backgroundElevated, 0.4),
+                width: '100%',
+              }}
+            />
+            <TextField
+              ref={passwordRef}
+              leadingAccessory={<Lock size={20} color={Colors.$textPrimary} />}
+              trailingAccessory={
+                <TouchableOpacity
+                  onPress={() => setShowPassword((v) => !v)}
+                  accessibilityLabel={showPassword ? 'Hide password' : 'Show password'}
+                  style={{ paddingHorizontal: 4 }}
+                >
+                  {showPassword ? (
+                    <EyeOff size={20} color={Colors.$textPrimary} />
+                  ) : (
+                    <Eye size={20} color={Colors.$textPrimary} />
+                  )}
+                </TouchableOpacity>
+              }
+              placeholder="Password"
+              value={password}
+              onChangeText={(v) => {
+                setPassword(v)
+                if (error) setError(null)
+              }}
+              onFocus={() => setPasswordFocused(true)}
+              onBlur={() => setPasswordFocused(false)}
+              secureTextEntry={!showPassword}
+              autoCapitalize="none"
+              floatingPlaceholder
+              returnKeyType="done"
+              onSubmitEditing={handleSubmitForm}
+              containerStyle={{
+                backgroundColor: Colors.rgba(Colors.$backgroundElevated, 0.4),
+                width: '100%',
+              }}
+            />
+            <PasswordStrengthGauge
+              password={password}
+              policy={DEFAULT_POLICY}
+              focused={passwordFocused}
+            />
+          </>
         ) : (
           <TextField
             leadingAccessory={
@@ -381,7 +461,7 @@ export function SignUpForm({ onBack, onSuccess, onPhone, initialEmail }: Props) 
         disabled={loading || (tabMode === 'phone' && !localNumber.trim())}
         className="w-full"
       >
-        {loading ? 'Sending code…' : 'Continue'}
+        {loading ? 'Creating account…' : 'Continue'}
       </AppButton>
 
       <View style={{ width: '100%', flexDirection: 'row', alignItems: 'center', gap: 24 }}>

@@ -1,21 +1,13 @@
 import { useCombinedRefs } from '@/components/hooks/useCombinedRefs'
-import React, { forwardRef, useEffect, useMemo } from 'react'
+import React, { forwardRef, useContext, useMemo, useState } from 'react'
 import { ColorValue, StyleProp, StyleSheet, Text, TextStyle, View, ViewProps } from 'react-native'
-import Animated, {
-  DerivedValue,
-  useAnimatedProps,
-  useAnimatedRef,
-  useAnimatedStyle,
-  useDerivedValue,
-  useSharedValue,
-  withTiming,
-} from 'react-native-reanimated'
-import Svg, { Path } from 'react-native-svg'
+import Animated, { DerivedValue, useAnimatedRef } from 'react-native-reanimated'
+import { Path, Svg } from 'react-native-svg'
 import { BorderRadiuses } from 'react-native-ui-lib'
+import { getColorByState } from '../input/helpers'
+import { FieldContext, FieldStore } from '../input/provider'
 import { DURATION, GAP_PADDING, styles } from '../input/styles'
 import { FieldDecoratorContext } from './provider'
-
-const AnimatedPath = Animated.createAnimatedComponent(Path)
 
 type DynamicBorderBoxProps = ViewProps & {
   label?: string
@@ -30,20 +22,11 @@ export const DynamicBorderBox = forwardRef<View, DynamicBorderBoxProps>(
     const animRef = useAnimatedRef<View>()
     const combinedRef = useCombinedRefs(ref, animRef)
 
-    const labelWidthSV = useSharedValue(0)
-    const forceFloatSV = useSharedValue(forceFloat ?? false)
-    const widthSV = useSharedValue(0)
-    const heightSV = useSharedValue(0)
+    const [size, setSize] = useState({ width: 0, height: 0 })
+    const [labelWidth, setLabelWidth] = useState(0)
 
-    useEffect(() => {
-      console.log(
-        '[DynamicBorderBox.web] forceFloat:',
-        forceFloat,
-        'labelWidth:',
-        labelWidthSV.value
-      )
-      forceFloatSV.value = forceFloat ?? false
-    }, [forceFloat])
+    const fieldCtx = useContext<FieldStore>(FieldContext)
+    const strokeColor = getColorByState(fieldCtx) ?? (color.value as string)
 
     const {
       borderWidth: strokeWidth,
@@ -53,63 +36,35 @@ export const DynamicBorderBox = forwardRef<View, DynamicBorderBoxProps>(
       () => ({
         borderWidth: 1.5,
         fontSize: 16,
+        minHeight: 60,
         ...StyleSheet.flatten(style),
       }),
       [style]
     )
+
     const radius = BorderRadiuses.br40
 
-    // Animate gap width exactly as native: labelWidth + GAP_PADDING, timed with DURATION
-    const gapWidth = useDerivedValue(() =>
-      withTiming(forceFloatSV.value ? labelWidthSV.value + GAP_PADDING : 0, { duration: DURATION })
-    )
+    // SVG path + dasharray computed from React state — no worklets needed
+    const { d, dasharray } = useMemo(() => {
+      const { width, height } = size
+      if (width === 0 || height === 0) return { d: '', dasharray: '0' }
 
-    // SVG equivalent of Skia RoundedRect + DashPathEffect.
-    //
-    // The path starts at the bottom of the left edge and goes counterclockwise:
-    //   up left → top-left corner → across top → top-right corner →
-    //   down right → bottom-right corner → across bottom → bottom-left corner
-    //
-    // This matches the Skia path direction, so the native dasharray offset formula
-    //   offset = vertical + arcPerim/4 - GAP_PADDING*2
-    // produces the same gap position on the top-left area of the border.
-    // Mirror the prior CSS border approach: opacity on the wrapper, color on the stroke.
-    const borderStyle = useAnimatedStyle(() => ({
-      opacity: opacity.value,
-    }))
+      const inset = strokeWidth / 2
+      const rw = Math.max(0, width - strokeWidth)
+      const rh = Math.max(0, height - strokeWidth)
+      const r = Math.min(radius, rw / 2, rh / 2)
 
-    const animatedPathProps = useAnimatedProps(() => {
-      const sw = strokeWidth // JS closure — constant at runtime
-      const R = radius // JS closure — constant at runtime
-      const baseReturn = {
-        d: '',
-        strokeDasharray: '0',
-        stroke: color.value as string,
-        strokeWidth: sw,
-        fill: (backgroundColor as string) ?? 'none',
-      }
-
-      const W = widthSV.value
-      const H = heightSV.value
-      if (W <= 0 || H <= 0) return baseReturn
-
-      const inset = sw / 2
-      const rw = Math.max(0, W - sw)
-      const rh = Math.max(0, H - sw)
-      const r = Math.min(R, rw / 2, rh / 2)
-      const x = inset
-      const y = inset
-
-      const d = [
-        `M ${x} ${y + rh - r}`,
-        `L ${x} ${y + r}`,
-        `A ${r} ${r} 0 0 1 ${x + r} ${y}`,
-        `L ${x + rw - r} ${y}`,
-        `A ${r} ${r} 0 0 1 ${x + rw} ${y + r}`,
-        `L ${x + rw} ${y + rh - r}`,
-        `A ${r} ${r} 0 0 1 ${x + rw - r} ${y + rh}`,
-        `L ${x + r} ${y + rh}`,
-        `A ${r} ${r} 0 0 1 ${x} ${y + rh - r}`,
+      // Clockwise path starting at the bottom of the left edge — mirrors Skia's RoundedRect
+      const path = [
+        `M ${inset} ${inset + rh - r}`,
+        `L ${inset} ${inset + r}`,
+        `A ${r} ${r} 0 0 1 ${inset + r} ${inset}`,
+        `L ${inset + rw - r} ${inset}`,
+        `A ${r} ${r} 0 0 1 ${inset + rw} ${inset + r}`,
+        `L ${inset + rw} ${inset + rh - r}`,
+        `A ${r} ${r} 0 0 1 ${inset + rw - r} ${inset + rh}`,
+        `L ${inset + r} ${inset + rh}`,
+        `A ${r} ${r} 0 0 1 ${inset} ${inset + rh - r}`,
         'Z',
       ].join(' ')
 
@@ -118,17 +73,16 @@ export const DynamicBorderBox = forwardRef<View, DynamicBorderBoxProps>(
       const arcPerim = 2 * Math.PI * r
       const P = 2 * (horizontal + vertical) + arcPerim
 
-      const gap = gapWidth.value
-      const clampedGap = Math.max(0, Math.min(gap, P - 0.001))
+      const gapW = forceFloat ? labelWidth + 2 * GAP_PADDING : 0
+      const clampedGap = Math.max(0, Math.min(gapW, P - 0.0001))
       const offset = Math.max(0, vertical + arcPerim / 4 - GAP_PADDING * 2)
+      const rest = Math.max(0, P - clampedGap - offset)
 
-      const strokeDasharray =
-        clampedGap > 0.5
-          ? `${offset} ${clampedGap} ${Math.max(0, P - clampedGap - offset)} 0`
-          : `${P}`
-
-      return { ...baseReturn, d, strokeDasharray }
-    })
+      return {
+        d: path,
+        dasharray: `${offset} ${clampedGap} ${rest} 0`,
+      }
+    }, [size, strokeWidth, radius, forceFloat, labelWidth])
 
     const context = useMemo(
       () => ({
@@ -147,8 +101,7 @@ export const DynamicBorderBox = forwardRef<View, DynamicBorderBoxProps>(
           collapsable={false}
           onLayout={(e) => {
             const { width, height } = e.nativeEvent.layout
-            widthSV.value = width
-            heightSV.value = height
+            setSize({ width, height })
             onLayout?.(e)
           }}
           style={[ExtraStyles.container, containerStyle]}
@@ -156,17 +109,30 @@ export const DynamicBorderBox = forwardRef<View, DynamicBorderBoxProps>(
           {...props}
         >
           {children}
-          <Animated.View style={[StyleSheet.absoluteFill, borderStyle]} pointerEvents="none">
+
+          <View style={[StyleSheet.absoluteFill, ExtraStyles.svgWrapper]} pointerEvents="none">
             <Svg width="100%" height="100%">
-              <AnimatedPath animatedProps={animatedPathProps} />
+              <Path
+                d={d}
+                stroke={strokeColor}
+                strokeWidth={strokeWidth}
+                strokeDasharray={dasharray}
+                fill={backgroundColor ? (backgroundColor as string) : 'none'}
+                style={
+                  {
+                    transition: `stroke-dasharray ${DURATION}ms cubic-bezier(0.4,0,0.2,1), stroke ${DURATION / 2}ms`,
+                  } as any
+                }
+              />
             </Svg>
-          </Animated.View>
+          </View>
+
+          {/* hidden label for gap width measurement */}
           <Text
-            style={[styles.floatingPlaceholderTextStyle, ExtraStyles.text, labelStyle]}
+            style={[styles.floatingPlaceholderTextStyle, ExtraStyles.hiddenText, labelStyle]}
             onLayout={(e) => {
-              const width = e.nativeEvent.layout.width
-              console.log('[DynamicBorderBox.web] onLayout label:', label, 'width:', width)
-              if (width) labelWidthSV.value = width
+              const w = e.nativeEvent.layout.width
+              if (w) setLabelWidth(w)
             }}
           >
             {label}
@@ -180,7 +146,7 @@ export const DynamicBorderBox = forwardRef<View, DynamicBorderBoxProps>(
 DynamicBorderBox.displayName = 'DynamicBorderBox'
 
 const ExtraStyles = StyleSheet.create({
-  text: {
+  hiddenText: {
     position: 'absolute',
     left: 0,
     top: 0,
@@ -192,5 +158,8 @@ const ExtraStyles = StyleSheet.create({
     position: 'relative',
     flexDirection: 'row',
     alignItems: 'center',
+  },
+  svgWrapper: {
+    zIndex: -1,
   },
 })
