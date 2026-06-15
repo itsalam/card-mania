@@ -562,8 +562,6 @@ const CardDetailContainer = ({
         <Animated.ScrollView
           onScroll={onScroll}
           scrollEventThrottle={16} // ~60fps updates
-          // style={[{ paddingBottom: insets.bottom + 20, transform: [{ translateY: '-50%' }] }]}
-          // contentContainerStyle={[{ paddingTop: travelDistance, paddingBottom: travelDistance }]}
           stickyHeaderIndices={[1]}
           ref={scrollViewRef}
           onLayout={onListLayout}
@@ -571,6 +569,9 @@ const CardDetailContainer = ({
           style={{
             width: W,
             flex: 1,
+          }}
+          contentContainerStyle={{
+            paddingBottom: 80 + insets.bottom,
           }}
         >
           <Animated.View style={[{ position: 'relative' }, scrimStyle]}>

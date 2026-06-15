@@ -515,7 +515,12 @@ export function PriceGraph<
               const activeX = sharedActiveJs ? sharedXJs : state.x.position.value
               const lastPoints = yKeys.reduce(
                 (acc, yKey) => {
-                  const pts = points[yKey] as PointsArray
+                  // Only consider points with finite y — victory-native sets y=NaN for dates
+                  // where a series has no value. Using NaN points as restPoints would cause
+                  // valueOverride=NaN, which propagates through ?? to the display label.
+                  const pts = (points[yKey] as PointsArray)?.filter(
+                    (p) => p.x != null && p.y != null && isFinite(p.y)
+                  )
                   if (!pts?.length) return acc
                   const nearest = findNearest(pts, activeX, true)
                   if (nearest) acc[yKey as keyof typeof acc] = nearest
