@@ -156,9 +156,10 @@ export function PriceGraph<
   )
 
   const crosshairIdx = useMemo(() => {
-    if (crosshairPx === null || filtered.length === 0) return null
+    if (crosshairPx === null || filtered.length === 0 || chartW <= 0) return null
     if (filtered.length === 1) return 0
-    return Math.round(Math.max(0, Math.min(1, crosshairPx / chartW)) * (filtered.length - 1))
+    const idx = Math.round(Math.max(0, Math.min(1, crosshairPx / chartW)) * (filtered.length - 1))
+    return isFinite(idx) && idx >= 0 && idx < filtered.length ? idx : null
   }, [crosshairPx, chartW, filtered.length])
 
   // Per-series y info at crosshair
@@ -250,7 +251,9 @@ export function PriceGraph<
   const isHovering = crosshairPx !== null
   const crosshairSvgX = isHovering ? PAD_L + crosshairPx! : null
   const crosshairDate =
-    crosshairIdx !== null ? fmtDateShort(filtered[crosshairIdx][xKey as string] as any) : null
+    crosshairIdx !== null && filtered[crosshairIdx]
+      ? fmtDateShort(filtered[crosshairIdx][xKey as string] as any)
+      : null
   const maxIdx = filtered.length - 1
 
   return (
