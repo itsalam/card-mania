@@ -297,7 +297,10 @@ export function PriceGraph<
       {/* Chart container */}
       <View
         style={{ width: '100%', height, position: 'relative' }}
-        onLayout={(e) => setContainerW(e.nativeEvent.layout.width)}
+        onLayout={(e) => {
+          const w = e.nativeEvent.layout.width
+          if (w > 0) setContainerW(w)
+        }}
       >
         {/* SVG layer — fades on period/series change */}
         <Animated.View
@@ -354,7 +357,12 @@ export function PriceGraph<
               {/* Clip left of crosshair for highlighted lines */}
               {isHovering && crosshairSvgX !== null && (
                 <ClipPath id="wLeftOfCrosshair">
-                  <Rect x={PAD_L} y={PAD_T} width={crosshairSvgX - PAD_L} height={chartH} />
+                  <Rect
+                    x={PAD_L}
+                    y={PAD_T}
+                    width={Math.max(0, crosshairSvgX - PAD_L)}
+                    height={chartH}
+                  />
                 </ClipPath>
               )}
             </Defs>
@@ -618,9 +626,12 @@ export function PriceGraph<
         <View
           style={{ position: 'absolute', left: PAD_L, top: PAD_T, width: chartW, height: chartH }}
           // @ts-ignore — web-only pointer events not in RN types
-          onMouseMove={(e: any) =>
-            setCrosshairPx(Math.max(0, Math.min(chartW, e.nativeEvent.locationX)))
-          }
+          onMouseMove={(e: any) => {
+            // DOM MouseEvent uses offsetX (position relative to target element).
+            // locationX is a React Native touch-event property and is undefined here.
+            const x = e.nativeEvent.offsetX ?? e.nativeEvent.locationX
+            if (isFinite(x)) setCrosshairPx(Math.max(0, Math.min(chartW, x)))
+          }}
           // @ts-ignore
           onMouseLeave={() => setCrosshairPx(null)}
         />
