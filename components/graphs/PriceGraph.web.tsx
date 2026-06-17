@@ -41,7 +41,7 @@ function fmtDateShort(v: string | number): string {
 }
 
 const PAD_L = 48
-const PAD_R = 120 // wide enough for tooltip cards
+const PAD_R = 16
 const PAD_T = 16
 const PAD_B = 28
 const Y_PAD_FRAC = 0.12
@@ -51,13 +51,20 @@ export function PriceGraph<
   InputKeys extends keyof any = any,
   YValues extends keyof any = any,
 >(props: PriceGraphProps<T, InputKeys, YValues>) {
-  const { data, xKey, yKeys, height = 240, colors = [], pending, fetching } = props
+  const { data, xKey, yKeys, height: heightProp, colors = [], pending, fetching } = props
   const [period, setPeriod] = useState<Period>('3M')
   const [containerW, setContainerW] = useState(600)
   const [crosshairPx, setCrosshairPx] = useState<number | null>(null)
+  // Animated crosshair x: lerps toward the snapped data-point x each RAF frame
+  const [animCrosshairX, setAnimCrosshairX] = useState<number | null>(null)
+  const rafRef = useRef<number | null>(null)
+  const animXRef = useRef<number | null>(null)
   const opacityAnim = useRef(new Animated.Value(1)).current
   const isFirstRender = useRef(true)
   const prevYKeysRef = useRef(yKeys)
+
+  // Derive height from container width when no explicit height is given (fills allotted space)
+  const height = heightProp ?? Math.round(containerW * (9 / 16))
 
   const chartW = containerW - PAD_L - PAD_R
   const chartH = height - PAD_T - PAD_B
@@ -87,16 +94,18 @@ export function PriceGraph<
     )
   }
 
+  const toTimestamp = (v: unknown): number =>
+    typeof v === 'number' ? v : new Date(v as string).getTime()
+
   const filtered = useMemo(() => {
     if (!data?.length) return []
     const sel = PERIODS.find((p) => p.label === period)
-    if (!sel?.days) return data
+    const sorted = [...data].sort(
+      (a, b) => toTimestamp(a[xKey as string]) - toTimestamp(b[xKey as string])
+    )
+    if (!sel?.days) return sorted
     const cutoff = Date.now() - sel.days * 86_400_000
-    return data.filter((d) => {
-      const v = d[xKey as string]
-      const t = typeof v === 'number' ? v : new Date(v as string).getTime()
-      return t >= cutoff
-    })
+    return sorted.filter((d) => toTimestamp(d[xKey as string]) >= cutoff)
   }, [data, period, xKey])
 
   const { renderData, renderYDomain, axisBreaks, valueDenorm } = useAxisTransform(
@@ -137,7 +146,7 @@ export function PriceGraph<
         rawMaxY += 0.1
       }
       const pad = (rawMaxY - rawMinY) * Y_PAD_FRAC
-      rawMinY -= pad
+      rawMinY = Math.max(0, rawMinY - pad)
       rawMaxY += pad
     }
     return { minY: rawMinY, maxY: rawMaxY, series: seriesArr }
@@ -155,12 +164,54 @@ export function PriceGraph<
     [minY, yRange, chartH]
   )
 
+  // Nearest data-point index under the mouse
   const crosshairIdx = useMemo(() => {
     if (crosshairPx === null || filtered.length === 0 || chartW <= 0) return null
     if (filtered.length === 1) return 0
     const idx = Math.round(Math.max(0, Math.min(1, crosshairPx / chartW)) * (filtered.length - 1))
     return isFinite(idx) && idx >= 0 && idx < filtered.length ? idx : null
   }, [crosshairPx, chartW, filtered.length])
+
+  // The SVG x that corresponds to the snapped data point
+  const snappedSvgX = crosshairIdx !== null ? PAD_L + toX(crosshairIdx) : null
+
+  // RAF lerp: animCrosshairX glides toward snappedSvgX each frame (≈35% per frame)
+  useEffect(() => {
+    if (rafRef.current !== null) cancelAnimationFrame(rafRef.current)
+
+    if (snappedSvgX === null) {
+      animXRef.current = null
+      setAnimCrosshairX(null)
+      return
+    }
+
+    // First appearance: jump immediately so there's no initial drift
+    if (animXRef.current === null) {
+      animXRef.current = snappedSvgX
+      setAnimCrosshairX(snappedSvgX)
+      return
+    }
+
+    const target = snappedSvgX
+    const tick = () => {
+      const curr = animXRef.current
+      if (curr === null) return
+      const diff = target - curr
+      if (Math.abs(diff) < 0.4) {
+        animXRef.current = target
+        setAnimCrosshairX(target)
+        return
+      }
+      animXRef.current = curr + diff * 0.35
+      setAnimCrosshairX(animXRef.current)
+      rafRef.current = requestAnimationFrame(tick)
+    }
+    rafRef.current = requestAnimationFrame(tick)
+
+    return () => {
+      if (rafRef.current !== null) cancelAnimationFrame(rafRef.current)
+    }
+  }, [snappedSvgX])
 
   // Per-series y info at crosshair
   const crosshairYs = useMemo(() => {
@@ -169,11 +220,17 @@ export function PriceGraph<
     const effectiveData = isTransformed ? (renderData ?? filtered) : filtered
     const result: Record<string, { rawVal: number; ypx: number; isExtrap: boolean }> = {}
     for (const { key, pts } of series) {
+      const firstPt = pts[0]
       const lastPt = pts[pts.length - 1]
       const exactRaw = (effectiveData[crosshairIdx] as Record<string, unknown>)?.[key]
       const hasExact = typeof exactRaw === 'number' && isFinite(exactRaw)
-      const isExtrap = !lastPt || (!hasExact && crosshairIdx > (lastPt?.idx ?? -1))
-      const yv = hasExact ? (exactRaw as number) : lastPt?.yv
+      // Left-extrapolated: cursor is before the series' first data point
+      const isLeftExtrap = !!firstPt && crosshairIdx < firstPt.idx
+      // Right-extrapolated: cursor is after the series' last data point
+      const isRightExtrap = !lastPt || (!hasExact && crosshairIdx > (lastPt?.idx ?? -1))
+      const isExtrap = isLeftExtrap || isRightExtrap
+      // Extend flat from the nearest boundary point rather than defaulting to last
+      const yv = hasExact ? (exactRaw as number) : isLeftExtrap ? firstPt?.yv : lastPt?.yv
       if (yv === undefined) continue
       result[key] = { rawVal: valueDenorm(yv), ypx: toY(yv), isExtrap }
     }
@@ -249,7 +306,6 @@ export function PriceGraph<
   }
 
   const isHovering = crosshairPx !== null
-  const crosshairSvgX = isHovering ? PAD_L + crosshairPx! : null
   const crosshairDate =
     crosshairIdx !== null && filtered[crosshairIdx]
       ? fmtDateShort(filtered[crosshairIdx][xKey as string] as any)
@@ -259,34 +315,47 @@ export function PriceGraph<
   return (
     <View style={{ width: '100%' }}>
       {/* Period selector */}
-      <View style={{ flexDirection: 'row', gap: 4, marginBottom: 8 }}>
-        {PERIODS.map(({ label }) => {
-          const active = period === label
-          return (
-            <Pressable
-              key={label}
-              onPress={() => handlePeriodChange(label)}
-              style={{
-                paddingHorizontal: 10,
-                paddingVertical: 4,
-                borderRadius: 6,
-                backgroundColor: active
-                  ? (Colors.$backgroundPrimaryLight ?? '#3B82F6')
-                  : 'transparent',
-              }}
-            >
-              <Text
-                variant="small"
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+        <View
+          style={{
+            flexDirection: 'row',
+            gap: 2,
+            padding: 3,
+            backgroundColor: Colors.rgba(Colors.$backgroundDefault, 0.92),
+            borderWidth: 1,
+            borderColor: Colors.rgba(Colors.$outlineNeutral, 0.4),
+            borderRadius: 999,
+            alignSelf: 'flex-start',
+          }}
+        >
+          {PERIODS.map(({ label }) => {
+            const active = period === label
+            return (
+              <Pressable
+                key={label}
+                onPress={() => handlePeriodChange(label)}
                 style={{
-                  color: active ? '#fff' : Colors.$textNeutral,
-                  fontWeight: active ? '600' : '400',
+                  paddingHorizontal: 10,
+                  paddingVertical: 4,
+                  borderRadius: 999,
+                  backgroundColor: active
+                    ? Colors.rgba(Colors.$backgroundPrimaryHeavy, 0.35)
+                    : 'transparent',
                 }}
               >
-                {label}
-              </Text>
-            </Pressable>
-          )
-        })}
+                <Text
+                  style={{
+                    fontSize: 13,
+                    color: active ? Colors.$textDefault : Colors.$textNeutral,
+                    fontWeight: active ? '700' : '500',
+                  }}
+                >
+                  {label}
+                </Text>
+              </Pressable>
+            )
+          })}
+        </View>
         {fetching && (
           <Text variant="small" style={{ color: Colors.$textNeutral, alignSelf: 'center' }}>
             …
@@ -316,18 +385,23 @@ export function PriceGraph<
         >
           <Svg width={containerW} height={height}>
             <Defs>
-              {/* Per-series area gradients */}
+              {/*
+               * Per-series area gradients.
+               * objectBoundingBox makes each gradient span the polygon's own
+               * vertical extent (top of the line → chart bottom), so low-value
+               * series that sit near the chart bottom still get visible fill.
+               */}
               {series.map(({ key, color }) => (
                 <LinearGradient
                   key={key as string}
                   id={`wgrad_${key as string}`}
                   x1="0"
-                  y1={PAD_T}
+                  y1="0"
                   x2="0"
-                  y2={PAD_T + chartH}
-                  gradientUnits="userSpaceOnUse"
+                  y2="1"
+                  gradientUnits="objectBoundingBox"
                 >
-                  <Stop offset="0%" stopColor={color} stopOpacity={0.28} />
+                  <Stop offset="0%" stopColor={color} stopOpacity={0.3} />
                   <Stop offset="100%" stopColor={color} stopOpacity={0} />
                 </LinearGradient>
               ))}
@@ -354,13 +428,13 @@ export function PriceGraph<
                 </Pattern>
               )}
 
-              {/* Clip left of crosshair for highlighted lines */}
-              {isHovering && crosshairSvgX !== null && (
+              {/* Clip rect — uses animCrosshairX so the highlight region glides */}
+              {isHovering && animCrosshairX !== null && (
                 <ClipPath id="wLeftOfCrosshair">
                   <Rect
                     x={PAD_L}
                     y={PAD_T}
-                    width={Math.max(0, crosshairSvgX - PAD_L)}
+                    width={Math.max(0, animCrosshairX - PAD_L)}
                     height={chartH}
                   />
                 </ClipPath>
@@ -389,7 +463,7 @@ export function PriceGraph<
                 x={PAD_L - 6}
                 y={PAD_T + y + 4}
                 textAnchor="end"
-                fontSize={10}
+                fontSize={12}
                 fill={Colors.$textNeutral ?? '#888'}
               >
                 {label}
@@ -412,7 +486,7 @@ export function PriceGraph<
                   x={PAD_L + x}
                   y={PAD_T + chartH + PAD_B - 4}
                   textAnchor="middle"
-                  fontSize={10}
+                  fontSize={12}
                   fill={Colors.$textNeutral ?? '#888'}
                 >
                   {label}
@@ -455,7 +529,7 @@ export function PriceGraph<
               )
             })}
 
-            {/* Full-color lines clipped to left of crosshair */}
+            {/* Full-color lines clipped to left of animated crosshair */}
             {isHovering &&
               series.map(({ key, pts, color }) => {
                 if (!pts.length) return null
@@ -483,11 +557,31 @@ export function PriceGraph<
               if (lastPt.idx >= maxIdx) return null
               return (
                 <Line
-                  key={`extrap_${key as string}`}
+                  key={`extrap_right_${key as string}`}
                   x1={PAD_L + toX(lastPt.idx)}
                   y1={PAD_T + toY(lastPt.yv)}
                   x2={PAD_L + toX(maxIdx)}
                   y2={PAD_T + toY(lastPt.yv)}
+                  stroke={color}
+                  strokeWidth={1.5}
+                  strokeDasharray="4 3"
+                  opacity={isHovering ? 0.18 : 0.5}
+                />
+              )
+            })}
+
+            {/* Extrapolation lines — dashed flat from domain start to first point */}
+            {series.map(({ key, pts, color }) => {
+              if (!pts.length) return null
+              const firstPt = pts[0]
+              if (firstPt.idx <= 0) return null
+              return (
+                <Line
+                  key={`extrap_left_${key as string}`}
+                  x1={PAD_L + toX(0)}
+                  y1={PAD_T + toY(firstPt.yv)}
+                  x2={PAD_L + toX(firstPt.idx)}
+                  y2={PAD_T + toY(firstPt.yv)}
                   stroke={color}
                   strokeWidth={1.5}
                   strokeDasharray="4 3"
@@ -516,7 +610,7 @@ export function PriceGraph<
                       x={PAD_L + chartW / 2}
                       y={mid + 4}
                       textAnchor="middle"
-                      fontSize={9}
+                      fontSize={11}
                       fill={Colors.$textNeutral ?? '#888'}
                     >
                       {b.label}
@@ -525,12 +619,12 @@ export function PriceGraph<
                 )
               })}
 
-            {/* Crosshair vertical guide */}
-            {isHovering && crosshairSvgX !== null && (
+            {/* Crosshair vertical guide — follows animCrosshairX */}
+            {isHovering && animCrosshairX !== null && (
               <Line
-                x1={crosshairSvgX}
+                x1={animCrosshairX}
                 y1={PAD_T}
-                x2={crosshairSvgX}
+                x2={animCrosshairX}
                 y2={PAD_T + chartH}
                 stroke={Colors.$outlineNeutral ?? '#888'}
                 strokeWidth={1}
@@ -538,11 +632,11 @@ export function PriceGraph<
               />
             )}
 
-            {/* Date badge at top of crosshair */}
-            {isHovering && crosshairSvgX !== null && crosshairDate && (
+            {/* Date badge — snapped position (crosshairIdx data), visual x from anim */}
+            {isHovering && animCrosshairX !== null && crosshairDate && (
               <>
                 <Rect
-                  x={crosshairSvgX - 28}
+                  x={animCrosshairX - 28}
                   y={PAD_T - 2}
                   width={56}
                   height={14}
@@ -550,7 +644,7 @@ export function PriceGraph<
                   fill={Colors.$outlineNeutral ?? '#666'}
                 />
                 <SvgText
-                  x={crosshairSvgX}
+                  x={animCrosshairX}
                   y={PAD_T + 9}
                   textAnchor="middle"
                   fontSize={9}
@@ -563,14 +657,14 @@ export function PriceGraph<
 
             {/* Dots at series y positions on crosshair */}
             {isHovering &&
-              crosshairSvgX !== null &&
+              animCrosshairX !== null &&
               series.map(({ key, color }) => {
                 const sy = crosshairYs[key as string]
                 if (!sy) return null
                 return (
                   <Circle
                     key={`dot_${key as string}`}
-                    cx={crosshairSvgX}
+                    cx={animCrosshairX}
                     cy={PAD_T + sy.ypx}
                     r={4}
                     fill={color}
@@ -582,9 +676,9 @@ export function PriceGraph<
           </Svg>
         </Animated.View>
 
-        {/* Value cards — React Views positioned right of crosshair */}
+        {/* Value cards — positioned at animCrosshairX right of crosshair */}
         {isHovering &&
-          crosshairSvgX !== null &&
+          animCrosshairX !== null &&
           series.map(({ key, color }) => {
             const sy = crosshairYs[key as string]
             const cardY = resolvedCardYs[key as string]
@@ -595,7 +689,7 @@ export function PriceGraph<
                 key={`card_${key as string}`}
                 style={{
                   position: 'absolute',
-                  left: crosshairSvgX + 8,
+                  left: animCrosshairX + 8,
                   top: PAD_T + cardY,
                   backgroundColor: Colors.$backgroundElevatedLight ?? 'rgba(24,24,28,0.92)',
                   borderRadius: 6,
@@ -606,16 +700,10 @@ export function PriceGraph<
                   minWidth: 72,
                 }}
               >
-                <Text
-                  variant="small"
-                  style={{ color: Colors.$textNeutral, fontSize: 9, lineHeight: 13 }}
-                >
+                <Text style={{ color: Colors.$textNeutral, fontSize: 11, lineHeight: 14 }}>
                   {label}
                 </Text>
-                <Text
-                  variant="default"
-                  style={{ color, fontSize: 12, lineHeight: 16, fontWeight: '700' }}
-                >
+                <Text style={{ color, fontSize: 13, lineHeight: 17, fontWeight: '700' }}>
                   {fmtPrice(sy.rawVal)}
                 </Text>
               </View>
@@ -627,8 +715,7 @@ export function PriceGraph<
           style={{ position: 'absolute', left: PAD_L, top: PAD_T, width: chartW, height: chartH }}
           // @ts-ignore — web-only pointer events not in RN types
           onMouseMove={(e: any) => {
-            // DOM MouseEvent uses offsetX (position relative to target element).
-            // locationX is a React Native touch-event property and is undefined here.
+            // DOM MouseEvent uses offsetX; locationX is a React Native touch-only property
             const x = e.nativeEvent.offsetX ?? e.nativeEvent.locationX
             if (isFinite(x)) setCrosshairPx(Math.max(0, Math.min(chartW, x)))
           }}

@@ -7,6 +7,7 @@ import { fetchCardHedgeResults } from '@cardhedge'
 import { CardImageFields } from '@types'
 import {
   buildSerpQuery,
+  corsHeaders,
   createSupabaseServiceClient,
   fetchGlobalVars,
   getImageCacheFromQueryHash,
@@ -30,6 +31,12 @@ type Image = {
 const PRICE_STALE_MS = Number(Deno.env.get('PRICE_STALE_HOURS') ?? '24') * 3_600_000
 
 Deno.serve(async (req) => {
+  const origin = req.headers.get('origin') ?? ''
+  if (req.method === 'OPTIONS') {
+    const headers = corsHeaders(origin)
+    return new Response(null, { status: Object.keys(headers).length ? 204 : 403, headers })
+  }
+
   // Step 1: Get the card ID from the request
   const { searchParams } = new URL(req.url)
   const populate = searchParams.get('populate') === 'true'
@@ -71,11 +78,12 @@ Deno.serve(async (req) => {
         JSON.stringify({
           message: 'Card not found, populating for next fetch',
         }),
-        { status: 206, headers: { 'Content-Type': 'application/json' } }
+        { status: 206, headers: { 'Content-Type': 'application/json', ...corsHeaders(origin) } }
       )
     }
     return new Response(JSON.stringify({ error: 'Card not found' }), {
       status: 500,
+      headers: corsHeaders(origin),
     })
   }
 
@@ -149,7 +157,7 @@ Deno.serve(async (req) => {
   }
 
   return new Response(JSON.stringify({ data: { ...fetchedCard, image } }), {
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...corsHeaders(origin) },
   })
 })
 

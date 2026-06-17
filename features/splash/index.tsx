@@ -784,7 +784,7 @@ export function SplashPage() {
           </MotiView>
 
           {/* Error + CTA */}
-          <View style={{ alignItems: 'center', width: '100%', backgroundColor: 'red' }}>
+          <View style={{ alignItems: 'center', width: '100%' }}>
             <MotiView
               animate={{
                 opacity: (mainTab === 'email' ? emailFlow.error : error) ? 1 : 0,
@@ -792,7 +792,7 @@ export function SplashPage() {
                 minHeight: (mainTab === 'email' ? emailFlow.error : error) ? 20 : 0,
               }}
               transition={{ type: 'timing', duration: 180 }}
-              style={{ width: '100%', justifyContent: 'center', backgroundColor: 'blue' }}
+              style={{ width: '100%', justifyContent: 'center' }}
               pointerEvents="none"
             >
               <Text className="text-red-400 text-sm text-center w-full px-4">

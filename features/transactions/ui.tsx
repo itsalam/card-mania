@@ -394,26 +394,27 @@ export function CollectionSyncTick({ isBuyer, items }: { isBuyer: boolean; items
   const handleToggle = () => {
     if (isPending) return
     if (synced) {
+      setSynced(false)
       removeFromCollection(
         { items },
         {
-          onSuccess: () => {
-            setSynced(false)
-            showToast({ title: 'Removed from collection', message: '' })
+          onSuccess: () => showToast({ title: 'Removed from collection', message: '' }),
+          onError: () => {
+            setSynced(true)
+            showToast({ title: 'Error', message: 'Could not remove from collection.' })
           },
-          onError: () =>
-            showToast({ title: 'Error', message: 'Could not remove from collection.' }),
         }
       )
     } else {
+      setSynced(true)
       addToCollection(
         { items },
         {
-          onSuccess: () => {
-            setSynced(true)
-            showToast({ title: 'Added to collection', message: '' })
+          onSuccess: () => showToast({ title: 'Added to collection', message: '' }),
+          onError: () => {
+            setSynced(false)
+            showToast({ title: 'Error', message: 'Could not add to collection.' })
           },
-          onError: () => showToast({ title: 'Error', message: 'Could not add to collection.' }),
         }
       )
     }

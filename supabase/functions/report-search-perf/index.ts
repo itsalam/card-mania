@@ -8,25 +8,25 @@
  *
  * Response: { prefetch_enabled: boolean }
  */
-import { createSupabaseServiceClient } from '@utils'
+import { corsHeaders, createSupabaseServiceClient } from '@utils'
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
 
 Deno.serve(async (req) => {
+  const origin = req.headers.get('origin') ?? ''
+  const ch = corsHeaders(origin, 'POST, OPTIONS')
+
   if (req.method === 'OPTIONS') {
-    return new Response(null, {
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'POST,OPTIONS',
-        'Access-Control-Allow-Headers': 'authorization,content-type',
-      },
-    })
+    return new Response(null, { status: Object.keys(ch).length ? 204 : 403, headers: ch })
   }
 
-  if (req.method !== 'POST') {
-    return new Response(JSON.stringify({ error: 'method not allowed' }), {
-      status: 405,
-      headers: { 'Content-Type': 'application/json' },
+  const json = (v: unknown, init: ResponseInit = {}) =>
+    new Response(JSON.stringify(v), {
+      ...init,
+      headers: { 'Content-Type': 'application/json', ...ch, ...(init.headers ?? {}) },
     })
+
+  if (req.method !== 'POST') {
+    return json({ error: 'method not allowed' }, { status: 405 })
   }
 
   let render_ms: unknown
@@ -34,17 +34,11 @@ Deno.serve(async (req) => {
     const body = await req.json()
     render_ms = body?.render_ms
   } catch {
-    return new Response(JSON.stringify({ error: 'invalid JSON body' }), {
-      status: 400,
-      headers: { 'Content-Type': 'application/json' },
-    })
+    return json({ error: 'invalid JSON body' }, { status: 400 })
   }
 
   if (typeof render_ms !== 'number' || !Number.isFinite(render_ms) || render_ms < 0) {
-    return new Response(JSON.stringify({ error: 'render_ms must be a non-negative number' }), {
-      status: 400,
-      headers: { 'Content-Type': 'application/json' },
-    })
+    return json({ error: 'render_ms must be a non-negative number' }, { status: 400 })
   }
 
   const supabase = createSupabaseServiceClient()
@@ -60,10 +54,5 @@ Deno.serve(async (req) => {
 
   const prefetch_enabled = cfgResult.data?.prefetch_enabled ?? false
 
-  return new Response(JSON.stringify({ prefetch_enabled }), {
-    headers: {
-      'Content-Type': 'application/json',
-      'Access-Control-Allow-Origin': '*',
-    },
-  })
+  return json({ prefetch_enabled })
 })

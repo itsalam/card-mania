@@ -1,4 +1,4 @@
-import { createSupabaseClient } from '@utils'
+import { corsHeaders, createSupabaseClient } from '@utils'
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
 
 const json = (v: unknown, init: ResponseInit = {}) =>
@@ -8,6 +8,19 @@ const json = (v: unknown, init: ResponseInit = {}) =>
   })
 
 Deno.serve(async (req) => {
+  const origin = req.headers.get('origin') ?? ''
+  const ch = corsHeaders(origin, 'POST, OPTIONS')
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { status: Object.keys(ch).length ? 204 : 403, headers: ch })
+  }
+
+  // Shadow module-level json so every response gets CORS headers automatically.
+  const json = (v: unknown, init: ResponseInit = {}) =>
+    new Response(JSON.stringify(v), {
+      ...init,
+      headers: { 'content-type': 'application/json', ...ch, ...(init.headers ?? {}) },
+    })
+
   const { mock_data, grade, card_id } = await req.json()
   const supabase = createSupabaseClient(req)
 
