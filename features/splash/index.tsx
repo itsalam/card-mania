@@ -9,10 +9,21 @@ import { ProfileSetupWizard } from '@/features/onboarding'
 import { useUserStore } from '@/lib/store/useUserStore'
 import { cn } from '@/lib/utils'
 import AsyncStorage from '@react-native-async-storage/async-storage'
-import { AtSign, ChevronLeft, Eye, EyeOff, Lock, Phone, RefreshCw, User } from 'lucide-react-native'
+import {
+  AtSign,
+  CheckSquare,
+  ChevronLeft,
+  Eye,
+  EyeOff,
+  Lock,
+  Phone,
+  RefreshCw,
+  Square,
+  User,
+} from 'lucide-react-native'
 import { MotiView } from 'moti'
 import { ComponentProps, useEffect, useRef, useState } from 'react'
-import { TouchableOpacity, View } from 'react-native'
+import { Linking, TouchableOpacity, View } from 'react-native'
 import {
   KeyboardAvoidingView,
   useReanimatedKeyboardAnimation,
@@ -142,7 +153,7 @@ const FacebookSignInButton = () => (
 
 // ── Splash / login page ───────────────────────────────────────────────────────
 
-export function SplashPage() {
+export function SplashPage({ initialSignUp }: { initialSignUp?: boolean }) {
   const { signInAnonymously, signInWithPhone, verifyPhoneOtp } = useUserStore()
   const [hasEverSignedIn, setHasEverSignedIn] = useState(false)
   useEffect(() => {
@@ -164,11 +175,14 @@ export function SplashPage() {
   const [phoneOtpSent, setPhoneOtpSent] = useState(false)
 
   // Phone state
-  const [phoneMode, setPhoneMode] = useState<'signin' | 'signup'>('signin')
+  const [phoneMode, setPhoneMode] = useState<'signin' | 'signup'>(
+    initialSignUp ? 'signup' : 'signin'
+  )
   const [country, setCountry] = useState<Country>(COUNTRIES[0])
   const [localNumber, setLocalNumber] = useState('')
   const [phoneCode, setPhoneCode] = useState('')
   const [resendCooldown, setResendCooldown] = useState(0)
+  const [smsOptIn, setSmsOptIn] = useState(false)
 
   // Email auth — shared hook
   const emailFlow = useEmailAuthFlow()
@@ -401,7 +415,10 @@ export function SplashPage() {
               }}
             >
               <TouchableOpacity
-                onPress={() => goTo('phone', -1)}
+                onPress={() => {
+                  setSmsOptIn(false)
+                  goTo('phone', -1)
+                }}
                 style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}
                 accessibilityLabel="Back to phone input"
               >
@@ -424,13 +441,53 @@ export function SplashPage() {
               </Text>
             </View>
 
+            {/* SMS opt-in consent */}
+            <View style={{ width: '100%', gap: 10 }}>
+              <Text style={{ color: 'rgba(255,255,255,0.65)', fontSize: 12, lineHeight: 18 }}>
+                You will receive a one-time verification code via SMS.
+              </Text>
+              <TouchableOpacity
+                onPress={() => setSmsOptIn((v) => !v)}
+                style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 10 }}
+                accessibilityRole="checkbox"
+                accessibilityState={{ checked: smsOptIn }}
+              >
+                {smsOptIn ? (
+                  <CheckSquare size={18} color="white" style={{ marginTop: 1 }} />
+                ) : (
+                  <Square size={18} color="rgba(255,255,255,0.45)" style={{ marginTop: 1 }} />
+                )}
+                <Text
+                  style={{ color: 'rgba(255,255,255,0.85)', fontSize: 12, lineHeight: 18, flex: 1 }}
+                >
+                  {'I agree to receive an SMS verification code. '}
+                  <Text
+                    onPress={() => Linking.openURL('https://cardmania.info/privacy')}
+                    style={{ textDecorationLine: 'underline' }}
+                  >
+                    Privacy Policy
+                  </Text>
+                  {'  ·  '}
+                  <Text
+                    onPress={() => Linking.openURL('https://cardmania.info/terms')}
+                    style={{ textDecorationLine: 'underline' }}
+                  >
+                    Messaging Terms
+                  </Text>
+                </Text>
+              </TouchableOpacity>
+              <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 11, lineHeight: 16 }}>
+                Message and data rates may apply. Reply STOP to opt out, HELP for help.
+              </Text>
+            </View>
+
             {error ? (
               <Text style={{ color: '#f87171', fontSize: 14, textAlign: 'center', width: '100%' }}>
                 {error}
               </Text>
             ) : null}
 
-            <BaseButton onPress={handleCreatePhoneAccount} disabled={loading}>
+            <BaseButton onPress={handleCreatePhoneAccount} disabled={loading || !smsOptIn}>
               {loading ? 'Sending code…' : 'Create account'}
             </BaseButton>
           </MotiView>
