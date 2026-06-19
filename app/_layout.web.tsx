@@ -8,13 +8,13 @@
  *  - No `expo-splash-screen`  (web has no splash)
  *  - No Sentry native SDK    (use @sentry/react for web if needed later)
  *  - No `expo-constants` navigation integration
- *  - No `OnboardingOverlay`  (mobile-only first-run flow)
  *  - No `PortalHost`         (rn-primitives portal not needed on web)
  */
 import '@/components/icons'
 import '@expo/metro-runtime'
 import '../global.css'
 
+import { WebOnboardingGate } from '@/features/web/WebOnboardingGate'
 import { WebRouteGuard } from '@/features/web/WebRouteGuard'
 import { Stack } from 'expo-router/stack'
 import React from 'react'
@@ -46,9 +46,12 @@ export default function WebRootLayout() {
           <Stack.Screen name="cart" options={{ headerShown: false }} />
           <Stack.Screen name="transactions" options={{ headerShown: false }} />
           <Stack.Screen name="transactions/[offerId]" options={{ headerShown: false }} />
+          <Stack.Screen name="settings" options={{ headerShown: false }} />
           <Stack.Screen name="+not-found" />
         </Stack>
       </WebRouteGuard>
+      {/* Onboarding wizard + post-setup tour — rendered above the page stack */}
+      <WebOnboardingGate />
     </WebProviders>
   )
 }

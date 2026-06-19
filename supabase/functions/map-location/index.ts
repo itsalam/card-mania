@@ -1,6 +1,24 @@
-import { DEBUG, logErr, logInfo, logWarn, maskPlaceId, msSince, rid, safeLen } from '@utils'
+import {
+  corsHeaders,
+  DEBUG,
+  logErr,
+  logInfo,
+  logWarn,
+  maskPlaceId,
+  msSince,
+  rid,
+  safeLen,
+} from '@utils'
 
 Deno.serve(async (req: Request) => {
+  const origin = req.headers.get('origin') ?? ''
+
+  // CORS preflight
+  if (req.method === 'OPTIONS') {
+    const headers = corsHeaders(origin, 'POST, OPTIONS')
+    return new Response(null, { status: Object.keys(headers).length ? 204 : 403, headers })
+  }
+
   const _rid = rid()
   const start = Date.now()
   logInfo(_rid, 'request:received', {
@@ -8,20 +26,17 @@ Deno.serve(async (req: Request) => {
     contentType: req.headers.get('content-type'),
     contentLength: req.headers.get('content-length'),
   })
-  // Basic request metadata
   logInfo(_rid, 'request:start', {
     method: req.method,
     url: new URL(req.url).pathname,
     ua: req.headers.get('user-agent') ?? undefined,
-    // do NOT log authorization header/body
   })
 
-  // Method guard (optional but useful)
   if (req.method !== 'POST') {
     logWarn(_rid, 'request:bad_method', { method: req.method })
     return new Response(JSON.stringify({ error: 'Method not allowed' }), {
       status: 405,
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...corsHeaders(origin, 'POST, OPTIONS') },
     })
   }
 
@@ -42,7 +57,7 @@ Deno.serve(async (req: Request) => {
       return new Response(JSON.stringify({ error: 'Invalid JSON body' }), {
         status: 400,
         statusText: 'Invalid JSON body',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...corsHeaders(origin, 'POST, OPTIONS') },
       })
     }
 
@@ -63,7 +78,7 @@ Deno.serve(async (req: Request) => {
       })
       return new Response(JSON.stringify({ error: 'Query too short' }), {
         status: 400,
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...corsHeaders(origin, 'POST, OPTIONS') },
       })
     }
 
@@ -74,7 +89,7 @@ Deno.serve(async (req: Request) => {
       })
       return new Response(JSON.stringify({ error: 'Missing API key' }), {
         status: 500,
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...corsHeaders(origin, 'POST, OPTIONS') },
       })
     }
 
@@ -94,9 +109,10 @@ Deno.serve(async (req: Request) => {
 
     const autoRes = await fetch(autoUrl, {
       method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         input: query,
-        includedPrimaryTypes: '(cities)',
+        includedPrimaryTypes: ['locality'],
         sessionToken,
       }),
     })
@@ -112,7 +128,7 @@ Deno.serve(async (req: Request) => {
       })
       return new Response(JSON.stringify({ error: 'Autocomplete failed' }), {
         status: 502,
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...corsHeaders(origin, 'POST, OPTIONS') },
       })
     }
 
@@ -126,7 +142,7 @@ Deno.serve(async (req: Request) => {
       })
       return new Response(JSON.stringify({ error: 'Autocomplete parse error' }), {
         status: 502,
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...corsHeaders(origin, 'POST, OPTIONS') },
       })
     }
 
@@ -143,7 +159,7 @@ Deno.serve(async (req: Request) => {
       logInfo(_rid, 'response:empty', { elapsedMs: msSince(start) })
       return new Response(JSON.stringify([]), {
         status: 200,
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...corsHeaders(origin, 'POST, OPTIONS') },
       })
     }
 
@@ -273,7 +289,7 @@ Deno.serve(async (req: Request) => {
     })
 
     return new Response(JSON.stringify(filtered), {
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...corsHeaders(origin, 'POST, OPTIONS') },
       status: 200,
     })
   } catch (err) {
@@ -288,7 +304,7 @@ Deno.serve(async (req: Request) => {
 
     return new Response(JSON.stringify({ error: 'Server error' }), {
       status: 500,
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...corsHeaders(origin, 'POST, OPTIONS') },
     })
   } finally {
     if (DEBUG) logInfo(_rid, 'request:end', { elapsedMs: msSince(start) })
