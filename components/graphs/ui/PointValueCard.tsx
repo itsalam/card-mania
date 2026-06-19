@@ -29,7 +29,7 @@ type PointValueCardProps = {
   label: string
   valueSV: SharedValue<number> // the numeric value to show (y or formatted)
   formatValue?: (n: number) => string
-  restPoint: SeriesPoint
+  restPoint?: SeriesPoint
   canvasTop: number
   canvasBottom: number
   isActive: boolean
@@ -78,11 +78,16 @@ export function PointValueCard({
     () => ({ v: valueSV.value, active: isActive, curX: cx.value }),
     ({ v, active, curX }) => {
       'worklet'
-      const inExtrapolated = lastDataX !== undefined && curX > lastDataX
-      const display =
-        active && !inExtrapolated
-          ? v
-          : (valueOverride ?? (restPoint?.yValue as number) ?? (restPoint?.y as number) ?? 0)
+      // Treat non-finite v (NaN from CartesianChart for dates with no series data) the same
+      // as extrapolated — fall back to the last-known override value.
+      const inExtrapolated = (lastDataX !== undefined && curX > lastDataX) || !isFinite(v)
+      const safeOverride =
+        typeof valueOverride === 'number' && isFinite(valueOverride) ? valueOverride : undefined
+      const safeYValue =
+        typeof restPoint?.yValue === 'number' && isFinite(restPoint!.yValue as number)
+          ? (restPoint!.yValue as number)
+          : undefined
+      const display = active && !inExtrapolated ? v : (safeOverride ?? safeYValue ?? 0)
       scheduleOnRN(setFormattedLabel, display)
     },
     [isActive, valueOverride, lastDataX]
@@ -198,7 +203,7 @@ export function PointValueCard({
         isActive={isActive}
         x={cx}
         posY={dotY}
-        restY={restPoint.y ?? 0}
+        restY={restPoint?.y ?? 0}
         color={textColor as any}
       />
       {/* Dashed connector from dot to card */}

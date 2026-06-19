@@ -4,16 +4,18 @@
  * Deliberately excludes mobile-only dependencies:
  *  - react-native-keyboard-controller (KeyboardProvider)
  *  - react-native-gesture-handler     (GestureHandlerRootView)
- *  - OnboardingProvider / OfferRealtimeProvider (mobile-only flows)
+ *  - OfferRealtimeProvider (mobile-only flow)
  *
- * Everything needed for public storefront data fetching is included.
+ * OnboardingProvider is now included — it has no native deps and drives
+ * the post-setup tour on web via WebOnboardingGate / OnboardingOverlay.web.
  */
 import { ToastProvider } from '@/components/Toast'
-import { CartPanel } from '@/features/web/CartPanel'
 import ThemeProvider from '@/components/ui/theme'
+import { OnboardingProvider } from '@/features/onboarding'
 import { SettingsProvider } from '@/features/settings'
 import { localStorageLocalAdapter } from '@/features/settings/adapters/local-adapter.web'
 import { webSystemAdapter } from '@/features/settings/adapters/system-adapter.web'
+import { CartPanel } from '@/features/web/CartPanel'
 import { StoreProvider } from '@/lib/store/provider'
 import { AuthStatus, useUserStore } from '@/lib/store/useUserStore'
 import { Session } from '@supabase/supabase-js'
@@ -106,6 +108,7 @@ export default function WebProviders({ children }: { children: React.ReactNode }
         <ThemeProvider>
           <StoreProvider>
             <ToastProvider>
+              <OnboardingProvider />
               {children}
               <CartPanel />
             </ToastProvider>

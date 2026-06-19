@@ -9,6 +9,7 @@ import {
 } from '@types'
 import {
   buildSerpQuery,
+  corsHeaders,
   createSupabaseServiceClient,
   fetchGlobalVars,
   normalize,
@@ -43,11 +44,6 @@ const json = (v: unknown, init: ResponseInit = {}) =>
     headers: { 'content-type': 'application/json', ...(init.headers ?? {}) },
   })
 
-const cors = {
-  origin: '*',
-  headers: 'authorization,content-type',
-  methods: 'GET,OPTIONS',
-}
 const convertPCEntrytoSearchItem = async (p: PriceChartingEntry): Promise<SearchResultItem> => ({
   id: p.id,
   card: {
@@ -104,14 +100,12 @@ const convertToPriceEntry = (data: any): PriceChartingEntry => ({
 })
 
 Deno.serve(async (req) => {
+  const origin = req.headers.get('origin') ?? ''
   if (req.method === 'OPTIONS') {
-    console.log('OPTIONS received, sending cors headers')
+    const headers = corsHeaders(origin)
     return new Response(null, {
-      headers: {
-        'Access-Control-Allow-Origin': cors.origin,
-        'Access-Control-Allow-Methods': cors.methods,
-        'Access-Control-Allow-Headers': cors.headers,
-      },
+      status: Object.keys(headers).length ? 204 : 403,
+      headers,
     })
   }
   const inm = req.headers.get('if-none-match') ?? ''
@@ -372,7 +366,7 @@ Deno.serve(async (req) => {
   if (inm && inm === etag) {
     return new Response(null, {
       status: 304,
-      headers: { 'Access-Control-Allow-Origin': cors.origin },
+      headers: corsHeaders(origin),
     })
   }
 
@@ -400,7 +394,7 @@ Deno.serve(async (req) => {
   return new Response(payloadStr, {
     headers: {
       'content-type': 'application/json',
-      'Access-Control-Allow-Origin': cors.origin,
+      ...corsHeaders(origin),
       'cache-control': 'public, max-age=60, s-maxage=300, stale-while-revalidate=86400',
       etag: etag,
     },

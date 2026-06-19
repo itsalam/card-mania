@@ -42,7 +42,15 @@ export const createSupabaseServiceClient = () => {
   return createClient<Database>(supa, srole)
 }
 
-export const fetchFromCache = async ({ srole, url }: { srole: string; url: string }) => {
+export const fetchFromCache = async ({
+  srole,
+  url,
+  origin = '',
+}: {
+  srole: string
+  url: string
+  origin?: string
+}) => {
   const check = await fetch(url, {
     headers: { apikey: srole, authorization: `Bearer ${srole}` },
   })
@@ -50,17 +58,7 @@ export const fetchFromCache = async ({ srole, url }: { srole: string; url: strin
     const rows = (await check.json()) as any[]
     const hit = rows[0]
     if (hit && new Date(hit.expires_at).getTime() > Date.now()) {
-      return ok(
-        json(
-          { cacheHit: true, ...hit.payload },
-          {
-            headers: {
-              'Access-Control-Allow-Origin': cors.origin,
-              'cache-control': 'public, max-age=300',
-            },
-          }
-        )
-      )
+      return ok(json({ cacheHit: true, ...hit.payload }), origin, 300)
     }
   }
 }
@@ -94,15 +92,30 @@ export const json = (v: unknown, init: ResponseInit = {}) =>
     headers: { 'content-type': 'application/json', ...(init.headers ?? {}) },
   })
 
-export const cors = {
-  origin: '*',
-  headers: 'authorization,content-type',
-  methods: 'GET,OPTIONS',
+export const ALLOWED_ORIGINS = new Set(
+  [
+    Deno.env.get('WEB_ORIGIN') ?? '',
+    'http://localhost:8081',
+    'http://localhost:19006',
+    'http://127.0.0.1:8081',
+  ].filter(Boolean)
+)
+
+export function corsHeaders(origin: string, methods = 'GET, OPTIONS'): Record<string, string> {
+  if (!ALLOWED_ORIGINS.has(origin)) return {}
+  return {
+    'Access-Control-Allow-Origin': origin,
+    'Access-Control-Allow-Methods': methods,
+    'Access-Control-Allow-Headers':
+      'authorization, content-type, x-client-info, apikey, idempotency-key, x-internal',
+    'Access-Control-Max-Age': '86400',
+    Vary: 'Origin',
+  }
 }
 
-export function ok(res: Response, cacheSeconds = 600) {
+export function ok(res: Response, origin = '', cacheSeconds = 600) {
   const h = new Headers(res.headers)
-  h.set('Access-Control-Allow-Origin', cors.origin)
+  for (const [k, v] of Object.entries(corsHeaders(origin))) h.set(k, v)
   h.set('Cache-Control', `public, max-age=${cacheSeconds}`)
   return new Response(res.body, { status: res.status, headers: h })
 }

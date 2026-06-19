@@ -3,7 +3,7 @@ import { cn } from '@/lib/utils'
 import * as TabsPrimitive from '@rn-primitives/tabs'
 import { LucideIcon } from 'lucide-react-native'
 import { ReactNode } from 'react'
-import { Platform, StyleProp, TextProps, View, ViewStyle } from 'react-native'
+import { Platform, StyleProp, StyleSheet, TextProps, View, ViewStyle } from 'react-native'
 import { Colors } from 'react-native-ui-lib'
 
 function Tabs({
@@ -25,7 +25,7 @@ function TabsList({
         Platform.select({ web: 'inline-flex w-fit', native: 'mr-auto' }),
         className
       )}
-      style={[
+      style={StyleSheet.flatten([
         {
           backgroundColor: Colors.rgba(Colors.$backgroundDefault, 0.92),
           borderWidth: 1,
@@ -36,7 +36,7 @@ function TabsList({
           gap: 4,
         },
         style,
-      ]}
+      ])}
       {...props}
     />
   )
@@ -66,7 +66,7 @@ function TabsTrigger({
           props.value === value && 'dark:border-foreground/10 dark:bg-input/30',
           className
         )}
-        style={[
+        style={StyleSheet.flatten([
           {
             borderRadius: 999,
             paddingHorizontal: 12,
@@ -74,10 +74,10 @@ function TabsTrigger({
             alignSelf: 'stretch',
           },
           style,
-          props.value === value && {
-            backgroundColor: Colors.rgba(Colors.$backgroundPrimaryHeavy, 0.35),
-          },
-        ]}
+          props.value === value
+            ? { backgroundColor: Colors.rgba(Colors.$backgroundPrimaryHeavy, 0.35) }
+            : null,
+        ])}
         {...props}
       />
     </TextClassContext.Provider>
@@ -122,7 +122,7 @@ function TabsLabel({
   return (
     <View
       className="flex flex-row items-center justify-center"
-      style={[{ gap: 5 }, containerStyle]}
+      style={StyleSheet.flatten([{ gap: 5 }, containerStyle])}
     >
       {IconLeft ? (
         <IconLeft
@@ -139,7 +139,7 @@ function TabsLabel({
       {label?.length && (
         <Text
           variant={'h4'}
-          style={[
+          style={StyleSheet.flatten([
             {
               display: 'flex',
               flexDirection: 'row',
@@ -151,7 +151,7 @@ function TabsLabel({
             },
             style,
             // isCurrent ? { color: Colors.$backgroundPrimaryHeavy } : { color: Colors.$textNeutral },
-          ]}
+          ])}
           {...props}
         >
           {label.charAt(0).toUpperCase() + label.slice(1)}

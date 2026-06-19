@@ -2,7 +2,7 @@ import { ImageItem, SerpImageResults } from '@types'
 import {
   buildSerpQuery,
   CardKeyFields,
-  cors,
+  corsHeaders,
   createSupabaseClient,
   createSupabaseServiceClient,
   json,
@@ -60,13 +60,9 @@ Deno.serve(async (req) => {
   }
 
   if (req.method === 'OPTIONS') {
-    return new Response(null, {
-      headers: {
-        'Access-Control-Allow-Origin': cors.origin,
-        'Access-Control-Allow-Methods': cors.methods,
-        'Access-Control-Allow-Headers': cors.headers,
-      },
-    })
+    const origin = req.headers.get('origin') ?? ''
+    const headers = corsHeaders(origin)
+    return new Response(null, { status: Object.keys(headers).length ? 204 : 403, headers })
   }
   try {
     const { searchParams } = new URL(req.url)

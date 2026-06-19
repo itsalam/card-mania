@@ -58,6 +58,13 @@ export function useCardQuery(
     // show prior data while refetching
     placeholderData: keepPreviousData,
     retry: 2,
+    // Re-poll every 3 s while card is being populated (max 4 refetches = ~12 s)
+    refetchInterval: (q) => {
+      const raw = q.state.data as { status?: number } | undefined
+      if (raw?.status === 206 && (q.state.dataUpdateCount ?? 0) <= 4) return 3_000
+      return false
+    },
+    refetchIntervalInBackground: false,
     ...(opts.queryOptions ?? {}),
   })
 
@@ -74,12 +81,15 @@ export function useCardQuery(
     () => query.data ?? entry?.data ?? (entry?.prefetchData as TCard | undefined),
     [query.data, entry?.data, entry?.prefetchData]
   )
-  const loading = Boolean(query.isFetching || entry?.loading)
+  // True while the edge function returned 206 (card being committed) and we're waiting to retry
+  const isPopulating = Boolean(query.isSuccess && (query.state as any)?.data?.status === 206)
+  const loading = Boolean(query.isFetching || entry?.loading || isPopulating)
   const error = query.error ? String((query.error as any)?.message ?? query.error) : entry?.error
 
   return {
     data,
     loading,
+    isPopulating,
     error,
     isStale,
     refetch: query.refetch,

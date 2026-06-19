@@ -8,7 +8,9 @@
  * TODO: replace placeholder copy + colours once brand identity lands.
  */
 import { GradientBackground } from '@/components/Background'
+import { SearchBar } from '@/components/ui/search'
 import { Text } from '@/components/ui/text/base-text'
+import { useRouter } from 'expo-router'
 import React, { useState } from 'react'
 import { Linking, Pressable, ScrollView, View, useWindowDimensions } from 'react-native'
 import { Colors } from 'react-native-ui-lib'
@@ -69,6 +71,14 @@ export default function LandingPage() {
   const currentUser = useWebUser()
   const { width } = useWindowDimensions()
   const isPortrait = width < 768
+  const router = useRouter()
+
+  const handleHeroSearch = () => {
+    const q = searchQuery.trim()
+    if (q.length >= 2) {
+      router.push(`/search?q=${encodeURIComponent(q)}` as any)
+    }
+  }
 
   return (
     <GradientBackground style={{ flex: 1 }}>
@@ -125,11 +135,25 @@ export default function LandingPage() {
             Build your collection. List your storefront. Connect with collectors worldwide.
           </Text>
 
+          {/* Hero search */}
+          <View style={{ width: '100%', maxWidth: 520, marginTop: 8 }}>
+            <SearchBar
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              placeholder="Search cards, sets, players…"
+              hideSideButton
+              onLeftIconPress={handleHeroSearch}
+              onSubmitEditing={handleHeroSearch}
+              returnKeyType="search"
+              style={{ borderRadius: 16 }}
+            />
+          </View>
+
           <View
             style={{
               flexDirection: 'row',
               gap: 12,
-              marginTop: 12,
+              marginTop: 4,
               flexWrap: 'wrap',
               justifyContent: 'center',
             }}

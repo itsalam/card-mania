@@ -9,7 +9,7 @@ import { ProfileSetupWizard } from '@/features/onboarding'
 import { useUserStore } from '@/lib/store/useUserStore'
 import { cn } from '@/lib/utils'
 import AsyncStorage from '@react-native-async-storage/async-storage'
-import { AtSign, ChevronLeft, Eye, EyeOff, Lock, Phone, RefreshCw, User } from 'lucide-react-native'
+import { AtSign, Eye, EyeOff, Lock, Phone, RefreshCw, User } from 'lucide-react-native'
 import { MotiView } from 'moti'
 import { ComponentProps, useEffect, useRef, useState } from 'react'
 import { TouchableOpacity, View } from 'react-native'
@@ -142,7 +142,7 @@ const FacebookSignInButton = () => (
 
 // ── Splash / login page ───────────────────────────────────────────────────────
 
-export function SplashPage() {
+export function SplashPage({ initialSignUp }: { initialSignUp?: boolean }) {
   const { signInAnonymously, signInWithPhone, verifyPhoneOtp } = useUserStore()
   const [hasEverSignedIn, setHasEverSignedIn] = useState(false)
   useEffect(() => {
@@ -157,14 +157,14 @@ export function SplashPage() {
   }))
 
   // 'phone' is the primary / default view
-  const [view, setView] = useState<'phone' | 'phone-otp' | 'phone-signup' | 'signup'>('phone')
+  const [view, setView] = useState<'phone' | 'signup'>('phone')
 
   // Main page tab
   const [mainTab, setMainTab] = useState<'phone' | 'email'>('phone')
   const [phoneOtpSent, setPhoneOtpSent] = useState(false)
 
   // Phone state
-  const [phoneMode, setPhoneMode] = useState<'signin' | 'signup'>('signin')
+  const [isNewUser, setIsNewUser] = useState(false)
   const [country, setCountry] = useState<Country>(COUNTRIES[0])
   const [localNumber, setLocalNumber] = useState('')
   const [phoneCode, setPhoneCode] = useState('')
@@ -204,10 +204,10 @@ export function SplashPage() {
   const goTo = (v: typeof view, dir: 1 | -1 = 1) => {
     direction.current = dir
     setError(null)
-    if (v !== 'phone' && v !== 'phone-otp' && v !== 'phone-signup') setPhoneMode('signin')
     if (v !== 'phone') {
       setPhoneOtpSent(false)
       setPhoneCode('')
+      setIsNewUser(false)
     }
     setView(v)
   }
@@ -241,8 +241,8 @@ export function SplashPage() {
       await signInWithPhone(e164, false)
       setResendCooldown(60)
       setPhoneOtpSent(true)
-    } catch (err: any) {
-      const msg = err?.message ?? ''
+    } catch (firstErr: any) {
+      const msg = firstErr?.message ?? ''
       console.error('[handleSendCode] caught error', {
         message: msg,
         isBlocking: isBlockingPhoneError(msg),
@@ -250,26 +250,19 @@ export function SplashPage() {
       if (isBlockingPhoneError(msg)) {
         setError(friendlyPhoneError(msg || 'Failed to send code. Please try again.'))
       } else {
-        goTo('phone-signup')
+        // No account found — auto-create and still send OTP
+        try {
+          await signInWithPhone(e164, true)
+          setIsNewUser(true)
+          setResendCooldown(60)
+          setPhoneOtpSent(true)
+        } catch (createErr: any) {
+          console.error('[handleSendCode] create error', { message: createErr?.message })
+          setError(
+            friendlyPhoneError(createErr?.message ?? 'Failed to send code. Please try again.')
+          )
+        }
       }
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const handleCreatePhoneAccount = async () => {
-    setError(null)
-    console.log('[handleCreatePhoneAccount] creating account + sending OTP', { e164 })
-    setLoading(true)
-    try {
-      console.log({ e164 }, 'FU')
-      await signInWithPhone(e164, true)
-      setPhoneMode('signup')
-      setResendCooldown(60)
-      goTo('phone-otp')
-    } catch (err: any) {
-      console.error('[handleCreatePhoneAccount] error', { message: err?.message })
-      setError(friendlyPhoneError(err?.message ?? 'Failed to send code. Please try again.'))
     } finally {
       setLoading(false)
     }
@@ -292,9 +285,9 @@ export function SplashPage() {
 
   const handleResendPhoneOtp = async () => {
     if (resendCooldown > 0) return
-    console.log('[handleResendPhoneOtp] resending OTP', { e164, mode: phoneMode })
+    console.log('[handleResendPhoneOtp] resending OTP', { e164, isNewUser })
     try {
-      await signInWithPhone(e164, phoneMode === 'signup')
+      await signInWithPhone(e164, isNewUser)
       setResendCooldown(60)
       setPhoneCode('')
       setError(null)
@@ -307,6 +300,7 @@ export function SplashPage() {
   const handleResetPhoneOtp = () => {
     setPhoneOtpSent(false)
     setPhoneCode('')
+    setIsNewUser(false)
     setError(null)
   }
 
@@ -371,150 +365,11 @@ export function SplashPage() {
                   }, null) ?? COUNTRIES[0]
                 setCountry(matched)
                 setLocalNumber(phoneE164.slice(matched.dial.length))
-                goTo('phone-signup', 1)
+                setMainTab('phone')
+                goTo('phone', -1)
               }}
             />
           </View>
-        </GradientBackground>
-      </KeyboardAvoidingView>
-    )
-  }
-
-  // ── Phone sign-up ────────────────────────────────────────────────────────────
-  if (view === 'phone-signup') {
-    return (
-      <KeyboardAvoidingView behavior="padding" style={{ flex: 1 }}>
-        <GradientBackground style={{ flex: 1 }}>
-          {logoNode}
-          <MotiView
-            from={{ opacity: 0, translateX: direction.current * 40 }}
-            animate={{ opacity: 1, translateX: 0 }}
-            transition={{ type: 'spring', damping: 20, stiffness: 260, mass: 0.9 }}
-            style={{ ...formWrapStyle, gap: 24 }}
-          >
-            <View
-              style={{
-                width: '100%',
-                flexDirection: 'row',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-              }}
-            >
-              <TouchableOpacity
-                onPress={() => goTo('phone', -1)}
-                style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}
-                accessibilityLabel="Back to phone input"
-              >
-                <ChevronLeft size={16} color="white" />
-                <Text style={{ color: 'white', fontSize: 14 }}>Back</Text>
-              </TouchableOpacity>
-              <View style={{ width: 56 }} />
-            </View>
-
-            <View style={{ width: '100%', gap: 8 }}>
-              <Text style={{ color: 'white', fontSize: 24, lineHeight: 26, fontWeight: 'bold' }}>
-                {"Looks like you're new here"}
-              </Text>
-              <Text style={{ color: 'rgba(255,255,255,0.6)', lineHeight: 22 }}>
-                {"We'll create an account for"}
-                {'\n'}
-                <Text style={{ color: 'white', fontWeight: '600' }}>
-                  {country.dial} {formatLocalNumber(localNumber, country.format)}
-                </Text>
-              </Text>
-            </View>
-
-            {error ? (
-              <Text style={{ color: '#f87171', fontSize: 14, textAlign: 'center', width: '100%' }}>
-                {error}
-              </Text>
-            ) : null}
-
-            <BaseButton onPress={handleCreatePhoneAccount} disabled={loading}>
-              {loading ? 'Sending code…' : 'Create account'}
-            </BaseButton>
-          </MotiView>
-        </GradientBackground>
-      </KeyboardAvoidingView>
-    )
-  }
-
-  // ── Phone OTP ────────────────────────────────────────────────────────────────
-  if (view === 'phone-otp') {
-    return (
-      <KeyboardAvoidingView behavior="padding" style={{ flex: 1 }}>
-        <GradientBackground style={{ flex: 1 }}>
-          {logoNode}
-          <MotiView
-            from={{ opacity: 0, translateX: direction.current * 40 }}
-            animate={{ opacity: 1, translateX: 0 }}
-            transition={{ type: 'spring', damping: 20, stiffness: 260, mass: 0.9 }}
-            style={{ ...formWrapStyle, gap: 24 }}
-          >
-            <View
-              style={{
-                width: '100%',
-                flexDirection: 'row',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-              }}
-            >
-              <TouchableOpacity
-                onPress={() => {
-                  goTo('phone', -1)
-                  setPhoneCode('')
-                }}
-                style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}
-                accessibilityLabel="Back to phone input"
-              >
-                <ChevronLeft size={16} color="white" />
-                <Text style={{ color: 'white', fontSize: 14 }}>Back</Text>
-              </TouchableOpacity>
-              <Text style={{ color: 'white', fontSize: 20 }}>
-                {phoneMode === 'signup' ? "Looks like you're new here" : 'Verify phone'}
-              </Text>
-              <View style={{ width: 56 }} />
-            </View>
-
-            <Text style={{ color: 'white', textAlign: 'center', opacity: 0.7, lineHeight: 24 }}>
-              Enter the 6-digit code sent to{'\n'}
-              <Text style={{ color: 'white', fontWeight: '600', opacity: 1 }}>{e164}</Text>
-            </Text>
-
-            <OtpInput value={phoneCode} onChange={setPhoneCode} onComplete={handleVerifyPhoneOtp} />
-
-            {error ? (
-              <Text style={{ color: '#f87171', fontSize: 14, textAlign: 'center', width: '100%' }}>
-                {error}
-              </Text>
-            ) : null}
-
-            <AppButton
-              variant="primary"
-              size="lg"
-              onPress={() => phoneCode.length === 6 && handleVerifyPhoneOtp(phoneCode)}
-              disabled={loading || phoneCode.length < 6}
-              className="w-full"
-            >
-              {loading ? 'Verifying…' : 'Verify'}
-            </AppButton>
-
-            <TouchableOpacity
-              onPress={handleResendPhoneOtp}
-              disabled={resendCooldown > 0}
-              style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}
-            >
-              <RefreshCw size={14} color={resendCooldown > 0 ? 'rgba(255,255,255,0.3)' : 'white'} />
-              <Text
-                style={{
-                  color: resendCooldown > 0 ? 'rgba(255,255,255,0.3)' : 'white',
-                  fontSize: 13,
-                }}
-              >
-                {resendCooldown > 0 ? `Resend code in ${resendCooldown}s` : 'Resend code'}
-              </Text>
-            </TouchableOpacity>
-          </MotiView>
         </GradientBackground>
       </KeyboardAvoidingView>
     )
@@ -551,10 +406,18 @@ export function SplashPage() {
                   fontWeight: 'bold',
                 }}
               >
-                {hasEverSignedIn ? 'Welcome back,' : 'Welcome to CardMania'}
+                {isNewUser && phoneOtpSent
+                  ? "Looks like you're new here"
+                  : hasEverSignedIn
+                    ? 'Welcome back,'
+                    : 'Welcome to CardMania'}
               </Text>
               <Text style={{ color: Colors.$textNeutral, fontSize: 13 }}>
-                {hasEverSignedIn ? 'Sign in to continue.' : 'Enter your preferred sign-in method.'}
+                {isNewUser && phoneOtpSent
+                  ? `A new account will be created for ${e164}.`
+                  : hasEverSignedIn
+                    ? 'Sign in to continue.'
+                    : 'Enter your preferred sign-in method.'}
               </Text>
             </View>
           </View>
@@ -784,7 +647,7 @@ export function SplashPage() {
           </MotiView>
 
           {/* Error + CTA */}
-          <View style={{ alignItems: 'center', width: '100%', backgroundColor: 'red' }}>
+          <View style={{ alignItems: 'center', width: '100%' }}>
             <MotiView
               animate={{
                 opacity: (mainTab === 'email' ? emailFlow.error : error) ? 1 : 0,
@@ -792,7 +655,7 @@ export function SplashPage() {
                 minHeight: (mainTab === 'email' ? emailFlow.error : error) ? 20 : 0,
               }}
               transition={{ type: 'timing', duration: 180 }}
-              style={{ width: '100%', justifyContent: 'center', backgroundColor: 'blue' }}
+              style={{ width: '100%', justifyContent: 'center' }}
               pointerEvents="none"
             >
               <Text className="text-red-400 text-sm text-center w-full px-4">

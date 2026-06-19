@@ -206,6 +206,7 @@ export function AuthModal({ onClose }: Props) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [hasEverSignedIn, setHasEverSignedIn] = useState(false)
+  const [isNewUser, setIsNewUser] = useState(false)
 
   useEffect(() => {
     AsyncStorage.getItem('cardmania:hasEverSignedIn').then((v) => {
@@ -238,14 +239,22 @@ export function AuthModal({ onClose }: Props) {
       await signInWithPhone(e164, false)
       setResendCooldown(60)
       setPhoneOtpSent(true)
-    } catch (err: any) {
-      const msg = err?.message ?? ''
+    } catch (firstErr: any) {
+      const msg = firstErr?.message ?? ''
       if (isBlockingPhoneError(msg)) {
         setError(friendlyPhoneError(msg || 'Failed to send code. Please try again.'))
       } else {
-        // Phone not registered — go to email signup with context
-        setMainTab('email')
-        setError('No account found for that number. Try email sign-up.')
+        // No account found — auto-create and still send OTP
+        try {
+          await signInWithPhone(e164, true)
+          setIsNewUser(true)
+          setResendCooldown(60)
+          setPhoneOtpSent(true)
+        } catch (createErr: any) {
+          setError(
+            friendlyPhoneError(createErr?.message ?? 'Failed to send code. Please try again.')
+          )
+        }
       }
     } finally {
       setLoading(false)
@@ -269,7 +278,7 @@ export function AuthModal({ onClose }: Props) {
   const handleResend = async () => {
     if (resendCooldown > 0) return
     try {
-      await signInWithPhone(e164, false)
+      await signInWithPhone(e164, isNewUser)
       setResendCooldown(60)
       setPhoneCode('')
       setError(null)
@@ -379,6 +388,7 @@ export function AuthModal({ onClose }: Props) {
                         setError(null)
                         setPhoneOtpSent(false)
                         setPhoneCode('')
+                        setIsNewUser(false)
                         emailFlow.resetToEmailStep()
                       }}
                       style={{
@@ -512,6 +522,7 @@ export function AuthModal({ onClose }: Props) {
                       onPress={() => {
                         setPhoneOtpSent(false)
                         setPhoneCode('')
+                        setIsNewUser(false)
                         setError(null)
                       }}
                     >
@@ -659,6 +670,22 @@ export function AuthModal({ onClose }: Props) {
                 </View>
               </View>
             </View>
+
+            {/* New-user notice — shown while entering OTP for a newly created account */}
+            {isNewUser && mainTab === 'phone' && phoneOtpSent && (
+              <Text
+                style={{
+                  color: Colors.$textNeutral,
+                  fontSize: 12,
+                  lineHeight: 18,
+                  textAlign: 'center',
+                }}
+              >
+                {'No account found — '}
+                <Text style={{ color: Colors.$textDefault, fontWeight: '600' }}>a new account</Text>
+                {' will be created for this number.'}
+              </Text>
+            )}
 
             {/* Error */}
             <View

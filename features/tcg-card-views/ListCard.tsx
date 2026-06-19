@@ -7,7 +7,7 @@ import { CollectionItemQueryView } from '@/lib/store/functions/types'
 import { cn } from '@/lib/utils/cn'
 import { EllipsisVertical, Heart, Maximize, TrendingDown, TrendingUp } from 'lucide-react-native'
 import { forwardRef, ReactNode } from 'react'
-import { StyleSheet, View } from 'react-native'
+import { Pressable, StyleSheet, View } from 'react-native'
 import { Colors, TouchableOpacity } from 'react-native-ui-lib'
 import { useNavigateToItem } from '../../components/tcg-card/helpers'
 import { CardImage } from './card-image'
@@ -200,10 +200,11 @@ export const ItemListView = forwardRef<View, ItemListViewProps>(function ItemLis
   })
 
   return (
-    <View
+    <Pressable
       ref={ref}
       className={cn('items-start flex', vertical ? '' : 'flex-row w-full', className)}
-      style={[style]}
+      style={({ pressed }) => [style, { opacity: pressed ? 0.85 : 1 }]}
+      onPress={onPress ?? handlePress}
     >
       <View
         style={[
@@ -221,13 +222,13 @@ export const ItemListView = forwardRef<View, ItemListViewProps>(function ItemLis
           <CardImage
             displayData={displayData}
             imageProps={{
-              onPress: onPress ?? (navigateTo ? handlePress : undefined),
+              onPress: onPress ?? handlePress,
               ref: cardElement,
             }}
           />
           {imageAccessory !== undefined
             ? imageAccessory
-            : (navigateTo || onPress) && (
+            : item?.id && (
                 <View
                   style={{
                     aspectRatio: 1,
@@ -251,7 +252,7 @@ export const ItemListView = forwardRef<View, ItemListViewProps>(function ItemLis
       ) : (
         renderAccessories?.(props)
       )}
-    </View>
+    </Pressable>
   )
 })
 

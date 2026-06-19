@@ -7,7 +7,7 @@
  * Use the shortest unambiguous prefix — dynamic segments (/[param]) are
  * covered automatically because they share the same prefix.
  */
-export const PROTECTED_ROUTE_PREFIXES = ['/offers', '/cart', '/transactions'] as const
+export const PROTECTED_ROUTE_PREFIXES = ['/offers', '/cart', '/transactions', '/settings'] as const
 
 export type ProtectedRoutePrefix = (typeof PROTECTED_ROUTE_PREFIXES)[number]
 

@@ -10,7 +10,6 @@ import { ItemListViewProps } from '@/features/tcg-card-views/types'
 import { CollectionItemQueryView } from '@/lib/store/functions/types'
 import { useCartStore } from '@/lib/store/useCartStore'
 import { ShoppingCart } from 'lucide-react-native'
-import { AnimatePresence, MotiView } from 'moti'
 import { useState } from 'react'
 import { ActivityIndicator, Pressable, View, useWindowDimensions } from 'react-native'
 import { Colors } from 'react-native-ui-lib'
@@ -171,14 +170,11 @@ function CollectionGrid({
           {collectionName}
         </Text>
       )}
-      <AnimatePresence>
-        {filtered.map((item, index) => (
-          <MotiView
+      {filtered.map((item) => {
+        const inCart = cartItems.some((c) => c.data.id === item.collection_item_id)
+        return (
+          <View
             key={item.collection_item_id}
-            from={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.95 }}
-            transition={{ type: 'timing', duration: 200, delay: Math.min(index * 30, 300) }}
             style={{
               borderRadius: 8,
               overflow: 'hidden',
@@ -190,40 +186,35 @@ function CollectionGrid({
               width: '100%',
             }}
           >
-            {(() => {
-              const inCart = cartItems.some((c) => c.data.id === item.collection_item_id)
-              return (
-                <CardListView
-                  card={item}
-                  collectionItem={{ ...item, id: item.collection_item_id }}
-                  vertical={true}
-                  expanded={true}
-                  onPress={() => handleAddToCart(item)}
-                  imageAccessory={
-                    <View
-                      style={{
-                        aspectRatio: 1,
-                        borderRadius: 999,
-                        backgroundColor: Colors.rgba(
-                          inCart ? Colors.$backgroundPrimaryHeavy : Colors.$backgroundNeutralHeavy,
-                          0.85
-                        ),
-                        position: 'absolute',
-                        left: 6,
-                        bottom: 6,
-                        padding: 5,
-                      }}
-                    >
-                      <ShoppingCart size={14} color={inCart ? '#fff' : Colors.$iconNeutralLight} />
-                    </View>
-                  }
-                  renderAccessories={(props) => <GridTileInfo {...props} />}
-                />
-              )
-            })()}
-          </MotiView>
-        ))}
-      </AnimatePresence>
+            <CardListView
+              card={item}
+              collectionItem={{ ...item, id: item.collection_item_id }}
+              vertical={true}
+              expanded={true}
+              onPress={() => handleAddToCart(item)}
+              imageAccessory={
+                <View
+                  style={{
+                    aspectRatio: 1,
+                    borderRadius: 999,
+                    backgroundColor: Colors.rgba(
+                      inCart ? Colors.$backgroundPrimaryHeavy : Colors.$backgroundNeutralHeavy,
+                      0.85
+                    ),
+                    position: 'absolute',
+                    left: 6,
+                    bottom: 6,
+                    padding: 5,
+                  }}
+                >
+                  <ShoppingCart size={14} color={inCart ? '#fff' : Colors.$iconNeutralLight} />
+                </View>
+              }
+              renderAccessories={(props) => <GridTileInfo {...props} />}
+            />
+          </View>
+        )
+      })}
       {hasNextPage && (
         <Pressable
           onPress={() => fetchNextPage()}

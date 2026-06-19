@@ -1,121 +1,116 @@
 import { useToast } from '@/components/Toast'
-import { Modal } from '@/components/ui/modal'
-import { SearchBar } from '@/components/ui/search'
 import { Spinner } from '@/components/ui/spinner'
 import { Text } from '@/components/ui/text/base-text'
-import {
-  Check,
-  ChevronLeft,
-  ChevronRight,
-  MapPin,
-  MapPinned,
-  SearchX,
-  Undo,
-} from 'lucide-react-native'
+import { AlertCircle, Check, ChevronRight, MapPin, MapPinned, Search, X } from 'lucide-react-native'
 import React, { ReactNode, useEffect, useRef, useState } from 'react'
-import { FlatList, TouchableOpacity, View } from 'react-native'
-import Animated, { FadeIn, FadeOut } from 'react-native-reanimated'
-import { BorderRadiuses, Colors } from 'react-native-ui-lib'
+import { Pressable, ScrollView, TextInput, View } from 'react-native'
+import { Colors } from 'react-native-ui-lib'
 import { useSetting } from '..'
 import { CitySuggestion, newSessionToken, useCitySuggestions } from '../client'
 
-function haversineDistance(lat1: number, lon1: number, lat2: number, lon2: number) {
-  const R = 6371000 // meters
-  const toRad = (d: number) => (d * Math.PI) / 180
+function useDarkClass() {
+  const [isDark, setIsDark] = useState(
+    () => typeof document !== 'undefined' && document.documentElement.classList.contains('dark')
+  )
+  useEffect(() => {
+    const mo = new MutationObserver(() =>
+      setIsDark(document.documentElement.classList.contains('dark'))
+    )
+    mo.observe(document.documentElement, { attributeFilter: ['class'] })
+    return () => mo.disconnect()
+  }, [])
+  return isDark
+}
 
-  const dLat = toRad(lat2 - lat1)
-  const dLon = toRad(lon2 - lon1)
+function MapEmbed({ selected }: { selected: CitySuggestion }) {
+  const { latitude: lat, longitude: lon, viewport } = selected
+  const west = viewport?.low?.longitude ?? lon - 0.08
+  const south = viewport?.low?.latitude ?? lat - 0.08
+  const east = viewport?.high?.longitude ?? lon + 0.08
+  const north = viewport?.high?.latitude ?? lat + 0.08
+  const isDark = useDarkClass()
 
-  const a =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2
-
-  return 2 * R * Math.asin(Math.sqrt(a))
+  return React.createElement('iframe', {
+    src: `https://www.openstreetmap.org/export/embed.html?bbox=${west},${south},${east},${north}&layer=hot&marker=${lat},${lon}`,
+    style: {
+      width: '100%',
+      height: '100%',
+      border: 'none',
+      filter: isDark
+        ? 'grayscale(0.45) invert(1) hue-rotate(180deg) brightness(0.82) saturate(0.5) contrast(1.05)'
+        : 'grayscale(0.15) saturate(0.8) contrast(1.05)',
+    },
+    loading: 'lazy',
+    title: `Map of ${selected.city}`,
+  } as any)
 }
 
 const LocationPicker = ({ children }: { children?: ReactNode }) => {
   const setting = useSetting('location')
-  const mapRef = useRef<MapView>(null)
-  const prevText = useRef('')
-  const [showModal, setShowModal] = useState(false)
-  const [writingConfirmed, setWritingConfirmed] = useState(false)
   const toast = useToast()
+  const inputRef = useRef<TextInput>(null)
 
+  const [expanded, setExpanded] = useState(false)
   const [text, setText] = useState('')
   const [sessionToken, setSessionToken] = useState<string | null>(null)
-  const [selected, setSelected] = useState<CitySuggestion | null>(setting.value)
-  const [previewCircleRadius, setCircleRadius] = useState<number | null>(null)
-  const [confirmed, setConfirmed] = useState<CitySuggestion | null>(null)
+  const [selected, setSelected] = useState<CitySuggestion | null>(null)
+  const [saving, setSaving] = useState(false)
 
-  const {
-    data: suggestions = [],
-    isFetching,
-    isEnabled: isTextEnabled,
-  } = useCitySuggestions(text, sessionToken)
+  const isTextEnabled = text.trim().length >= 2 && !!sessionToken
 
-  const onFocus = () => {
-    setSessionToken((t) => t ?? newSessionToken())
-  }
-
-  const onSelect = (item: CitySuggestion) => {
-    setSelected(item)
-    setSessionToken(null)
-  }
-
-  useEffect(() => {
-    if (!selected) {
-      setText(prevText.current)
-      return
-    }
-    const { viewport } = selected
-
-    mapRef.current?.fitToCoordinates([viewport.high, viewport.low], {
-      edgePadding: { top: 40, right: 40, bottom: 40, left: 40 },
-      animated: true,
-    })
-    setCircleRadius(
-      Math.min(
-        haversineDistance(
-          selected.latitude,
-          selected.longitude,
-          viewport.high.latitude,
-          viewport.high.longitude
-        ),
-        haversineDistance(
-          selected.latitude,
-          selected.longitude,
-          viewport.low.latitude,
-          viewport.low.longitude
-        )
-      )
-    )
-    setText(selected?.city ?? text)
-    prevText.current = text
-  }, [selected])
-
-  useEffect(() => {
-    if (!confirmed) return
-    setWritingConfirmed(true)
-    setting.set(confirmed).then(({ prevVal, curr }) => {
-      setWritingConfirmed(false)
-      setShowModal(false)
-      setConfirmed(null)
-      toast.showToast({
-        title: 'Location Updated',
-        message: `Location updated ${prevVal?.city ? `from ${prevVal.city}` : ''} to ${curr?.city}`,
-      })
-    })
-  }, [confirmed])
+  const { data: suggestions = [], isFetching, isError } = useCitySuggestions(text, sessionToken)
 
   const cityLabel = setting.value?.city
     ? `${setting.value.city[0].toUpperCase()}${setting.value.city.slice(1)}`
     : undefined
 
+  useEffect(() => {
+    if (expanded) {
+      const id = setTimeout(() => inputRef.current?.focus?.(), 60)
+      return () => clearTimeout(id)
+    }
+  }, [expanded])
+
+  const handleOpen = () => {
+    setExpanded(true)
+    setSelected(null)
+    setText('')
+    setSessionToken(newSessionToken())
+  }
+
+  const handleClose = () => {
+    setExpanded(false)
+    setText('')
+    setSessionToken(null)
+    setSelected(null)
+  }
+
+  const handleSelect = (item: CitySuggestion) => {
+    setSelected(item)
+    setText(item.city ?? '')
+    setSessionToken(null)
+  }
+
+  const handleConfirm = async () => {
+    if (!selected) return
+    setSaving(true)
+    try {
+      const { prevVal, curr } = await setting.set(selected)
+      toast.showToast({
+        title: 'Location Updated',
+        message: `Location updated${prevVal?.city ? ` from ${prevVal.city}` : ''} to ${curr?.city}`,
+      })
+      handleClose()
+    } finally {
+      setSaving(false)
+    }
+  }
+
   return (
-    <>
-      {/* ── Trigger row ── */}
-      <TouchableOpacity
-        onPress={() => setShowModal(true)}
+    <View>
+      {/* ── Trigger row ─────────────────────────────────────────────────── */}
+      <Pressable
+        onPress={expanded ? handleClose : handleOpen}
         style={{
           flexDirection: 'row',
           alignItems: 'center',
@@ -126,244 +121,222 @@ const LocationPicker = ({ children }: { children?: ReactNode }) => {
       >
         {children}
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-          {cityLabel && (
-            <Text variant="large" style={{ color: Colors.$textDefault }}>
-              {cityLabel}
-            </Text>
+          {cityLabel && !expanded && (
+            <Text style={{ fontSize: 15, color: Colors.$textNeutral }}>{cityLabel}</Text>
           )}
-          <ChevronRight size={18} color={Colors.$iconDefault} />
+          <ChevronRight
+            size={18}
+            color={expanded ? Colors.$backgroundPrimaryHeavy : Colors.$iconDefault}
+            style={
+              {
+                transform: [{ rotate: expanded ? '90deg' : '0deg' }],
+                transition: 'transform 0.25s ease',
+              } as any
+            }
+          />
         </View>
-      </TouchableOpacity>
+      </Pressable>
 
-      <Modal
-        visible={showModal}
-        onDismiss={() => setShowModal(false)}
-        absoluteThumb
-        style={{ paddingHorizontal: 0 }}
-      >
-        {/* ── Search header ── */}
-        <View
-          style={{
-            position: 'absolute',
-            paddingTop: 20,
-            top: 0,
-            flexDirection: 'row',
-            width: '100%',
-            paddingLeft: 12,
-            paddingRight: 20,
-            zIndex: 2,
-            alignItems: 'center',
-            gap: 8,
-          }}
-        >
-          <TouchableOpacity onPress={() => setShowModal(false)} style={{ padding: 4 }}>
-            <ChevronLeft size={26} strokeWidth={2} color={Colors.$iconDefault} />
-          </TouchableOpacity>
-          <View style={{ flex: 1 }}>
-            <SearchBar
-              onFocus={onFocus}
-              onBlur={() => setSessionToken(null)}
-              style={{ backgroundColor: Colors.rgba(Colors.$backgroundElevated, 0.66) }}
-              value={text}
-              onChangeText={(value) => {
-                setText(value)
-                setSessionToken((t) => t ?? newSessionToken())
-              }}
-              hideSideButton
-              editable
-            />
-          </View>
-        </View>
-
-        {/* ── Map + suggestions overlay ── */}
-        <View
-          style={{
-            zIndex: 0,
-            width: '100%',
-            aspectRatio: 1,
-            position: 'relative',
-            borderRadius: BorderRadiuses.br20,
+      {/* ── Accordion expansion panel ────────────────────────────────────── */}
+      <View
+        style={
+          {
             overflow: 'hidden',
-          }}
-        >
-          {/* <MapView style={{ width: '100%', aspectRatio: 1, zIndex: 0 }} ref={mapRef}>
-            {selected && <Marker coordinate={selected} />}
-            {selected && previewCircleRadius && (
-              <Circle
-                center={{ latitude: selected.latitude, longitude: selected.longitude }}
-                radius={previewCircleRadius}
-                strokeColor={Colors.rgba(Colors.$backgroundPrimaryHeavy, 0.5)}
-                fillColor={Colors.rgba(Colors.$backgroundPrimaryHeavy, 0.15)}
-              />
-            )}
-          </MapView> */}
-
-          {sessionToken && (
-            <Animated.View
-              entering={FadeIn.duration(150)}
-              exiting={FadeOut.duration(100)}
-              style={{
-                width: '100%',
-                aspectRatio: 1,
-                zIndex: 1,
-                position: 'absolute',
-                backgroundColor: Colors.rgba(Colors.$backgroundElevated, 0.92),
-                top: 0,
-                left: 0,
-                paddingTop: 80,
-              }}
-            >
-              <FlatList
-                persistentScrollbar={false}
-                style={{ padding: 12, height: '100%', flex: 1 }}
-                contentContainerStyle={{ gap: 8, minHeight: '100%' }}
-                data={suggestions}
-                ListEmptyComponent={() => (
-                  <View
-                    style={{
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      alignSelf: 'stretch',
-                      height: '100%',
-                    }}
-                  >
-                    {isFetching ? (
-                      <Spinner />
-                    ) : isTextEnabled ? (
-                      <>
-                        <SearchX size={44} color={Colors.$iconDisabled} />
-                        <Text variant="large" style={{ color: Colors.$textDisabled, marginTop: 8 }}>
-                          No locations found.
-                        </Text>
-                      </>
-                    ) : null}
-                  </View>
-                )}
-                renderItem={({ item: suggestion }) => (
-                  <Animated.View
-                    key={suggestion.slug}
-                    style={{ alignSelf: 'stretch', marginHorizontal: 4 }}
-                    entering={FadeIn.duration(80)}
-                    exiting={FadeOut.duration(50)}
-                  >
-                    <TouchableOpacity
-                      onPress={() => onSelect(suggestion)}
-                      style={{
-                        alignItems: 'center',
-                        flexDirection: 'row',
-                        gap: 12,
-                        backgroundColor: Colors.$backgroundElevated,
-                        borderRadius: 16,
-                        borderWidth: 1,
-                        borderColor: Colors.$outlineDefault,
-                        paddingHorizontal: 16,
-                        paddingVertical: 12,
-                      }}
-                    >
-                      <View
-                        style={{
-                          width: 36,
-                          height: 36,
-                          borderRadius: 18,
-                          backgroundColor: Colors.rgba(Colors.$backgroundPrimaryHeavy, 0.12),
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                        }}
-                      >
-                        <MapPin size={18} color={Colors.$backgroundPrimaryHeavy} />
-                      </View>
-                      <View style={{ flex: 1, gap: 2 }}>
-                        <Text variant="h4">{suggestion.city}</Text>
-                        <Text
-                          variant="default"
-                          style={{ fontSize: 14, color: Colors.$textNeutralLight }}
-                        >
-                          {`${suggestion.state ? `${suggestion.state}, ` : ''}${suggestion.country}`}
-                        </Text>
-                      </View>
-                    </TouchableOpacity>
-                  </Animated.View>
-                )}
-              />
-            </Animated.View>
-          )}
-        </View>
-
-        {/* ── Confirmation bar ── */}
-        <View style={{ padding: 12, paddingTop: 20 }}>
+            maxHeight: expanded ? 640 : 0,
+            opacity: expanded ? 1 : 0,
+            transition: 'max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s ease',
+          } as any
+        }
+      >
+        <View style={{ paddingBottom: 12, paddingHorizontal: 4, gap: 10, paddingTop: 2 }}>
+          {/* Search input */}
           <View
             style={{
               flexDirection: 'row',
               alignItems: 'center',
-              gap: 12,
-              padding: 14,
-              borderRadius: 16,
+              gap: 8,
+              borderRadius: 999,
               borderWidth: 1,
               borderColor: Colors.$outlineDefault,
-              backgroundColor: Colors.$backgroundElevated,
+              backgroundColor: Colors.rgba(Colors.$backgroundDefault, 0.9),
+              paddingHorizontal: 12,
+              height: 38,
             }}
           >
-            <MapPinned
-              size={28}
-              color={selected ? Colors.$backgroundPrimaryHeavy : Colors.$iconDisabled}
+            <Search size={14} color={Colors.$textNeutralLight} strokeWidth={2.5} />
+            <TextInput
+              ref={inputRef}
+              value={text}
+              onChangeText={(v) => {
+                setText(v)
+                setSelected(null)
+                if (!sessionToken && v.trim().length >= 2) setSessionToken(newSessionToken())
+                else if (sessionToken && v.trim().length < 2) setSessionToken(null)
+              }}
+              placeholder="Search city..."
+              placeholderTextColor={Colors.$textNeutralLight}
+              style={
+                {
+                  flex: 1,
+                  fontSize: 14,
+                  color: Colors.$textDefault,
+                  paddingVertical: 0,
+                  outlineStyle: 'none',
+                } as any
+              }
             />
-            <View style={{ flex: 1 }}>
-              {selected ? (
-                <>
-                  <Text variant="h4" numberOfLines={1} ellipsizeMode="tail">
+            {text.length > 0 && (
+              <Pressable
+                onPress={() => {
+                  setText('')
+                  setSelected(null)
+                  setSessionToken(null)
+                }}
+                hitSlop={8}
+              >
+                <X size={13} color={Colors.$iconNeutral} />
+              </Pressable>
+            )}
+          </View>
+
+          {/* Results list */}
+          {!selected && sessionToken && (
+            <ScrollView
+              style={{ maxHeight: 200 }}
+              contentContainerStyle={{ gap: 6 }}
+              keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator={false}
+            >
+              {isFetching ? (
+                <View style={{ alignItems: 'center', paddingVertical: 14 }}>
+                  <Spinner />
+                </View>
+              ) : isError ? (
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: 8,
+                    paddingVertical: 10,
+                  }}
+                >
+                  <AlertCircle size={15} color={Colors.$textDanger} />
+                  <Text style={{ fontSize: 13, color: Colors.$textDanger }}>
+                    Failed to search. Try again.
+                  </Text>
+                </View>
+              ) : suggestions.length === 0 && isTextEnabled && !isFetching ? (
+                <View style={{ alignItems: 'center', paddingVertical: 14 }}>
+                  <Text style={{ fontSize: 14, color: Colors.$textDisabled }}>
+                    No locations found.
+                  </Text>
+                </View>
+              ) : (
+                suggestions.map((suggestion) => (
+                  <Pressable
+                    key={suggestion.slug}
+                    onPress={() => handleSelect(suggestion)}
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      gap: 10,
+                      paddingHorizontal: 8,
+                      paddingVertical: 7,
+                      borderRadius: 8,
+                    }}
+                  >
+                    <MapPin size={13} color={Colors.$textNeutralLight} strokeWidth={2} />
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ fontSize: 14, color: Colors.$textDefault, fontWeight: '500' }}>
+                        {suggestion.city}
+                      </Text>
+                      <Text style={{ fontSize: 12, color: Colors.$textNeutralLight }}>
+                        {`${suggestion.state ? `${suggestion.state}, ` : ''}${suggestion.country}`}
+                      </Text>
+                    </View>
+                  </Pressable>
+                ))
+              )}
+            </ScrollView>
+          )}
+
+          {/* Selected location — confirmation bar + map */}
+          {selected && (
+            <View style={{ gap: 8 }}>
+              <View
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 8,
+                  paddingHorizontal: 10,
+                  paddingVertical: 8,
+                  borderRadius: 10,
+                  borderWidth: 1,
+                  borderColor: Colors.$outlineDefault,
+                  backgroundColor: Colors.$backgroundElevated,
+                }}
+              >
+                <MapPinned size={15} color={Colors.$backgroundPrimaryHeavy} />
+                <View style={{ flex: 1 }}>
+                  <Text
+                    style={{ fontSize: 14, fontWeight: '500', color: Colors.$textDefault }}
+                    numberOfLines={1}
+                  >
                     {selected.city}
                   </Text>
-                  <Text
-                    variant="default"
-                    style={{ fontSize: 14, color: Colors.$textNeutralLight }}
-                    numberOfLines={1}
-                    ellipsizeMode="tail"
-                  >
+                  <Text style={{ fontSize: 12, color: Colors.$textNeutralLight }} numberOfLines={1}>
                     {`${selected.state ? `${selected.state}, ` : ''}${selected.country}`}
                   </Text>
-                </>
-              ) : (
-                <Text variant="lead" style={{ color: Colors.$textNeutralLight }}>
-                  No location selected.
-                </Text>
-              )}
-            </View>
-
-            {selected && (
-              <>
-                <TouchableOpacity
+                </View>
+                <Pressable
                   onPress={() => {
                     setSelected(null)
+                    setText('')
                     setSessionToken(newSessionToken())
                   }}
+                  hitSlop={8}
                   style={{
-                    padding: 10,
+                    padding: 5,
                     borderRadius: 20,
                     backgroundColor: Colors.$backgroundNeutralLight,
                   }}
                 >
-                  <Undo size={18} color={Colors.$iconNeutral} />
-                </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={() => setConfirmed(selected)}
+                  <X size={13} color={Colors.$iconNeutral} />
+                </Pressable>
+                <Pressable
+                  onPress={handleConfirm}
+                  hitSlop={8}
                   style={{
-                    padding: 10,
+                    padding: 5,
                     borderRadius: 20,
                     backgroundColor: Colors.$backgroundSuccessLight,
                   }}
                 >
-                  {writingConfirmed ? (
-                    <Spinner />
+                  {saving ? (
+                    <Spinner style={{ width: 13, height: 13 }} />
                   ) : (
-                    <Check size={18} color={Colors.$iconSuccessLight} />
+                    <Check size={13} color={Colors.$iconSuccessLight} />
                   )}
-                </TouchableOpacity>
-              </>
-            )}
-          </View>
+                </Pressable>
+              </View>
+
+              {/* Map preview */}
+              <View
+                style={{
+                  height: 220,
+                  borderRadius: 10,
+                  overflow: 'hidden',
+                  borderWidth: 1,
+                  borderColor: Colors.rgba(Colors.$outlineNeutral, 0.3),
+                }}
+              >
+                <MapEmbed selected={selected} />
+              </View>
+            </View>
+          )}
         </View>
-      </Modal>
-    </>
+      </View>
+    </View>
   )
 }
 

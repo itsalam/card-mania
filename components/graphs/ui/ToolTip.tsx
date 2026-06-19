@@ -36,6 +36,8 @@ type ToolTipProps = {
   valueDenorm?: (n: number) => number
   showLabel?: boolean
   breakGaps?: BreakGap[]
+  /** Pixel x of the last real data point for each series key — beyond this the series is extrapolated. */
+  lastDataXPerSeries?: Record<string, number>
 }
 
 export function ToolTip({
@@ -54,6 +56,7 @@ export function ToolTip({
   valueDenorm,
   showLabel = true,
   breakGaps,
+  lastDataXPerSeries,
 }: ToolTipProps) {
   const font = useFont(require('../../../assets/fonts/Inter.ttf'), 12)
   const seriesKeys = useMemo(() => Object.keys(yKeys ?? {}), [yKeys])
@@ -72,11 +75,23 @@ export function ToolTip({
     () => seriesKeys.map((k) => restPoints[k]?.y ?? 0),
     [seriesKeys, restPoints]
   )
+  const seriesLastDataXs = useMemo(
+    () => seriesKeys.map((k) => lastDataXPerSeries?.[k] ?? Infinity),
+    [seriesKeys, lastDataXPerSeries]
+  )
 
   const adjustedPositions = useDerivedValue(() => {
-    const rawYs: number[] = seriesPositions.map((posSV, i) =>
-      seriesIsActive ? posSV.value : seriesRestYs[i]
-    )
+    const curX = x.value
+    const rawYs: number[] = seriesPositions.map((posSV, i) => {
+      if (seriesIsActive) {
+        const posY = posSV.value
+        // Fall back to rest-Y when CartesianChart has no interpolated value for this series
+        // (crosshair is past the last real data point — extrapolated territory).
+        if (!isFinite(posY) || curX > seriesLastDataXs[i]) return seriesRestYs[i]
+        return posY
+      }
+      return seriesRestYs[i]
+    })
     const n = rawYs.length
     if (n <= 1) return rawYs
 
@@ -125,7 +140,7 @@ export function ToolTip({
     for (let i = 0; i < n; i++) adjusted[i] = Math.max(top, adjusted[i])
 
     return adjusted
-  }, [seriesIsActive, seriesRestYs])
+  }, [seriesIsActive, seriesRestYs, seriesLastDataXs, x])
 
   const [xValueText, setXValueText] = useState('')
 
@@ -243,6 +258,7 @@ export function ToolTip({
               textColor={seriesColor as string | undefined}
               adjustedPositions={adjustedPositions}
               seriesIndex={i}
+              lastDataX={lastDataXPerSeries?.[key]}
             />
           </Fragment>
         )

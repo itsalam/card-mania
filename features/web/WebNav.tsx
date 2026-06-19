@@ -3,8 +3,6 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuLabelText,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
@@ -14,7 +12,17 @@ import { useCartPanelStore } from '@/lib/store/useCartPanelStore'
 import { useCartStore } from '@/lib/store/useCartStore'
 import { useUserStore } from '@/lib/store/useUserStore'
 import { Link, usePathname, useRouter } from 'expo-router'
-import { ArrowLeftRight, Home, LogOut, Menu, ShoppingCart, Tag } from 'lucide-react-native'
+import {
+  ArrowLeftRight,
+  ChevronDown,
+  Home,
+  LogOut,
+  Menu,
+  Settings as SettingsIcon,
+  ShoppingCart,
+  Tag,
+  User,
+} from 'lucide-react-native'
 import { MotiView } from 'moti'
 import { useEffect, useRef, useState } from 'react'
 import { Image, Pressable, TextInput, useWindowDimensions, View } from 'react-native'
@@ -41,7 +49,8 @@ export function WebNav({
   scrolled,
   onSignInPress,
 }: WebNavProps) {
-  const { signOut } = useUserStore()
+  const { signOut, user } = useUserStore()
+  const email = user?.email
   const router = useRouter()
   const pathname = usePathname()
 
@@ -85,6 +94,7 @@ export function WebNav({
     { href: '/', label: 'Home', Icon: Home, authRequired: false },
     { href: '/offers', label: 'Offers', Icon: Tag, authRequired: true },
     { href: '/transactions', label: 'Transactions', Icon: ArrowLeftRight, authRequired: true },
+    { href: '/settings', label: 'Settings', Icon: SettingsIcon, authRequired: true },
   ]
 
   const menu = (
@@ -303,14 +313,32 @@ export function WebNav({
           <DropdownMenu>
             <DropdownMenuTrigger>
               {currentUser ? (
-                <Avatar size="sm" alt={displayName}>
-                  {currentUser.avatar_url ? (
-                    <AvatarImage source={{ uri: currentUser.avatar_url }} />
-                  ) : null}
-                  <AvatarFallback>
-                    <AvatarFallbackText>{initials}</AvatarFallbackText>
-                  </AvatarFallback>
-                </Avatar>
+                <View
+                  style={
+                    {
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      gap: 5,
+                      paddingHorizontal: 6,
+                      paddingVertical: 4,
+                      borderRadius: 999,
+                      borderWidth: 1,
+                      borderColor: Colors.rgba(Colors.$outlineNeutral, 0.55),
+                      backgroundColor: Colors.rgba(Colors.$backgroundElevated, 0.85),
+                      boxShadow: '0 1px 4px rgba(0,0,0,0.18), 0 0 0 1px rgba(255,255,255,0.04)',
+                    } as any
+                  }
+                >
+                  <Avatar size="xs" alt={displayName}>
+                    {currentUser.avatar_url ? (
+                      <AvatarImage source={{ uri: currentUser.avatar_url }} />
+                    ) : null}
+                    <AvatarFallback>
+                      <AvatarFallbackText>{initials}</AvatarFallbackText>
+                    </AvatarFallback>
+                  </Avatar>
+                  <ChevronDown size={11} color={Colors.$textNeutral} />
+                </View>
               ) : (
                 <Pressable style={{ padding: 4 }}>
                   <Menu size={22} color={Colors.$textDefault} />
@@ -320,9 +348,48 @@ export function WebNav({
             <DropdownMenuContent align="end">
               {currentUser ? (
                 <>
-                  <DropdownMenuLabel>
-                    <DropdownMenuLabelText>{displayName}</DropdownMenuLabelText>
-                  </DropdownMenuLabel>
+                  {/* Profile header */}
+                  <View
+                    style={{
+                      alignItems: 'center',
+                      paddingHorizontal: 16,
+                      paddingTop: 14,
+                      paddingBottom: 10,
+                      gap: 8,
+                    }}
+                  >
+                    <Avatar size="md" alt={displayName}>
+                      {currentUser.avatar_url ? (
+                        <AvatarImage source={{ uri: currentUser.avatar_url }} />
+                      ) : null}
+                      <AvatarFallback>
+                        <AvatarFallbackText>{initials}</AvatarFallbackText>
+                      </AvatarFallback>
+                    </Avatar>
+                    <View style={{ alignItems: 'center', gap: 2 }}>
+                      <Text style={{ fontSize: 14, fontWeight: '600', color: Colors.$textDefault }}>
+                        {displayName}
+                      </Text>
+                      {(currentUser.username || email) && (
+                        <Text style={{ fontSize: 12, color: Colors.$textNeutral }}>
+                          {currentUser.username ? `@${currentUser.username}` : email}
+                        </Text>
+                      )}
+                    </View>
+                  </View>
+                  <DropdownMenuSeparator />
+                  {currentUser.username && (
+                    <DropdownMenuItem
+                      onPress={() => router.push(`/${currentUser.username}` as any)}
+                    >
+                      <User size={14} color={Colors.$textNeutral} />
+                      <Text style={{ fontSize: 14 }}>View profile</Text>
+                    </DropdownMenuItem>
+                  )}
+                  <DropdownMenuItem onPress={() => router.push('/settings' as any)}>
+                    <SettingsIcon size={14} color={Colors.$textNeutral} />
+                    <Text style={{ fontSize: 14 }}>Settings</Text>
+                  </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onPress={handleSignOut}>
                     <LogOut size={14} color={Colors.$textNeutral} />
@@ -339,19 +406,74 @@ export function WebNav({
         ) : currentUser ? (
           <DropdownMenu>
             <DropdownMenuTrigger>
-              <Avatar size="sm" alt={displayName}>
-                {currentUser.avatar_url ? (
-                  <AvatarImage source={{ uri: currentUser.avatar_url }} />
-                ) : null}
-                <AvatarFallback>
-                  <AvatarFallbackText>{initials}</AvatarFallbackText>
-                </AvatarFallback>
-              </Avatar>
+              <View
+                style={
+                  {
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: 5,
+                    paddingHorizontal: 6,
+                    paddingVertical: 4,
+                    borderRadius: 999,
+                    borderWidth: 1,
+                    borderColor: Colors.rgba(Colors.$outlineNeutral, 0.55),
+                    backgroundColor: Colors.rgba(Colors.$backgroundElevated, 0.85),
+                    boxShadow: '0 1px 4px rgba(0,0,0,0.18), 0 0 0 1px rgba(255,255,255,0.04)',
+                  } as any
+                }
+              >
+                <Avatar size="xs" alt={displayName}>
+                  {currentUser.avatar_url ? (
+                    <AvatarImage source={{ uri: currentUser.avatar_url }} />
+                  ) : null}
+                  <AvatarFallback>
+                    <AvatarFallbackText>{initials}</AvatarFallbackText>
+                  </AvatarFallback>
+                </Avatar>
+                <ChevronDown size={11} color={Colors.$textNeutral} />
+              </View>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuLabel>
-                <DropdownMenuLabelText>{displayName}</DropdownMenuLabelText>
-              </DropdownMenuLabel>
+              {/* Profile header */}
+              <View
+                style={{
+                  alignItems: 'center',
+                  paddingHorizontal: 16,
+                  paddingTop: 14,
+                  paddingBottom: 10,
+                  gap: 8,
+                }}
+              >
+                <Avatar size="md" alt={displayName}>
+                  {currentUser.avatar_url ? (
+                    <AvatarImage source={{ uri: currentUser.avatar_url }} />
+                  ) : null}
+                  <AvatarFallback>
+                    <AvatarFallbackText>{initials}</AvatarFallbackText>
+                  </AvatarFallback>
+                </Avatar>
+                <View style={{ alignItems: 'center', gap: 2 }}>
+                  <Text style={{ fontSize: 14, fontWeight: '600', color: Colors.$textDefault }}>
+                    {displayName}
+                  </Text>
+                  {(currentUser.username || email) && (
+                    <Text style={{ fontSize: 12, color: Colors.$textNeutral }}>
+                      {currentUser.username ? `@${currentUser.username}` : email}
+                    </Text>
+                  )}
+                </View>
+              </View>
+              <DropdownMenuSeparator />
+              {currentUser.username && (
+                <DropdownMenuItem onPress={() => router.push(`/${currentUser.username}` as any)}>
+                  <User size={14} color={Colors.$textNeutral} />
+                  <Text style={{ fontSize: 14 }}>View profile</Text>
+                </DropdownMenuItem>
+              )}
+              <DropdownMenuItem onPress={() => router.push('/settings' as any)}>
+                <SettingsIcon size={14} color={Colors.$textNeutral} />
+                <Text style={{ fontSize: 14 }}>Settings</Text>
+              </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onPress={handleSignOut}>
                 <LogOut size={14} color={Colors.$textNeutral} />

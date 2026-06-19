@@ -1,7 +1,7 @@
 // /functions/image_proxy/index.ts
 import { createClient } from '@supabase/supabase-js'
 import { CardImageFields, CdnFit, CdnOpts, CdnShape, CdnVariant } from '@types'
-import { getImageCacheFromQueryHash } from '@utils'
+import { corsHeaders, getImageCacheFromQueryHash } from '@utils'
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
 import { Database } from '../_shared/supabase.ts'
 
@@ -158,40 +158,23 @@ function json(data: unknown, init: ResponseInit = {}) {
   })
 }
 
-// Origins allowed to call this function from a browser.
-// Production domain is set via the WEB_ORIGIN secret in Supabase dashboard.
-// Localhost entries cover local dev — they are not sensitive since they only
-// reach this server from someone's own machine.
-const ALLOWED_ORIGINS = new Set(
-  [
-    Deno.env.get('WEB_ORIGIN') ?? '',
-    'http://localhost:8081',
-    'http://localhost:19006',
-    'http://127.0.0.1:8081',
-  ].filter(Boolean)
-)
-
-function corsHeaders(origin: string): Record<string, string> {
-  if (!ALLOWED_ORIGINS.has(origin)) return {}
-  return {
-    'Access-Control-Allow-Origin': origin,
-    'Access-Control-Allow-Methods': 'GET, OPTIONS',
-    'Access-Control-Allow-Headers': 'authorization, content-type, x-client-info, x-internal',
-    'Access-Control-Max-Age': '86400',
-    Vary: 'Origin',
-  }
-}
-
 Deno.serve(async (req) => {
   const origin = req.headers.get('origin') ?? ''
+  const ch = corsHeaders(origin)
 
   if (req.method === 'OPTIONS') {
-    const headers = corsHeaders(origin)
     return new Response(null, {
-      status: Object.keys(headers).length ? 204 : 403,
-      headers,
+      status: Object.keys(ch).length ? 204 : 403,
+      headers: ch,
     })
   }
+
+  // Shadow module-level json so all inline responses carry CORS headers.
+  const json = (data: unknown, init: ResponseInit = {}) =>
+    new Response(JSON.stringify(data), {
+      ...init,
+      headers: { 'content-type': 'application/json', ...ch, ...(init.headers ?? {}) },
+    })
 
   const startTime = Date.now()
   const url = new URL(req.url)
@@ -255,7 +238,7 @@ Deno.serve(async (req) => {
         )
         return new Response(null, {
           status: 302,
-          headers: { Location: data.source_url },
+          headers: { Location: data.source_url, ...ch },
         })
       }
     }
@@ -288,7 +271,7 @@ Deno.serve(async (req) => {
         }
         return new Response(null, {
           status: 302,
-          headers: { Location: cdn },
+          headers: { Location: cdn, ...ch },
         })
       } else if (isc) {
         console.log('image not commited yet, committing to card_images')
@@ -314,7 +297,21 @@ Deno.serve(async (req) => {
 
       console.log('No cache/candidate found, returning fallback')
       if (internal) {
-        return returnInteralFallback({
+        return returnInteralFallback(
+          {
+            variant,
+            shape,
+            fit,
+            width,
+            height,
+            quality,
+            bucket: 'placeholder',
+          },
+          ch
+        )
+      }
+      return returnExternalFallback(
+        {
           variant,
           shape,
           fit,
@@ -322,17 +319,9 @@ Deno.serve(async (req) => {
           height,
           quality,
           bucket: 'placeholder',
-        })
-      }
-      return returnExternalFallback({
-        variant,
-        shape,
-        fit,
-        width,
-        height,
-        quality,
-        bucket: 'placeholder',
-      })
+        },
+        ch
+      )
     }
 
     if (storagePath) {
@@ -364,13 +353,28 @@ Deno.serve(async (req) => {
         headers: {
           Location: cdn,
           'cache-control': 'public, max-age=60, s-maxage=86400, stale-while-revalidate=604800',
+          ...ch,
         },
       })
     }
 
     console.log('No stored image found, returning placeholder')
     if (internal) {
-      return returnInteralFallback({
+      return returnInteralFallback(
+        {
+          variant,
+          shape,
+          fit,
+          width,
+          height,
+          quality,
+          bucket,
+        },
+        ch
+      )
+    }
+    return returnExternalFallback(
+      {
         variant,
         shape,
         fit,
@@ -378,17 +382,9 @@ Deno.serve(async (req) => {
         height,
         quality,
         bucket,
-      })
-    }
-    return returnExternalFallback({
-      variant,
-      shape,
-      fit,
-      width,
-      height,
-      quality,
-      bucket,
-    })
+      },
+      ch
+    )
   } catch (err) {
     console.error('Image proxy error:', err)
     return json({ error: 'Proxy failure' }, { status: 500 })
@@ -398,7 +394,7 @@ Deno.serve(async (req) => {
   }
 })
 
-const returnInteralFallback = (opts: CdnOpts) => {
+const returnInteralFallback = (opts: CdnOpts, ch: Record<string, string> = {}) => {
   dbg('Returning internal fallback with options:', opts)
   const { variant, shape, fit, width, height, quality } = opts
   const fallback = cdnUrl('default.png', {
@@ -410,15 +406,18 @@ const returnInteralFallback = (opts: CdnOpts) => {
     quality,
     bucket: 'placeholder',
   })
-  return json({
-    url: fallback,
-    status: 'FALLBACK',
-    shape: 'unknown' as ImageShape,
-    aspectRatio: null,
-  })
+  return new Response(
+    JSON.stringify({
+      url: fallback,
+      status: 'FALLBACK',
+      shape: 'unknown' as ImageShape,
+      aspectRatio: null,
+    }),
+    { headers: { 'content-type': 'application/json', ...ch } }
+  )
 }
 
-const returnExternalFallback = (opts: CdnOpts) => {
+const returnExternalFallback = (opts: CdnOpts, ch: Record<string, string> = {}) => {
   dbg('Returning external fallback with options:', opts)
   const { variant, shape, fit, width, height, quality } = opts
   const fallback = cdnUrl('default.png', {
@@ -430,5 +429,5 @@ const returnExternalFallback = (opts: CdnOpts) => {
     quality,
     bucket: 'placeholder',
   })
-  return new Response(null, { status: 302, headers: { Location: fallback } })
+  return new Response(null, { status: 302, headers: { Location: fallback, ...ch } })
 }

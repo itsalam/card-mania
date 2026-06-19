@@ -126,7 +126,7 @@ export function useCardSearch(params: { q: string; filters?: FilterQuery; limit?
     },
     initialPageParam: null as string | null,
     getNextPageParam: (last) => {
-      return last.results.length < 20
+      return last.results.length >= 20 ? 'more' : undefined
     },
     staleTime: 30_000,
   })

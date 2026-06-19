@@ -1,12 +1,11 @@
 import { Text } from '@/components/ui/text/base-text'
 import React, { useMemo } from 'react'
-import { ScrollView, View } from 'react-native'
+import { Pressable, View } from 'react-native'
 import { Colors } from 'react-native-ui-lib'
 
-import { LiquidGlassCard } from '@/components/tcg-card/GlassCard'
 import { fmtCardValue } from '@/components/graphs/helpers'
-import { formatLabel, splitToNChunks } from '@/components/utils'
-import { Eye, EyeOff, Plus } from 'lucide-react-native'
+import { formatLabel } from '@/components/utils'
+import { Eye, EyeOff } from 'lucide-react-native'
 import { useGradeColors } from '../GradeColorsProvider'
 
 export const Prices = ({
@@ -23,78 +22,69 @@ export const Prices = ({
   setShowMoreGrades: React.Dispatch<React.SetStateAction<boolean>>
 }) => {
   const gradeColors = useGradeColors()
-  const NUM_PRICE_ROWS = 2
-  const rows = useMemo(
-    () =>
-      splitToNChunks(
-        prices.filter(([key]) => visibleGrades.includes(key)),
-        NUM_PRICE_ROWS,
-        3
-      ).filter((r) => r.length > 0),
+  const visible = useMemo(
+    () => prices.filter(([key]) => visibleGrades.includes(key)),
     [prices, visibleGrades]
   )
 
   return (
-    <ScrollView
-      horizontal
-      bounces={false}
-      showsHorizontalScrollIndicator={true}
-      alwaysBounceVertical={true}
-      className="overflow-visible p-4"
-      style={{ alignSelf: 'stretch', maxHeight: 200, flexGrow: 0, flexShrink: 0 }}
-      contentContainerClassName="flex gap-2 flex-col"
+    <View
+      style={{
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: 6,
+        paddingHorizontal: 16,
+        paddingVertical: 4,
+      }}
     >
-      {rows.map((row, i) => (
-        <View key={`row-${i}`} className={'flex flex-row gap-2 overflow-visible pr-4'}>
-          {row.map(([key, value]) => {
-            const isSelected = selectedGrades.includes(key)
-            return (
-              <LiquidGlassCard
-                className="flex items-center justify-center"
-                style={{
-                  opacity: value ? 1 : 0.5,
-                  minWidth: 100,
-                  borderLeftWidth: 3,
-                  borderLeftColor: gradeColors[key]
-                    ? Colors.rgba(gradeColors[key], isSelected ? 1 : 0.25)
-                    : 'transparent',
-                }}
-                size="sm"
-                key={`${key}-${value}-${i}`}
-                onPress={() => {
-                  setSelectedGrades((prev) =>
-                    prev.includes(key) ? prev.filter((grade) => grade !== key) : [...prev, key]
-                  )
-                }}
-              >
-                <View className="flex flex-row gap-2 items-center justify-end">
-                  {isSelected ? (
-                    <Eye size={16} color={Colors.$iconDefault} />
-                  ) : (
-                    <EyeOff size={16} color={Colors.$iconDefault} />
-                  )}
-                  <Text className="text-sm font-bold text-muted-foreground text-nowrap text-right font-spaceMono">
-                    {formatLabel(key)}
-                  </Text>
-                </View>
-                <Text className="text-2xl capitalize text-nowrap text-right">
-                  {value ? fmtCardValue(value) : '--'}
-                </Text>
-              </LiquidGlassCard>
-            )
-          })}
-          {rows.length === i + 1 && (
-            <LiquidGlassCard
-              className="flex items-center justify-center"
-              style={{ aspectRatio: 1 }}
-              size="sm"
-              onPress={() => setShowMoreGrades((prev) => !prev)}
+      {visible.map(([key, value]) => {
+        const isSelected = selectedGrades.includes(key)
+        return (
+          <Pressable
+            key={key}
+            onPress={() => {
+              setSelectedGrades((prev) =>
+                prev.includes(key) ? prev.filter((grade) => grade !== key) : [...prev, key]
+              )
+            }}
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 5,
+              backgroundColor: Colors.$backgroundElevated,
+              borderRadius: 8,
+              paddingVertical: 6,
+              paddingHorizontal: 8,
+              opacity: value ? 1 : 0.5,
+              borderWidth: 1,
+              borderColor: Colors.rgba(Colors.$outlineNeutral, 0.4),
+              borderLeftWidth: 3,
+              borderLeftColor: gradeColors[key]
+                ? Colors.rgba(gradeColors[key], isSelected ? 1 : 0.25)
+                : 'transparent',
+            }}
+          >
+            {isSelected ? (
+              <Eye size={11} color={Colors.$iconDefault} />
+            ) : (
+              <EyeOff size={11} color={Colors.$iconDefault} />
+            )}
+            <Text
+              style={{
+                fontSize: 10,
+                fontWeight: '700',
+                fontFamily: 'SpaceMono',
+                color: Colors.$textNeutral,
+              }}
             >
-              <Plus size={28} color={Colors.$outlineDefault} />
-            </LiquidGlassCard>
-          )}
-        </View>
-      ))}
-    </ScrollView>
+              {formatLabel(key)}
+            </Text>
+            <Text style={{ fontSize: 13, fontWeight: '700', color: Colors.$textDefault }}>
+              {value ? fmtCardValue(value) : '--'}
+            </Text>
+          </Pressable>
+        )
+      })}
+    </View>
   )
 }

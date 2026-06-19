@@ -9,12 +9,11 @@ import {
   Rect,
   Skia,
   Line as SkiaLine,
-  Text,
+  Text as SkText,
   useFont,
   vec,
 } from '@shopify/react-native-skia'
 import React, { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { View } from 'react-native'
 import Animated, {
   Easing,
   useAnimatedReaction,
@@ -43,8 +42,9 @@ import {
 import { useAxisTransform } from './hooks/useAxisTransform'
 import { ChartPressContext, ChartPressProvider, useSharedPress } from './hooks/useChartPress'
 import { DateRangeContext, DateRangeProvider, useTimeRange } from './hooks/useDateRange'
+import { FetchingBadge } from './ui/FetchingBadge'
 import { LineEffect } from './ui/LineEffect'
-import { FetchingDot, LoadingState } from './ui/LoadingState'
+import { LoadingState } from './ui/LoadingState'
 import { PendingState } from './ui/PendingState'
 import { ToolTip } from './ui/ToolTip'
 import { GraphInputKey, NumericalFields, PriceGraphProps } from './ui/types'
@@ -455,7 +455,7 @@ export function PriceGraph<
                       const labelX = chartBounds.left - lw - 2
                       const labelY = py + lh / 2
                       return (
-                        <Text
+                        <SkText
                           key={`ylabel-${idx}`}
                           text={label}
                           x={labelX}
@@ -515,7 +515,12 @@ export function PriceGraph<
               const activeX = sharedActiveJs ? sharedXJs : state.x.position.value
               const lastPoints = yKeys.reduce(
                 (acc, yKey) => {
-                  const pts = points[yKey] as PointsArray
+                  // Only consider points with finite y — victory-native sets y=NaN for dates
+                  // where a series has no value. Using NaN points as restPoints would cause
+                  // valueOverride=NaN, which propagates through ?? to the display label.
+                  const pts = (points[yKey] as PointsArray)?.filter(
+                    (p) => p.x != null && p.y != null && isFinite(p.y)
+                  )
                   if (!pts?.length) return acc
                   const nearest = findNearest(pts, activeX, true)
                   if (nearest) acc[yKey as keyof typeof acc] = nearest
@@ -646,7 +651,7 @@ export function PriceGraph<
                           color="rgba(255,255,255,0.25)"
                         />
                         {axisFont && (
-                          <Text
+                          <SkText
                             x={labelX}
                             y={labelY}
                             text={labelText}
@@ -717,7 +722,7 @@ export function PriceGraph<
                             color="rgba(255,255,255,0.25)"
                           />
                           {axisFont && (
-                            <Text
+                            <SkText
                               x={labelX}
                               y={labelY}
                               text={breakLabel}
@@ -904,42 +909,7 @@ export function PriceGraph<
               )
             }}
           </CartesianChart>
-          {fetching && (
-            <View
-              pointerEvents="none"
-              style={{
-                position: 'absolute',
-                bottom: 0,
-                left: 0,
-                right: 0,
-                alignItems: 'center',
-                paddingBottom: 8,
-              }}
-            >
-              <View
-                style={{
-                  backgroundColor: 'rgba(0,0,0,0.45)',
-                  borderRadius: 20,
-                  paddingHorizontal: 14,
-                  paddingVertical: 6,
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  gap: 6,
-                }}
-              >
-                <FetchingDot />
-                <Text
-                  style={{
-                    color: 'rgba(255,255,255,0.75)',
-                    fontSize: 12,
-                    fontFamily: 'SpaceMono',
-                  }}
-                >
-                  Fetching price history…
-                </Text>
-              </View>
-            </View>
-          )}
+          {fetching && <FetchingBadge />}
         </Animated.View>
       )}
     </Animated.View>
@@ -951,14 +921,14 @@ export default function FullPriceGraph<
   InputKeys extends GraphInputKey<T> = GraphInputKey<T>,
   YValues extends keyof NumericalFields<T> = keyof NumericalFields<T>,
 >(props: PriceGraphProps<T, InputKeys, YValues>) {
-  const { width = WINDOW_WIDTH, height = 450, data } = props
+  const { width = WINDOW_WIDTH, height = Math.round(WINDOW_WIDTH * (9 / 16)), data } = props
   const isInactive = !Boolean(data)
 
   return (
     <Animated.View className="w-full" style={{ height: isInactive ? height / 4 : height }}>
       <DateRangeProvider>
         <ChartPressProvider>
-          <PriceGraph {...props} />
+          <PriceGraph {...props} height={height} />
         </ChartPressProvider>
       </DateRangeProvider>
     </Animated.View>
