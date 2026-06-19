@@ -14,29 +14,10 @@ import { SignUpForm } from '@/features/splash/SignUpForm'
 import { useEmailAuthFlow } from '@/features/splash/useEmailAuthFlow'
 import { useUserStore } from '@/lib/store/useUserStore'
 import AsyncStorage from '@react-native-async-storage/async-storage'
-import {
-  AtSign,
-  CheckSquare,
-  ChevronDown,
-  Eye,
-  EyeOff,
-  Lock,
-  Phone,
-  RefreshCw,
-  Square,
-  X,
-} from 'lucide-react-native'
+import { AtSign, ChevronDown, Eye, EyeOff, Lock, Phone, RefreshCw, X } from 'lucide-react-native'
 import { MotiView } from 'moti'
 import { useEffect, useState } from 'react'
-import {
-  Linking,
-  Modal,
-  Pressable,
-  ScrollView,
-  TextInput,
-  TouchableOpacity,
-  View,
-} from 'react-native'
+import { Modal, Pressable, ScrollView, TextInput, TouchableOpacity, View } from 'react-native'
 import { G, Path, Svg } from 'react-native-svg'
 import { Colors } from 'react-native-ui-lib'
 
@@ -202,10 +183,9 @@ function WebCountryPicker({
 
 type Props = {
   onClose: () => void
-  showSmsConsent?: boolean
 }
 
-export function AuthModal({ onClose, showSmsConsent }: Props) {
+export function AuthModal({ onClose }: Props) {
   const { signInWithPhone, verifyPhoneOtp } = useUserStore()
   const [view, setView] = useState<'main' | 'signup'>('main')
 
@@ -226,7 +206,7 @@ export function AuthModal({ onClose, showSmsConsent }: Props) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [hasEverSignedIn, setHasEverSignedIn] = useState(false)
-  const [smsOptIn, setSmsOptIn] = useState(false)
+  const [isNewUser, setIsNewUser] = useState(false)
 
   useEffect(() => {
     AsyncStorage.getItem('cardmania:hasEverSignedIn').then((v) => {
@@ -259,14 +239,22 @@ export function AuthModal({ onClose, showSmsConsent }: Props) {
       await signInWithPhone(e164, false)
       setResendCooldown(60)
       setPhoneOtpSent(true)
-    } catch (err: any) {
-      const msg = err?.message ?? ''
+    } catch (firstErr: any) {
+      const msg = firstErr?.message ?? ''
       if (isBlockingPhoneError(msg)) {
         setError(friendlyPhoneError(msg || 'Failed to send code. Please try again.'))
       } else {
-        // Phone not registered — go to email signup with context
-        setMainTab('email')
-        setError('No account found for that number. Try email sign-up.')
+        // No account found — auto-create and still send OTP
+        try {
+          await signInWithPhone(e164, true)
+          setIsNewUser(true)
+          setResendCooldown(60)
+          setPhoneOtpSent(true)
+        } catch (createErr: any) {
+          setError(
+            friendlyPhoneError(createErr?.message ?? 'Failed to send code. Please try again.')
+          )
+        }
       }
     } finally {
       setLoading(false)
@@ -290,7 +278,7 @@ export function AuthModal({ onClose, showSmsConsent }: Props) {
   const handleResend = async () => {
     if (resendCooldown > 0) return
     try {
-      await signInWithPhone(e164, false)
+      await signInWithPhone(e164, isNewUser)
       setResendCooldown(60)
       setPhoneCode('')
       setError(null)
@@ -400,7 +388,7 @@ export function AuthModal({ onClose, showSmsConsent }: Props) {
                         setError(null)
                         setPhoneOtpSent(false)
                         setPhoneCode('')
-                        setSmsOptIn(false)
+                        setIsNewUser(false)
                         emailFlow.resetToEmailStep()
                       }}
                       style={{
@@ -534,6 +522,7 @@ export function AuthModal({ onClose, showSmsConsent }: Props) {
                       onPress={() => {
                         setPhoneOtpSent(false)
                         setPhoneCode('')
+                        setIsNewUser(false)
                         setError(null)
                       }}
                     >
@@ -682,62 +671,20 @@ export function AuthModal({ onClose, showSmsConsent }: Props) {
               </View>
             </View>
 
-            {/* SMS opt-in consent — shown when phone tab is active, code not yet sent */}
-            {showSmsConsent && mainTab === 'phone' && !phoneOtpSent && (
-              <View style={{ gap: 10 }}>
-                <Text style={{ color: Colors.$textNeutral, fontSize: 12, lineHeight: 18 }}>
-                  You will receive a one-time verification code via SMS.
-                </Text>
-                <TouchableOpacity
-                  onPress={() => setSmsOptIn((v) => !v)}
-                  style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 10 }}
-                  accessibilityRole="checkbox"
-                  accessibilityState={{ checked: smsOptIn }}
-                >
-                  {smsOptIn ? (
-                    <CheckSquare
-                      size={16}
-                      color={Colors.$textDefault}
-                      style={{ marginTop: 1 } as any}
-                    />
-                  ) : (
-                    <Square size={16} color={Colors.$textNeutral} style={{ marginTop: 1 } as any} />
-                  )}
-                  <Text
-                    style={{ color: Colors.$textNeutral, fontSize: 12, lineHeight: 18, flex: 1 }}
-                  >
-                    {'I agree to receive an SMS verification code. '}
-                    <Text
-                      onPress={() => Linking.openURL('https://cardmania.info/privacy')}
-                      style={
-                        {
-                          color: Colors.$textDefault,
-                          textDecorationLine: 'underline',
-                          cursor: 'pointer',
-                        } as any
-                      }
-                    >
-                      Privacy Policy
-                    </Text>
-                    {'  ·  '}
-                    <Text
-                      onPress={() => Linking.openURL('https://cardmania.info/terms')}
-                      style={
-                        {
-                          color: Colors.$textDefault,
-                          textDecorationLine: 'underline',
-                          cursor: 'pointer',
-                        } as any
-                      }
-                    >
-                      Messaging Terms
-                    </Text>
-                  </Text>
-                </TouchableOpacity>
-                <Text style={{ color: Colors.$textDisabled, fontSize: 11, lineHeight: 16 }}>
-                  Message and data rates may apply. Reply STOP to opt out, HELP for help.
-                </Text>
-              </View>
+            {/* New-user notice — shown while entering OTP for a newly created account */}
+            {isNewUser && mainTab === 'phone' && phoneOtpSent && (
+              <Text
+                style={{
+                  color: Colors.$textNeutral,
+                  fontSize: 12,
+                  lineHeight: 18,
+                  textAlign: 'center',
+                }}
+              >
+                {'No account found — '}
+                <Text style={{ color: Colors.$textDefault, fontWeight: '600' }}>a new account</Text>
+                {' will be created for this number.'}
+              </Text>
             )}
 
             {/* Error */}
@@ -773,8 +720,7 @@ export function AuthModal({ onClose, showSmsConsent }: Props) {
                 emailFlow.loading ||
                 loading ||
                 (mainTab === 'phone' && !phoneOtpSent && !localNumber.trim()) ||
-                (mainTab === 'phone' && phoneOtpSent && phoneCode.length < 6) ||
-                (showSmsConsent && mainTab === 'phone' && !phoneOtpSent && !smsOptIn)
+                (mainTab === 'phone' && phoneOtpSent && phoneCode.length < 6)
               }
               style={{ width: '100%' }}
             >

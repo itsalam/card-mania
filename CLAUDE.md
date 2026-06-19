@@ -4,7 +4,7 @@
 
 When starting work on any task, look up the corresponding Linear issue (e.g. ITS-83) for requirements, acceptance criteria, and design decisions before writing code. Use the `linear-cli` skill to fetch issue details.
 
-For UI layout and designs, source and refer to Mobbin, via the MCP, and cite resources. If a task creates UI components/layouts that have not cited Mobbin, or the design layout, retroactively fill out the design documentation with the existing work.
+For UI layout and designs, source and refer to Mobbin/Refero, via the MCP, and cite resources. If a task creates UI components/layouts that have not cited Mobbin/Refero, or the design layout, retroactively fill out the design documentation with the existing work.
 
 ## Repo
 
@@ -17,16 +17,16 @@ github.com/itsalam/card-mania
 
 ## Stack
 
-| Layer         | Library                                                                  |
-| ------------- | ------------------------------------------------------------------------ |
-| App framework | Expo 55, Expo Router 55, React Native 0.83                               |
-| Styling       | NativeWind 4, Tailwind CSS (`darkMode: 'class'`)                         |
-| UI components | `react-native-ui-lib`, `@gluestack-ui`                                   |
-| Animations    | React Native Reanimated 4, `@shopify/react-native-skia` (stubbed on web) |
-| State         | Zustand 5                                                                |
-| Server state  | TanStack Query 5                                                         |
-| Backend       | Supabase (Auth, Postgres, Realtime)                                      |
-| Monitoring    | Sentry (`@sentry/react-native`)                                          |
+| Layer         | Library                                                                 |
+| ------------- | ----------------------------------------------------------------------- |
+| App framework | Expo 55, Expo Router 55, React Native 0.83                              |
+| Styling       | NativeWind 4, Tailwind CSS (`darkMode: 'class'`)                        |
+| UI components | `react-native-ui-lib`, `@gluestack-ui`                                  |
+| Animations    | React Native Reanimated 4,`@shopify/react-native-skia` (stubbed on web) |
+| State         | Zustand 5                                                               |
+| Server state  | TanStack Query 5                                                        |
+| Backend       | Supabase (Auth, Postgres, Realtime)                                     |
+| Monitoring    | Sentry (`@sentry/react-native`)                                         |
 
 ## Routing
 
@@ -67,13 +67,13 @@ All toggle bars and tab strips (period selectors, Chart/Sales tabs, Vault/Wishli
 
 All Reanimated `withSpring` calls must draw from one of these established presets rather than using ad-hoc values. The presets are derived from live usage in the codebase — do not invent new damping/stiffness pairs without a clear reason.
 
-| Preset          | `damping` | `stiffness` | `mass` | When to use                                                                                                                 |
-| --------------- | --------- | ----------- | ------ | --------------------------------------------------------------------------------------------------------------------------- |
-| **tab-slide**   | 24        | 300         | 0.6    | Sliding indicator inside a pill toggle or tab bar (e.g. Chart/Sales, `TabRow`). Reference: `components/tabs/TabRow.tsx:42`. |
-| **panel-entry** | 20        | 260         | 0.9    | Cards, sheets, or panels animating into position. Reference: `features/splash/index.tsx`.                                   |
-| **press-in**    | 14        | 220         | —      | Scale-down on button `onPressIn`.                                                                                           |
-| **press-out**   | 12        | 200         | —      | Scale-back-to-1 on button `onPressOut` / `onPressIn` release. Reference: back button in `DetailCardView/index.tsx`.         |
-| **snap**        | 100       | 300         | —      | Snap-to-grid or drag-release with no visible bounce. Reference: `components/DraggableFooter.tsx`.                           |
+| Preset          | `damping` | `stiffness` | `mass` | When to use                                                                                                                |
+| --------------- | --------- | ----------- | ------ | -------------------------------------------------------------------------------------------------------------------------- |
+| **tab-slide**   | 24        | 300         | 0.6    | Sliding indicator inside a pill toggle or tab bar (e.g. Chart/Sales,`TabRow`). Reference: `components/tabs/TabRow.tsx:42`. |
+| **panel-entry** | 20        | 260         | 0.9    | Cards, sheets, or panels animating into position. Reference:`features/splash/index.tsx`.                                   |
+| **press-in**    | 14        | 220         | —      | Scale-down on button `onPressIn`.                                                                                          |
+| **press-out**   | 12        | 200         | —      | Scale-back-to-1 on button `onPressOut` / `onPressIn` release. Reference: back button in `DetailCardView/index.tsx`.        |
+| **snap**        | 100       | 300         | —      | Snap-to-grid or drag-release with no visible bounce. Reference:`components/DraggableFooter.tsx`.                           |
 
 Use the `tab-slide` preset for any animated indicator that slides between fixed positions (segmented controls, underline indicators). Use `panel-entry` for anything that flies in from off-screen or reveals. Press-in/out are always paired. `snap` is for gesture-driven snapping only.
 

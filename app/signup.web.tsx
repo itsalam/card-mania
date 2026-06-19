@@ -15,7 +15,7 @@ export default function SignUpWebRoute() {
 
   return (
     <View style={{ flex: 1 }}>
-      <AuthModal onClose={() => router.replace('/')} showSmsConsent />
+      <AuthModal onClose={() => router.replace('/')} />
     </View>
   )
 }
