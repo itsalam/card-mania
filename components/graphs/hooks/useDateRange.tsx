@@ -1,7 +1,8 @@
 import { Skeleton } from '@/components/ui/skeleton'
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Text } from '@/components/ui/text/base-text'
 import React, { ReactNode, useState } from 'react'
 import { View } from 'react-native'
-import { Colors, SegmentedControl } from 'react-native-ui-lib'
 import { TIME_PERIODS } from '../constants'
 
 export const DateRangeContext = React.createContext<{
@@ -29,22 +30,18 @@ export function DateRangeProvider({
   const [timePeriod, setTimePeriod] = useState(TIME_PERIODS[0])
 
   const SegmentControlComponent = !isLoading ? (
-    <View
-      style={{
-        paddingHorizontal: 12,
-      }}
-    >
-      <SegmentedControl
-        activeColor={Colors.$iconPrimary}
-        segments={TIME_PERIODS.map((period) => ({ label: period }))}
-        onChangeIndex={(index) => setTimePeriod(TIME_PERIODS[index])}
-        backgroundColor={Colors.$backgroundElevated}
-        outlineColor={Colors.$outlineNeutral}
-        activeBackgroundColor={Colors.$backgroundElevatedLight}
-        style={{
-          borderColor: Colors.$backgroundElevatedLight,
-        }}
-      />
+    <View style={{ paddingHorizontal: 12 }}>
+      <Tabs value={timePeriod} onValueChange={setTimePeriod}>
+        <TabsList>
+          {TIME_PERIODS.map((period) => (
+            <TabsTrigger key={period} value={period} style={{ paddingHorizontal: 10 }}>
+              <Text variant="small" style={{ fontSize: 13, lineHeight: 16 }}>
+                {period}
+              </Text>
+            </TabsTrigger>
+          ))}
+        </TabsList>
+      </Tabs>
     </View>
   ) : (
     <View className="w-full px-12 py-4">
