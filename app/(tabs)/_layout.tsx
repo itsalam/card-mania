@@ -11,11 +11,11 @@ import { Tabs } from 'expo-router'
 import {
   ArrowLeftRight,
   Bell,
-  Compass,
   Home,
   Inbox,
   Layers,
   Scan,
+  ShoppingBag,
   ShoppingCart,
   User,
 } from 'lucide-react-native'
@@ -321,10 +321,10 @@ export default function TabLayout() {
           }}
         />
         <Tabs.Screen
-          name="explore"
+          name="marketplace"
           options={{
-            title: 'Explore',
-            tabBarIcon: ({ color }) => <Compass size={24} color={color} />,
+            title: 'Market',
+            tabBarIcon: ({ color }) => <ShoppingBag size={24} color={color} />,
           }}
         />
         <Tabs.Screen
@@ -333,10 +333,6 @@ export default function TabLayout() {
             title: 'Collection',
             tabBarIcon: ({ color }) => <Layers size={24} color={color} />,
           }}
-        />
-        <Tabs.Screen
-          name="marketplace"
-          options={{ href: null, tabBarItemStyle: { display: 'none' } }}
         />
         <Tabs.Screen
           name="offers"

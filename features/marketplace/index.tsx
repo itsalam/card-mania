@@ -1,3 +1,4 @@
+import { useFeaturedListings } from '@/client/marketplace'
 import { CARD_ASPECT_RATIO } from '@/components/consts'
 import { ExpandableCard } from '@/components/content-card'
 import { ExpandedContent } from '@/components/content-card/ExpandableCard'
@@ -24,6 +25,8 @@ export function PlaceholderBox({
 }
 
 export default function MarketplaceScreen() {
+  const { data: featuredData = [] } = useFeaturedListings()
+  const featuredListings = featuredData.map((l) => ({ ...l, id: l.collection_item_id }))
   return (
     <SafeAreaView className="flex-1">
       <ScrollView>
@@ -31,7 +34,7 @@ export default function MarketplaceScreen() {
           title="Featured"
           itemWidth={THUMBNAIL_WIDTH}
           containerClassNames="gap-6 px-6"
-          items={[]}
+          items={featuredListings}
           renderItem={({ isOpen }) => (
             <PlaceholderBox
               isOpen={isOpen}
@@ -44,43 +47,6 @@ export default function MarketplaceScreen() {
             />
           )}
         />
-        <View>
-          <ExpandableCard
-            title="Auctions - Graded"
-            itemWidth={THUMBNAIL_WIDTH}
-            containerClassNames="gap-6 px-6"
-            items={[]}
-            renderItem={({ isOpen }) => (
-              <PlaceholderBox
-                isOpen={isOpen}
-                style={{
-                  height: isOpen ? EXPANDED_CARD_HEIGHT : THUMBNAIL_HEIGHT,
-                  aspectRatio: CARD_ASPECT_RATIO,
-
-                  zIndex: 0,
-                }}
-              />
-            )}
-          />
-
-          <ExpandableCard
-            title="Auctions - Sealed"
-            itemWidth={THUMBNAIL_WIDTH}
-            containerClassNames="gap-6 px-6"
-            items={[]}
-            renderItem={({ isOpen }) => (
-              <PlaceholderBox
-                isOpen={isOpen}
-                style={{
-                  height: isOpen ? EXPANDED_CARD_HEIGHT : THUMBNAIL_HEIGHT,
-                  aspectRatio: CARD_ASPECT_RATIO,
-
-                  zIndex: 0,
-                }}
-              />
-            )}
-          />
-        </View>
       </ScrollView>
     </SafeAreaView>
   )

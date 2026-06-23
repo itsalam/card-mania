@@ -1,9 +1,9 @@
 import { Text, TextClassContext } from '@/components/ui/text/base-text'
 import { cn } from '@/lib/utils'
+import MaskedView from '@react-native-masked-view/masked-view'
 import * as TabsPrimitive from '@rn-primitives/tabs'
 import { LinearGradient } from 'expo-linear-gradient'
 import { LucideIcon } from 'lucide-react-native'
-import MaskedView from '@react-native-masked-view/masked-view'
 import {
   createContext,
   ReactNode,
@@ -374,12 +374,11 @@ function TabsTrigger({
       <TabsPrimitive.Trigger
         onLayout={handleLayout}
         className={cn(
-          'flex flex-row items-center justify-center rounded-full border border-transparent',
+          'flex flex-row items-center justify-center rounded-full',
           Platform.select({
             web: 'focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:outline-ring inline-flex cursor-default whitespace-nowrap transition-[color,box-shadow] focus-visible:outline-1 focus-visible:ring-[3px] disabled:pointer-events-none [&_svg]:pointer-events-none [&_svg]:shrink-0',
           }),
           props.disabled && 'opacity-50',
-          isActive && 'dark:border-foreground/10',
           className
         )}
         style={StyleSheet.flatten([
@@ -468,7 +467,7 @@ function TabsLabel({
               color: Colors.$textNeutral,
             },
             style,
-          ]}
+          ])}
           {...props}
         >
           {label.charAt(0).toUpperCase() + label.slice(1)}
