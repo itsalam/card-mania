@@ -1,29 +1,13 @@
 'use client'
 import { useCollectionTotal, useWishlistTotal } from '@/client/collections/query'
-// Modified by @vincentlam
-/**
- * @author: @kokonutui
- * @description: Apple Activity Card
- * @version: 1.0.0
- * @date: 2025-06-26
- * @license: MIT
- * @website: https://kokonutui.com
- * @github: https://github.com/kokonut-labs/kokonutui
- */
-
 import { Text } from '@/components/ui/text/base-text'
 import { formatCompactPrice } from '@/components/utils'
 import { cn } from '@/lib/utils'
-import { Eye, EyeOff } from 'lucide-react-native'
-import { AnimatePresence, motify, MotiView } from 'moti'
-import { motifySvg } from 'moti/svg'
-import { useMemo, useReducer } from 'react'
+import { MotiView } from 'moti'
+import { useMemo } from 'react'
 import { Pressable, StyleProp, View, ViewStyle } from 'react-native'
-import { Easing } from 'react-native-reanimated'
-import { Circle, Defs, LinearGradient, Stop, Svg } from 'react-native-svg'
 import { Colors } from 'react-native-ui-lib'
 import { DefaultCollectionData } from '../helpers'
-import { CircleProgressProps } from '../types'
 
 const LABEL_TO_TYPE: Record<string, string> = {
   WISHLIST: 'wishlist',
@@ -31,144 +15,7 @@ const LABEL_TO_TYPE: Record<string, string> = {
   PORTFOLIO: 'vault',
 }
 
-const MotiCircle = motifySvg(Circle)()
-
-const BASE_RING_SIZE = 80
-const RING_GAP = 8
-const RING_WIDTH = 18
-
-export const CircleProgress = ({ data, index }: CircleProgressProps) => {
-  const size = BASE_RING_SIZE + (RING_WIDTH + RING_GAP) * index * 2
-  const radius = (size - RING_WIDTH) / 2
-  const circumference = radius * 2 * Math.PI
-  const value = data.current / data.target || data.value
-  const progress = ((100 - value * 100) / 100) * circumference
-
-  const gradientId = `gradient-${data.label.toLowerCase()}`
-  const gradientUrl = `url(#${gradientId})`
-
-  return (
-    <MotiView
-      className="absolute inset-0 flex items-center justify-center"
-      from={{ opacity: 0, scale: 0.8 }}
-      animate={{ opacity: 1, scale: 1 }}
-      transition={{ delay: index * 200, easing: Easing.out(Easing.ease) }}
-    >
-      <View className="relative">
-        <Svg
-          width={size}
-          height={size}
-          viewBox={`0 0 ${size} ${size}`}
-          className="transform -rotate-90"
-          aria-label={`${data.label} Activity Progress - ${data.value}%`}
-        >
-          {/* <title>{`${data.label} Activity Progress - ${data.value}%`}</title> */}
-
-          <Defs>
-            <LinearGradient id={gradientId} x1="0%" y1="0%" x2="100%" y2="100%">
-              <Stop offset="0%" stopColor={data.colors[0]} stopOpacity={1} />
-              <Stop offset="100%" stopColor={data.colors[1]} stopOpacity={1} />
-            </LinearGradient>
-          </Defs>
-
-          {/* <Circle
-            cx={data.size / 2}
-            cy={data.size / 2}
-            r={radius}
-            fill={Colors.$backgroundNeutral}
-            strokeWidth={strokeWidth}
-            color={Colors.$backgroundNeutral}
-          /> */}
-
-          <MotiCircle
-            cx={size / 2}
-            cy={size / 2}
-            r={radius}
-            fill="none"
-            stroke={gradientUrl}
-            strokeWidth={RING_WIDTH}
-            strokeDasharray={[`${circumference}`]}
-            from={{ strokeDashoffset: circumference }}
-            animate={{ strokeDashoffset: progress }}
-            transition={{
-              type: 'timing',
-              duration: 800,
-              delay: index * 200,
-              easing: Easing.inOut(Easing.ease),
-            }}
-            strokeLinecap="round"
-          />
-          <Circle
-            cx={size / 2}
-            cy={size / 2}
-            r={radius}
-            fill={'none'}
-            stroke={gradientUrl} // reuse your gradient
-            strokeOpacity={0.2}
-            strokeWidth={RING_WIDTH + 2} // wider than the main stroke
-          />
-        </Svg>
-      </View>
-    </MotiView>
-  )
-}
-
-const DetailedActivityInfo = ({
-  selectedCollections,
-  onToggle,
-}: {
-  selectedCollections: string[]
-  onToggle: (type: string) => void
-}) => {
-  return (
-    <MotiView
-      className="flex flex-col gap-3"
-      from={{ opacity: 0, translateX: 20 }}
-      animate={{ opacity: 1, translateX: 0 }}
-      transition={{ duration: 500, delay: 300 }}
-    >
-      {DefaultCollectionData.map((activity) => {
-        const collectionType = LABEL_TO_TYPE[activity.label]
-        const isSelected = selectedCollections.includes(collectionType)
-        const isCurrency = activity.unit === '$'
-        const currentText = isCurrency ? formatCompactPrice(activity.current) : activity.current
-        const targetText = isCurrency ? formatCompactPrice(activity.target) : activity.target
-        return (
-          <Pressable
-            key={activity.label}
-            onPress={() => onToggle(collectionType)}
-            style={{
-              opacity: isSelected ? 1 : 0.45,
-              borderLeftWidth: 3,
-              borderLeftColor: Colors.rgba(activity.colors[0], isSelected ? 1 : 0.3),
-              paddingLeft: 8,
-            }}
-          >
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-              {isSelected ? (
-                <Eye size={12} color={Colors.$iconDefault} />
-              ) : (
-                <EyeOff size={12} color={Colors.$iconDefault} />
-              )}
-              <Text variant={'small'}>{activity.label}</Text>
-            </View>
-            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-              <Text variant={'h3'} style={{ color: activity.colors[1], fontWeight: '400' }}>
-                {currentText}/{targetText}
-              </Text>
-              {!isCurrency && <Text className="ml-0.5">{activity.unit}</Text>}
-            </View>
-          </Pressable>
-        )
-      })}
-    </MotiView>
-  )
-}
-
-const MText = motify(Text)()
-
 export default function CollectionBreakdown({
-  title = 'Collection Breakdown',
   style,
   className,
   selectedCollections,
@@ -180,51 +27,91 @@ export default function CollectionBreakdown({
   selectedCollections?: string[]
   onToggleCollection?: (type: string) => void
 }) {
-  const [visible] = useReducer((s) => !s, true)
-  const { data: wishlistTotal, ...wishlistReq } = useWishlistTotal()
-  const _selected = selectedCollections ?? ['wishlist', 'selling', 'vault']
-  const _onToggle = onToggleCollection ?? (() => {})
+  const { data: wishlistTotal } = useWishlistTotal()
   const { data: sellingTotal } = useCollectionTotal({ collectionType: 'selling' })
   const { data: portfolioTotal } = useCollectionTotal({ collectionType: 'vault' })
-  const totals = useMemo(() => {
-    const seeking = DefaultCollectionData[0]
-    const selling = DefaultCollectionData[1]
-    const holding = DefaultCollectionData[2]
-    const fullTarget = (sellingTotal ?? 0) + (wishlistTotal ?? 0) + (portfolioTotal ?? 0)
-    seeking.current = wishlistTotal ?? 0
-    selling.current = sellingTotal ?? 0
-    seeking.target = fullTarget
-    selling.target = fullTarget
-    holding.target = fullTarget
-    holding.current = portfolioTotal ?? 0
-    return [seeking, selling, holding]
+
+  const _selected = selectedCollections ?? ['wishlist', 'selling', 'vault']
+  const _onToggle = onToggleCollection ?? (() => {})
+
+  const { items, grandTotal } = useMemo(() => {
+    const total = (wishlistTotal ?? 0) + (sellingTotal ?? 0) + (portfolioTotal ?? 0)
+    return {
+      items: [
+        { ...DefaultCollectionData[0], current: wishlistTotal ?? 0, target: total },
+        { ...DefaultCollectionData[1], current: sellingTotal ?? 0, target: total },
+        { ...DefaultCollectionData[2], current: portfolioTotal ?? 0, target: total },
+      ],
+      grandTotal: total,
+    }
   }, [wishlistTotal, sellingTotal, portfolioTotal])
 
-  const size = BASE_RING_SIZE + (RING_WIDTH + RING_GAP) * (totals.length - 1) * 2
-
   return (
-    <View
-      className={cn(
-        'relative w-full rounded-3xl flex gap-8 mx-auto my-auto flex-row items-center justify-center',
-        className
-      )}
-      style={style}
-    >
+    <View className={cn('w-full', className)} style={[{ gap: 10 }, style]}>
+      {/* Segmented allocation bar */}
       <View
-        className="relative"
         style={{
-          height: size,
-          width: size,
+          flexDirection: 'row',
+          height: 6,
+          borderRadius: 99,
+          overflow: 'hidden',
+          backgroundColor: Colors.$backgroundNeutral,
+          gap: 2,
         }}
       >
-        <AnimatePresence>
-          {visible &&
-            totals.map((activity, index) => (
-              <CircleProgress key={activity.label} data={activity} index={index} />
-            ))}
-        </AnimatePresence>
+        {items.map((item) => {
+          const collectionType = LABEL_TO_TYPE[item.label]
+          const isSelected = _selected.includes(collectionType)
+          const flex = grandTotal > 0 ? item.current / grandTotal : 1 / items.length
+          return (
+            <MotiView
+              key={item.label}
+              animate={{ opacity: isSelected ? 1 : 0.15 }}
+              transition={{ type: 'timing', duration: 200 }}
+              style={{ flex, backgroundColor: item.colors[0] }}
+            />
+          )
+        })}
       </View>
-      <DetailedActivityInfo selectedCollections={_selected} onToggle={_onToggle} />
+
+      {/* 3-column legend */}
+      <View style={{ flexDirection: 'row', gap: 8 }}>
+        {items.map((item) => {
+          const collectionType = LABEL_TO_TYPE[item.label]
+          const isSelected = _selected.includes(collectionType)
+          const pct = grandTotal > 0 ? Math.round((item.current / grandTotal) * 100) : 0
+          return (
+            <Pressable
+              key={item.label}
+              onPress={() => _onToggle(collectionType)}
+              style={{ flex: 1, opacity: isSelected ? 1 : 0.4 }}
+            >
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, marginBottom: 3 }}>
+                <View
+                  style={{
+                    width: 7,
+                    height: 7,
+                    borderRadius: 99,
+                    backgroundColor: item.colors[0],
+                  }}
+                />
+                <Text variant="stats" style={{ color: Colors.$textNeutral }}>
+                  {item.label}
+                </Text>
+              </View>
+              <Text
+                variant="small"
+                style={{ color: item.colors[1], fontWeight: '600', paddingLeft: 12 }}
+              >
+                {formatCompactPrice(item.current)}
+              </Text>
+              <Text variant="stats" style={{ color: Colors.$textNeutral, paddingLeft: 12 }}>
+                {pct}%
+              </Text>
+            </Pressable>
+          )
+        })}
+      </View>
     </View>
   )
 }

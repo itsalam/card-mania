@@ -1,5 +1,5 @@
 import { useViewCollectionForUser } from '@/client/collections/query'
-import { CollectionListView } from '@/components/collections/list-item'
+import { CollectionsAvatar } from '@/components/collections/avatar'
 import { FolderTabsContainer } from '@/components/tabs/FolderTabs'
 import { TCard } from '@/constants/types'
 import { CollectionItemQueryView, CollectionRow } from '@/lib/store/functions/types'
@@ -9,13 +9,14 @@ import { CollectionLike } from '@/client/collections/types'
 import { THUMBNAIL_HEIGHT } from '@/components/tcg-card/consts'
 import { Tabs } from '@/components/ui/tabs'
 import { Text } from '@/components/ui/text/base-text'
+import { VISIBILITY_OPTIONS } from '@/features/tcg-card-views/DetailCardView/components/ui'
 import { CollectionCardItemEntries } from '@/features/tcg-card-views/DetailCardView/footer/pages/add-to-collections/components'
 import { CardListView } from '@/features/tcg-card-views/ListCard'
 import { useRefresh } from '@/lib/hooks/useRefresh'
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs'
-import { X } from 'lucide-react-native'
-import React, { useCallback, useMemo, useRef } from 'react'
-import { RefreshControl, View } from 'react-native'
+import { ChevronDown, X } from 'lucide-react-native'
+import React, { useCallback, useMemo, useRef, useState } from 'react'
+import { Pressable, RefreshControl, TouchableOpacity, View } from 'react-native'
 import { FlatList, GestureDetector } from 'react-native-gesture-handler'
 import Animated, {
   FadeInLeft,
@@ -24,11 +25,18 @@ import Animated, {
   FadeOutRight,
   interpolate,
   useAnimatedStyle,
+  useSharedValue,
+  withTiming,
 } from 'react-native-reanimated'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { BorderRadiuses, Colors } from 'react-native-ui-lib'
 import { shallow } from 'zustand/shallow'
-import { useDefaultCollectionIds, useGetCollection, useGetCollectionItems } from '../hooks'
+import {
+  useDefaultCollectionIds,
+  useGetCollection,
+  useGetCollectionCountInfo,
+  useGetCollectionItems,
+} from '../hooks'
 import { ModifyCollectionView } from '../pages/modify-collection'
 import { defaultPages, getCollectionIdArgs, useCollectionsPageStore } from '../provider'
 import { useCollaspableHeader } from '../ui'
@@ -59,7 +67,6 @@ export function WishlistDebug({ ids }: { ids: string[] }) {
   )
 }
 
-const AnimatedCollectionList = Animated.createAnimatedComponent(FlatList<CollectionRow>)
 const AnimatedCollectionItemList = Animated.createAnimatedComponent(FlatList<ListEntry>)
 
 export const CollectionsPageLayout = () => {
@@ -120,6 +127,134 @@ export const CollectionsPageLayout = () => {
   )
 }
 
+// ─── Card-style item for the DefaultCollectionView list ─────────────────────
+
+function CollectionCard({
+  collection,
+  onPress,
+  isLoading,
+}: {
+  collection: CollectionRow
+  onPress: () => void
+  isLoading?: boolean
+}) {
+  const { data: count } = useGetCollectionCountInfo(
+    isLoading || !collection?.id ? {} : { collectionId: collection.id }
+  )
+  const visibilityInfo = VISIBILITY_OPTIONS.find((v) => v.key === collection?.visibility)
+  const VisibilityIcon = visibilityInfo?.icon
+
+  if (isLoading) {
+    return (
+      <View
+        style={{
+          borderRadius: BorderRadiuses.br50,
+          borderWidth: 2,
+          borderColor: Colors.$outlineNeutral,
+          backgroundColor: Colors.$backgroundElevatedLight,
+          padding: 14,
+          flexDirection: 'row',
+          gap: 12,
+          alignItems: 'flex-start',
+        }}
+      />
+    )
+  }
+
+  return (
+    <TouchableOpacity onPress={onPress} activeOpacity={0.75}>
+      <View
+        style={{
+          borderRadius: BorderRadiuses.br50,
+          borderWidth: 2,
+          borderColor: Colors.$outlineNeutral,
+          backgroundColor: Colors.$backgroundElevatedLight,
+          padding: 14,
+          flexDirection: 'row',
+          gap: 12,
+          alignItems: 'flex-start',
+        }}
+      >
+        <CollectionsAvatar iconImageSrc={collection.cover_image_url ?? undefined} />
+        <View style={{ flex: 1, gap: 3 }}>
+          <Text variant="h4">{collection.name}</Text>
+          {!!collection.description && (
+            <Text numberOfLines={2} style={{ color: Colors.$textNeutralHeavy }}>
+              {collection.description}
+            </Text>
+          )}
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 }}>
+            <Text style={{ color: Colors.$textNeutral }}>{count ?? 0} items</Text>
+            {visibilityInfo && (
+              <>
+                <Text style={{ color: Colors.$textNeutral }}>•</Text>
+                {VisibilityIcon && <VisibilityIcon size={12} color={Colors.$textNeutral} />}
+                <Text style={{ color: Colors.$textNeutral }}>{visibilityInfo.label}</Text>
+              </>
+            )}
+          </View>
+        </View>
+      </View>
+    </TouchableOpacity>
+  )
+}
+
+// ─── Collapseable section header ─────────────────────────────────────────────
+
+function CollectionSection({
+  title,
+  children,
+  defaultExpanded = true,
+  isEmpty,
+}: {
+  title: string
+  children: React.ReactNode
+  defaultExpanded?: boolean
+  isEmpty?: boolean
+}) {
+  const [expanded, setExpanded] = useState(defaultExpanded)
+  const rotation = useSharedValue(defaultExpanded ? 1 : 0)
+
+  const chevronStyle = useAnimatedStyle(() => ({
+    transform: [{ rotate: `${rotation.value * 180}deg` }],
+  }))
+
+  const toggle = () => {
+    const next = !expanded
+    setExpanded(next)
+    rotation.value = withTiming(next ? 1 : 0, { duration: 200 })
+  }
+
+  if (isEmpty) return null
+
+  return (
+    <View style={{ gap: 10 }}>
+      <Pressable
+        onPress={toggle}
+        style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 4 }}
+      >
+        <Text
+          variant="stats"
+          style={{
+            flex: 1,
+            color: Colors.$textNeutral,
+            textTransform: 'uppercase',
+            letterSpacing: 0.8,
+          }}
+        >
+          {title}
+        </Text>
+        <Animated.View style={chevronStyle}>
+          <ChevronDown size={14} color={Colors.$textNeutral} />
+        </Animated.View>
+      </Pressable>
+      {expanded && <View style={{ gap: 10 }}>{children}</View>}
+    </View>
+  )
+}
+
+// ─── Default view: grouped, card-style list ──────────────────────────────────
+
 const DefaultCollectionView = ({ direction }: { direction: 'forward' | 'backward' }) => {
   const { currentPage, setCurrentPage, preferenceState } = useCollectionsPageStore()
 
@@ -135,48 +270,38 @@ const DefaultCollectionView = ({ direction }: { direction: 'forward' | 'backward
 
   const {
     data: collections,
-    error,
     isLoading: isLoadingCollections,
     refetch,
-  } = useViewCollectionForUser(true)
+  } = useViewCollectionForUser(false)
 
   const { refreshing, onRefresh } = useRefresh([refetch], () => {
     virtualOffset.value = 0
   })
 
-  const listData = useMemo<CollectionRow[]>(() => {
-    if (isLoadingCollections) return Array(7).fill({ kind: 'collection' })
-    return collections ?? []
-  }, [collections, isLoadingCollections])
+  const { defaultCollections, customCollections } = useMemo(() => {
+    const rows = collections ?? []
+    return {
+      defaultCollections: rows.filter((c) => c.is_vault || c.is_wishlist || c.is_selling),
+      customCollections: rows.filter((c) => !c.is_vault && !c.is_wishlist && !c.is_selling),
+    }
+  }, [collections])
 
-  const renderItem = useCallback(
-    ({ item, index }: { item: CollectionRow; index: number }) => {
-      return (
-        <CollectionListView
-          key={keyExtractor(item, index)}
-          collection={item}
-          onPress={() => {
-            const isDefaultPage = item?.is_selling || item?.is_vault || item?.is_wishlist
-            const defaultValues = Object.entries(preferenceState.preferences.defaultIds)
-            const defaultPage = defaultValues.find(([key, id]) => id && id === item.id)
-
-            if (!isDefaultPage) {
-              preferenceState.updatePreferences({
-                tabs: Array.from(new Set([...(preferenceState.preferences.tabs ?? []), item.id])),
-              })
-            }
-            setCurrentPage(defaultPage?.[0] ?? item.id)
-          }}
-          isLoading={isLoadingCollections}
-        />
-      )
+  const navigateTo = useCallback(
+    (item: CollectionRow) => {
+      const defaultValues = Object.entries(preferenceState.preferences.defaultIds)
+      const defaultPage = defaultValues.find(([, id]) => id && id === item.id)
+      const isDefaultType = item.is_selling || item.is_vault || item.is_wishlist
+      if (!isDefaultType) {
+        preferenceState.updatePreferences({
+          tabs: Array.from(new Set([...(preferenceState.preferences.tabs ?? []), item.id])),
+        })
+      }
+      setCurrentPage(defaultPage?.[0] ?? item.id)
     },
-    [preferenceState, setCurrentPage, isLoadingCollections]
+    [preferenceState, setCurrentPage]
   )
 
-  const keyExtractor = useCallback((item: CollectionRow, index: number) => {
-    return `collection-${item?.id ?? `skeleton-${index}`}`
-  }, [])
+  const skeletons = Array(3).fill(null)
 
   return (
     <GestureDetector gesture={composedGestures}>
@@ -190,41 +315,69 @@ const DefaultCollectionView = ({ direction }: { direction: 'forward' | 'backward
           style={[headerAnimatedStyle, { overflow: 'hidden' }]}
         >
           <View onLayout={onHeaderLayout}>
-            <CollectionBreakdown
-              style={{
-                paddingTop: 12,
-                marginBottom: 40,
-                marginHorizontal: 12,
-              }}
-            />
+            <CollectionBreakdown style={{ paddingTop: 12, paddingHorizontal: 12 }} />
           </View>
         </Animated.View>
-        <Animated.View>
-          <FolderTabsContainer>
-            <AnimatedCollectionList
-              initialNumToRender={10}
-              //@ts-ignore
-              ref={scrollViewRef}
-              onLayout={onListLayout}
-              onContentSizeChange={onContentSizeChange}
-              scrollEnabled={false}
-              style={{ flex: 1, marginBottom: 24 }}
-              bounces={false}
-              data={listData}
-              contentContainerStyle={{
-                display: 'flex',
-                gap: 18,
-                paddingLeft: 12,
-                paddingTop: 18,
-                paddingBottom: 24,
-              }}
-              refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-              ListEmptyComponent={EmptyColelctionList}
-              keyExtractor={keyExtractor}
-              renderItem={renderItem}
-            />
-          </FolderTabsContainer>
-        </Animated.View>
+
+        <Animated.ScrollView
+          //@ts-ignore
+          ref={scrollViewRef}
+          onLayout={onListLayout}
+          onContentSizeChange={onContentSizeChange}
+          scrollEnabled={false}
+          bounces={false}
+          style={{ marginBottom: 24 }}
+          contentContainerStyle={{
+            gap: 20,
+            paddingHorizontal: 12,
+            paddingTop: 18,
+            paddingBottom: 24,
+          }}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+        >
+          <CollectionSection
+            title="Collections"
+            defaultExpanded
+            isEmpty={!isLoadingCollections && defaultCollections.length === 0}
+          >
+            {isLoadingCollections
+              ? skeletons.map((_, i) => (
+                  <CollectionCard
+                    key={`skeleton-default-${i}`}
+                    collection={{} as CollectionRow}
+                    onPress={() => {}}
+                    isLoading
+                  />
+                ))
+              : defaultCollections.map((c) => (
+                  <CollectionCard key={c.id} collection={c} onPress={() => navigateTo(c)} />
+                ))}
+          </CollectionSection>
+
+          <CollectionSection
+            title="My Collections"
+            defaultExpanded
+            isEmpty={!isLoadingCollections && customCollections.length === 0}
+          >
+            {isLoadingCollections
+              ? skeletons.map((_, i) => (
+                  <CollectionCard
+                    key={`skeleton-custom-${i}`}
+                    collection={{} as CollectionRow}
+                    onPress={() => {}}
+                    isLoading
+                  />
+                ))
+              : customCollections.map((c) => (
+                  <CollectionCard key={c.id} collection={c} onPress={() => navigateTo(c)} />
+                ))}
+          </CollectionSection>
+
+          {/* Watching section — will populate when collection_follows is added */}
+          <CollectionSection title="Watching" defaultExpanded isEmpty>
+            {null}
+          </CollectionSection>
+        </Animated.ScrollView>
       </Animated.View>
     </GestureDetector>
   )
