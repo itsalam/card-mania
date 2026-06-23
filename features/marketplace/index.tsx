@@ -1,8 +1,8 @@
 import { useFeaturedListings, usePublicStorefronts } from '@/client/marketplace'
+import { CARD_ASPECT_RATIO } from '@/components/consts'
 import { FadeScrollView } from '@/components/ui/fade-scroll'
 import { Text } from '@/components/ui/text/base-text'
 import { useRefresh } from '@/lib/hooks/useRefresh'
-import { CARD_ASPECT_RATIO } from '@/components/consts'
 import { Columns2, Grid2x2, LayoutGrid, LayoutList, SlidersHorizontal } from 'lucide-react-native'
 import React, { useState } from 'react'
 import {
