@@ -156,48 +156,49 @@ function HomeContent({
       </OnboardingTarget>
 
       <Tabs value={currentPage} onValueChange={setCurrentPage} style={{ width: '100%' }}>
-        <View style={{ flexDirection: 'row' }}>
-          <OnboardingTarget id="tab-list" style={{ flex: 1 }}>
-            <TabsList className="overflow-visible w-full items-start justify-start">
+        <OnboardingTarget id="tab-list">
+          <View style={{ flexDirection: 'row', paddingHorizontal: 8 }}>
+            <TabsList
+              className="overflow-visible items-start justify-start"
+              style={{ paddingHorizontal: 4 }}
+            >
               {tabValues.map((tab) => (
-                <TabsTrigger
-                  key={tab}
-                  value={tab}
-                  style={{
-                    flex: 1,
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
-                >
+                <TabsTrigger key={tab} value={tab}>
                   <TabsLabel
                     label={tab}
                     value={tab}
                     leftElement={(isCurrent) =>
                       React.createElement(tabIcons[tab], {
+                        size: 13,
                         color: isCurrent ? Colors.$backgroundPrimaryHeavy : Colors.$textNeutral,
                       })
                     }
+                    containerStyle={{
+                      padding: 4,
+                    }}
+                    style={{
+                      padding: 1,
+                    }}
                   />
                 </TabsTrigger>
               ))}
             </TabsList>
-          </OnboardingTarget>
 
-          <TabsList style={{ height: 48 }}>
-            <TabsTrigger key={'Recents'} value={'Recents'} style={{}}>
-              <TabsLabel
-                value={'Recents'}
-                leftElement={(isCurrent) =>
-                  React.createElement(History, {
-                    size: 13,
-                    color: isCurrent ? Colors.$backgroundPrimaryHeavy : Colors.$textNeutral,
-                  })
-                }
-              />
-            </TabsTrigger>
-          </TabsList>
-        </View>
-
+            <TabsList>
+              <TabsTrigger key={'Recents'} value={'Recents'} style={{ aspectRatio: 1 }}>
+                <TabsLabel
+                  value={'Recents'}
+                  leftElement={(isCurrent) =>
+                    React.createElement(History, {
+                      size: 13,
+                      color: isCurrent ? Colors.$backgroundPrimaryHeavy : Colors.$textNeutral,
+                    })
+                  }
+                />
+              </TabsTrigger>
+            </TabsList>
+          </View>
+        </OnboardingTarget>
         {tabValues.map((tab) => (
           <TabsContent key={tab} value={tab}>
             {tabContent[tab]}
