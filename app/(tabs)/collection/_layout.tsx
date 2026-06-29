@@ -16,7 +16,6 @@ export default function TabLayout() {
       <Stack.Screen
         name="add-card"
         options={{
-          // Slide up from the bottom as a modal
           presentation: 'modal',
           animation: 'slide_from_bottom',
           headerShown: false,

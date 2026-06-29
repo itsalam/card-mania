@@ -1,3 +1,4 @@
+import { GradientBackground } from '@/components/Background'
 import { useMyTransactions } from '@/client/transactions'
 import { CollapsibleSection } from '@/components/ui/collapsible-section'
 import { Separator } from '@/components/ui/separator'
@@ -32,74 +33,76 @@ export default function TransactionsRoute() {
   const sellingCount = selling?.length ?? 0
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
-      <View style={styles.header}>
-        <Text variant="h1" style={styles.headerTitle}>
-          Transactions
-        </Text>
-      </View>
-
-      <Separator orientation="horizontal" />
-
-      <ScrollView
-        contentContainerStyle={styles.list}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-      >
-        <CollapsibleSection
-          title="Buying"
-          rightElement={
-            !buyingLoading && buyingCount > 0 ? (
-              <Text variant="muted" style={styles.count}>
-                {buyingCount}
-              </Text>
-            ) : undefined
-          }
-        >
-          {buyingLoading ? (
-            <LoadingSkeleton />
-          ) : buyingCount === 0 ? (
-            <EmptyState message="Accepted offers you make will appear here." />
-          ) : (
-            buying!.map((tx) => (
-              <TransactionListCard
-                key={tx.id}
-                transaction={tx}
-                currentUserId={currentUserId}
-                onPress={() => router.push(`/transactions/${tx.offer_id}`)}
-              />
-            ))
-          )}
-        </CollapsibleSection>
+    <GradientBackground style={{ flex: 1 }}>
+      <View style={[styles.container, { paddingTop: insets.top }]}>
+        <View style={styles.header}>
+          <Text variant="h1" style={styles.headerTitle}>
+            Transactions
+          </Text>
+        </View>
 
         <Separator orientation="horizontal" />
 
-        <CollapsibleSection
-          title="Selling"
-          rightElement={
-            !sellingLoading && sellingCount > 0 ? (
-              <Text variant="muted" style={styles.count}>
-                {sellingCount}
-              </Text>
-            ) : undefined
-          }
+        <ScrollView
+          contentContainerStyle={styles.list}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         >
-          {sellingLoading ? (
-            <LoadingSkeleton />
-          ) : sellingCount === 0 ? (
-            <EmptyState message="Offers you accept will appear here." />
-          ) : (
-            selling!.map((tx) => (
-              <TransactionListCard
-                key={tx.id}
-                transaction={tx}
-                currentUserId={currentUserId}
-                onPress={() => router.push(`/transactions/${tx.offer_id}`)}
-              />
-            ))
-          )}
-        </CollapsibleSection>
-      </ScrollView>
-    </View>
+          <CollapsibleSection
+            title="Buying"
+            rightElement={
+              !buyingLoading && buyingCount > 0 ? (
+                <Text variant="muted" style={styles.count}>
+                  {buyingCount}
+                </Text>
+              ) : undefined
+            }
+          >
+            {buyingLoading ? (
+              <LoadingSkeleton />
+            ) : buyingCount === 0 ? (
+              <EmptyState message="Accepted offers you make will appear here." />
+            ) : (
+              buying!.map((tx) => (
+                <TransactionListCard
+                  key={tx.id}
+                  transaction={tx}
+                  currentUserId={currentUserId}
+                  onPress={() => router.push(`/transactions/${tx.offer_id}`)}
+                />
+              ))
+            )}
+          </CollapsibleSection>
+
+          <Separator orientation="horizontal" />
+
+          <CollapsibleSection
+            title="Selling"
+            rightElement={
+              !sellingLoading && sellingCount > 0 ? (
+                <Text variant="muted" style={styles.count}>
+                  {sellingCount}
+                </Text>
+              ) : undefined
+            }
+          >
+            {sellingLoading ? (
+              <LoadingSkeleton />
+            ) : sellingCount === 0 ? (
+              <EmptyState message="Offers you accept will appear here." />
+            ) : (
+              selling!.map((tx) => (
+                <TransactionListCard
+                  key={tx.id}
+                  transaction={tx}
+                  currentUserId={currentUserId}
+                  onPress={() => router.push(`/transactions/${tx.offer_id}`)}
+                />
+              ))
+            )}
+          </CollapsibleSection>
+        </ScrollView>
+      </View>
+    </GradientBackground>
   )
 }
 

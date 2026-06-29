@@ -1,139 +1,73 @@
 import { useEditCollection } from '@/client/collections/mutate'
-import { useToast } from '@/components/Toast'
-import { Text } from '@/components/ui/text/base-text'
-import {
-  CircleQuestionMark,
-  CopyX,
-  LucideIcon,
-  NotebookText,
-  PanelBottomClose,
-  Store,
-} from 'lucide-react-native'
-import { ReactNode, useState } from 'react'
-import { StyleProp, TouchableOpacity, View, ViewStyle } from 'react-native'
-import { Button, Colors, Hint, HintProps } from 'react-native-ui-lib'
-import { HintPositions } from 'react-native-ui-lib/src/components/hint/types'
-
 import { EditCollectionResult } from '@/client/collections/types'
+import { useToast } from '@/components/Toast'
 import { useInputColors } from '@/components/ui/input/provider'
 import { Switch } from '@/components/ui/switch'
+import { Text } from '@/components/ui/text/base-text'
 import { useCreateNewCollections } from '@/features/tcg-card-views/DetailCardView/provider'
+import { CopyX, LucideIcon, NotebookText, Store } from 'lucide-react-native'
+import React, { ReactNode } from 'react'
+import { StyleSheet, TouchableOpacity, View } from 'react-native'
 import Animated, { FadeInUp, FadeOut } from 'react-native-reanimated'
-import { FooterButton } from '../../../tcg-card-views/DetailCardView/footer/components/button'
-import { FooterStyles as styles } from '../../../tcg-card-views/DetailCardView/footer/components/styles'
+import { Colors } from 'react-native-ui-lib'
 import { CreateCollectionInput } from './input'
 
-export const OptionLabel = ({
+// ── Shared row component for settings ─────────────────────────────────────────
+
+export const SettingRow = ({
   icon: Icon,
   label,
-  hintProps,
   description,
-  style,
+  right,
 }: {
   icon: LucideIcon
-  description?: string
   label: ReactNode
-  hintProps?: HintProps
-  style?: StyleProp<ViewStyle>
-}) => {
-  const [toggleHint, setToggleHint] = useState(false)
-  const { onBackgroundPress, ...rest } = hintProps ?? {}
-
-  return (
+  description?: string
+  right?: ReactNode
+}) => (
+  <View style={rowStyles.row}>
     <View
-      style={[
-        {
-          display: 'flex',
-          flexDirection: 'row',
-          alignItems: 'center',
-          gap: 8,
-        },
-        style,
-      ]}
+      style={{
+        width: 34,
+        height: 34,
+        borderRadius: 10,
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: Colors.rgba(Colors.$backgroundPrimaryHeavy, 0.15),
+        borderWidth: 1,
+        borderColor: Colors.rgba(Colors.$backgroundPrimaryHeavy, 0.3),
+      }}
     >
-      <TouchableOpacity
-        style={{
-          display: 'flex',
-          flexDirection: 'row',
-          alignItems: 'center',
-          gap: 6,
-        }}
-        {...(hintProps
-          ? {
-              onPress: () => {
-                setToggleHint(!toggleHint)
-              },
-            }
-          : {
-              disabled: true,
-              activeOpacity: 1,
-            })}
-      >
-        <Icon color={Colors.$textNeutralLight} size={30} />
-        <View>
-          <View
-            style={{
-              display: 'flex',
-              flexDirection: 'row',
-              alignItems: 'center',
-              gap: 6,
-            }}
-          >
-            <Text
-              style={[
-                {
-                  color: Colors.$textNeutralLight,
-                  fontSize: 20,
-                  lineHeight: 24,
-                  fontWeight: '500',
-                },
-              ]}
-            >
-              {label}
-            </Text>
-            {hintProps && (
-              <Hint
-                visible={toggleHint}
-                useModal
-                position={HintPositions.TOP}
-                onBackgroundPress={(e) => {
-                  onBackgroundPress?.(e)
-                  setToggleHint(false)
-                }}
-                {...rest}
-              >
-                <Button
-                  onPress={() => {
-                    setToggleHint(!toggleHint)
-                  }}
-                  size="large"
-                  iconSource={(style) => (
-                    <CircleQuestionMark style={style} color={Colors.$iconDefaultLight} />
-                  )}
-                />
-              </Hint>
-            )}
-          </View>
-          {description && (
-            <Text
-              numberOfLines={2}
-              style={[
-                {
-                  color: Colors.$textNeutralLight,
-                  fontSize: 10,
-                  lineHeight: 12,
-                  fontWeight: '500',
-                  flexShrink: 1,
-                },
-              ]}
-            >
-              {description}
-            </Text>
-          )}
-        </View>
-      </TouchableOpacity>
+      <Icon size={17} color={Colors.$backgroundPrimaryHeavy} />
     </View>
-  )
+    <View style={{ flex: 1, gap: 1 }}>
+      <Text style={{ fontSize: 14, fontWeight: '500', color: Colors.$textDefault }}>{label}</Text>
+      {description && (
+        <Text style={{ fontSize: 12, color: Colors.$textNeutral, lineHeight: 16 }}>
+          {description}
+        </Text>
+      )}
+    </View>
+    {right}
+  </View>
+)
+
+const rowStyles = StyleSheet.create({
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+})
+
+// ── Inputs ─────────────────────────────────────────────────────────────────────
+
+const AnimNotebookText = Animated.createAnimatedComponent(NotebookText)
+
+const ANotebookText = () => {
+  const { color } = useInputColors()
+  //@ts-ignore
+  return <AnimNotebookText size={22} color={color} />
 }
 
 export const CollectionsNameInput = () => {
@@ -142,9 +76,9 @@ export const CollectionsNameInput = () => {
 
   return (
     <CreateCollectionInput
-      placeholder={'Name'}
-      style={[styles.titleInputBody, { padding: 2 }]}
-      floatingPlaceholderStyle={styles.titleFloatingPlaceholderStyle}
+      placeholder="Name"
+      style={{ fontSize: 20, lineHeight: 24, margin: 2 }}
+      floatingPlaceholderStyle={{ fontSize: 14, lineHeight: 16 }}
       containerStyle={{
         backgroundColor: Colors.rgba(Colors.$backgroundElevated, 0.4),
         margin: 0,
@@ -160,22 +94,15 @@ export const CollectionsNameInput = () => {
   )
 }
 
-const AnimNotebookText = Animated.createAnimatedComponent(NotebookText)
-
-const ANotebookText = () => {
-  const { color } = useInputColors()
-  //@ts-ignore
-  return <AnimNotebookText size={28} color={color} />
-}
-
 export const CollectionsDescriptionInput = () => {
   const description = useCreateNewCollections((s) => s.description)
   const setDescription = useCreateNewCollections((s) => s.setDescription)
   return (
     <CreateCollectionInput
-      placeholder={'Description'}
+      placeholder="Description"
       containerStyle={{
         backgroundColor: Colors.rgba(Colors.$backgroundElevated, 0.4),
+        margin: 0,
       }}
       value={description}
       onChangeText={setDescription}
@@ -187,6 +114,50 @@ export const CollectionsDescriptionInput = () => {
     />
   )
 }
+
+// ── Storefront options ─────────────────────────────────────────────────────────
+
+export const StorefrontOptions = () => {
+  const isStoreFront = useCreateNewCollections(({ isStoreFront }) => isStoreFront)
+  const hideSoldItems = useCreateNewCollections(({ hideSoldItems }) => hideSoldItems)
+  const setStoreOptions = useCreateNewCollections(({ setStoreOptions }) => setStoreOptions)
+
+  return (
+    <View style={{ gap: 14 }}>
+      <SettingRow
+        icon={Store}
+        label="Storefront"
+        description="Items are publicly searchable for sale."
+        right={
+          <Switch
+            checked={Boolean(isStoreFront)}
+            onCheckedChange={(val) => setStoreOptions({ isStoreFront: val })}
+          />
+        }
+      />
+      {isStoreFront && (
+        <Animated.View
+          entering={FadeInUp.withInitialValues({ transform: [{ translateY: -4 }] })}
+          exiting={FadeOut}
+        >
+          <SettingRow
+            icon={CopyX}
+            label="Hide Sold Items"
+            description="Sold items won't appear in your storefront."
+            right={
+              <Switch
+                checked={Boolean(hideSoldItems)}
+                onCheckedChange={(val) => setStoreOptions({ hideSoldItems: val })}
+              />
+            }
+          />
+        </Animated.View>
+      )}
+    </View>
+  )
+}
+
+// ── Submit button ──────────────────────────────────────────────────────────────
 
 export const SubmitCollectionButton = ({
   onSubmit,
@@ -204,88 +175,46 @@ export const SubmitCollectionButton = ({
   const validate = useCreateNewCollections((s) => s.validate)
   const submit = useEditCollection(collectionId)
   const { showToast } = useToast()
+
+  const handlePress = () => {
+    if (!validate()) return
+    submit
+      .mutateAsync({
+        name,
+        description,
+        visibility,
+        tags: tags.map((t) => t.id).filter(Boolean) as string[],
+        is_storefront: isStoreFront,
+        hide_sold_items: hideSoldItems,
+      })
+      .then((res) => onSubmit?.(res))
+      .catch(() => {
+        showToast({
+          title: 'Error',
+          message: 'Failed to save collection. Please try again.',
+          preset: 'failure',
+        })
+      })
+  }
+
   return (
-    <FooterButton
+    <TouchableOpacity
+      onPress={handlePress}
+      disabled={submit.isPending}
+      activeOpacity={0.75}
       style={{
-        flexShrink: 1,
-        backgroundColor: Colors.$backgroundPrimaryMedium,
+        borderRadius: 999,
+        paddingVertical: 14,
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: submit.isPending
+          ? Colors.rgba(Colors.$backgroundPrimaryHeavy, 0.5)
+          : Colors.$backgroundPrimaryHeavy,
       }}
-      onPress={() => {
-        if (validate()) {
-          submit
-            .mutateAsync({
-              name,
-              description,
-              visibility,
-              tags: tags.map((t) => t.id).filter(Boolean) as string[],
-              is_storefront: isStoreFront,
-              hide_sold_items: hideSoldItems,
-            })
-            .then((res) => onSubmit?.(res))
-            .catch(() => {
-              showToast({
-                title: 'Error',
-                message: 'Failed to save collection. Please try again.',
-                preset: 'failure',
-              })
-            })
-        } else {
-          //TODO: Alert the improper state
-        }
-      }}
-      label="Done"
-      iconSource={(style) => <PanelBottomClose color={Colors.$iconDefaultLight} style={style} />}
-    />
-  )
-}
-
-export const StorefrontOptions = () => {
-  const isStoreFront = useCreateNewCollections(({ isStoreFront }) => isStoreFront)
-  const hideSoldItems = useCreateNewCollections(({ hideSoldItems }) => hideSoldItems)
-  const setStoreOptions = useCreateNewCollections(({ setStoreOptions }) => setStoreOptions)
-
-  return (
-    <View style={{ gap: 14, width: '100%' }}>
-      <View
-        style={{
-          flexDirection: 'row',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-        }}
-      >
-        <OptionLabel
-          style={{ flex: 0.8, flexShrink: 1 }}
-          icon={Store}
-          label={'Storefront'}
-          description="Items are searchable for sales (if public)."
-        />
-        <Switch
-          checked={Boolean(isStoreFront)}
-          onCheckedChange={(isStoreFront) => setStoreOptions({ isStoreFront })}
-        />
-      </View>
-      {isStoreFront && (
-        <Animated.View
-          entering={FadeInUp.withInitialValues({ transform: [{ translateY: -5 }] })}
-          exiting={FadeOut}
-          style={{
-            flexDirection: 'row',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-          }}
-        >
-          <OptionLabel
-            style={{ flex: 0.8, flexShrink: 1 }}
-            icon={CopyX}
-            label={'Hide Sold Items'}
-            description="Sold Items are not searchable/viewable."
-          />
-          <Switch
-            checked={Boolean(hideSoldItems)}
-            onCheckedChange={(hideSoldItems) => setStoreOptions({ hideSoldItems })}
-          />
-        </Animated.View>
-      )}
-    </View>
+    >
+      <Text style={{ color: '#fff', fontSize: 15, fontWeight: '600', letterSpacing: 0.2 }}>
+        {submit.isPending ? 'Saving…' : collectionId ? 'Save Changes' : 'Create Collection'}
+      </Text>
+    </TouchableOpacity>
   )
 }

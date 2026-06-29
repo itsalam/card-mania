@@ -5,9 +5,9 @@ import { Swapper } from '@/components/ui/swapper'
 import { Text } from '@/components/ui/text'
 import { TCard } from '@/constants/types'
 import { useCartCount, useOpenCart } from '@/features/cart/hooks'
-import { FolderHeart, ShoppingCart, Star } from 'lucide-react-native'
-import { useEffect, useRef } from 'react'
-import { Dimensions, View } from 'react-native'
+import { Check, FolderHeart, RotateCcw, ShoppingCart, Star } from 'lucide-react-native'
+import { useEffect, useRef, useState } from 'react'
+import { Dimensions, TouchableOpacity, View } from 'react-native'
 import Animated, {
   FadeIn,
   FadeInLeft,
@@ -29,7 +29,9 @@ export const Footer = ({ card }: { card?: TCard }) => {
     currentPage: page,
     footerPages: pages,
     setPage,
+    pendingRollback,
   } = useCardDetails()
+  const [rollingBack, setRollingBack] = useState(false)
   const { data: wishlistSet } = useIsWishlisted('card', [card?.id].filter(Boolean) as string[])
   const toggleWishlist = useToggleWishlist('card')
   const prevPage = useRef<number>(page)
@@ -39,6 +41,14 @@ export const Footer = ({ card }: { card?: TCard }) => {
   useEffect(() => {
     prevPage.current = page
   }, [page])
+
+  useEffect(() => {
+    const cutoutVisible = page === 0
+    console.log('[Footer] cutout visible:', cutoutVisible, {
+      page,
+      pendingRollback: pendingRollback ? { count: pendingRollback.count } : null,
+    })
+  }, [page, pendingRollback])
 
   return (
     <DraggableFooter
@@ -129,6 +139,72 @@ export const Footer = ({ card }: { card?: TCard }) => {
                 }}
                 title={pages?.[page].title}
                 style={{ flex: 1 }}
+                cutout={
+                  page === 0
+                    ? {
+                        onPress: () => setFooterFullView(false),
+                        content: (
+                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                            {pendingRollback && (
+                              <>
+                                <TouchableOpacity
+                                  disabled={rollingBack}
+                                  onPress={async () => {
+                                    setRollingBack(true)
+                                    await pendingRollback.execute()
+                                    setRollingBack(false)
+                                  }}
+                                  style={{
+                                    flexDirection: 'row',
+                                    alignItems: 'center',
+                                    gap: 5,
+                                    opacity: rollingBack ? 0.5 : 1,
+                                  }}
+                                >
+                                  {/* count badge */}
+                                  <View
+                                    style={{
+                                      backgroundColor: 'rgba(255,255,255,0.25)',
+                                      borderRadius: 999,
+                                      minWidth: 18,
+                                      height: 18,
+                                      alignItems: 'center',
+                                      justifyContent: 'center',
+                                      paddingHorizontal: 4,
+                                    }}
+                                  >
+                                    <Text
+                                      style={{
+                                        color: '#fff',
+                                        fontSize: 11,
+                                        fontWeight: '700',
+                                        lineHeight: 13,
+                                      }}
+                                    >
+                                      {pendingRollback.count}
+                                    </Text>
+                                  </View>
+                                  <RotateCcw size={13} color="#fff" strokeWidth={2.5} />
+                                </TouchableOpacity>
+                                {/* divider */}
+                                <View
+                                  style={{
+                                    width: 1,
+                                    height: 14,
+                                    backgroundColor: 'rgba(255,255,255,0.3)',
+                                  }}
+                                />
+                              </>
+                            )}
+                            <Check size={13} color="#fff" strokeWidth={2.5} />
+                            <Text style={{ color: '#fff', fontWeight: '600', fontSize: 13 }}>
+                              Confirm
+                            </Text>
+                          </View>
+                        ),
+                      }
+                    : undefined
+                }
               />
             </Animated.View>
           ) : null}

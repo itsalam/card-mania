@@ -56,7 +56,8 @@ export function ProfileHeader() {
         justifyContent: 'flex-start',
         alignItems: 'flex-start',
         paddingHorizontal: 20,
-        paddingVertical: 12,
+        paddingTop: 0,
+        paddingBottom: 12,
         gap: 12,
       }}
     >

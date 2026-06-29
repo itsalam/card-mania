@@ -111,7 +111,7 @@ function ProfilePageLayoutInner() {
   }
 
   return (
-    <View style={{ flex: 1, paddingTop: insets.top, paddingBottom: insets.bottom }}>
+    <View style={{ flex: 1, paddingTop: insets.top + 12, paddingBottom: insets.bottom }}>
       <ProfileHeader />
 
       <Body style={{ flex: 1 }}>

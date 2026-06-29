@@ -2,24 +2,36 @@ import {
   AnimatedProp,
   Canvas,
   LinearGradient,
-  Rect,
+  Path,
+  Skia,
   SkPoint,
   vec,
 } from '@shopify/react-native-skia'
 import { BlurView } from 'expo-blur'
-import React from 'react'
+import React, { useLayoutEffect, useMemo } from 'react'
 import { ColorValue, StyleProp, StyleSheet, View, ViewStyle } from 'react-native'
 import Animated, {
   AnimatedStyle,
   DerivedValue,
+  SharedValue,
   useAnimatedProps,
   useDerivedValue,
   useSharedValue,
+  withSpring,
 } from 'react-native-reanimated'
 import { useBackgroundColors } from './utils'
 
 type ColorValueArray = readonly [ColorValue, ColorValue, ...ColorValue[]]
 type OptionalColorValueArray = (string | undefined)[]
+
+export type ShoulderCutoutDescriptor = {
+  /** SharedValue driven directly by onCutoutSize — no React re-render needed */
+  pillWSv: SharedValue<number>
+  /** Height of the pill / header row — where the background becomes full-width below */
+  headerHeight: number
+  /** Corner radius of the pill's bottom-left corner (and background's matching concave arc) */
+  cornerR: number
+}
 
 const ABlur = Animated.createAnimatedComponent(BlurView)
 
@@ -46,6 +58,7 @@ function BackgroundBase({
   start,
   end,
   positions,
+  shoulderCutout,
   ...props
 }: React.ComponentProps<typeof View> & {
   start?: SkPoint
@@ -53,9 +66,70 @@ function BackgroundBase({
   colors?: OptionalColorValueArray
   opacity?: AnimatedProp<number | number[]>
   positions?: number[]
+  shoulderCutout?: ShoulderCutoutDescriptor
 }) {
   const sizeSv = useSharedValue({ width: 0, height: 0 })
-  const defaultColors: ColorValueArray = useBackgroundColors() // make this hook return a stable array if possible
+  const defaultColors: ColorValueArray = useBackgroundColors()
+
+  const cutoutDescSv = useSharedValue<{ hH: number; CR: number } | null>(null)
+
+  // Static config is only set once (headerHeight/cornerR are constants).
+  useLayoutEffect(() => {
+    cutoutDescSv.value = shoulderCutout
+      ? { hH: shoulderCutout.headerHeight, CR: shoulderCutout.cornerR }
+      : null
+  }, [!!shoulderCutout, shoulderCutout?.headerHeight, shoulderCutout?.cornerR])
+
+  // useDerivedValue + withSpring: the derived value retargets whenever pillWSv changes
+  // and preserves animation state across re-renders (backed by a ref internally).
+  // This avoids the useAnimatedReaction teardown/re-setup race that caused animPillW
+  // to reset to 0 when BackgroundBase re-rendered (children change) mid-animation.
+  const fallbackPillWSv = useSharedValue(0)
+  const activePillWSv = shoulderCutout?.pillWSv ?? fallbackPillWSv
+
+  const animPillW = useDerivedValue(() => {
+    'worklet'
+    return withSpring(activePillWSv.value, { damping: 20, stiffness: 260, mass: 0.9 })
+  })
+
+  const cutSkPath = useMemo(() => Skia.Path.Make(), [])
+  const cutPath = useDerivedValue(() => {
+    'worklet'
+    const W = sizeSv.value.width
+    const H = sizeSv.value.height
+    const pillW = animPillW.value
+    const desc = cutoutDescSv.value
+    cutSkPath.reset()
+
+    if (!desc || pillW < 2 * desc.CR) {
+      // No cutout or pill too narrow for valid arc geometry — fill full rect.
+      cutSkPath.moveTo(0, 0)
+      cutSkPath.lineTo(W, 0)
+      cutSkPath.lineTo(W, H)
+      cutSkPath.lineTo(0, H)
+      cutSkPath.close()
+      return cutSkPath
+    }
+
+    const { hH, CR } = desc
+    const px = W - pillW
+
+    // L-shape: full rect minus top-right pill void, with 3 matching arcs.
+    cutSkPath.moveTo(0, 0)
+    cutSkPath.lineTo(px - CR, 0)
+    // Convex corner (top-right of gradient notch): CW 90°
+    cutSkPath.arcToOval({ x: px - CR, y: -CR, width: 2 * CR, height: 2 * CR }, 180, 90, false)
+    cutSkPath.lineTo(px, hH - CR)
+    // Concave inner corner: CCW 90°
+    cutSkPath.arcToOval({ x: px, y: hH - 2 * CR, width: 2 * CR, height: 2 * CR }, 180, -90, false)
+    cutSkPath.lineTo(W - CR, hH)
+    // Convex corner at bottom-right: CW 90° → curves up to (W, hH - CR)
+    cutSkPath.arcToOval({ x: W - CR, y: hH - CR, width: 2 * CR, height: 2 * CR }, 180, 90, false)
+    cutSkPath.lineTo(W, H)
+    cutSkPath.lineTo(0, H)
+    cutSkPath.close()
+    return cutSkPath
+  }, [animPillW, sizeSv, cutoutDescSv])
 
   const resolveOpacity = (o: AnimatedProp<number | number[]>) => {
     'worklet'
@@ -103,20 +177,17 @@ function BackgroundBase({
     [end, sizeSv]
   )
 
-  const width = useDerivedValue(() => sizeSv.value.width, [sizeSv])
-  const height = useDerivedValue(() => sizeSv.value.height, [sizeSv])
-
   return (
     <View style={[styles.container, style]} {...props}>
       <Canvas style={[StyleSheet.absoluteFill]} pointerEvents="none" onSize={sizeSv}>
-        <Rect x={0} y={0} width={width} height={height}>
+        <Path path={cutPath}>
           <LinearGradient
             colors={finalColors}
             start={gradientStart}
             end={gradientEnd}
             positions={positions}
           />
-        </Rect>
+        </Path>
       </Canvas>
 
       {children}
@@ -129,6 +200,7 @@ export const GradientBackground = React.memo(BackgroundBase, (prev, next) => {
   if (!opacityEq(prev.opacity as any, next.opacity as any)) return false
   if (prev.style !== next.style) return false
   if (prev.children !== next.children) return false
+  if (prev.shoulderCutout !== next.shoulderCutout) return false
   return true
 })
 

@@ -10,7 +10,6 @@ import { Button } from '../ui/button'
 import { Icon } from '../ui/icon'
 import { Text } from '../ui/text/base-text'
 
-const DEFAULT_CARD_WIDTH = 72
 const ITEM_ASPECT_RATIO = 5 / 7
 
 export function PlaceholderBox({
@@ -48,7 +47,7 @@ export function ExpandableCard<T extends { id: string }>({
   title,
   renderItem,
   items,
-  itemWidth = DEFAULT_CARD_WIDTH,
+  itemWidth = 72,
   getExpandedHeight = (itemWidth) => (itemWidth / CARD_ASPECT_RATIO) * 3 + 24,
   containerClassNames,
   className,
@@ -64,10 +63,10 @@ export function ExpandableCard<T extends { id: string }>({
       <Button
         variant="ghost"
         onPress={() => setIsOpen(!isOpen)}
-        className="h-auto w-full py-6 z-button"
+        className="h-auto w-full py-4 z-button"
       >
         <View className="w-full items-center flex flex-row p-1 gap-2 px-4">
-          <Text>{title}</Text>
+          {typeof title === 'string' ? <Text>{title}</Text> : title}
           <Icon
             style={{ transform: [{ rotate: !isOpen ? '-90deg' : '0deg' }] }}
             as={ChevronDown}
@@ -103,7 +102,7 @@ export function ExpandableCard<T extends { id: string }>({
         <ScrollView
           horizontal={!isOpen}
           decelerationRate="fast"
-          snapToInterval={DEFAULT_CARD_WIDTH} // snap like a carousel
+          snapToInterval={itemWidth}
           snapToAlignment="start"
           className="overflow-visible"
         >

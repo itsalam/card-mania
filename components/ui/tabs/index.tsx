@@ -201,6 +201,7 @@ function TabsList({
             borderColor: Colors.rgba(Colors.$outlineNeutral, 0.4),
             borderRadius: 999,
             gap: 4,
+            overflow: 'hidden',
           },
           style,
         ])}
@@ -254,6 +255,11 @@ function TabsScrollList({
 
   const scrollViewRef = useRef<ScrollView>(null)
   const [scrollX, setScrollX] = useState(0)
+  const [contentWidth, setContentWidth] = useState(0)
+  const [visibleWidth, setVisibleWidth] = useState(0)
+
+  // True when scrolled to the rightmost position (2px tolerance for float precision)
+  const atEnd = contentWidth > 0 && visibleWidth > 0 && scrollX >= contentWidth - visibleWidth - 2
 
   useEffect(() => {
     const layout = layoutsRef.current[activeValue]
@@ -279,6 +285,8 @@ function TabsScrollList({
       showsHorizontalScrollIndicator={false}
       scrollEventThrottle={16}
       onScroll={(e) => setScrollX(e.nativeEvent.contentOffset.x)}
+      onContentSizeChange={(w) => setContentWidth(w)}
+      onLayout={(e) => setVisibleWidth(e.nativeEvent.layout.width)}
     >
       <TabIndicatorContext.Provider value={{ registerLayout }}>
         <View style={{ flexDirection: 'row', position: 'relative' }}>
@@ -301,19 +309,33 @@ function TabsScrollList({
     </ScrollView>
   )
 
+  const gradientColors: [string, string, string, string] =
+    scrollX > 0 && !atEnd
+      ? ['transparent', 'black', 'black', 'transparent'] // left + right fade
+      : scrollX > 0 && atEnd
+        ? ['transparent', 'black', 'black', 'black'] // left fade only
+        : !atEnd
+          ? ['black', 'black', 'black', 'transparent'] // right fade only
+          : ['black', 'black', 'black', 'black'] // no fade (at both ends)
+
+  const gradientLocations: [number, number, number, number] =
+    scrollX > 0 && !atEnd
+      ? [0, 0.025, 0.95, 1]
+      : scrollX > 0 && atEnd
+        ? [0, 0.025, 1, 1]
+        : !atEnd
+          ? [0, 0, 0.95, 1]
+          : [0, 0, 1, 1]
+
   const middleContent = masked ? (
     <MaskedView
       style={{ flex: 1 }}
       maskElement={
         <LinearGradient
-          colors={
-            scrollX > 0
-              ? ['transparent', 'black', 'black', 'transparent']
-              : ['black', 'black', 'black', 'transparent']
-          }
+          colors={gradientColors}
           start={{ x: 0, y: 0.5 }}
           end={{ x: 1, y: 0.5 }}
-          locations={scrollX > 0 ? [0, 0.025, 0.95, 1] : [0, 0, 0.95, 1]}
+          locations={gradientLocations}
           style={{ position: 'absolute', height: '100%', width: '100%' }}
         />
       }

@@ -3,7 +3,7 @@ import { Graders, useGradingConditions } from '@/client/card/grading'
 import { suggestedVariantsOptions, Variant } from '@/client/collections/items'
 
 import { useEditCollectionItem } from '@/client/collections/mutate'
-import { CollectionLike, EditCollectionArgsItem } from '@/client/collections/types'
+import { CollectionItem, CollectionLike, EditCollectionArgsItem } from '@/client/collections/types'
 import { getGradedPrice } from '@/components/tcg-card/helpers'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -23,6 +23,7 @@ import { formatPrice } from '@/components/utils'
 import { TCard } from '@/constants/types'
 import { getGradingDisplayString } from '@/features/collection/helpers'
 import { useEffectiveColorScheme } from '@/features/settings/hooks/effective-color-scheme'
+import { qk } from '@/lib/store/functions/helpers'
 import { CollectionItemRow } from '@/lib/store/functions/types'
 import { useQueryClient } from '@tanstack/react-query'
 import { debounce } from 'lodash'
@@ -117,6 +118,7 @@ export const CollectionItemEntry = ({
 }) => {
   const { data: gradeData, error } = useGradingConditions()
   const [hide, setHide] = useState(false)
+  const qc = useQueryClient()
 
   const editableItem = useEditCollectionItem(
     collectionItem?.collection_id || collection?.id,
@@ -156,10 +158,6 @@ export const CollectionItemEntry = ({
     return currentGrader?.grades.find((grade) => grade.id === collectionItem?.grade_condition_id)
   }, [currentGrader])
 
-  useEffect(() => {
-    setDraft(initialDraft)
-  }, [initialDraft])
-
   // Refs so the stable debounce below always calls the latest logic without
   // being recreated (useMutation returns a new object reference every render,
   // which was causing a new debounce instance per render — old timers were
@@ -170,6 +168,15 @@ export const CollectionItemEntry = ({
   cardRef.current = card
   const initialDraftRef = useRef(initialDraft)
   initialDraftRef.current = initialDraft
+  // Tracks the most-recently committed draft so the debounce can detect a rollback.
+  // Updated synchronously at every setDraft call site (not via useEffect) so it is
+  // always current by the time the 1000ms debounce fires.
+  const draftRef = useRef(draft)
+
+  useEffect(() => {
+    setDraft(initialDraft)
+    draftRef.current = initialDraft
+  }, [initialDraft])
 
   // Created once — never recreated, so its internal timer is always the same.
   const mutateDebounce = useMemo(
@@ -181,6 +188,16 @@ export const CollectionItemEntry = ({
           merged.quantity === id.quantity &&
           merged.grading_company === id.grading_company &&
           merged.grade_condition_id === id.grade_condition_id
+        )
+          return
+        // If the component was reset (e.g., rollback) while this debounce was pending,
+        // draftRef.current will no longer match the captured merged values — skip the
+        // server write to prevent the rolled-back cache from being overwritten.
+        const cur = draftRef.current
+        if (
+          cur.quantity !== merged.quantity ||
+          cur.grade_condition_id !== merged.grade_condition_id ||
+          cur.grading_company !== merged.grading_company
         )
           return
         editableItemRef.current.mutate(
@@ -222,6 +239,22 @@ export const CollectionItemEntry = ({
       deleteEntry(draft)
     } else {
       setDraft((prev) => ({ ...prev, ...patch }))
+      draftRef.current = { ...draftRef.current, ...patch }
+
+      // Immediately reflect the patch in the query cache so that add-card.tsx's
+      // cache subscriber detects the change without waiting for the 1000ms debounce
+      // + server round-trip. The debounced mutate still handles persistence.
+      const itemCollectionId = collectionItem?.collection_id || collection?.id
+      if (itemCollectionId && card?.id && collectionItem?.id) {
+        qc.setQueryData<CollectionItem[]>(
+          [...qk.collectionItems(itemCollectionId), 'cardId', card.id],
+          (prev) =>
+            prev?.map((item) =>
+              item.id === collectionItem.id ? ({ ...item, ...patch } as CollectionItem) : item
+            ) ?? prev
+        )
+      }
+
       mutateDebounce(draft, patch)
     }
   }

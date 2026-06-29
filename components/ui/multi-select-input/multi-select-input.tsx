@@ -184,6 +184,7 @@ const InputForwardRef = <T extends BaseTagObject>(
       chips={chips}
       defaultChipProps={{
         leftElement: renderIconElement(),
+        backgroundColor: Colors.$backgroundPrimaryHeavy,
       }}
       //@ts-ignore
       onChange={(newChips, changeReason, updatedChip) => {
