@@ -1,7 +1,7 @@
 import { useImageProxy } from '@/client/image-proxy'
 import { FeaturedListing } from '@/client/marketplace'
 import { CARD_ASPECT_RATIO } from '@/components/consts'
-import { THUMBNAIL_HEIGHT, THUMBNAIL_WIDTH } from '@/components/tcg-card/consts'
+import { THUMBNAIL_WIDTH } from '@/components/tcg-card/consts'
 import { Avatar, AvatarFallback, AvatarFallbackText, AvatarImage } from '@/components/ui/avatar'
 import { Text } from '@/components/ui/text/base-text'
 import { formatPrice } from '@/components/utils'
