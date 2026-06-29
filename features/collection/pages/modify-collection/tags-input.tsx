@@ -68,18 +68,20 @@ export const CreateCollectionChipInput = () => {
       }}
       containerStyle={{
         backgroundColor: Colors.rgba(Colors.$backgroundElevated, 0.4),
+        margin: 0,
       }}
       leadingAccessory={<ATags />}
     >
       {(props, ref) => (
-        <View style={{ flex: 1 }}>
+        <View>
           <View
             style={{
               flexDirection: 'row',
               gap: 8,
               alignItems: 'center',
               flex: 1,
-              marginHorizontal: 20,
+              paddingHorizontal: 16,
+              paddingVertical: 4,
             }}
           >
             <MultiChipInnerInput<CategoryTag> {...props} ref={ref} />

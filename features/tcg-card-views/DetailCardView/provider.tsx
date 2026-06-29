@@ -5,6 +5,11 @@ import { createContext, useContext, useEffect, useMemo, useState } from 'react'
 import { createStore, StoreApi, useStore } from 'zustand'
 import { VISIBILITY_OPTIONS } from './components/ui'
 
+export type PendingRollback = {
+  count: number
+  execute: () => Promise<void>
+}
+
 export type CardDetailsStore = {
   card: TCard | null
   footerPages: { title: string; page: () => React.ReactNode }[]
@@ -14,6 +19,8 @@ export type CardDetailsStore = {
   setFooterPages: (pages: { title: string; page: () => React.ReactNode }[]) => void
   footerFullView: boolean
   setFooterFullView: (value: boolean) => void
+  pendingRollback: PendingRollback | null
+  setPendingRollback: (r: PendingRollback | null) => void
 }
 
 export const createCardDetailsStore = ({
@@ -38,6 +45,8 @@ export const createCardDetailsStore = ({
     setFooterPages: (pages) => set({ footerPages: pages }),
     footerFullView: false,
     setFooterFullView: (value) => set({ footerFullView: value }),
+    pendingRollback: null,
+    setPendingRollback: (r) => set({ pendingRollback: r }),
   }))
 
 const CardDetailsContext = createContext<StoreApi<CardDetailsStore> | null>(null)

@@ -1,76 +1,48 @@
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Text } from '@/components/ui/text/base-text'
-
 import { VISIBILITY_OPTIONS } from '@/features/tcg-card-views/DetailCardView/components/ui'
+import { useCreateNewCollections } from '@/features/tcg-card-views/DetailCardView/provider'
 import { Eye } from 'lucide-react-native'
-import { useMemo, useState } from 'react'
-import { StyleSheet, View } from 'react-native'
-import { Colors, SegmentedControl } from 'react-native-ui-lib'
-import { useEffectiveColorScheme } from '@/features/settings/hooks/effective-color-scheme'
-import { useCreateNewCollections } from '../../../tcg-card-views/DetailCardView/provider'
-import { OptionLabel } from './components'
+import { View } from 'react-native'
+import { Colors } from 'react-native-ui-lib'
+import { SettingRow } from './components'
 
 export function VisibilitySelector() {
-  const [toggleHint, setToggleHint] = useState(false)
-  const colorScheme = useEffectiveColorScheme()
-  const styles = useMemo(
-    () =>
-      StyleSheet.create({
-        HintMessageContainer: {
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 12,
-          padding: 8,
-        },
-        HintMessageEntry: {
-          display: 'flex',
-          flexDirection: 'row',
-          alignItems: 'center',
-          gap: 8,
-          paddingRight: 20,
-        },
-        HintIcon: {
-          color: Colors.$textDefaultLight,
-          fontSize: 16,
-        },
-      }),
-    [colorScheme]
-  )
   const visibility = useCreateNewCollections((s) => s.visibility)
   const setVisibility = useCreateNewCollections((s) => s.setVisibility)
 
-  const HintMessage = (
-    <View style={styles.HintMessageContainer}>
-      {VISIBILITY_OPTIONS.map(({ icon: Icon, label, description }, i) => (
-        <View style={styles.HintMessageEntry} key={`${label}-${i}`}>
-          <Icon color={Colors.$iconDefaultLight} />
-          <Text style={styles.HintIcon}>
-            {label}: {description}
-          </Text>
-        </View>
-      ))}
-    </View>
-  )
-
   return (
-    <View>
-      <View
-        style={{
-          display: 'flex',
-          flexDirection: 'row',
-          alignItems: 'center',
-          gap: 8,
-        }}
-      >
-        <OptionLabel icon={Eye} label={'Visibility'} hintProps={{ message: HintMessage }} />
-      </View>
-      <SegmentedControl
-        style={{ width: '100%', marginTop: 8 }}
-        segments={VISIBILITY_OPTIONS.map(({ label, iconSource }) => ({ label, iconSource }))}
-        initialIndex={VISIBILITY_OPTIONS.findIndex((option) => option.key === visibility)}
-        onChangeIndex={(index) => {
-          setVisibility(VISIBILITY_OPTIONS[index].key)
-        }}
-      />
+    <View style={{ gap: 10 }}>
+      <SettingRow icon={Eye} label="Visibility" description="Who can see this collection." />
+      <Tabs value={visibility} onValueChange={(v) => setVisibility(v as typeof visibility)}>
+        <TabsList
+          style={{
+            alignSelf: 'stretch',
+            backgroundColor: Colors.rgba(Colors.$backgroundElevated, 0.6),
+          }}
+        >
+          {VISIBILITY_OPTIONS.map(({ key, label, icon: Icon }) => (
+            <TabsTrigger key={key} value={key} style={{ flex: 1 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                <Icon
+                  size={12}
+                  color={visibility === key ? Colors.$textDefault : Colors.$textNeutral}
+                  strokeWidth={2.5}
+                />
+                <Text
+                  style={{
+                    fontSize: 13,
+                    fontWeight: visibility === key ? '600' : '400',
+                    color: visibility === key ? Colors.$textDefault : Colors.$textNeutral,
+                  }}
+                >
+                  {label}
+                </Text>
+              </View>
+            </TabsTrigger>
+          ))}
+        </TabsList>
+      </Tabs>
     </View>
   )
 }

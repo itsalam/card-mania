@@ -75,6 +75,8 @@ export const CollectionsPageLayout = () => {
   const { currentPage, setCurrentPage, preferenceState, setShowEditView, showEditView } =
     useCollectionsPageStore()
 
+  const { data: collection } = useGetCollection(getCollectionIdArgs(currentPage))
+
   const orderedPages = useMemo(() => {
     const customTabs = preferenceState.preferences.tabs ?? []
     const merged = [...defaultPages]

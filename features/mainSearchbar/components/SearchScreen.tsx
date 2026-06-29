@@ -1,12 +1,14 @@
 import { reportSearchRenderMs, useCardSearch, useSuggestionsFixed } from '@/client/price-charting'
-import { BlurGradientBackground } from '@/components/Background'
+import { BlurGradientBackground, ShoulderCutoutDescriptor } from '@/components/Background'
 import DraggableFooter from '@/components/DraggableFooter'
 import { AppStandaloneHeader } from '@/components/ui/headers'
 import { SearchBar } from '@/components/ui/search'
 import { Spinner } from '@/components/ui/spinner'
 import { ItemListViewProps } from '@/features/tcg-card-views/types'
 import { useRefresh } from '@/lib/hooks/useRefresh'
-import React, { RefObject, useEffect, useMemo, useRef, useState } from 'react'
+import MaskedView from '@react-native-masked-view/masked-view'
+import { LinearGradient } from 'expo-linear-gradient'
+import React, { RefObject, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { RefreshControl, StyleProp, StyleSheet, View, ViewStyle } from 'react-native'
 import { FlatList } from 'react-native-gesture-handler'
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller'
@@ -30,6 +32,12 @@ export type SearchScreenProps = {
   style?: StyleProp<ViewStyle>
   title?: string
   itemAccessories?: ItemListViewProps['renderAccessories']
+  /** Header rendered inside the gradient background — supply when the caller owns the header. */
+  header?: React.ReactNode
+  /** Pre-computed shoulder cutout descriptor from the caller — drives the background void. */
+  shoulderCutout?: ShoulderCutoutDescriptor
+  /** Set true when no header should render at all */
+  hideHeader?: boolean
 }
 
 export function SearchScreen({
@@ -41,6 +49,9 @@ export function SearchScreen({
   style,
   title = 'Search',
   itemAccessories,
+  header,
+  shoulderCutout,
+  hideHeader = false,
 }: SearchScreenProps) {
   const filters = useFiltersStore()
   const filterQuery = useMemo(() => {
@@ -134,13 +145,29 @@ export function SearchScreen({
   )
 
   const blurOpacity = useDerivedValue<number>(() => {
-    return withTiming(focused ? 0.8 : 0, { duration: 200 })
+    return withTiming(focused ? 0 : 0, { duration: 200 })
   }, [focused])
 
   const overlayStyle = useAnimatedStyle(() => {
     return {
       opacity: withTiming(1, { duration: 200 }),
     }
+  }, [])
+
+  const TOP_FADE_H = 24
+  const bottomFadeH = Math.max(Math.min(bottomPadding || 80, 80) + insets.bottom, 40)
+
+  const scrollInfoRef = useRef({ y: 0, contentH: 0, frameH: 0 })
+  const [edgeState, setEdgeState] = useState({ top: true, bottom: false })
+
+  const checkEdges = useCallback(() => {
+    const { y, contentH, frameH } = scrollInfoRef.current
+    const atTop = y <= 8
+    const atBottom = contentH > 0 && frameH > 0 && contentH - frameH - y <= 8
+    setEdgeState((prev) => {
+      if (prev.top === atTop && prev.bottom === atBottom) return prev
+      return { top: atTop, bottom: atBottom }
+    })
   }, [])
 
   return (
@@ -156,38 +183,119 @@ export function SearchScreen({
         // behavior={'translate-with-padding'}
       >
         <BlurGradientBackground
+          // backgroundOpacity={0.8}
           opacity={blurOpacity}
           style={{ flex: 1, overflow: 'visible', paddingBottom: bottomPadding }}
+          shoulderCutout={shoulderCutout}
         >
           <Animated.View
             style={[overlayStyle, style, { paddingBottom: insets.bottom }]}
             className="h-full overflow-visible"
           >
-            <AppStandaloneHeader
-              title={title}
-              onBack={() => {
-                hide?.()
-              }}
-            />
-            <FlatList
-              className="flex-1"
-              data={!isCardSearchLoading ? searchItems : []}
-              ListEmptyComponent={Spinner}
-              refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-              renderItem={({ item }) => (
-                <SearchPreviewCard
-                  key={item.id}
-                  searchItem={item}
-                  renderAccessories={itemAccessories}
-                />
-              )}
-              contentContainerStyle={{
-                display: 'flex',
-                gap: 18,
-                paddingLeft: 12,
-                paddingTop: 18,
-              }}
-            />
+            {/* zIndex:1 ensures the header (and its absolutely-positioned pill SVG)
+                always renders above FlatList items regardless of JSX order. */}
+            {!hideHeader && (
+              <View style={{ zIndex: 1 }}>
+                {header ?? (
+                  <AppStandaloneHeader title={title} onBack={hide ? () => hide() : undefined} />
+                )}
+              </View>
+            )}
+            {/* MaskedView clips scroll content (overflow:hidden equivalent) and
+                fades the list at top/bottom via RN Animated.Value opacity on the
+                gradient views inside the mask element. RN's native-driver timing
+                goes through Core Animation / Android RenderThread, which MaskedView's
+                compositing pass DOES observe — unlike Reanimated's UI-thread writes. */}
+            {/* Three non-overlapping absolute zones — no SRC_OVER compositing
+                between them, so alpha is never accidentally cancelled out.
+                Content is offset by the same pixel amounts via contentContainerStyle
+                padding so items start/end outside the fade zones at rest. */}
+            <MaskedView
+              style={{ flex: 1 }}
+              maskElement={
+                <View style={{ height: '100%', width: '100%' }}>
+                  {/* Solid body — content visible everywhere except the fade zones */}
+                  <View
+                    style={{
+                      position: 'absolute',
+                      top: edgeState.top ? 0 : TOP_FADE_H,
+                      bottom: edgeState.bottom ? 0 : bottomFadeH,
+                      left: 0,
+                      right: 0,
+                      backgroundColor: 'black',
+                    }}
+                  />
+                  {/* Top fade — mounted only when scrolled away from the top edge.
+                      Mount/unmount causes a React re-render that MaskedView observes;
+                      animated opacity inside maskElement is not captured by the compositor. */}
+                  {!edgeState.top && (
+                    <LinearGradient
+                      colors={['transparent', 'rgba(0,0,0,0.4)', 'rgba(0,0,0,0.85)', 'black']}
+                      locations={[0, 0.3, 0.65, 1]}
+                      style={{
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        height: TOP_FADE_H,
+                      }}
+                    />
+                  )}
+                  {/* Bottom fade — mounted only when more content exists below */}
+                  {!edgeState.bottom && (
+                    <LinearGradient
+                      colors={['black', 'rgba(0,0,0,0.85)', 'rgba(0,0,0,0.4)', 'transparent']}
+                      locations={[0, 0.35, 0.7, 1]}
+                      style={{
+                        position: 'absolute',
+                        bottom: 0,
+                        left: 0,
+                        right: 0,
+                        height: bottomFadeH,
+                      }}
+                    />
+                  )}
+                </View>
+              }
+            >
+              <FlatList
+                className="flex-1"
+                data={!isCardSearchLoading ? searchItems : []}
+                ListEmptyComponent={Spinner}
+                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+                renderItem={({ item }) => (
+                  <SearchPreviewCard
+                    key={item.id}
+                    searchItem={item}
+                    renderAccessories={itemAccessories}
+                  />
+                )}
+                contentContainerStyle={{
+                  display: 'flex',
+                  gap: 18,
+                  paddingLeft: 12,
+                  paddingBottom: bottomFadeH,
+                }}
+                onScroll={(e) => {
+                  const { contentOffset, contentSize, layoutMeasurement } = e.nativeEvent
+                  scrollInfoRef.current = {
+                    y: contentOffset.y,
+                    contentH: contentSize.height,
+                    frameH: layoutMeasurement.height,
+                  }
+                  checkEdges()
+                }}
+                onContentSizeChange={(_, h) => {
+                  scrollInfoRef.current.contentH = h
+                  checkEdges()
+                }}
+                onLayout={(e) => {
+                  scrollInfoRef.current.frameH = e.nativeEvent.layout.height
+                  checkEdges()
+                }}
+                scrollEventThrottle={16}
+              />
+            </MaskedView>
           </Animated.View>
         </BlurGradientBackground>
 

@@ -37,13 +37,9 @@ function Switch({
           {
             width: 20,
             height: 20,
+            backgroundColor: '#fff',
           },
-          props.checked
-            ? { transform: [{ translateX: 23 }] }
-            : {
-                transform: [{ translateX: 2 }],
-                backgroundColor: Colors.rgba(Colors.$backgroundDefault, 1.0),
-              },
+          props.checked ? { transform: [{ translateX: 23 }] } : { transform: [{ translateX: 2 }] },
         ]}
       />
     </SwitchPrimitives.Root>
