@@ -11,9 +11,17 @@ import React from 'react'
 import { StyleSheet, TouchableOpacity, View } from 'react-native'
 import { Colors } from 'react-native-ui-lib'
 
-type FeaturedCardItem = FeaturedListing & { id: string }
+export type FeaturedCardItem = FeaturedListing & { id: string }
 
-function CardThumbnail({ item }: { item: FeaturedCardItem }) {
+function CardThumbnail({
+  item,
+  width = THUMBNAIL_WIDTH,
+}: {
+  item: FeaturedCardItem
+  width?: number
+}) {
+  const height = Math.round(width / CARD_ASPECT_RATIO)
+
   const { data: imageData } = useImageProxy({
     variant: 'tiny',
     shape: 'card',
@@ -27,9 +35,8 @@ function CardThumbnail({ item }: { item: FeaturedCardItem }) {
   return (
     <View
       style={{
-        width: THUMBNAIL_WIDTH,
-        height: THUMBNAIL_HEIGHT,
-        aspectRatio: CARD_ASPECT_RATIO,
+        width,
+        height,
         borderRadius: 8,
         overflow: 'hidden',
         backgroundColor: Colors.$backgroundElevated,
@@ -59,19 +66,27 @@ function CardThumbnail({ item }: { item: FeaturedCardItem }) {
   )
 }
 
-export function FeaturedCard({ item, isOpen }: { item: FeaturedCardItem; isOpen?: boolean }) {
+export function FeaturedCard({
+  item,
+  isOpen,
+  width = THUMBNAIL_WIDTH,
+}: {
+  item: FeaturedCardItem
+  isOpen?: boolean
+  width?: number
+}) {
   const router = useRouter()
   const sellerHandle = item.seller_username ?? item.seller_display_name ?? 'Unknown'
   const sellerInitial = sellerHandle.charAt(0).toUpperCase()
   const isGraded = item.price_key !== 'ungraded' && item.grading_company
 
   if (!isOpen) {
-    return <CardThumbnail item={item} />
+    return <CardThumbnail item={item} width={width} />
   }
 
   return (
     <View style={styles.expandedWrapper}>
-      <CardThumbnail item={item} />
+      <CardThumbnail item={item} width={width} />
 
       <View style={styles.detailPanel}>
         <Text variant="h3" style={styles.cardName} numberOfLines={2}>

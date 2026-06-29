@@ -55,13 +55,14 @@ export const CollectionInfoCard = (props: { collectionItemId: string; cardId: st
 
   return (
     <View
-      className="w-full flex gap-3"
+      className="flex gap-3"
       style={{
         borderWidth: 1,
         borderRadius: BorderRadiuses.br40,
         borderColor: Colors.$outlineDefault,
         padding: 12,
-        alignSelf: 'stretch',
+        marginHorizontal: 16,
+        marginVertical: 8,
       }}
     >
       <View>

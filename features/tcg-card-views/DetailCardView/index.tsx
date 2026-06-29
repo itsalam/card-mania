@@ -166,14 +166,16 @@ export default function FocusCardView({
 
   useInvalidateOnFocus(qk.recent)
 
+  const footerPages = useMemo(
+    () => [
+      { title: 'Add to Collection', page: AddToCollectionsView },
+      { title: 'Create Collection', page: CreateCollectionView },
+    ],
+    []
+  )
+
   return (
-    <CardDetailsProvider
-      card={cardData}
-      footerPages={[
-        { title: 'Add to Collection', page: AddToCollectionsView },
-        { title: 'Create Collection', page: CreateCollectionView },
-      ]}
-    >
+    <CardDetailsProvider card={cardData} footerPages={footerPages}>
       <CardDetailContainer
         animateFrom={animateFrom}
         returnTo={returnTo}
@@ -203,12 +205,21 @@ export default function FocusCardView({
                 {cardData?.set_name}
               </Text>
             </View>
-            {collectionIdArgs && (
-              <CollectionInfoCard collectionItemId={collectionIdArgs.itemId} cardId={cardId} />
-            )}
           </View>
         }
         sections={[
+          ...(collectionIdArgs
+            ? [
+                {
+                  header: (
+                    <CollectionInfoCard
+                      collectionItemId={collectionIdArgs.itemId}
+                      cardId={cardId}
+                    />
+                  ),
+                },
+              ]
+            : []),
           {
             header: <CardScreenHeader title={'Prices'} />,
             content: (

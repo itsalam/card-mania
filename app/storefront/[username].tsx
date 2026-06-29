@@ -1,83 +1,42 @@
-import { Avatar, AvatarFallback, AvatarFallbackText, AvatarImage } from '@/components/ui/avatar'
 import { Text } from '@/components/ui/text/base-text'
-import { getUserStoreFront } from '@/features/profile/client'
-import { StorefrontView } from '@/features/profile/components/storefront-view'
-import { useRefresh } from '@/lib/hooks/useRefresh'
+import ProfilePageLayout from '@/features/profile'
 import { getSupabase } from '@/lib/store/client'
 import { useQuery } from '@tanstack/react-query'
 import { useLocalSearchParams } from 'expo-router'
-import { ActivityIndicator, RefreshControl, ScrollView, View } from 'react-native'
+import { ActivityIndicator, View } from 'react-native'
 import { Colors } from 'react-native-ui-lib'
 
 export default function PublicStorefrontPage() {
   const { username } = useLocalSearchParams<{ username: string }>()
 
   const {
-    data: profile,
-    isLoading: isLoadingProfile,
-    refetch: refetchProfile,
+    data: userId,
+    isLoading,
+    isError,
   } = useQuery({
-    queryKey: ['public-storefront-profile', username],
+    queryKey: ['storefront-user-id', username],
     queryFn: async () => {
-      if (!username) return null
-
-      const { data: session } = await getSupabase().auth.getSession()
-      console.log('[Storefront] profile lookup — username:', username)
-      console.log('[Storefront] auth session:', {
-        hasSession: Boolean(session.session),
-        userId: session.session?.user?.id ?? null,
-        role: session.session?.user?.role ?? null,
-        aud: session.session?.user?.aud ?? null,
-        expiresAt: session.session?.expires_at ?? null,
-      })
-
       const { data, error } = await getSupabase()
         .from('user_profile')
-        .select('user_id, username, display_name, avatar_url, bio')
+        .select('user_id')
         .eq('username', username)
         .single()
-
-      if (error) {
-        console.error('[Storefront] user_profile query error:', {
-          code: error.code,
-          message: error.message,
-          details: error.details,
-          hint: error.hint,
-        })
-      } else {
-        console.log('[Storefront] user_profile result:', {
-          found: Boolean(data),
-          userId: data?.user_id ?? null,
-        })
-      }
-
-      return data ?? null
+      if (error) throw error
+      return data.user_id as string
     },
     enabled: Boolean(username),
+    staleTime: 60 * 60 * 1000,
   })
-
-  const {
-    data: collections,
-    isLoading: isLoadingCollections,
-    refetch: refetchCollections,
-  } = useQuery({
-    queryKey: ['public-storefront-collections', profile?.user_id],
-    queryFn: () => getUserStoreFront(profile?.user_id),
-    enabled: Boolean(profile?.user_id),
-  })
-
-  const isLoading = isLoadingProfile || (Boolean(profile?.user_id) && isLoadingCollections)
-  const { refreshing, onRefresh } = useRefresh([refetchProfile, refetchCollections])
 
   if (isLoading) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 40 }}>
-        <ActivityIndicator size="large" />
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <ActivityIndicator size="large" color={Colors.$iconDefault} />
       </View>
     )
   }
 
-  if (!profile) {
+  if (isError || !userId) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 32 }}>
         <Text variant="h2">Not found</Text>
@@ -88,87 +47,5 @@ export default function PublicStorefrontPage() {
     )
   }
 
-  const initials = profile.display_name?.[0]?.toUpperCase() ?? '?'
-
-  return (
-    <ScrollView
-      style={{ flex: 1 }}
-      contentContainerStyle={{ padding: 20, paddingBottom: 80, paddingTop: 0 }}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-    >
-      {/* Profile header */}
-      <View
-        style={{
-          alignItems: 'center',
-          paddingVertical: 32,
-          paddingTop: 0,
-          gap: 12,
-          borderBottomWidth: 1,
-          borderBottomColor: Colors.$outlineNeutralLight,
-          marginBottom: 24,
-        }}
-      >
-        <Avatar size="2xl">
-          {profile.avatar_url ? <AvatarImage source={{ uri: profile.avatar_url }} /> : null}
-          <AvatarFallback>
-            <AvatarFallbackText>{initials}</AvatarFallbackText>
-          </AvatarFallback>
-        </Avatar>
-
-        <View style={{ alignItems: 'center', gap: 4 }}>
-          <Text variant="h2">{profile.display_name ?? profile.username}</Text>
-          <Text variant="muted">@{profile.username}</Text>
-        </View>
-
-        {profile.bio ? (
-          <Text
-            variant="default"
-            style={{ textAlign: 'center', maxWidth: 360, color: Colors.$textNeutralHeavy }}
-          >
-            {profile.bio}
-          </Text>
-        ) : null}
-      </View>
-
-      {/* Storefront collections */}
-      {!collections?.length ? (
-        <View style={{ alignItems: 'center', padding: 32 }}>
-          <Text variant="muted">No storefront collections yet.</Text>
-        </View>
-      ) : (
-        collections.map((collection) => (
-          <View key={collection.id} style={{ marginBottom: 28 }}>
-            <Text variant="h3" style={{ marginBottom: 4 }}>
-              {collection.name}
-            </Text>
-            {collection.description ? (
-              <Text variant="muted" style={{ marginBottom: 10 }}>
-                {collection.description}
-              </Text>
-            ) : null}
-            <StorefrontView collectionId={collection.id} />
-          </View>
-        ))
-      )}
-
-      {/* Footer CTA */}
-      <View
-        style={{
-          marginTop: 32,
-          alignItems: 'center',
-          padding: 20,
-          borderRadius: 16,
-          backgroundColor: Colors.$backgroundElevated,
-          gap: 8,
-        }}
-      >
-        <Text variant="large" style={{ fontWeight: '600' }}>
-          CardMania
-        </Text>
-        <Text variant="muted" style={{ textAlign: 'center' }}>
-          View and trade sports cards on the CardMania app
-        </Text>
-      </View>
-    </ScrollView>
-  )
+  return <ProfilePageLayout userId={userId} />
 }

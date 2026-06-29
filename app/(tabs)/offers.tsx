@@ -1,3 +1,4 @@
+import { GradientBackground } from '@/components/Background'
 import { useMyOffers } from '@/client/offers'
 import { Offer, OfferStatus } from '@/client/offers/types'
 import { TabRow } from '@/components/tabs/TabRow'
@@ -128,154 +129,156 @@ export default function OffersRoute() {
   const currentSortLabel = SORT_OPTIONS.find((s) => s.value === sort)?.label ?? 'Newest'
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
-      {/* Header row */}
-      <View style={styles.header}>
-        <Text variant="h1" style={styles.headerTitle}>
-          Offers
-        </Text>
-      </View>
+    <GradientBackground style={{ flex: 1 }}>
+      <View style={[styles.container, { paddingTop: insets.top }]}>
+        {/* Header row */}
+        <View style={styles.header}>
+          <Text variant="h1" style={styles.headerTitle}>
+            Offers
+          </Text>
+        </View>
 
-      {/* View filter tabs */}
-      <TabRow options={VIEW_FILTERS} onValueChange={setView} />
+        {/* View filter tabs */}
+        <TabRow options={VIEW_FILTERS} onValueChange={setView} />
 
-      {/* Status filter chips */}
-      <View style={styles.filterContents}>
-        <SearchBar
-          placeholder="Search offers..."
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-          customRightElement={
-            <Pressable
-              ref={sortButtonRef}
-              style={styles.sortButton}
-              onPress={() => {
-                sortButtonRef.current?.measureInWindow((x, y, width, height) => {
-                  setSortButtonLayout({ x, y, width, height })
-                  setSortModalVisible(true)
-                })
-              }}
-            >
-              <Text style={[styles.sortLabel, { color: Colors.$textNeutral }]}>
-                {currentSortLabel}
-              </Text>
-              <Text style={[styles.sortChevron, { color: Colors.$textNeutral }]}>›</Text>
-            </Pressable>
-          }
-        />
-      </View>
-      <ChipRowContainer label={'Statuses'}>
-        {STATUS_FILTERS.map((f) => (
-          <ToggleBadge
-            key={f.value}
-            onPress={() => {
-              if (f.value === 'all') {
-                setActiveStatuses(new Set())
-              } else {
-                setActiveStatuses((prev) => {
-                  const next = new Set(prev)
-                  if (next.has(f.value as OfferStatus)) {
-                    next.delete(f.value as OfferStatus)
-                  } else {
-                    next.add(f.value as OfferStatus)
-                  }
-                  return next
-                })
-              }
-            }}
-            style={styles.chip}
-            label={f.label}
-            checked={
-              f.value === 'all'
-                ? activeStatuses.size === 0
-                : activeStatuses.has(f.value as OfferStatus)
-            }
-            rightElement={
-              f.value !== 'all' && activeStatuses.has(f.value) ? (
-                <X
-                  size={16}
-                  color={Colors.$textDefault}
-                  style={{ marginRight: 0, paddingRight: 0 }}
-                  strokeWidth={3}
-                />
-              ) : null
-            }
-          />
-        ))}
-      </ChipRowContainer>
-      {/* Offer list */}
-      <ScrollView
-        contentContainerStyle={[styles.list, filtered.length === 0 && { flex: 1 }]}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-      >
-        {isLoading ? (
-          <LoadingSkeleton />
-        ) : filtered.length === 0 ? (
-          <EmptyState hasQuery={!!query} />
-        ) : (
-          filtered.map((offer) =>
-            view === 'inbox' ? (
-              <InboxOfferCard key={offer.id} offer={offer} />
-            ) : (
-              <BuyerOfferCard key={offer.id} offer={offer} />
-            )
-          )
-        )}
-      </ScrollView>
-
-      {/* Sort modal */}
-      <Modal
-        visible={sortModalVisible}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setSortModalVisible(false)}
-      >
-        <Pressable style={styles.modalBackdrop} onPress={() => setSortModalVisible(false)}>
-          <View
-            style={[
-              styles.modalContent,
-              {
-                backgroundColor: Colors.$backgroundElevated,
-                borderColor: Colors.$outlineNeutral,
-                ...(sortButtonLayout && {
-                  position: 'absolute',
-                  top: sortButtonLayout.y + sortButtonLayout.height + 4,
-                  right:
-                    Dimensions.get('window').width - sortButtonLayout.x - sortButtonLayout.width,
-                }),
-              },
-            ]}
-          >
-            <Text style={[styles.modalTitle, { color: Colors.$textDefault }]}>Sort by</Text>
-            {SORT_OPTIONS.map((option) => (
-              <TouchableOpacity
-                key={option.value}
-                style={[
-                  styles.modalOption,
-                  sort === option.value && {
-                    backgroundColor: Colors.$backgroundPrimaryHeavy,
-                  },
-                ]}
+        {/* Status filter chips */}
+        <View style={styles.filterContents}>
+          <SearchBar
+            placeholder="Search offers..."
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            customRightElement={
+              <Pressable
+                ref={sortButtonRef}
+                style={styles.sortButton}
                 onPress={() => {
-                  setSort(option.value)
-                  setSortModalVisible(false)
+                  sortButtonRef.current?.measureInWindow((x, y, width, height) => {
+                    setSortButtonLayout({ x, y, width, height })
+                    setSortModalVisible(true)
+                  })
                 }}
               >
-                <Text
-                  style={[
-                    styles.modalOptionText,
-                    { color: Colors.$textDefault },
-                    sort === option.value && { fontWeight: '600' },
-                  ]}
-                >
-                  {option.label}
+                <Text style={[styles.sortLabel, { color: Colors.$textNeutral }]}>
+                  {currentSortLabel}
                 </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </Pressable>
-      </Modal>
-    </View>
+                <Text style={[styles.sortChevron, { color: Colors.$textNeutral }]}>›</Text>
+              </Pressable>
+            }
+          />
+        </View>
+        <ChipRowContainer label={'Statuses'}>
+          {STATUS_FILTERS.map((f) => (
+            <ToggleBadge
+              key={f.value}
+              onPress={() => {
+                if (f.value === 'all') {
+                  setActiveStatuses(new Set())
+                } else {
+                  setActiveStatuses((prev) => {
+                    const next = new Set(prev)
+                    if (next.has(f.value as OfferStatus)) {
+                      next.delete(f.value as OfferStatus)
+                    } else {
+                      next.add(f.value as OfferStatus)
+                    }
+                    return next
+                  })
+                }
+              }}
+              style={styles.chip}
+              label={f.label}
+              checked={
+                f.value === 'all'
+                  ? activeStatuses.size === 0
+                  : activeStatuses.has(f.value as OfferStatus)
+              }
+              rightElement={
+                f.value !== 'all' && activeStatuses.has(f.value) ? (
+                  <X
+                    size={16}
+                    color={Colors.$textDefault}
+                    style={{ marginRight: 0, paddingRight: 0 }}
+                    strokeWidth={3}
+                  />
+                ) : null
+              }
+            />
+          ))}
+        </ChipRowContainer>
+        {/* Offer list */}
+        <ScrollView
+          contentContainerStyle={[styles.list, filtered.length === 0 && { flex: 1 }]}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+        >
+          {isLoading ? (
+            <LoadingSkeleton />
+          ) : filtered.length === 0 ? (
+            <EmptyState hasQuery={!!query} />
+          ) : (
+            filtered.map((offer) =>
+              view === 'inbox' ? (
+                <InboxOfferCard key={offer.id} offer={offer} />
+              ) : (
+                <BuyerOfferCard key={offer.id} offer={offer} />
+              )
+            )
+          )}
+        </ScrollView>
+
+        {/* Sort modal */}
+        <Modal
+          visible={sortModalVisible}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setSortModalVisible(false)}
+        >
+          <Pressable style={styles.modalBackdrop} onPress={() => setSortModalVisible(false)}>
+            <View
+              style={[
+                styles.modalContent,
+                {
+                  backgroundColor: Colors.$backgroundElevated,
+                  borderColor: Colors.$outlineNeutral,
+                  ...(sortButtonLayout && {
+                    position: 'absolute',
+                    top: sortButtonLayout.y + sortButtonLayout.height + 4,
+                    right:
+                      Dimensions.get('window').width - sortButtonLayout.x - sortButtonLayout.width,
+                  }),
+                },
+              ]}
+            >
+              <Text style={[styles.modalTitle, { color: Colors.$textDefault }]}>Sort by</Text>
+              {SORT_OPTIONS.map((option) => (
+                <TouchableOpacity
+                  key={option.value}
+                  style={[
+                    styles.modalOption,
+                    sort === option.value && {
+                      backgroundColor: Colors.$backgroundPrimaryHeavy,
+                    },
+                  ]}
+                  onPress={() => {
+                    setSort(option.value)
+                    setSortModalVisible(false)
+                  }}
+                >
+                  <Text
+                    style={[
+                      styles.modalOptionText,
+                      { color: Colors.$textDefault },
+                      sort === option.value && { fontWeight: '600' },
+                    ]}
+                  >
+                    {option.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </Pressable>
+        </Modal>
+      </View>
+    </GradientBackground>
   )
 }
 
