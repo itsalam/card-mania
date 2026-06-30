@@ -27,6 +27,7 @@ export type FeaturedListing = {
   back_id: string | null
   price_key: string
   market_value: number
+  popularity_score: number | null
 }
 
 export type PublicStorefront = {
