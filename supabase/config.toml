@@ -457,3 +457,8 @@ entrypoint = "./functions/report-search-perf/index.ts"
 enabled = true
 verify_jwt = false
 entrypoint = "./functions/cleanup-anon-users/index.ts"
+
+[functions.ebay-deletion]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/ebay-deletion/index.ts"

@@ -4,6 +4,10 @@
   "framework": null,
   "rewrites": [
     {
+      "source": "/api/ebay/deletion",
+      "destination": "https://zijgqgpwmqrgnzcictcb.supabase.co/functions/v1/ebay-deletion"
+    },
+    {
       "source": "/((?!_next|static|favicon\\.ico).*)",
       "destination": "/index.html"
     }

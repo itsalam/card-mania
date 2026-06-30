@@ -768,7 +768,11 @@ async function convertEbayItems(items: EbayItemSummary[]): Promise<{
       const price = item.price ? parseFloat(item.price.value) : null
 
       let imageHint: SearchResultItem['card']['image']
-      const imageUrl = item.image?.imageUrl
+      const rawImageUrl = item.image?.imageUrl
+      // Upgrade eBay image URLs to full-res (s-l1600) — Browse API may return thumbs
+      const imageUrl = rawImageUrl
+        ? rawImageUrl.replace(/\/thumbs\//, '/images/').replace(/s-l\d+(\.\w+)$/, 's-l1600$1')
+        : undefined
       if (imageUrl) {
         const qHash = await sha256HexStr(`ebay:${item.itemId}`)
         preknownHints.set(qHash, {
