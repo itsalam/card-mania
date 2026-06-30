@@ -13,6 +13,11 @@
     "design:build": "tsc -p design/tsconfig.json",
     "design:watch": "node ./scripts/serve-gojs-demo.js",
     "design": "npm run design:build && npm run design:watch",
+    "storybook": "EXPO_PUBLIC_STORYBOOK=true expo start",
+    "storybook:ios": "EXPO_PUBLIC_STORYBOOK=true expo start --ios",
+    "storybook:android": "EXPO_PUBLIC_STORYBOOK=true expo start --android",
+    "storybook:web": "storybook dev --config-dir .storybook-web -p 6006",
+    "storybook:build-web": "storybook build --config-dir .storybook-web -o storybook-static",
     "lint": "expo lint",
     "db:new": "supabase migration new",
     "db:diff": "supabase db diff -f",
@@ -123,7 +128,14 @@
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",
+    "@storybook/addon-ondevice-actions": "^8.4.6",
+    "@storybook/addon-ondevice-controls": "^8.4.6",
+    "@storybook/react": "^8.6.0",
+    "@storybook/react-native": "^8.4.6",
+    "@storybook/react-vite": "^8.6.0",
     "@types/react": "~19.1.10",
+    "@vitejs/plugin-react": "^6.0.3",
+    "babel-plugin-react-docgen-typescript": "^1.5.1",
     "eslint": "^9.39.3",
     "eslint-config-expo": "~10.0.0",
     "gojs": "^3.1.5",
@@ -134,13 +146,15 @@
     "prettier": "^3.8.1",
     "react-native-svg-transformer": "^1.5.1",
     "sharp": "^0.34.4",
-    "typescript": "~5.9.2"
+    "storybook": "^8.6.0",
+    "typescript": "~5.9.2",
+    "vite": "^8.1.2"
   },
   "lint-staged": {
     "*.{js,ts,tsx}": [
-      "npm run lint",
-      "npm run eslint",
-      "npm run format",
+      "yarn lint",
+      "yarn eslint",
+      "yarn format",
       "git add"
     ]
   },
