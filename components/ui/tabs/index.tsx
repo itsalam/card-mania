@@ -149,8 +149,8 @@ function useTabIndicator(activeValue: string) {
   )
 
   const indicatorStyle = useAnimatedStyle(() => ({
-    left: iL.value,
-    width: Math.max(0, iR.value - iL.value),
+    left: iL.value + INDICATOR_PAD,
+    width: Math.max(0, iR.value - iL.value - 2 * INDICATOR_PAD),
     opacity: iOpacity.value,
   }))
 

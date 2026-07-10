@@ -51,6 +51,13 @@ SplashScreen.setOptions({
 
 SplashScreen.preventAutoHideAsync()
 
+// When EXPO_PUBLIC_STORYBOOK=true, bypass the app and render the Storybook UI.
+// The conditional require keeps the storybook bundle out of production.
+if (process.env.EXPO_PUBLIC_STORYBOOK === 'true') {
+  const StorybookUIRoot = require('../.storybook/index').default
+  module.exports = { default: StorybookUIRoot }
+}
+
 export default Sentry.wrap(function RootLayout() {
   const ref = useNavigationContainerRef()
   React.useEffect(() => {

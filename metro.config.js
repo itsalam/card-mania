@@ -1,5 +1,6 @@
 const { withNativeWind } = require('nativewind/metro')
 const { getSentryExpoConfig } = require('@sentry/react-native/metro')
+const withStorybook = require('@storybook/react-native/metro/withStorybook')
 const path = require('path')
 
 module.exports = (() => {
@@ -79,6 +80,16 @@ module.exports = (() => {
   // require.context() call works even if getSentryExpoConfig doesn't inherit
   // unstable_allowRequireContext from @expo/metro-config's getDefaultConfig.
   config.transformer.unstable_allowRequireContext = true
+
+  // Always run withStorybook so it can stub out @storybook/* imports in normal
+  // builds. With enabled:false + onDisabledRemoveStorybook:true, Metro returns
+  // empty modules for every @storybook/* import, which prevents native peer deps
+  // (bottom-sheet, datetimepicker, slider) from being pulled into the app bundle.
+  config = withStorybook(config, {
+    enabled: process.env.EXPO_PUBLIC_STORYBOOK === 'true',
+    onDisabledRemoveStorybook: true,
+    configPath: path.resolve(__dirname, './.storybook'),
+  })
 
   return config
 })()
