@@ -1,7 +1,22 @@
-// Native Storybook entry point.
-// Rendered by app/_layout.tsx when EXPO_PUBLIC_STORYBOOK=true.
-import { getStorybookUI } from '@storybook/react-native'
-import './storybook.requires'
+import AsyncStorage from '@react-native-async-storage/async-storage'
+import * as SplashScreen from 'expo-splash-screen'
+import React, { useEffect } from 'react'
+import { view } from './storybook.requires'
 
-const StorybookUIRoot = getStorybookUI({ shouldPersistSelection: true })
-export default StorybookUIRoot
+// ThemeProvider normally hides the splash screen, but it never mounts in
+// Storybook mode. Hide it here so the Storybook UI is actually visible.
+function StorybookWithSplash() {
+  useEffect(() => {
+    SplashScreen.hideAsync()
+  }, [])
+
+  const UI = view.getStorybookUI({
+    storage: {
+      getItem: AsyncStorage.getItem,
+      setItem: AsyncStorage.setItem,
+    },
+  })
+  return <UI />
+}
+
+export default StorybookWithSplash

@@ -3,7 +3,7 @@ import React from 'react'
 import '../global.css'
 
 // Initialise react-native-ui-lib color tokens (works via react-native-web)
-require('@/assets/rn-ui')
+import '@/assets/rn-ui'
 
 const preview: Preview = {
   parameters: {

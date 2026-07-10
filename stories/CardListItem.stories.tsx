@@ -37,7 +37,7 @@ type Story = StoryObj<typeof CardListView>
 export const Default: Story = {
   render: () => (
     <View style={{ width: 360 }}>
-      <CardListView item={MOCK_CARD} />
+      <CardListView card={MOCK_CARD} />
     </View>
   ),
 }
@@ -45,7 +45,7 @@ export const Default: Story = {
 export const Loading: Story = {
   render: () => (
     <View style={{ width: 360 }}>
-      <CardListView item={null} />
+      <CardListView card={undefined} />
     </View>
   ),
 }
@@ -53,8 +53,8 @@ export const Loading: Story = {
 export const List: Story = {
   render: () => (
     <View style={{ width: 360, gap: 1 }}>
-      <CardListView item={MOCK_CARD} />
-      <CardListView item={MOCK_CARD_CHEAP} />
+      <CardListView card={MOCK_CARD} />
+      <CardListView card={MOCK_CARD_CHEAP} />
     </View>
   ),
 }

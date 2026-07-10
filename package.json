@@ -44,7 +44,9 @@
     "@gluestack-ui/overlay": "^0.1.22",
     "@gluestack-ui/spinner": "^0.1.15",
     "@gluestack-ui/toast": "^1.0.9",
+    "@gorhom/bottom-sheet": "^5.2.14",
     "@react-native-async-storage/async-storage": "2.2.0",
+    "@react-native-community/datetimepicker": "8.6.0",
     "@react-native-community/slider": "5.1.2",
     "@react-native-masked-view/masked-view": "0.3.2",
     "@react-navigation/bottom-tabs": "^7.3.10",
@@ -73,7 +75,7 @@
     "babel-plugin-module-resolver": "^5.0.2",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
-    "expo": "^55.0.24",
+    "expo": "55.0.24",
     "expo-asset": "~55.0.17",
     "expo-blur": "~55.0.14",
     "expo-build-properties": "~55.0.14",
@@ -128,12 +130,13 @@
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",
-    "@types/react": "~19.2.10",
+    "@storybook/addon-essentials": "^8.6.0",
     "@storybook/addon-ondevice-actions": "^8.4.6",
     "@storybook/addon-ondevice-controls": "^8.4.6",
     "@storybook/react": "^8.6.0",
     "@storybook/react-native": "^8.4.6",
     "@storybook/react-vite": "^8.6.0",
+    "@types/react": "~19.2.10",
     "@vitejs/plugin-react": "^6.0.3",
     "babel-plugin-react-docgen-typescript": "^1.5.1",
     "eslint": "^9.39.3",
@@ -158,6 +161,5 @@
       "git add"
     ]
   },
-  "private": true,
-  "packageManager": "yarn@3.4.1+sha512.a333bf9c2557d71f5ba87dd1446cde24bb9c35301ec29dd2baba577b3f9d1ab61348b66a1324de9088c40a996c5b9203794da8bf14cab9fae6a6eccc00cb8078"
+  "private": true
 }
