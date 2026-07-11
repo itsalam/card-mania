@@ -1,0 +1,27 @@
+/* @font-face definitions for the families the shipped Tailwind CSS references.
+   Paths resolve from this file's location (.design-sync/). Wired via
+   cfg.extraFonts; the converter copies the referenced ttf into fonts/. */
+@font-face {
+  font-family: 'Montserrat_400Regular';
+  font-weight: 400;
+  font-style: normal;
+  src: url('../node_modules/@expo-google-fonts/montserrat/400Regular/Montserrat_400Regular.ttf') format('truetype');
+}
+@font-face {
+  font-family: 'Montserrat_500Medium';
+  font-weight: 500;
+  font-style: normal;
+  src: url('../node_modules/@expo-google-fonts/montserrat/500Medium/Montserrat_500Medium.ttf') format('truetype');
+}
+@font-face {
+  font-family: 'Montserrat_700Bold';
+  font-weight: 700;
+  font-style: normal;
+  src: url('../node_modules/@expo-google-fonts/montserrat/700Bold/Montserrat_700Bold.ttf') format('truetype');
+}
+@font-face {
+  font-family: 'SpaceMono';
+  font-weight: 400;
+  font-style: normal;
+  src: url('../assets/fonts/SpaceMono-Regular.ttf') format('truetype');
+}

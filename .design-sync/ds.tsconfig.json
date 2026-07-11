@@ -1,0 +1,18 @@
+{
+  "compilerOptions": {
+    "baseUrl": "..",
+    "jsx": "react-jsx",
+    "jsxImportSource": "react",
+    "paths": {
+      "@/*": ["./*"],
+      "tailwind.config": ["./tailwind.config.js"],
+      "react-native": ["./lib/stubs/react-native-web-shim.mjs"],
+      "@shopify/react-native-skia": ["./lib/stubs/react-native-skia.js"],
+      "react-native-worklets": ["./lib/stubs/react-native-worklets.js"],
+      "react-native-reanimated": ["./lib/stubs/reanimated-web.ts"],
+      "@react-native-masked-view/masked-view": ["./lib/stubs/masked-view.js"],
+      "@react-native-community/datetimepicker": ["./lib/stubs/datetimepicker.js"],
+      "uilib-native": ["./lib/stubs/uilib-native.js"]
+    }
+  }
+}
