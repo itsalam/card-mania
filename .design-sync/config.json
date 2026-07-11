@@ -1,0 +1,40 @@
+{
+  "projectId": "c026bc0a-ff06-408e-98c8-434702098ef0",
+  "shape": "package",
+  "pkg": "card-mania",
+  "globalName": "CardMania",
+  "srcDir": "components",
+  "buildCmd": "DARK_MODE=class npx tailwindcss -i global.css -o .design-sync/compiled.css --config tailwind.config.js && NODE_PATH=./.ds-sync/node_modules node .design-sync/prebundle.mjs",
+  "tsconfig": ".design-sync/ds.tsconfig.json",
+  "entry": ".design-sync/ds-prebundle.mjs",
+  "cssEntry": ".design-sync/compiled.css",
+  "extraFonts": [".design-sync/fonts.css"],
+  "readmeHeader": ".design-sync/conventions.md",
+  "componentSrcMap": {
+    "Button": "components/ui/button.tsx",
+    "Badge": "components/ui/badge.tsx",
+    "Chip": "components/ui/badge.tsx",
+    "Text": "components/ui/text/base-text.tsx",
+    "Avatar": null,
+    "Alert": "components/ui/alert.tsx",
+    "CollapsibleSection": "components/ui/collapsible-section.tsx",
+    "CardListView": "features/tcg-card-views/ListCard.tsx",
+    "Skeleton": "components/ui/skeleton.tsx",
+    "SkeletonText": "components/ui/text/skeleton-text.tsx",
+    "TabRow": "components/tabs/TabRow.tsx",
+    "Tabs": "components/ui/tabs/index.tsx"
+  },
+  "dtsPropsFor": {
+    "Button": "variant?: 'default' | 'primary' | 'destructive' | 'outline' | 'secondary' | 'ghost' | 'link'; size?: 'default' | 'sm' | 'lg' | 'icon'; disabled?: boolean; onPress?: () => void; className?: string; style?: object; children?: React.ReactNode",
+    "Badge": "label: string; variant?: 'default' | 'square'; className?: string; style?: object",
+    "Chip": "label: string; className?: string; style?: object",
+    "Text": "variant?: 'default' | 'h1' | 'h2' | 'h3' | 'h4' | 'p' | 'lead' | 'large' | 'small' | 'muted' | 'info' | 'badge' | 'stats'; className?: string; style?: object; children?: React.ReactNode",
+    "Alert": "variant?: 'default' | 'destructive'; icon?: React.ComponentType<{ size?: number; color?: string }>; className?: string; children?: React.ReactNode",
+    "CollapsibleSection": "title: string; rightElement?: React.ReactNode; defaultCollapsed?: boolean; className?: string; children?: React.ReactNode",
+    "CardListView": "card?: { id: string; name: string; set_name?: string; latest_price?: number } | undefined",
+    "Skeleton": "style?: object; className?: string",
+    "SkeletonText": "loading?: boolean; variant?: 'default' | 'h1' | 'h2' | 'h3' | 'h4' | 'muted' | 'small'; className?: string; children?: React.ReactNode",
+    "TabRow": "options: { value: string; label: string }[]; startingIdx?: number; onValueChange?: (value: string) => void; className?: string",
+    "Tabs": "value: string; onValueChange: (value: string) => void; children?: React.ReactNode"
+  }
+}

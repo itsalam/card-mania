@@ -445,6 +445,17 @@ const config: StorybookConfig = {
         __DEV__: JSON.stringify(true),
         'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV ?? 'development'),
       },
+      // The production (rolldown) build does not run the dep-optimizer, so the
+      // `.mjs: jsx` moduleType set under optimizeDeps above only fixes `storybook
+      // dev`. The static `storybook build` bundles node_modules directly, where
+      // rolldown treats `.js`/`.mjs` as plain JS and chokes on the JSX that the
+      // RN ecosystem (react-native-ui-lib/src, @rn-primitives, expo-*) ships in
+      // `.js`. Metro parses all `.js` as JSX; mirror that for the build.
+      build: {
+        rollupOptions: {
+          moduleTypes: { '.js': 'jsx', '.mjs': 'jsx' },
+        },
+      },
     })
   },
 }
