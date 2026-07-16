@@ -140,6 +140,8 @@ export function useCardSearch(params: {
     [debouncedQ, scope, wireFilters, params.limit]
   )
 
+  console.log({ payloadBase })
+
   return useInfiniteQuery<TSearchRes>({
     queryKey: ['card-search', payloadBase],
     enabled,
@@ -159,6 +161,45 @@ export function useCardSearch(params: {
       return last.results.length >= 20 ? 'more' : undefined
     },
     staleTime: 30_000,
+  })
+}
+
+export type GenreOption = { genre: string; n: number }
+export type SetOption = { set_name: string; n: number }
+
+// ITS-91: genre-first chip row. Distinct *canonical* genres (list_card_genres
+// applies canonical_genre() so "Baseball Cards"/"Baseball" collapse to one chip).
+// `as any` on the RPC name: these RPCs aren't in the generated types until the
+// migration is pushed + `npm run db:types` re-runs (matches the codebase pattern).
+export function useCardGenres() {
+  return useQuery<GenreOption[]>({
+    queryKey: ['card-genres'],
+    queryFn: async () => {
+      const { data, error } = await getSupabase().rpc('list_card_genres' as any)
+      console.log({ data, error })
+      if (error) throw error
+      return (data ?? []) as GenreOption[]
+    },
+    staleTime: 10 * 60_000,
+    gcTime: 30 * 60_000,
+  })
+}
+
+// ITS-91: set multi-select. Optionally scoped to the selected canonical genre so
+// the list stays bounded once a genre chip is active.
+export function useCardSets(genre?: string | null) {
+  return useQuery<SetOption[]>({
+    queryKey: ['card-sets', genre ?? null],
+    queryFn: async () => {
+      const { data, error } = await getSupabase().rpc(
+        'list_card_sets' as any,
+        genre ? { p_genre: genre } : ({} as any)
+      )
+      if (error) throw error
+      return (data ?? []) as SetOption[]
+    },
+    staleTime: 10 * 60_000,
+    gcTime: 30 * 60_000,
   })
 }
 

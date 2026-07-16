@@ -132,9 +132,8 @@ Deno.serve(async (req) => {
 
   // ITS-77: search scope + filters. `filters` arrives JSON-encoded in a query
   // param (invokeFx serializes object values with JSON.stringify).
-  const scope = (url.searchParams.get('scope') ?? 'catalog') === 'marketplace'
-    ? 'marketplace'
-    : 'catalog'
+  const scope =
+    (url.searchParams.get('scope') ?? 'catalog') === 'marketplace' ? 'marketplace' : 'catalog'
   let filters: {
     genre?: string
     sets?: string[]
@@ -264,7 +263,10 @@ Deno.serve(async (req) => {
   const cacheKey = id ? `id:${id}` : q ? `q:${q!.toLowerCase().trim()}` : null
 
   const queryNorm = q ? normalize(q) : id ? `id:${id}` : ''
-  const queryHashPromise = sha256HexStr(queryNorm || cacheKey!)
+  // Include filters in the cache key — otherwise changing genre/sets/price/sealed
+  // hits the same query-only cache entry and the filtered RPC is never re-run
+  // (mirrors the marketplace hash above).
+  const queryHashPromise = sha256HexStr(`${queryNorm || cacheKey!}:${JSON.stringify(filters)}`)
   let queryHash
   if (!cacheKey) return json({ error: 'Missing id or q' }, { status: 400 })
 

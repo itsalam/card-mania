@@ -3,6 +3,7 @@ import { TextInput } from 'react-native'
 import { create } from 'zustand'
 
 type ItemType = 'cards' | 'sets' | 'collections'
+type CardGenre = string
 
 type Filters = {
   itemTypes: ItemType[]
@@ -14,6 +15,11 @@ type Filters = {
   owned: boolean
   wishlisted: boolean
   unowned: boolean
+  genre: CardGenre | null
+  // NB: distinct from the `sets` ItemType (cards/sets/collections). This is the
+  // set_name multi-select; the wire key stays `sets` (mapped in SearchScreen).
+  setNames: string[]
+  grading: string[]
 }
 
 export type FiltersKeys = keyof Filters | ItemType
@@ -25,6 +31,9 @@ type FilterActions = {
   setOwned: (owned: boolean) => void
   setWishlisted: (wishlisted: boolean) => void
   setUnowned: (unowned: boolean) => void
+  setGenre: (genre: CardGenre | null) => void
+  toggleSet: (set: string) => void
+  toggleGrading: (company: string) => void
   toggleDisplayFilter: (filter: FiltersKeys) => void
 }
 
@@ -43,6 +52,9 @@ export const DisplayFilterLabels = {
   owned: 'Owned',
   wishlisted: 'Wishlisted',
   unowned: 'Unowned',
+  genre: 'Genre',
+  setNames: 'Set',
+  grading: 'Grading',
 } as Record<FiltersKeys, string>
 
 export const useFiltersStore = create<FilterState>((set) => ({
@@ -51,6 +63,9 @@ export const useFiltersStore = create<FilterState>((set) => ({
   sealed: false,
   owned: false,
   wishlisted: false,
+  genre: null,
+  setNames: [],
+  grading: [],
   unowned: false,
   toggleItemTypes: (type) =>
     set((state) => ({
@@ -63,12 +78,34 @@ export const useFiltersStore = create<FilterState>((set) => ({
   setOwned: (owned) => set({ owned }),
   setWishlisted: (wishlisted) => set({ wishlisted }),
   setUnowned: (unowned) => set({ unowned }),
+  setGenre: (genre) => set({ genre }),
+  toggleSet: (setName) =>
+    set((state) => ({
+      setNames: state.setNames.includes(setName)
+        ? state.setNames.filter((s) => s !== setName)
+        : [...state.setNames, setName],
+    })),
+  toggleGrading: (company) =>
+    set((state) => ({
+      grading: state.grading.includes(company)
+        ? state.grading.filter((g) => g !== company)
+        : [...state.grading, company],
+    })),
   toggleDisplayFilter: (filter) =>
     set((state) => {
       if (filter in DisplayFilterLabels) {
         const key = filter as keyof Filters
         if (key === 'priceRange') {
           return { priceRange: { min: undefined, max: undefined } }
+        }
+        if (key === 'genre') {
+          return { genre: null }
+        }
+        if (key === 'setNames') {
+          return { setNames: [] }
+        }
+        if (key === 'grading') {
+          return { grading: [] }
         }
         if (state[key]) {
           delete state[key]
@@ -102,7 +139,8 @@ export function FiltersProvider({
 }: PropsWithChildren & { filters: FilterState }) {
   const { min, max } = filters.priceRange
   const displayFilters = useMemo(() => {
-    const { itemTypes, priceRange, sealed, owned, wishlisted, unowned } = filters
+    const { itemTypes, priceRange, sealed, owned, wishlisted, unowned, genre, setNames, grading } =
+      filters
 
     const itemLabels = itemTypes.reduce(
       (acc, type) => {
@@ -130,6 +168,13 @@ export function FiltersProvider({
       ...(owned ? { owned: DisplayFilterLabels.owned } : {}),
       ...(wishlisted ? { wishlisted: DisplayFilterLabels.wishlisted } : {}),
       ...(unowned ? { unowned: DisplayFilterLabels.unowned } : {}),
+      ...(genre ? { genre } : {}),
+      ...(setNames.length
+        ? { setNames: `${setNames.length} set${setNames.length > 1 ? 's' : ''}` }
+        : {}),
+      ...(grading.length
+        ? { grading: `${grading.length} grade${grading.length > 1 ? 's' : ''}` }
+        : {}),
     } as FilterDisplayState['displayFilters']
   }, [filters, min, max])
 

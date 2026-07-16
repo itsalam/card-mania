@@ -20,7 +20,7 @@ export const CardSearchItem = z.object({
 // three layers — before, each disagreed and filters never reached the DB.
 export const SearchFilters = z
   .object({
-    genre: z.string().optional(), // cards.genre (the "sport"/category axis)
+    genre: z.string().optional(), // canonical_genre(cards.genre) — the "sport"/category axis (ITS-91)
     sets: z.array(z.string()).optional(), // cards.set_name
     grading: z.array(z.string()).optional(), // grading-company slugs + 'raw' (marketplace scope)
     sealed: z.boolean().optional(), // cards.sealed
