@@ -10,7 +10,6 @@ import {
   Skia,
   Line as SkiaLine,
   Text as SkText,
-  useFont,
   vec,
 } from '@shopify/react-native-skia'
 import React, { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react'
@@ -42,6 +41,7 @@ import {
 import { useAxisTransform } from './hooks/useAxisTransform'
 import { ChartPressContext, ChartPressProvider, useSharedPress } from './hooks/useChartPress'
 import { DateRangeContext, DateRangeProvider, useTimeRange } from './hooks/useDateRange'
+import { useGraphFonts } from './hooks/useGraphFonts'
 import { FetchingBadge } from './ui/FetchingBadge'
 import { LineEffect } from './ui/LineEffect'
 import { LoadingState } from './ui/LoadingState'
@@ -335,10 +335,11 @@ export function PriceGraph<
     }
   }, [hasValidData, yKeys])
 
-  const axisFont = useFont(require('../../assets/fonts/Inter.ttf'), 11)
-  // Same fonts PointValueCard uses — needed to measure card width for domainPadding.right
-  const cardPriceFont = useFont(require('../../assets/fonts/SpaceMono-Regular.ttf'), 12)
-  const cardLabelFont = useFont(require('../../assets/fonts/SpaceMono-Regular.ttf'), 10)
+  // All graph fonts load once here (see useGraphFonts). cardPrice/cardLabel are
+  // the same fonts PointValueCard renders — needed to measure card width for
+  // domainPadding.right.
+  const fonts = useGraphFonts()
+  const { axis: axisFont, price: cardPriceFont, label: cardLabelFont } = fonts
 
   const yLabelPad = useMemo(() => {
     if (!yTickValues || !axisFont) return 0
@@ -892,6 +893,7 @@ export function PriceGraph<
                       valueDenorm={axisBreaks.length ? valueDenorm : undefined}
                       showLabel={showTooltipLabel}
                       breakGaps={breakGaps}
+                      fonts={fonts}
                       lastDataXPerSeries={(() => {
                         const m: Record<string, number> = {}
                         for (const yKey of props.yKeys as string[]) {
