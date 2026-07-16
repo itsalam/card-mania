@@ -1,4 +1,9 @@
-import { reportSearchRenderMs, useCardSearch, useSuggestionsFixed } from '@/client/price-charting'
+import {
+  FilterQuery,
+  reportSearchRenderMs,
+  useCardSearch,
+  useSuggestionsFixed,
+} from '@/client/price-charting'
 import { BlurGradientBackground, ShoulderCutoutDescriptor } from '@/components/Background'
 import DraggableFooter from '@/components/DraggableFooter'
 import { AppStandaloneHeader } from '@/components/ui/headers'
@@ -20,7 +25,8 @@ import Animated, {
 } from 'react-native-reanimated'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { SearchPreviewCard } from '../PreviewItem'
-import { FiltersKeys, FiltersProvider, useFiltersStore } from './filters/providers'
+import { GenreFilter } from './filters/GenreFilter'
+import { FiltersProvider, useFiltersStore } from './filters/providers'
 import { SearchFiltersOptions } from './filters/SearchFilters'
 
 export type SearchScreenProps = {
@@ -70,10 +76,11 @@ export function SearchScreen({
       ...(filters.owned ? { owned: filters.owned } : {}),
       ...(filters.wishlisted ? { wishlisted: filters.wishlisted } : {}),
       ...(filters.unowned ? { unowned: filters.unowned } : {}),
-    } as Partial<Record<FiltersKeys, string>> & {
-      itemTypes: string[]
-      priceRange: { min: number | undefined; max: number | undefined }
-    }
+      // ITS-91: genre/sets/grading now reach useCardSearch → toWireFilters → RPC.
+      ...(filters.genre ? { genre: filters.genre } : {}),
+      ...(filters.setNames.length ? { sets: filters.setNames } : {}),
+      ...(filters.grading.length ? { grading: filters.grading } : {}),
+    } as FilterQuery
   }, [filters])
 
   // State hooks
@@ -201,6 +208,9 @@ export function SearchScreen({
                 )}
               </View>
             )}
+
+            <GenreFilter />
+
             {/* MaskedView clips scroll content (overflow:hidden equivalent) and
                 fades the list at top/bottom via RN Animated.Value opacity on the
                 gradient views inside the mask element. RN's native-driver timing
@@ -312,10 +322,10 @@ export function SearchScreen({
           ]}
           toggleLocked={filtersExpanded}
           onLockedChange={setFiltersExpanded}
+          reverseExpand
           mainContent={
             <View
               style={{
-                paddingBottom: 20,
                 width: '100%',
               }}
             >

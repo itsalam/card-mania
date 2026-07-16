@@ -13,7 +13,7 @@ import {
 } from 'react-native'
 import { Gesture, GestureDetector } from 'react-native-gesture-handler'
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated'
-import { BorderRadiuses, Colors } from 'react-native-ui-lib'
+import { BorderRadiuses, Colors as ThemeColors } from 'react-native-ui-lib'
 
 import { scheduleOnRN } from 'react-native-worklets'
 require('@/assets/rn-ui')
@@ -54,7 +54,7 @@ export function Chip({
   leftElement,
   rightElement,
   avatar,
-  backgroundColor = Colors.$backgroundPrimaryHeavy,
+  backgroundColor = ThemeColors.$backgroundPrimaryHeavy,
   borderRadius = BorderRadiuses.br100,
   containerStyle,
   size = 26,
@@ -111,17 +111,23 @@ export type BadgeProps = ChipProps & {
   icon?: LucideIcon
 }
 
-// Exported for backward compatibility (badge-input.tsx reads these fields)
-export const BaseBadgeProps = {
+type ColorsModule = typeof ThemeColors
+
+// Factories, not frozen objects: theme tokens are scheme-dependent and must be
+// read at render time. As module-level object literals they captured whatever
+// scheme was active at import and never reacted to a light/dark switch. Called
+// per-render as BaseBadgeProps(Colors) — matches the call site in badge-input.tsx
+// and the native badge.tsx.
+export const BaseBadgeProps = (Colors: ColorsModule) => ({
   iconStyle: { width: BASE_ICON_SIZE, height: BASE_ICON_SIZE },
   containerStyle: {} as StyleProp<ViewStyle>,
   labelStyle: { color: Colors.$textDefault } as StyleProp<TextStyle>,
   size: { height: BASE_BADGE_HEIGHT } as ChipSize,
   backgroundColor: Colors.$backgroundPrimaryHeavy,
   iconStrokeWidth: 2.5,
-}
+})
 
-export const SquareBadgeProps = {
+export const SquareBadgeProps = (Colors: ColorsModule) => ({
   iconStyle: { width: SQUARE_ICON_SIZE, height: SQUARE_ICON_SIZE },
   containerStyle: {} as StyleProp<ViewStyle>,
   labelStyle: { color: Colors.$textDefault, fontWeight: '400' } as StyleProp<TextStyle>,
@@ -129,7 +135,7 @@ export const SquareBadgeProps = {
   backgroundColor: Colors.$backgroundPrimaryHeavy,
   borderRadius: BorderRadiuses.br20 as number,
   iconStrokeWidth: 1.5,
-}
+})
 
 export function Badge({
   variant = 'default',
@@ -139,19 +145,19 @@ export function Badge({
   ...props
 }: BadgeProps) {
   const isSquare = variant === 'square'
-  const defaults = isSquare ? SquareBadgeProps : BaseBadgeProps
+  const defaults = isSquare ? SquareBadgeProps(ThemeColors) : BaseBadgeProps(ThemeColors)
 
   return (
     <Chip
       size={defaults.size}
       backgroundColor={defaults.backgroundColor}
-      {...(isSquare && { borderRadius: SquareBadgeProps.borderRadius })}
+      {...(isSquare ? { borderRadius: BorderRadiuses.br20 } : {})}
       labelStyle={[defaults.labelStyle, labelStyle]}
       leftElement={
         Icon ? (
           <Icon
             size={BASE_ICON_SIZE}
-            color={Colors.$textDefault}
+            color={ThemeColors.$textDefault}
             strokeWidth={defaults.iconStrokeWidth}
           />
         ) : (

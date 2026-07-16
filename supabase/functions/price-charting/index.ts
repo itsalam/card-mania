@@ -130,6 +130,25 @@ Deno.serve(async (req) => {
 
   const commitImages = Boolean(url.searchParams.get('commit_images'))
 
+  // ITS-77: search scope + filters. `filters` arrives JSON-encoded in a query
+  // param (invokeFx serializes object values with JSON.stringify).
+  const scope =
+    (url.searchParams.get('scope') ?? 'catalog') === 'marketplace' ? 'marketplace' : 'catalog'
+  let filters: {
+    genre?: string
+    sets?: string[]
+    grading?: string[]
+    sealed?: boolean
+    minPrice?: number
+    maxPrice?: number
+  } = {}
+  try {
+    const raw = url.searchParams.get('filters')
+    if (raw) filters = JSON.parse(raw)
+  } catch {
+    filters = {}
+  }
+
   const pcBase = Deno.env.get('PRICECHARTING_API_BASE')!
   const pcKey = Deno.env.get('PRICECHARTING_API_KEY')!
   const SCORE_THRESHOLD = Number(Deno.env.get('SCORE_THRESHOLD') ?? '0.35')
@@ -149,6 +168,72 @@ Deno.serve(async (req) => {
 
   if (!pcBase || !pcKey || !supa || !srole) {
     return json({ error: 'Missing environment variables' }, { status: 500 })
+  }
+
+  // ITS-77: marketplace scope — search live storefront listings only, via the
+  // search_storefront_items RPC. No vendor fallbacks (eBay/PriceCharting/
+  // CardHedge) — those aren't items for sale. Lists all storefront items when
+  // the query is empty.
+  if (scope === 'marketplace') {
+    const qNorm = q ? normalize(q) : ''
+    const rows = await fetch(`${supa}/rest/v1/rpc/search_storefront_items`, {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        apikey: srole,
+        authorization: `Bearer ${srole}`,
+      },
+      body: JSON.stringify({
+        p_q: qNorm,
+        p_limit: Number(limit ?? '20'),
+        p_genre: filters.genre ?? null,
+        p_sets: filters.sets ?? null,
+        p_grading: filters.grading ?? null,
+        p_min_price: filters.minPrice ?? null,
+        p_max_price: filters.maxPrice ?? null,
+        p_sealed: typeof filters.sealed === 'boolean' ? filters.sealed : null,
+      }),
+    })
+      .then((r) => r.json() as Promise<Array<Record<string, any>>>)
+      .catch((err) => {
+        console.error('storefront search failed', err)
+        return [] as Array<Record<string, any>>
+      })
+
+    const mapped: SearchResultItem[] = (Array.isArray(rows) ? rows : []).map((row) => ({
+      id: String(row.id),
+      card: {
+        id: row.card_id,
+        name: row.name,
+        set_name: row.set_name,
+        latest_price: row.price ?? null,
+        grades_prices: {},
+        genre: row.genre,
+      },
+      score: row.score ?? 1,
+      snippet: row.snippet,
+      source: 'local' as const,
+      // Marketplace-specific fields the result row / renderAccessories consume.
+      reason: {
+        ...(row.reason ?? {}),
+        policy: 'storefront',
+        scope: 'marketplace',
+        listing_id: row.id,
+        seller_id: row.seller_id,
+        seller_username: row.seller_username,
+        price: row.price,
+        grade_label: row.grade_label,
+        grading_company: row.grading_company,
+        sealed: row.sealed,
+      },
+    }))
+
+    const withHints = await attachImageHints(mapped, supa, srole, new Map())
+    const marketHash = await sha256HexStr(`market:${qNorm}:${JSON.stringify(filters)}`)
+    return json(
+      { query: q || 'marketplace', query_hash: marketHash, results: withHints },
+      { headers: { 'Access-Control-Allow-Origin': cors.origin } }
+    )
   }
 
   // No query and no id after config lookup — fall back to CardHedge top-movers
@@ -178,7 +263,10 @@ Deno.serve(async (req) => {
   const cacheKey = id ? `id:${id}` : q ? `q:${q!.toLowerCase().trim()}` : null
 
   const queryNorm = q ? normalize(q) : id ? `id:${id}` : ''
-  const queryHashPromise = sha256HexStr(queryNorm || cacheKey!)
+  // Include filters in the cache key — otherwise changing genre/sets/price/sealed
+  // hits the same query-only cache entry and the filtered RPC is never re-run
+  // (mirrors the marketplace hash above).
+  const queryHashPromise = sha256HexStr(`${queryNorm || cacheKey!}:${JSON.stringify(filters)}`)
   let queryHash
   if (!cacheKey) return json({ error: 'Missing id or q' }, { status: 400 })
 
@@ -274,7 +362,16 @@ Deno.serve(async (req) => {
         apikey: srole,
         authorization: `Bearer ${srole}`,
       },
-      body: JSON.stringify({ p_q: qNorm, p_limit: Number(limit ?? '20') }),
+      body: JSON.stringify({
+        p_q: qNorm,
+        p_limit: Number(limit ?? '20'),
+        // ITS-77: catalog filters (all optional; RPC guards each with IS NULL)
+        p_genre: filters.genre ?? null,
+        p_sets: filters.sets ?? null,
+        p_min_price: filters.minPrice ?? null,
+        p_max_price: filters.maxPrice ?? null,
+        p_sealed: typeof filters.sealed === 'boolean' ? filters.sealed : null,
+      }),
     })
       .then((rpc) => rpc.json() as Promise<Array<BlendedSearchResultItem>>)
       .then((json) => {

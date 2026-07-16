@@ -158,7 +158,7 @@ export const thumbStyles = StyleSheet.create({
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
-    height: '100%',
+    // height: '100%',
   },
   sheet: {
     width: W + 2,
@@ -182,8 +182,8 @@ export const thumbStyles = StyleSheet.create({
     justifyContent: 'center',
   },
   sheetInner: {
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
+    borderTopLeftRadius: 23,
+    borderTopRightRadius: 23,
     overflow: 'hidden',
   },
 })

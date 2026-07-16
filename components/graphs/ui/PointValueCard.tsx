@@ -6,8 +6,8 @@ import {
   Path,
   RoundedRect,
   Skia,
+  type SkFont,
   Text,
-  useFont,
 } from '@shopify/react-native-skia'
 import React, { useMemo } from 'react'
 import {
@@ -42,6 +42,10 @@ type PointValueCardProps = {
   seriesIndex?: number
   /** Pixel x of the last real data point — beyond this the series is extrapolated. */
   lastDataX?: number
+  /** SpaceMono @ 12 for the value text; loaded once by the parent. */
+  priceFont: SkFont | null
+  /** SpaceMono @ 10 for the series label; loaded once by the parent. */
+  labelFont: SkFont | null
 }
 
 export function PointValueCard({
@@ -60,10 +64,9 @@ export function PointValueCard({
   adjustedPositions,
   seriesIndex,
   lastDataX,
+  priceFont,
+  labelFont,
 }: PointValueCardProps) {
-  // 1) load a font (must be a real .ttf/.otf file in your bundle)
-  const priceFont = useFont(require('../../../assets/fonts/SpaceMono-Regular.ttf'), 12)
-  const labelFont = useFont(require('../../../assets/fonts/SpaceMono-Regular.ttf'), 10)
   const setFormattedLabel = React.useCallback(
     (n: number) => {
       const fallback = restPoint?.yValue ?? (0 as number)

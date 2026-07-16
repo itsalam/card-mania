@@ -1,4 +1,4 @@
-import { Rect, RoundedRect, Text, useFont } from '@shopify/react-native-skia'
+import { Rect, RoundedRect, Text } from '@shopify/react-native-skia'
 import React, { Fragment, useMemo, useState } from 'react'
 import {
   Easing,
@@ -11,6 +11,7 @@ import { Colors } from 'react-native-ui-lib'
 import { scheduleOnRN } from 'react-native-worklets'
 import { WINDOW_WIDTH } from '../constants'
 import { fmtCardValue } from '../helpers'
+import { GraphFonts } from '../hooks/useGraphFonts'
 import { getFontHeight, wrapContent } from '../utils'
 import { PointValueCard } from './PointValueCard'
 import { InputFieldType, SeriesPoint, SeriesSV } from './types'
@@ -38,6 +39,8 @@ type ToolTipProps = {
   breakGaps?: BreakGap[]
   /** Pixel x of the last real data point for each series key — beyond this the series is extrapolated. */
   lastDataXPerSeries?: Record<string, number>
+  /** Fonts loaded once by PriceGraph; shared across the tooltip and every card. */
+  fonts: GraphFonts
 }
 
 export function ToolTip({
@@ -57,8 +60,9 @@ export function ToolTip({
   showLabel = true,
   breakGaps,
   lastDataXPerSeries,
+  fonts,
 }: ToolTipProps) {
-  const font = useFont(require('../../../assets/fonts/Inter.ttf'), 12)
+  const font = fonts.tooltip
   const seriesKeys = useMemo(() => Object.keys(yKeys ?? {}), [yKeys])
   const seriesIsActive = seriesActive ?? isActive
 
@@ -259,6 +263,8 @@ export function ToolTip({
               adjustedPositions={adjustedPositions}
               seriesIndex={i}
               lastDataX={lastDataXPerSeries?.[key]}
+              priceFont={fonts.price}
+              labelFont={fonts.label}
             />
           </Fragment>
         )

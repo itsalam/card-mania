@@ -2,7 +2,14 @@ import { useCombinedRefs } from '@/components/hooks/useCombinedRefs'
 import _isUndefined from 'lodash/isUndefined'
 import { forwardRef, useCallback, useContext, useMemo, useRef, useState } from 'react'
 import { TextInputChangeEvent } from 'react-native'
-import { Assets, Chip, ChipProps, ChipsInputChipProps, Constants } from 'react-native-ui-lib'
+import {
+  Assets,
+  Chip,
+  ChipProps,
+  ChipsInputChipProps,
+  Colors,
+  Constants,
+} from 'react-native-ui-lib'
 import { ChipsInputChangeReason } from 'react-native-ui-lib/src/components/chipsInput'
 import { useDidUpdate } from 'react-native-ui-lib/src/hooks'
 import { BaseBadgeProps } from '../badge'
@@ -175,21 +182,22 @@ export const BadgeInputInner = forwardRef<TextFieldHandle, ChipsInputProps>(
     }) => {
       const { index, chip, isMarkedForRemoval } = props
       const { iconStyle, containerStyle, labelStyle, ...defaultProps } = defaultChipProps || {}
+      const baseBadgeStyles = BaseBadgeProps(Colors)
       return (
         <Chip
           key={index}
           customValue={index}
           dismissIcon={Assets.internal.icons.xSmall}
           recorderTag={'mask'}
-          iconStyle={[BaseBadgeProps.iconStyle, iconStyle]}
+          iconStyle={[baseBadgeStyles.iconStyle, iconStyle]}
           containerStyle={[
-            BaseBadgeProps.containerStyle,
+            baseBadgeStyles.containerStyle,
             containerStyle,
             {
               marginTop: 0,
             },
           ]}
-          labelStyle={[BaseBadgeProps.labelStyle, labelStyle]}
+          labelStyle={[baseBadgeStyles.labelStyle, labelStyle]}
           {...defaultProps}
           {...(chip.invalid ? invalidChipProps : undefined)}
           {...chip}

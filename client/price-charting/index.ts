@@ -5,7 +5,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage'
 import { QueryClient, useInfiniteQuery, useQuery } from '@tanstack/react-query'
 import { useMemo } from 'react'
 import { invokeFx } from '../helper'
-import { SearchRequest, SearchResponse, TSearchRes } from './types'
+import { SearchRequest, SearchResponse, SearchScope, TSearchFilters, TSearchRes } from './types'
 
 const PREFETCH_FLAG_KEY = 'search-prefetch-enabled'
 const PREFETCH_FLAG_TTL_MS = 60 * 60 * 1000 // 1 hour
@@ -92,23 +92,55 @@ export function useSuggestionQuery(): string | undefined {
   return data.suggestion_queries[data.suggestion_query_idx] ?? data.suggestion_queries[0]
 }
 
-type FilterQuery = Partial<Record<FiltersKeys, string>> & {
-  itemTypes: string[]
-  priceRange: { min: number | undefined; max: number | undefined }
+export type FilterQuery = Partial<Record<FiltersKeys, string>> & {
+  itemTypes?: string[]
+  priceRange?: { min: number | undefined; max: number | undefined }
+  // ITS-77 filter axes (populated by the filter store; see filters/providers)
+  genre?: string
+  sets?: string[]
+  grading?: string[]
+  sealed?: boolean
 }
 
-export function useCardSearch(params: { q: string; filters?: FilterQuery; limit?: number }) {
-  const debouncedQ = useDebounced(params.q, 250)
+// Map the client filter store shape → the edge-function wire contract
+// (SearchFilters). Only defined keys are sent, so the RPC's `IS NULL` guards
+// leave unset filters unconstrained.
+function toWireFilters(f?: FilterQuery): TSearchFilters | undefined {
+  if (!f) return undefined
+  const wire: TSearchFilters = {}
+  if (f.genre) wire.genre = f.genre
+  if (f.sets?.length) wire.sets = f.sets
+  if (f.grading?.length) wire.grading = f.grading
+  if (typeof f.sealed === 'boolean') wire.sealed = f.sealed
+  if (f.priceRange?.min != null) wire.minPrice = f.priceRange.min
+  if (f.priceRange?.max != null) wire.maxPrice = f.priceRange.max
+  return Object.keys(wire).length ? wire : undefined
+}
 
-  const enabled = debouncedQ.trim().length >= 2
+export function useCardSearch(params: {
+  q: string
+  scope?: SearchScope
+  filters?: FilterQuery
+  limit?: number
+}) {
+  const debouncedQ = useDebounced(params.q, 250)
+  const scope: SearchScope = params.scope ?? 'catalog'
+
+  // Marketplace scope lists live storefront items even with an empty query;
+  // catalog scope still requires 2+ chars to avoid unbounded catalog scans.
+  const enabled = scope === 'marketplace' || debouncedQ.trim().length >= 2
+  const wireFilters = useMemo(() => toWireFilters(params.filters), [params.filters])
   const payloadBase = useMemo(
     () => ({
       q: debouncedQ,
-      filters: params.filters ?? {},
+      scope,
+      filters: wireFilters ?? {},
       limit: params.limit ?? 20,
     }),
-    [debouncedQ, params.filters, params.limit]
+    [debouncedQ, scope, wireFilters, params.limit]
   )
+
+  console.log({ payloadBase })
 
   return useInfiniteQuery<TSearchRes>({
     queryKey: ['card-search', payloadBase],
@@ -129,6 +161,45 @@ export function useCardSearch(params: { q: string; filters?: FilterQuery; limit?
       return last.results.length >= 20 ? 'more' : undefined
     },
     staleTime: 30_000,
+  })
+}
+
+export type GenreOption = { genre: string; n: number }
+export type SetOption = { set_name: string; n: number }
+
+// ITS-91: genre-first chip row. Distinct *canonical* genres (list_card_genres
+// applies canonical_genre() so "Baseball Cards"/"Baseball" collapse to one chip).
+// `as any` on the RPC name: these RPCs aren't in the generated types until the
+// migration is pushed + `npm run db:types` re-runs (matches the codebase pattern).
+export function useCardGenres() {
+  return useQuery<GenreOption[]>({
+    queryKey: ['card-genres'],
+    queryFn: async () => {
+      const { data, error } = await getSupabase().rpc('list_card_genres' as any)
+      console.log({ data, error })
+      if (error) throw error
+      return (data ?? []) as GenreOption[]
+    },
+    staleTime: 10 * 60_000,
+    gcTime: 30 * 60_000,
+  })
+}
+
+// ITS-91: set multi-select. Optionally scoped to the selected canonical genre so
+// the list stays bounded once a genre chip is active.
+export function useCardSets(genre?: string | null) {
+  return useQuery<SetOption[]>({
+    queryKey: ['card-sets', genre ?? null],
+    queryFn: async () => {
+      const { data, error } = await getSupabase().rpc(
+        'list_card_sets' as any,
+        genre ? { p_genre: genre } : ({} as any)
+      )
+      if (error) throw error
+      return (data ?? []) as SetOption[]
+    },
+    staleTime: 10 * 60_000,
+    gcTime: 30 * 60_000,
   })
 }
 

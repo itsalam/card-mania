@@ -4,23 +4,27 @@ import { AnimatePresence } from 'moti'
 import React from 'react'
 import { ScrollView, View } from 'react-native'
 import Animated from 'react-native-reanimated'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { CategoryFilter } from './CategoryFilter'
 import { FilterBadge } from './FilterBadge'
+import { GradingFilter } from './GradingFilter'
 import PriceFilter from './PriceFilter'
 import { FiltersKeys, useFilters } from './providers'
 import { AttributeFilter } from './SealedFilter'
+import { SetFilter } from './SetFilter'
 const AnimatedView = Animated.createAnimatedComponent(View)
 
 export function SearchFiltersOptions() {
   const { priceRange } = useFilters()
-  const insets = useSafeAreaInsets()
   return (
-    <View className="w-full pl-4" style={{ paddingBottom: insets.bottom }}>
+    <View className="w-full pl-4 pb-4">
       <ScrollView keyboardShouldPersistTaps="always">
         <AnimatedView className="flex-col gap-2">
           <Separator orientation="horizontal" />
           <CategoryFilter />
+          <Separator orientation="horizontal" />
+          <SetFilter />
+          <Separator orientation="horizontal" />
+          <GradingFilter />
           <Separator orientation="horizontal" />
           <PriceFilter min={priceRange.min} max={priceRange.max} absMin={0} absMax={1000} />
           <Separator orientation="horizontal" />
