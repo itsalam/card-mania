@@ -41,6 +41,7 @@ export type ThumbProps = {
   isKeyboardAccessory?: boolean
   containerStyle?: StyleProp<AnimatedStyle<StyleProp<ViewStyle>>>
   absoluteThumb?: boolean
+  reverseExpand?: boolean
 }
 
 export const THUMB_SIZE = 5
