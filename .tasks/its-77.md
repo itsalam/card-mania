@@ -3,6 +3,7 @@
 ITS-80 (filter hierarchy) decided: **Option A — genre-first chips** ("sport" maps to `cards.genre`).
 
 ## Phases
+
 - [x] **Phase 1 — backend + contract** (verified on Supabase dev branch `its77-search`)
   - migration `20260711000000_its77_search_filters_storefront.sql`: `sealed` flag on cards;
     `search_cards_blended` extended with genre/set/price/sealed predicates;
@@ -17,6 +18,7 @@ ITS-80 (filter hierarchy) decided: **Option A — genre-first chips** ("sport" m
 - [ ] Phase 6 — ITS-75 fix (route param drop) + e2e walkthroughs.
 
 ## Notes
+
 - Edge-fn changes need deploy + the migration applied to main before production search uses filters.
 - `search_storefront_items` is SECURITY DEFINER (storefront items are public); grants to anon/authenticated.
 - Regenerate `lib/store/supabase.d.ts` (`npm run db:types`) after the migration lands on main.

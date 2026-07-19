@@ -162,14 +162,13 @@ export const thumbStyles = StyleSheet.create({
   },
   sheet: {
     width: W + 2,
-    paddingHorizontal: 1,
     position: 'absolute',
     top: '100%',
     left: -1,
     right: 0,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
-    borderWidth: 2,
+    borderWidth: 1,
   },
   absoluteThumbContainer: {
     position: 'absolute',

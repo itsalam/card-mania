@@ -52,11 +52,15 @@ function getDeepExportedNames(filePath, visiting = new Set()) {
     live.add('default')
     names.add('default')
   }
-  for (const m of code.matchAll(/\bexport\s+(?:const|let|var|function|class|async\s+function)\s+([\w$]+)/g)) {
+  for (const m of code.matchAll(
+    /\bexport\s+(?:const|let|var|function|class|async\s+function)\s+([\w$]+)/g
+  )) {
     live.add(m[1])
     names.add(m[1])
   }
-  for (const m of code.matchAll(/^\s*(?:const|let|var|function|class|async\s+function)\s+([\w$]+)/gm)) {
+  for (const m of code.matchAll(
+    /^\s*(?:const|let|var|function|class|async\s+function)\s+([\w$]+)/gm
+  )) {
     live.add(m[1])
   }
   for (const m of code.matchAll(/\bimport\s+([^'"]+?)\s*from\s*(['"])(\.\.?\/[^'"]+)\2/g)) {
@@ -69,9 +73,15 @@ function getDeepExportedNames(filePath, visiting = new Set()) {
     if (defaultMatch && src.has('default')) live.add(defaultMatch[1])
     const namedMatch = importSpec.match(/\{([^}]+)\}/)
     if (namedMatch) {
-      for (const n of namedMatch[1].split(',').map((s) => s.trim()).filter(Boolean)) {
+      for (const n of namedMatch[1]
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean)) {
         const orig = n.split(/\s+as\s+/)[0].trim()
-        const alias = n.split(/\s+as\s+/).pop().trim()
+        const alias = n
+          .split(/\s+as\s+/)
+          .pop()
+          .trim()
         if (src.has(orig)) live.add(alias)
       }
     }
@@ -81,9 +91,15 @@ function getDeepExportedNames(filePath, visiting = new Set()) {
     if (!target) continue
     const src = getDeepExportedNames(target, vis)
     if (!src) continue
-    for (const n of m[1].split(',').map((s) => s.trim()).filter(Boolean)) {
+    for (const n of m[1]
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean)) {
       const orig = n.split(/\s+as\s+/)[0].trim()
-      const alias = n.split(/\s+as\s+/).pop().trim()
+      const alias = n
+        .split(/\s+as\s+/)
+        .pop()
+        .trim()
       if (src.has(orig)) names.add(alias)
     }
   }
@@ -106,11 +122,14 @@ export function stripRnuiTypeReexports(code, id) {
       if (!targetPath) return match
       const available = getDeepExportedNames(targetPath)
       if (!available) return match
-      const kept = names.split(',').map((n) => n.trim()).filter((n) => {
-        if (!n) return false
-        const orig = n.split(/\s+as\s+/)[0].trim()
-        return available.has(orig)
-      })
+      const kept = names
+        .split(',')
+        .map((n) => n.trim())
+        .filter((n) => {
+          if (!n) return false
+          const orig = n.split(/\s+as\s+/)[0].trim()
+          return available.has(orig)
+        })
       if (kept.length === 0) return ''
       return `export { ${kept.join(', ')} } from ${quote}${specifier}${quote}`
     }
@@ -126,12 +145,20 @@ export function stripRnuiTypeReexports(code, id) {
       const available = getDeepExportedNames(targetPath)
       if (!available) return match
       const keptNamed = []
-      for (const n of namedMatch[1].split(',').map((s) => s.trim()).filter(Boolean)) {
+      for (const n of namedMatch[1]
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean)) {
         const orig = n.split(/\s+as\s+/)[0].trim()
         if (available.has(orig)) {
           keptNamed.push(n)
         } else {
-          strippedImportNames.add(n.split(/\s+as\s+/).pop().trim())
+          strippedImportNames.add(
+            n
+              .split(/\s+as\s+/)
+              .pop()
+              .trim()
+          )
         }
       }
       const defaultMatch = importSpec.match(/^([\w$]+)\s*,/)
@@ -147,11 +174,14 @@ export function stripRnuiTypeReexports(code, id) {
 
   if (strippedImportNames.size > 0) {
     result = result.replace(/export\s*\{([^}]+)\}(?!\s*from)/g, (match, names) => {
-      const kept = names.split(',').map((n) => n.trim()).filter((n) => {
-        if (!n) return false
-        const orig = n.split(/\s+as\s+/)[0].trim()
-        return !strippedImportNames.has(orig)
-      })
+      const kept = names
+        .split(',')
+        .map((n) => n.trim())
+        .filter((n) => {
+          if (!n) return false
+          const orig = n.split(/\s+as\s+/)[0].trim()
+          return !strippedImportNames.has(orig)
+        })
       if (kept.length === 0) return ''
       return `export { ${kept.join(', ')} }`
     })

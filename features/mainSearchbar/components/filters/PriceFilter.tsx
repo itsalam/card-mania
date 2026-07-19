@@ -83,7 +83,7 @@ function PriceFilter({ absMin, absMax }: { absMin: number; absMax: number }) {
   })
 
   return (
-    <Animated.View className="flex flex-row items-center justify-between pb-2">
+    <Animated.View className="flex flex-row items-center justify-between pb-2 flex-1 px-4">
       <Text className="text-lg font-medium">Price Range</Text>
       <View className="flex-1 flex flex-col gap-2 items-center justify-center">
         <Slider absMin={absMin} absMax={startingAbsMax} min={minValShared} max={maxValShared} />

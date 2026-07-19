@@ -76,12 +76,13 @@ export function SearchScreen({
       ...(filters.owned ? { owned: filters.owned } : {}),
       ...(filters.wishlisted ? { wishlisted: filters.wishlisted } : {}),
       ...(filters.unowned ? { unowned: filters.unowned } : {}),
-      // ITS-91: genre/sets/grading now reach useCardSearch → toWireFilters → RPC.
       ...(filters.genre ? { genre: filters.genre } : {}),
       ...(filters.setNames.length ? { sets: filters.setNames } : {}),
       ...(filters.grading.length ? { grading: filters.grading } : {}),
     } as FilterQuery
   }, [filters])
+
+  const scope = useMemo(() => filters.scope ?? undefined, [filters])
 
   // State hooks
   const [filtersExpanded, setFiltersExpanded] = useState(false)
@@ -95,7 +96,7 @@ export function SearchScreen({
     isLoading: isCardSearchLoading,
     refetch: refetchSearch,
     ...cardSearchState
-  } = useCardSearch({ q: searchText, filters: filterQuery })
+  } = useCardSearch({ q: searchText, scope, filters: filterQuery })
   const { refreshing, onRefresh } = useRefresh([refetchSearch])
 
   useEffect(() => {

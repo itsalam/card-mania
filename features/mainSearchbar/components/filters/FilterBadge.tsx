@@ -1,34 +1,60 @@
 import { ToggleBadge } from '@/components/ui/badge'
-import { DollarSign } from 'lucide-react-native'
+import { Cards, WishlistCard } from '@/components/ui/icon'
+import {
+  Boxes,
+  DollarSign,
+  Folder,
+  Library,
+  Package,
+  PackageOpen,
+  ShoppingBag,
+  Sparkle,
+  Sparkles,
+} from 'lucide-react-native'
 import { ComponentProps } from 'react'
-import { Assets, Chip } from 'react-native-ui-lib'
+import { Chip } from 'react-native-ui-lib'
 import { DisplayFilterLabels, FiltersKeys } from './providers'
+
 require('@/assets/rn-ui')
 
 const LabelToBadgeIcon = {
+  marketplace: {
+    leftElement: <ShoppingBag size={20} />,
+  },
+  catalog: {
+    leftElement: <Library size={20} />,
+  },
   cards: {
-    iconSource: Assets.icons.WebStore,
+    leftElement: <Cards size={20} strokeWidth={0.25} />,
   },
   sets: {
-    iconSource: Assets.icons.PlayingCards,
+    leftElement: <Boxes size={20} />,
   },
   collections: {
-    iconSource: Assets.icons.Folder,
+    leftElement: <Folder size={20} />,
   },
   priceRange: {
-    leftElement: <DollarSign size={24} style={{ marginLeft: 10 }} />,
+    leftElement: <DollarSign size={20} style={{ marginLeft: 10 }} />,
   },
   sealed: {
-    iconSource: Assets.icons.Fluorescent,
+    leftElement: <Sparkles size={20} />,
   },
   owned: {
-    iconSource: Assets.icons.Verified,
+    leftElement: <PackageOpen size={20} />,
   },
   wishlisted: {
-    iconSource: Assets.icons.BookmarkHeart,
+    leftElement: <WishlistCard size={20} strokeWidth={0.25} />,
   },
   unowned: {
-    iconSource: Assets.icons.VerifiedOff,
+    leftElement: (
+      <Package size={20}>
+        <Sparkle
+          size={20}
+          transform={[{ translateX: 12 }, { translateY: -0 }, { scale: 0.6 }]}
+          strokeWidth={4}
+        />
+      </Package>
+    ),
   },
 } as Record<FiltersKeys, Pick<ComponentProps<typeof Chip>, 'iconSource' | 'leftElement'>>
 
@@ -38,7 +64,10 @@ export function FilterBadge({
   ...props
 }: ComponentProps<typeof ToggleBadge> & { filterKey: FiltersKeys }) {
   const iconProps = LabelToBadgeIcon[filterKey as FiltersKeys]
-  label = label || DisplayFilterLabels[filterKey as FiltersKeys]
+  label =
+    label ||
+    DisplayFilterLabels[filterKey as FiltersKeys] ||
+    [filterKey.toString()[0].toLocaleUpperCase(), ...filterKey.slice(1)].join('')
   return (
     <ToggleBadge
       className="text-foreground"

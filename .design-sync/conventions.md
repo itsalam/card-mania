@@ -20,7 +20,7 @@ Components are styled two ways, and you can use both:
      `bg-background-0…950`, `text-typography-500`, etc.
 2. **Inline `style`** (React Native style objects) for **one-off colors and geometry**,
    typically using react-native-ui-lib color tokens: `style={{ backgroundColor:
-   Colors.$backgroundPrimaryHeavy }}`. Prefer `className` for anything reusable.
+Colors.$backgroundPrimaryHeavy }}`. Prefer `className` for anything reusable.
 
 Both `className` and `style` merge; `style` wins on conflicts.
 

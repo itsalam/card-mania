@@ -12,7 +12,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { Colors } from 'react-native-ui-lib'
+import { Colors, View } from 'react-native-ui-lib'
 import { scheduleOnRN } from 'react-native-worklets'
 import { BlurBackground, BlurGradientBackground } from './Background'
 import { useMeasure } from './hooks/useMeasure'
@@ -175,6 +175,8 @@ export default function DraggableFooter({
 
   // Pinned bar (reverseExpand): only the keyboard offset — no expansion term, so
   // it stays fixed to the viewport bottom while the detail sheet expands above it.
+  const fromColor = useSharedValue(Colors.rgba(Colors.$backgroundDefault, 0))
+  const toColor = useSharedValue(Colors.rgba(Colors.$backgroundDefault, 0.0))
   const pinnedBarStyle = useAnimatedStyle(() => ({
     transform: [{ translateY: keyboardOffset.value }],
   }))
@@ -265,26 +267,29 @@ export default function DraggableFooter({
       style={[
         containerStyle,
         thumbStyles.sheet,
-        { borderColor: Colors.$outlineNeutral },
+        {
+          borderColor: Colors.$outlineNeutral,
+        },
         cardStyle,
       ]}
       className="flex flex-col items-center"
       ref={fullContentRef}
-      onLayout={onFullContentLayout}
     >
       <BlurGradientBackground
-        style={[thumbStyles.sheetInner, { flex: 1, alignSelf: 'stretch' }]}
+        style={[thumbStyles.sheetInner, { flex: 1, alignSelf: 'stretch', paddingBottom: 400 }]}
         backgroundOpacity={0.95}
+        opacity={mainContentBlurOpacity}
       >
-        <GestureDetector gesture={composed}>
-          <BlurBackground
-            style={[{ zIndex: 2, display: 'flex', minHeight: 52, alignSelf: 'stretch' }]}
-            opacity={mainContentBlurOpacity}
-          >
-            {reverseExpand ? detailContainer : mainContentContainer}
-          </BlurBackground>
-        </GestureDetector>
-        {!reverseExpand && detailContainer}
+        <View onLayout={onFullContentLayout}>
+          <GestureDetector gesture={composed}>
+            <BlurBackground
+              style={[{ zIndex: 2, display: 'flex', minHeight: 52, alignSelf: 'stretch' }]}
+            >
+              {reverseExpand ? detailContainer : mainContentContainer}
+            </BlurBackground>
+          </GestureDetector>
+          {!reverseExpand && detailContainer}
+        </View>
       </BlurGradientBackground>
     </Animated.View>
   )

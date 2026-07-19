@@ -4,6 +4,7 @@ import MaskedView from '@react-native-masked-view/masked-view'
 import * as TabsPrimitive from '@rn-primitives/tabs'
 import { LinearGradient } from 'expo-linear-gradient'
 import { LucideIcon } from 'lucide-react-native'
+import { AnimatePresence, MotiView } from 'moti'
 import {
   createContext,
   ReactNode,
@@ -435,6 +436,45 @@ function TabsContent({
   )
 }
 
+/**
+ * Fade-crossfading tab panel. Unlike `TabsContent` (which mounts/unmounts
+ * instantly), this keeps the outgoing panel mounted to run a fade-out `exit`
+ * while the incoming panel fades in. Panels are absolutely positioned so the
+ * two overlap during the crossfade instead of stacking — the parent must be
+ * `position: 'relative'` with a defined height (e.g. a `flex: 1` region below
+ * the tab list).
+ */
+function AnimatedTabsContent({
+  value,
+  children,
+  style,
+  duration = 180,
+}: {
+  value: string
+  children?: ReactNode
+  style?: StyleProp<ViewStyle>
+  duration?: number
+}) {
+  const { value: currentValue } = TabsPrimitive.useRootContext()
+  const isActive = currentValue === value
+  return (
+    <AnimatePresence>
+      {isActive ? (
+        <MotiView
+          key={value}
+          from={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ type: 'timing', duration }}
+          style={StyleSheet.flatten([StyleSheet.absoluteFill, style])}
+        >
+          {children}
+        </MotiView>
+      ) : null}
+    </AnimatePresence>
+  )
+}
+
 function TabsLabel({
   className,
   label,
@@ -511,4 +551,4 @@ function TabsLabel({
   )
 }
 
-export { Tabs, TabsContent, TabsLabel, TabsList, TabsScrollList, TabsTrigger }
+export { AnimatedTabsContent, Tabs, TabsContent, TabsLabel, TabsList, TabsScrollList, TabsTrigger }

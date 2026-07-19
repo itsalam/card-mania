@@ -1,7 +1,8 @@
+import { FadeScrollView } from '@/components/ui/fade-scroll'
 import { Separator } from '@/components/ui/separator'
 import { Text } from '@/components/ui/text/base-text'
 import React from 'react'
-import { ScrollView, View } from 'react-native'
+import { View } from 'react-native'
 import { FilterBadge } from './FilterBadge'
 import { useFilters } from './providers'
 
@@ -12,7 +13,7 @@ export function CategoryFilter() {
       <Text className="text-lg font-medium">Item Type</Text>
       <Separator orientation="vertical" />
 
-      <ScrollView horizontal>
+      <FadeScrollView horizontal style={{ flex: 1 }}>
         <View className="flex-row gap-2">
           <FilterBadge
             filterKey="cards"
@@ -30,7 +31,7 @@ export function CategoryFilter() {
             onCheckedChange={() => toggleItemTypes('collections')}
           />
         </View>
-      </ScrollView>
+      </FadeScrollView>
     </View>
   )
 }

@@ -19,13 +19,14 @@ stories/
 
 Every story file must have at minimum:
 
-| Story name | Purpose |
-|---|---|
-| `Default` | The most common, happy-path usage |
-| `AllVariants` (or equivalent) | Every meaningful `variant`/`size` prop shown together |
+| Story name                     | Purpose                                                 |
+| ------------------------------ | ------------------------------------------------------- |
+| `Default`                      | The most common, happy-path usage                       |
+| `AllVariants` (or equivalent)  | Every meaningful `variant`/`size` prop shown together   |
 | At least one "real data" story | Realistic mock values that look like actual app content |
 
 Optional but strongly preferred:
+
 - `Loading` / `Skeleton` — if the component has a loading state
 - `Disabled` — if the component has a disabled state
 - `Stacked` / `Group` — if the component is typically composed in a list
@@ -42,7 +43,7 @@ The Storybook global preview wraps every story with:
 
 **Do not add these again inside story files or story-level decorators.**
 
-Add to a story's `decorators` only when the component needs something *beyond* the global set (e.g. a navigation mock, a specific context provider).
+Add to a story's `decorators` only when the component needs something _beyond_ the global set (e.g. a navigation mock, a specific context provider).
 
 ---
 
@@ -51,7 +52,7 @@ Add to a story's `decorators` only when the component needs something *beyond* t
 - Declare mock data as top-level `const` objects, not inside render functions.
 - Use realistic values — real field names, plausible card prices, actual set names.
 - Cast with `as ComponentType` or `as any` only when necessary to satisfy generics on data shapes from Supabase.
-- Include all *required* fields; use `null` or `undefined` for optional ones.
+- Include all _required_ fields; use `null` or `undefined` for optional ones.
 
 ```tsx
 // ✅ Good
@@ -71,13 +72,13 @@ const MOCK_CARD = { id: '1', name: 'Card Name', latest_price: 0 } as any
 
 ## What to avoid
 
-| Avoid | Why |
-|---|---|
-| Importing from `@/client/` inside stories | These hit the network; use inline mock data instead |
-| Adding `QueryClientProvider` / `StoreProvider` inside story files | Already in global preview — double-wrapping creates bugs |
-| Stories with no visible output (empty render) | Defeats the purpose; add a placeholder if truly stateless |
-| Real Supabase calls or `useEffect` data fetching | Stories must be self-contained with no async data loading |
-| `console.error` suppressions | Fix the underlying prop type instead |
+| Avoid                                                             | Why                                                       |
+| ----------------------------------------------------------------- | --------------------------------------------------------- |
+| Importing from `@/client/` inside stories                         | These hit the network; use inline mock data instead       |
+| Adding `QueryClientProvider` / `StoreProvider` inside story files | Already in global preview — double-wrapping creates bugs  |
+| Stories with no visible output (empty render)                     | Defeats the purpose; add a placeholder if truly stateless |
+| Real Supabase calls or `useEffect` data fetching                  | Stories must be self-contained with no async data loading |
+| `console.error` suppressions                                      | Fix the underlying prop type instead                      |
 
 ---
 

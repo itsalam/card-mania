@@ -150,7 +150,7 @@ const Provider = <T extends BaseTagObject>(
             : (_, ref) => (
                 <View>
                   <Input<T> {...props} ref={ref} onChange={onChange} />
-                  <Suggestions<T> compare={compare} />
+                  <Suggestions<T> compare={compare} resultsLabel={'Suggested'} />
                 </View>
               )}
       </TextField>
@@ -224,10 +224,12 @@ const Input = forwardRef(InputForwardRef) as <T extends BaseTagObject>(
   props: MultiChipInputProps<T> & { ref?: Ref<TextFieldHandle> }
 ) => React.JSX.Element
 
-const Suggestions = <T extends BaseTagObject>(props: Pick<MultiChipInputProps<T>, 'compare'>) => {
+const Suggestions = <T extends BaseTagObject>(
+  props: Pick<MultiChipInputProps<T>, 'compare'> & { resultsLabel?: string }
+) => {
   const NUM_ROWS = 2
 
-  const { compare = (a: T, b: T) => a.id === b.id } = props
+  const { compare = (a: T, b: T) => a.id === b.id, resultsLabel } = props
   const { items, setItems, suggestions, hasResults, renderIconElement } = useChipContext<T>()
   const context = useContext(FieldContext)
   const isFocused = context.isFocused
@@ -260,79 +262,71 @@ const Suggestions = <T extends BaseTagObject>(props: Pick<MultiChipInputProps<T>
         },
       ]}
     >
-      <Text
-        style={{
-          paddingVertical: 4,
-          paddingHorizontal: 40,
-          color: Colors.$textNeutralLight,
-        }}
-      >
-        {'Suggested'}
-      </Text>
+      {!rows.length ||
+        (resultsLabel && (
+          <Text
+            style={{
+              paddingTop: 4,
+              paddingHorizontal: 12,
+              color: Colors.$textNeutralLight,
+            }}
+          >
+            {rows.length ? resultsLabel : 'No Results'}
+          </Text>
+        ))}
       <ScrollView
         horizontal
         contentContainerStyle={[
           {
+            paddingVertical: 4,
             display: 'flex',
             flexDirection: 'column',
             marginHorizontal: 20,
+            paddingTop: resultsLabel ? 0 : 4,
           },
         ]}
         style={{ overflow: 'visible' }}
       >
-        {rows.length ? (
-          rows.map((row, index) => (
-            <Animated.View
-              key={`row-${index}`}
-              style={[
-                {
-                  display: 'flex',
-                  flexDirection: 'row',
-                  flexWrap: 'nowrap',
-                  rowGap: 6,
-                  columnGap: 8,
-                  paddingVertical: 4,
-                  paddingHorizontal: 4,
-                },
-              ]}
-            >
-              {row.map((item) => {
-                return (
-                  <Animated.View
-                    key={`tag-${item.id}`}
-                    // sharedTransitionTag={`tag-${item.id}`}
-                    layout={SequencedTransition.reverse()}
-                    entering={FadeIn.duration(75)}
-                    exiting={FadeOut.duration(75)}
-                  >
-                    <ToggleBadge
-                      onPress={() => {
-                        setItems([...items, item])
-                      }}
-                      key={item.id}
-                      checked
-                      leftElement={renderIconElement(item)}
-                      label={item.name}
-                    >
-                      {item.name}
-                    </ToggleBadge>
-                  </Animated.View>
-                )
-              })}
-            </Animated.View>
-          ))
-        ) : (
-          <View
-            style={{
-              flex: 1,
-              justifyContent: 'center',
-              alignItems: 'center',
-              height: BASE_BADGE_HEIGHT,
-            }}
+        {rows.map((row, index) => (
+          <Animated.View
+            key={`row-${index}`}
+            style={[
+              {
+                display: 'flex',
+                flexDirection: 'row',
+                flexWrap: 'nowrap',
+                rowGap: 6,
+                columnGap: 8,
+                paddingVertical: 4,
+                paddingHorizontal: 4,
+              },
+            ]}
           >
-            {/* <Text>No Results</Text> */}
-          </View>
-        )}
+            {row.map((item) => {
+              return (
+                <Animated.View
+                  key={`tag-${item.id}`}
+                  // sharedTransitionTag={`tag-${item.id}`}
+                  layout={SequencedTransition.reverse()}
+                  entering={FadeIn.duration(75)}
+                  exiting={FadeOut.duration(75)}
+                >
+                  <ToggleBadge
+                    onPress={() => {
+                      setItems([...items, item])
+                    }}
+                    key={item.id}
+                    checked
+                    leftElement={renderIconElement(item)}
+                    label={item.name}
+                  >
+                    {item.name}
+                  </ToggleBadge>
+                </Animated.View>
+              )
+            })}
+          </Animated.View>
+        ))}
       </ScrollView>
     </Animated.View>
   )

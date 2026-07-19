@@ -40,8 +40,27 @@ const rnBridge = {
     b.onResolve({ filter: /^@\// }, (args) => {
       const rest = args.path.slice(2)
       const isFile = (p) => existsSync(p) && statSync(p).isFile()
-      for (const ext of ['', '.web.tsx', '.web.ts', '.web.jsx', '.web.mjs', '.web.js', '.tsx', '.ts', '.jsx', '.mjs', '.js', '.json',
-        '/index.web.tsx', '/index.web.ts', '/index.web.js', '/index.tsx', '/index.ts', '/index.jsx', '/index.js']) {
+      for (const ext of [
+        '',
+        '.web.tsx',
+        '.web.ts',
+        '.web.jsx',
+        '.web.mjs',
+        '.web.js',
+        '.tsx',
+        '.ts',
+        '.jsx',
+        '.mjs',
+        '.js',
+        '.json',
+        '/index.web.tsx',
+        '/index.web.ts',
+        '/index.web.js',
+        '/index.tsx',
+        '/index.ts',
+        '/index.jsx',
+        '/index.js',
+      ]) {
         const p = stub(rest) + ext
         if (isFile(p)) return { path: p }
       }
@@ -55,14 +74,17 @@ const rnBridge = {
     // binding analysis hard-errors on the missing names even though the
     // consuming components (card/modal/dateTimePicker) are unused here. Append
     // null stubs so the barrel resolves.
-    b.onLoad({ filter: /react-native-ui-lib[/\\]src[/\\]optionalDependencies[/\\]index\.web\.js$/ }, (args) => {
-      const code = readFileSync(args.path, 'utf8')
-      const stubs = ['BlurViewPackage', 'DateTimePickerPackage', 'MomentPackage', 'SvgCssUri']
-        .filter((n) => !new RegExp(`\\b${n}\\b`).test(code))
-        .map((n) => `export const ${n} = null;`)
-        .join('\n')
-      return { contents: code + '\n' + stubs + '\n', loader: 'jsx' }
-    })
+    b.onLoad(
+      { filter: /react-native-ui-lib[/\\]src[/\\]optionalDependencies[/\\]index\.web\.js$/ },
+      (args) => {
+        const code = readFileSync(args.path, 'utf8')
+        const stubs = ['BlurViewPackage', 'DateTimePickerPackage', 'MomentPackage', 'SvgCssUri']
+          .filter((n) => !new RegExp(`\\b${n}\\b`).test(code))
+          .map((n) => `export const ${n} = null;`)
+          .join('\n')
+        return { contents: code + '\n' + stubs + '\n', loader: 'jsx' }
+      }
+    )
     // Strip react-native-ui-lib type-only re-exports (mirror of the vite plugin).
     b.onLoad({ filter: /react-native-ui-lib[/\\]src[/\\].*\.js$/ }, (args) => {
       const code = readFileSync(args.path, 'utf8')
@@ -79,7 +101,16 @@ await build({
   platform: 'browser',
   target: 'es2020',
   // The RN ecosystem ships JSX in .js/.mjs; treat them as jsx (Metro does too).
-  loader: { '.js': 'jsx', '.mjs': 'jsx', '.png': 'dataurl', '.jpg': 'dataurl', '.svg': 'dataurl', '.ttf': 'dataurl', '.woff': 'dataurl', '.woff2': 'dataurl' },
+  loader: {
+    '.js': 'jsx',
+    '.mjs': 'jsx',
+    '.png': 'dataurl',
+    '.jpg': 'dataurl',
+    '.svg': 'dataurl',
+    '.ttf': 'dataurl',
+    '.woff': 'dataurl',
+    '.woff2': 'dataurl',
+  },
   // NativeWind's JSX runtime (react-native-css-interop) turns `className` into
   // real DOM classes on web, which the compiled Tailwind CSS then styles —
   // matching how the app renders. React's own runtime drops className, so
@@ -87,7 +118,19 @@ await build({
   jsx: 'automatic',
   jsxImportSource: 'nativewind',
   // Web-first resolution so @rn-primitives/* and other platform files pick .web.
-  resolveExtensions: ['.web.tsx', '.web.ts', '.web.jsx', '.web.mjs', '.web.js', '.tsx', '.ts', '.jsx', '.mjs', '.js', '.json'],
+  resolveExtensions: [
+    '.web.tsx',
+    '.web.ts',
+    '.web.jsx',
+    '.web.mjs',
+    '.web.js',
+    '.tsx',
+    '.ts',
+    '.jsx',
+    '.mjs',
+    '.js',
+    '.json',
+  ],
   // Build in production mode: __DEV__ false dead-code-eliminates RN/Expo/Metro
   // dev machinery (HMR client, dev warnings) that otherwise runs at module load
   // and throws in a static browser bundle. EXPO_OS is normally inlined by

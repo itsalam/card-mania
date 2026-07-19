@@ -3,6 +3,7 @@ import { TextInput } from 'react-native'
 import { create } from 'zustand'
 
 type ItemType = 'cards' | 'sets' | 'collections'
+type ScopeType = 'marketplace' | 'catalog'
 type CardGenre = string
 
 type Filters = {
@@ -20,9 +21,10 @@ type Filters = {
   // set_name multi-select; the wire key stays `sets` (mapped in SearchScreen).
   setNames: string[]
   grading: string[]
+  scope?: ScopeType
 }
 
-export type FiltersKeys = keyof Filters | ItemType
+export type FiltersKeys = keyof Filters | ItemType | ScopeType
 
 type FilterActions = {
   toggleItemTypes: (type: ItemType) => void
@@ -33,6 +35,8 @@ type FilterActions = {
   setUnowned: (unowned: boolean) => void
   setGenre: (genre: CardGenre | null) => void
   toggleSet: (set: string) => void
+  setSetNames: (names: string[]) => void
+  setScope: (scope: ScopeType) => void
   toggleGrading: (company: string) => void
   toggleDisplayFilter: (filter: FiltersKeys) => void
 }
@@ -79,12 +83,14 @@ export const useFiltersStore = create<FilterState>((set) => ({
   setWishlisted: (wishlisted) => set({ wishlisted }),
   setUnowned: (unowned) => set({ unowned }),
   setGenre: (genre) => set({ genre }),
+  setScope: (scope) => set({ scope }),
   toggleSet: (setName) =>
     set((state) => ({
       setNames: state.setNames.includes(setName)
         ? state.setNames.filter((s) => s !== setName)
         : [...state.setNames, setName],
     })),
+  setSetNames: (names) => set({ setNames: names }),
   toggleGrading: (company) =>
     set((state) => ({
       grading: state.grading.includes(company)

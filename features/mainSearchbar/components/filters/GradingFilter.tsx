@@ -1,8 +1,9 @@
 import { ToggleBadge } from '@/components/ui/badge'
+import { FadeScrollView } from '@/components/ui/fade-scroll'
 import { Separator } from '@/components/ui/separator'
 import { Text } from '@/components/ui/text/base-text'
 import React from 'react'
-import { ScrollView, View } from 'react-native'
+import { View } from 'react-native'
 import { useFilters } from './providers'
 
 // Stored values are the slugs search_storefront_items expects in p_grading —
@@ -27,7 +28,7 @@ export function GradingFilter() {
     <View className="flex flex-row gap-2 items-center">
       <Text className="text-lg font-medium">Grading</Text>
       <Separator orientation="vertical" />
-      <ScrollView horizontal>
+      <FadeScrollView horizontal style={{ flex: 1 }}>
         <View className="flex-row gap-2">
           {GRADING_OPTIONS.map(({ slug, label }) => (
             <ToggleBadge
@@ -38,7 +39,7 @@ export function GradingFilter() {
             />
           ))}
         </View>
-      </ScrollView>
+      </FadeScrollView>
     </View>
   )
 }
