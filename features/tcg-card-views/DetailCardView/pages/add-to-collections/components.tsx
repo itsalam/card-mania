@@ -31,6 +31,7 @@ import { Text } from '@/components/ui/text/base-text'
 import { formatPrice } from '@/components/utils'
 import { sortCollectionItem } from '@/features/tcg-card-views/helpers'
 import { qk } from '@/lib/store/functions/helpers'
+import { useRequiredUserId } from '@/lib/store/useUserStore'
 import { InfiniteData, useQueryClient } from '@tanstack/react-query'
 import Animated, { FadeIn, LinearTransition } from 'react-native-reanimated'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -59,6 +60,8 @@ export const CollectionCardItemEntries = ({
     isLoading,
     refetch,
   } = useViewCollectionItemsForCard(collection?.id, card?.id, isShown)
+
+  const username = useRequiredUserId()
 
   const qc = useQueryClient()
 
@@ -135,8 +138,8 @@ export const CollectionCardItemEntries = ({
                         ...(card?.id ? ['cardId', card?.id] : []),
                       ],
                     })
-                    if (card?.id) {
-                      qc.invalidateQueries({ queryKey: qk.collectionForCard(card.id) })
+                    if (card?.id && username) {
+                      qc.invalidateQueries({ queryKey: qk.collectionForCard(card.id, username) })
                     }
                     if (loadedEntries.length <= 1 && card?.id && collection?.id) {
                       qc.setQueriesData<InfiniteData<{ ref_id: string }[]>>(

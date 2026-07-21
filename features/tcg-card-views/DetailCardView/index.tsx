@@ -42,6 +42,7 @@ import { useMeasure } from '@/components/hooks/useMeasure'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useCollaspableHeader } from '@/features/collection/ui'
+import { useEffectiveColorScheme } from '@/features/settings/hooks/effective-color-scheme'
 import MaskedView from '@react-native-masked-view/masked-view'
 import { LinearGradient } from 'expo-linear-gradient'
 import { GestureDetector } from 'react-native-gesture-handler'
@@ -53,10 +54,10 @@ import { CardScreenHeader } from './components/CardScreenHeader'
 import { CollectionInfoCard } from './components/CollectionInfoCard'
 import { Prices } from './components/Prices'
 import { Footer } from './footer/footer'
-import { AddToCollectionsView } from './footer/pages/add-to-collections'
-import { CreateCollectionView } from './footer/pages/create-collection'
 import { GradeColorsProvider } from './GradeColorsProvider'
 import { Coordinates, useSelectedGrades, useTransitionAnimation } from './helpers'
+import { AddToCollectionsView } from './pages/add-to-collections'
+import { CreateCollectionView } from './pages/create-collection'
 import { CardDetailsProvider } from './provider'
 
 function SalesListSkeleton() {
@@ -436,6 +437,9 @@ const CardDetailContainer = ({
     onLayout: onImageContainerLayout,
   } = useMeasure<View>()
 
+  const scheme = useEffectiveColorScheme()
+  const defaultBackground = useMemo(() => Colors.$backgroundDefault, [scheme])
+
   const adjustedAnimateFrom = useMemo(
     () =>
       imageContainerLayout
@@ -582,7 +586,6 @@ const CardDetailContainer = ({
                 overflow: 'visible',
                 position: 'relative',
                 width: '100%',
-                // backgroundColor: 'red',
               },
               // headerAnimatedStyle,
               headerAStyle,
@@ -631,16 +634,16 @@ const CardDetailContainer = ({
                     position: 'absolute',
                     top: '-3.15%',
                     left: '-3.4%',
-                    borderColor: 'rgba(80,80,80,1)',
+                    borderColor: 'rgba(110,110,110,1)',
                     borderWidth: 1,
                   }}
                 >
                   <LinearGradient
                     colors={[
-                      'rgba(80,80,80,0.7)',
+                      'rgba(110,110,110,0.7)',
                       'transparent',
                       'transparent',
-                      'rgba(80,80,80,0.7)',
+                      'rgba(110,110,110,0.7)',
                     ]}
                     start={{ x: 0, y: 0.5 }}
                     end={{ x: 1, y: 0.5 }}
@@ -649,10 +652,10 @@ const CardDetailContainer = ({
                   />
                   <LinearGradient
                     colors={[
-                      'rgba(80,80,80,0.7)',
+                      'rgba(110,110,110,0.7)',
                       'transparent',
                       'transparent',
-                      'rgba(80,80,80,0.7)',
+                      'rgba(110,110,110,0.7)',
                     ]}
                     start={{ x: 0.5, y: 0 }}
                     end={{ x: 0.5, y: 1 }}
@@ -699,7 +702,7 @@ const CardDetailContainer = ({
         <GradientBackground
           start={{ x: 0.5, y: 1.0 }}
           end={{ x: 0.5, y: 0.0 }}
-          colors={[Colors.$backgroundDefault, 'transparent']}
+          colors={[defaultBackground, defaultBackground]}
           positions={[0, 1.0]}
           opacity={[1, 0]}
           style={{
@@ -749,7 +752,7 @@ const CardDetailContainer = ({
           backgroundOpacity={backgroundOpacity}
           start={{ x: 0.5, y: 1.0 }}
           end={{ x: 0.5, y: 0.0 }}
-          colors={[Colors.$backgroundDefault, Colors.$backgroundDefault]}
+          colors={[defaultBackground, defaultBackground]}
           positions={[0.2, 0.6]}
           opacity={progress}
           style={[

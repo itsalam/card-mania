@@ -41,6 +41,9 @@ const buttonVariants = cva(
         ),
         icon: 'h-11 w-11 sm:h-9 sm:w-9 rounded-full',
       },
+      shape: {
+        rounded: 'rounded-full',
+      },
     },
     defaultVariants: {
       variant: 'default',
@@ -144,7 +147,7 @@ const getButtonTextColorStyles = ({ variant = 'default' }: ButtonVariantArgs = {
   return { textStyle }
 }
 
-function Button({ className, variant, size, style, children, ...props }: ButtonProps) {
+function Button({ className, variant, size, shape, style, children, ...props }: ButtonProps) {
   const wrappedChildren = React.Children.map(children, (child) =>
     typeof child === 'string' || typeof child === 'number' ? <Text>{child}</Text> : child
   )
@@ -152,7 +155,11 @@ function Button({ className, variant, size, style, children, ...props }: ButtonP
   return (
     <TextClassContext.Provider value={buttonTextVariants({ variant, size })}>
       <TouchableOpacity
-        className={cn(props.disabled && 'opacity-50', buttonVariants({ variant, size }), className)}
+        className={cn(
+          props.disabled && 'opacity-50',
+          buttonVariants({ variant, size, shape }),
+          className
+        )}
         role="button"
         style={[
           {

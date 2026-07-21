@@ -2,6 +2,7 @@ import { ItemKinds } from '@/constants/types'
 import { getSupabase } from '@/lib/store/client'
 import { qk, requireUser, WishlistKey } from '@/lib/store/functions/helpers'
 import { Database } from '@/lib/store/supabase'
+import { useRequiredUserId, useUserStore } from '@/lib/store/useUserStore'
 import { reportError } from '@/lib/utils/report-error'
 import {
   InfiniteData,
@@ -146,9 +147,10 @@ function intersection(a: Set<string>, b: Set<string>) {
 }
 
 export function useIsWishlisted(kind: ItemKinds, ids: string[]) {
+  const username = useRequiredUserId()
   const idSet = new Set(ids)
   const qc = useQueryClient()
-  const queryKey = qk.wishlist(kind)
+  const queryKey = qk.wishlist(kind, username)
   const negativeQueryKey = [...queryKey, 'negative']
   const unvisitedKey = [...idSet].sort().join(',')
 
@@ -206,12 +208,20 @@ type ToggleWishlistContext = Partial<{
   touched?: boolean
 }>
 
-function setWishlist(qc: QueryClient, kind: ItemKinds, fn: (s: Set<string>) => Set<string>) {
-  qc.setQueryData<Set<string>>(qk.wishlist(kind), (prev) => fn(prev ? new Set(prev) : new Set()))
+function setWishlist(
+  qc: QueryClient,
+  kind: ItemKinds,
+  username: string,
+  fn: (s: Set<string>) => Set<string>
+) {
+  qc.setQueryData<Set<string>>(qk.wishlist(kind, username), (prev) =>
+    fn(prev ? new Set(prev) : new Set())
+  )
 }
 
 export function useToggleWishlist(kind: ItemKinds) {
   const qc = useQueryClient()
+  const username = useRequiredUserId()
 
   return useMutation({
     mutationFn: async ({ kind, id, grade_condition_id, card }: ToggleWishlistParams) => {
@@ -236,30 +246,27 @@ export function useToggleWishlist(kind: ItemKinds) {
     },
 
     onMutate: async ({ id }) => {
-      await qc.cancelQueries({ queryKey: qk.wishlist(kind) })
+      const userId = useUserStore.getState().user?.id
+      if (!userId) throw new Error('No user')
+      const key = qk.wishlist(kind, userId)
 
-      // Optimistically flip Set
-      setWishlist(qc, kind, (s) => {
+      await qc.cancelQueries({ queryKey: key })
+      const prev = toSet(qc.getQueryData(key)) // snapshot BEFORE mutating
+      setWishlist(qc, kind, userId, (s) => {
         const next = new Set(s)
         next.has(id) ? next.delete(id) : next.add(id)
         return next
       })
-
-      // Optionally patch entity map’s wishlisted flag for instant UI
-      return {
-        prev: qc.getQueryData<Set<string>>(qk.wishlist(kind)) ?? new Set(),
-        id,
-      }
+      return { prev, key }
     },
-
     onError: (err, vars, ctx) => {
-      if (ctx) qc.setQueryData(qk.wishlist(kind), ctx.prev)
+      if (ctx) qc.setQueryData(ctx.key, ctx.prev) // same key, correct snapshot
       reportError({ context: 'useToggleWishlist', error: err, metadata: { vars } })
     },
 
     onSuccess: ({ id, on }) => {
       // align with server (in case optimistic was wrong)
-      setWishlist(qc, kind, (s) => {
+      setWishlist(qc, kind, username, (s) => {
         const next = new Set(s)
         on ? next.add(id) : next.delete(id)
         return next

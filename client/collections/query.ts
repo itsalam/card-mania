@@ -8,6 +8,7 @@ import {
 } from '@/lib/store/functions/collections'
 import { qk } from '@/lib/store/functions/helpers'
 import { CollectionItemRow, CollectionRow } from '@/lib/store/functions/types'
+import { useRequiredUserId } from '@/lib/store/useUserStore'
 import { DefaultError, keepPreviousData, useInfiniteQuery, useQuery } from '@tanstack/react-query'
 import React from 'react'
 import { ViewParams } from '../card/types'
@@ -23,17 +24,24 @@ import {
 
 export function useViewCollectionsForCard(cardId = '', query?: string) {
   const { data: isWishlisted } = useIsWishlisted('card', [cardId])
+  const username = useRequiredUserId()
+  const { data: defaultIds } = useDefaultCollectionIds()
+  const wishlistId = defaultIds?.wishlist
 
   const base = useQuery<CollectionLike[], DefaultError>({
-    queryKey: [...qk.collectionForCard(cardId), ...(query ? ['query', query] : [])],
+    queryKey: [...qk.collectionForCard(cardId, username!), ...(query ? ['query', query] : [])],
     queryFn: () => viewCollectionsForCard(cardId, query),
     placeholderData: keepPreviousData,
-    enabled: !!cardId && !!cardId.length,
+    enabled: !!cardId && !!cardId.length && !!username,
     // keep: no select here
   })
 
   const data = React.useMemo<CollectionView>(() => {
-    const collections = base.data ?? []
+    // Drop the real wishlist collection row (RPC returns every collection with no
+    // is_wishlist filter) so it isn't duplicated by the synthetic entry below.
+    const collections = (base.data ?? []).filter((c) => c.id !== wishlistId)
+
+    const isCardWishlisted = !!isWishlisted?.has(cardId)
 
     const wishListCollection: CollectionLike = {
       id: 'wishlist',
@@ -42,17 +50,18 @@ export function useViewCollectionsForCard(cardId = '', query?: string) {
       visibility: 'private',
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
-      has_item: true,
+      // Real membership, not a hardcoded true — drives the row's checkbox.
+      has_item: isCardWishlisted,
     } as any
 
     const included = collections.filter((c) => c.has_item)
     const excluded = collections.filter((c) => !c.has_item)
 
-    if (isWishlisted?.has(cardId)) included.unshift(wishListCollection)
+    if (isCardWishlisted) included.unshift(wishListCollection)
     else excluded.unshift(wishListCollection)
 
     return { included, excluded }
-  }, [base.data, isWishlisted, cardId])
+  }, [base.data, isWishlisted, cardId, wishlistId])
 
   return { ...base, data }
 }

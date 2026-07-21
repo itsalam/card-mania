@@ -20,14 +20,16 @@ import {
 import { CreateCollectionChipInput } from '@/features/collection/pages/modify-collection/tags-input'
 import { VisibilitySelector } from '@/features/collection/pages/modify-collection/visibility-selector'
 import { qk } from '@/lib/store/functions/helpers'
+import { useRequiredUserId } from '@/lib/store/useUserStore'
 import { useQueryClient } from '@tanstack/react-query'
-import { FooterButton } from '../components/button'
-import { FooterStyles as styles } from '../components/styles'
+import { FooterButton } from '../footer/components/button'
+import { FooterStyles as styles } from '../footer/components/styles'
 
 const { width } = Dimensions.get('window')
 
 export const CreateCollectionView = () => {
   const { setPage, card } = useCardDetails()
+  const username = useRequiredUserId()
   const qc = useQueryClient()
 
   return (
@@ -94,8 +96,9 @@ export const CreateCollectionView = () => {
         <SubmitCollectionButton
           onSubmit={() => {
             card &&
+              username &&
               qc.invalidateQueries({
-                queryKey: qk.collectionForCard(card?.id),
+                queryKey: qk.collectionForCard(card?.id, username),
               })
 
             setPage(0)

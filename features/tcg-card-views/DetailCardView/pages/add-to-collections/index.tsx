@@ -7,19 +7,22 @@ import { Text } from '@/components/ui/text/base-text'
 import { getSupabase } from '@/lib/store/client'
 import { viewCollectionItemsForCard } from '@/lib/store/functions/collections'
 import { qk } from '@/lib/store/functions/helpers'
+import { useRequiredUserId } from '@/lib/store/useUserStore'
 import { useQueryClient } from '@tanstack/react-query'
 import { PanelBottomClose, Plus } from 'lucide-react-native'
 import React, { useEffect, useRef, useState } from 'react'
 import { ScrollView, View } from 'react-native'
 import { Colors, Spacings } from 'react-native-ui-lib'
-import { useCardDetails } from '../../../provider'
-import { FooterButton } from '../../components/button'
+import { FooterButton } from '../../footer/components/button'
+import { useCardDetails } from '../../provider'
 
 export const AddToCollectionsView = () => {
   const { card, setPage, setFooterFullView, setPendingRollback } = useCardDetails()
   const qc = useQueryClient()
   const [query, setQuery] = useState<string>()
   const { data: collection } = useViewCollectionsForCard(card?.id, query)
+
+  const username = useRequiredUserId()
 
   // Effect 1 — capture included collection IDs once on first data arrival
   const [initialIncludedIds, setInitialIncludedIds] = useState<Set<string> | null>(null)
@@ -81,14 +84,15 @@ export const AddToCollectionsView = () => {
 
   // Effect 3 — subscribe to QueryCache; recompute diff and register rollback on data changes
   useEffect(() => {
-    if (!snapshotReady || !card?.id || !initialIncludedIds) return
+    if (!snapshotReady || !card?.id || !initialIncludedIds || !username) return
     const cardId = card.id
     console.log('[AddToCollections] subscriber active, snapshot size:', initialItemsSnapshot.size)
 
     const recompute = () => {
       // The cache stores CollectionLike[] (flat array); the included/excluded split is derived
       // inside useViewCollectionsForCard's useMemo and is never written to cache.
-      const allCollections = qc.getQueryData<CollectionLike[]>(qk.collectionForCard(cardId)) ?? []
+      const allCollections =
+        qc.getQueryData<CollectionLike[]>(qk.collectionForCard(cardId, username)) ?? []
 
       const newlyAdded = allCollections.filter(
         (c): c is CollectionLike & { id: string } =>
@@ -179,7 +183,7 @@ export const AddToCollectionsView = () => {
                     )
                 }
               }
-              qc.invalidateQueries({ queryKey: qk.collectionForCard(cardId) })
+              qc.invalidateQueries({ queryKey: qk.collectionForCard(cardId, username) })
               for (const colId of [
                 ...newlyAdded.map((c) => c.id),
                 ...initialItemsSnapshot.keys(),
@@ -209,7 +213,7 @@ export const AddToCollectionsView = () => {
     // not start with one of these prefixes is from an unrelated query (e.g. the
     // AddCardToCollection search screen's per-card item queries) and can be skipped.
     const watchedPrefixes = [
-      qk.collectionForCard(cardId),
+      qk.collectionForCard(cardId, username),
       ...[...initialIncludedIds].map((colId) => qk.collectionItems(colId)),
     ]
     const isRelevantKey = (key: ReadonlyArray<unknown>) =>
@@ -235,14 +239,13 @@ export const AddToCollectionsView = () => {
       <ScrollView
         style={{
           flex: 1,
-          width: '100%',
+          alignSelf: 'stretch',
           overflow: 'visible',
-          paddingTop: Spacings.s2,
           display: 'flex',
-          gap: Spacings.s2,
+          // gap: Spacings.s2,
         }}
       >
-        <View style={{ width: '100%', paddingHorizontal: Spacings.s4 }}>
+        <View style={{ width: '100%', paddingHorizontal: Spacings.s4, paddingBottom: Spacings.s2 }}>
           <SearchBar onChangeText={setQuery} />
         </View>
         {!!collection?.included.length && (
@@ -261,8 +264,10 @@ export const AddToCollectionsView = () => {
         )}
         {!!collection?.excluded && (
           <>
-            <Text style={{ paddingHorizontal: Spacings.s4 }}>Other Collections</Text>
-            <View className="py-2 flex flex-col">
+            {collection?.included.length && (
+              <Text style={{ paddingHorizontal: Spacings.s4 }}>Other Collections</Text>
+            )}
+            <View className="py-2 flex flex-col gap-2">
               {collection?.excluded.length ? (
                 collection?.excluded.map((c) => (
                   <ExpandableCollectionEntryListItem

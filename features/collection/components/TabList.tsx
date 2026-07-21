@@ -1,8 +1,9 @@
 import { CollectionIdArgs } from '@/client/collections/types'
+import { WishlistCard } from '@/components/ui/icon'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Spinner } from '@/components/ui/spinner'
 import { TabsLabel, TabsScrollList, TabsTrigger } from '@/components/ui/tabs'
-import { Coins, Heart, Layers, LucideIcon, Plus, Vault, X } from 'lucide-react-native'
+import { Coins, Layers, LucideIcon, Plus, Vault, X } from 'lucide-react-native'
 import React, { useEffect, useRef } from 'react'
 import { LayoutChangeEvent, TouchableOpacity, View } from 'react-native'
 import Animated from 'react-native-reanimated'
@@ -222,6 +223,6 @@ const CollectionTab = ({ collectionKey, onLayout }: CollectionTabProps) => {
 const tabIcons: Record<DefaultPageTypes, LucideIcon> = {
   default: Layers,
   vault: Vault,
-  wishlist: Heart,
+  wishlist: WishlistCard,
   selling: Coins,
 }

@@ -28,12 +28,12 @@ export const qk = {
   profile: [supabaseUrl, 'profile'] as const,
   collections: [supabaseUrl, 'collections'] as const,
   userCollections: [supabaseUrl, 'collections', 'me'] as const,
-  collectionForCard: (cardId: string, userId?: string) =>
-    [supabaseUrl, 'collections', 'card', userId ?? 'me', cardId] as const,
+  collectionForCard: (cardId: string, userId: string) =>
+    [supabaseUrl, 'collections', 'card', userId, cardId] as const,
   collectionItems: (id?: string) => [supabaseUrl, 'collections', id, 'items'] as const,
   collectionItemSingle: (id?: string) => [supabaseUrl, 'collection-item', id] as const,
   recent: [supabaseUrl, 'recent', 'me'] as const,
-  wishlist: (kind: string) => [supabaseUrl, WishlistKey.Default, kind],
+  wishlist: (kind: string, userId?: string) => [supabaseUrl, WishlistKey.Default, kind, userId],
   userCards: (userId?: string) => [supabaseUrl, 'user', userId ?? 'me', 'cards'] as const,
   priceQuery: (cardId?: string, grade?: string | object) => [
     supabaseUrl,

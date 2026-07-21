@@ -22,7 +22,13 @@ import { FooterButton } from './components/button'
 
 const { height: H } = Dimensions.get('window')
 
-export const Footer = ({ card }: { card?: TCard }) => {
+export const Footer = ({
+  card,
+  onLockedChange,
+}: {
+  card?: TCard
+  onLockedChange?: (v: boolean) => void
+}) => {
   const {
     footerFullView,
     setFooterFullView,
@@ -53,7 +59,10 @@ export const Footer = ({ card }: { card?: TCard }) => {
   return (
     <DraggableFooter
       toggleLocked={footerFullView}
-      onLockedChange={setFooterFullView}
+      onLockedChange={(l) => {
+        setFooterFullView(l)
+        onLockedChange?.(l)
+      }}
       mainContent={
         <>
           {!footerFullView ? (

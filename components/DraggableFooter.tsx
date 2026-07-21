@@ -235,7 +235,7 @@ export default function DraggableFooter({
   // Normal mode: mainContent lives inside the translated sheet.
   const mainContentContainer = (
     <Animated.View
-      style={[thumbStyles.mainContent]}
+      style={[thumbStyles.mainContent, { paddingBottom: insets.bottom }]}
       ref={mainContentRef}
       onLayout={onMainContentLayout}
     >
@@ -256,7 +256,14 @@ export default function DraggableFooter({
       }}
     >
       {reverseExpand && thumbContainer}
-      <Animated.View style={[reverseExpand && thumbStyles.mainContent, detailContentStyle, style]}>
+      <Animated.View
+        style={[
+          reverseExpand && thumbStyles.mainContent,
+          reverseExpand && { paddingBottom: insets.bottom },
+          detailContentStyle,
+          style,
+        ]}
+      >
         {children}
       </Animated.View>
     </Animated.View>

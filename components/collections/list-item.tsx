@@ -46,7 +46,7 @@ export const CollectionListView = ({
         style={{
           display: 'flex',
           flexDirection: 'row',
-          alignItems: 'center',
+          alignItems: 'flex-start',
           gap: Spacings.s4,
           paddingRight: Spacings.s2,
           paddingLeft: Spacings.s1,
@@ -66,6 +66,7 @@ export const CollectionListView = ({
                   flexWrap: 'wrap',
                   width: '100%',
                 }}
+                numberOfLines={2}
               >
                 {collection.description}
               </Text>

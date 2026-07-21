@@ -1,14 +1,17 @@
 import { useIsWishlisted, useToggleWishlist } from '@/client/card/wishlist'
+import { Button } from '@/components/ui/button'
+import { WishlistCard } from '@/components/ui/icon'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Text } from '@/components/ui/text/base-text'
 import { formatLabel, formatPrice } from '@/components/utils'
 import { TCard } from '@/constants/types'
 import { CollectionItemQueryView } from '@/lib/store/functions/types'
 import { cn } from '@/lib/utils/cn'
-import { EllipsisVertical, Heart, Maximize, TrendingDown, TrendingUp } from 'lucide-react-native'
+import { useRouter } from 'expo-router'
+import { Layers, Maximize, TrendingDown, TrendingUp } from 'lucide-react-native'
 import { forwardRef, ReactNode } from 'react'
 import { Pressable, StyleSheet, View } from 'react-native'
-import { Colors, TouchableOpacity } from 'react-native-ui-lib'
+import { Colors } from 'react-native-ui-lib'
 import { useNavigateToItem } from '../../components/tcg-card/helpers'
 import { CardImage } from './card-image'
 import { getCardDisplayData } from './helpers'
@@ -52,6 +55,7 @@ export const DefaultAccessories = ({
 }: ItemListViewProps & { renderButtons?: (props: ItemListViewProps) => ReactNode }) => {
   const { kind, item, displayData, gain } = props
   const toggleWishList = useToggleWishlist('card')
+  const router = useRouter()
 
   const { data: wishlistedIds } = useIsWishlisted('card', item ? [item.id] : [])
   const isWishlisted = [...wishlistedIds?.values()].some((i) => i === item?.id)
@@ -113,11 +117,13 @@ export const DefaultAccessories = ({
       {renderButtons ? (
         renderButtons(props)
       ) : (
-        <View className="absolute right-0 bottom-0 flex gap-1 items-center flex-col justify-center">
-          <TouchableOpacity style={[styles.button]}>
-            <EllipsisVertical size={24} color={Colors.$iconGeneral} />
-          </TouchableOpacity>
-          <TouchableOpacity
+        <View className="flex flex-row items-center justify-stretch flex-1 gap-2" style={{}}>
+          <Button shape="rounded" onPress={() => router.push(`cards/${item.id}/add-to-collection`)}>
+            Add to Collection
+            <Layers color={Colors.$iconGeneral} size={18} />
+          </Button>
+          <Button
+            shape="rounded"
             onPress={() => {
               item &&
                 toggleWishList.mutate({
@@ -132,14 +138,10 @@ export const DefaultAccessories = ({
                   },
                 })
             }}
-            style={styles.button}
           >
-            <Heart
-              size={20}
-              fill={isWishlisted ? Colors.$iconGeneral : 'transparent'}
-              color={Colors.$iconGeneral}
-            />
-          </TouchableOpacity>
+            Wishlist
+            <WishlistCard size={20} color={Colors.$iconGeneral} fill={Colors.$iconGeneral} />
+          </Button>
         </View>
       )}
     </View>

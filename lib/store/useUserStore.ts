@@ -45,6 +45,12 @@ export const AuthStatus = {
   ERROR: 'error',
 } as const
 
+export function useRequiredUserId() {
+  const id = useUserStore((s) => s.user?.id)
+  if (!id) throw new Error('User required')
+  return id
+}
+
 export const useUserStore = create<State & Actions>()(
   persist(
     (set, get) => ({

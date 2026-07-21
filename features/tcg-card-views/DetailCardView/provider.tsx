@@ -27,10 +27,12 @@ export const createCardDetailsStore = ({
   card,
   footerPages,
   currentPage = 0,
+  footerFullView = false,
 }: {
   card?: TCard | null
   footerPages?: { title: string; page: () => React.ReactNode }[]
   currentPage?: number
+  footerFullView?: boolean
 }) =>
   createStore<CardDetailsStore>((set, get) => ({
     card: card ?? null,
@@ -43,7 +45,7 @@ export const createCardDetailsStore = ({
       set({ currentPage: pageIdx })
     },
     setFooterPages: (pages) => set({ footerPages: pages }),
-    footerFullView: false,
+    footerFullView,
     setFooterFullView: (value) => set({ footerFullView: value }),
     pendingRollback: null,
     setPendingRollback: (r) => set({ pendingRollback: r }),
@@ -55,14 +57,16 @@ export const CardDetailsProvider = ({
   card,
   children,
   footerPages,
+  footerFullView = false,
 }: {
   card?: TCard | null
   children: React.ReactNode
   footerPages: { title: string; page: () => React.ReactNode }[]
+  footerFullView?: boolean
 }) => {
   // create one store instance for this provider
   const [store] = useState(() =>
-    createCardDetailsStore({ card: card ?? null, footerPages, currentPage: 0 })
+    createCardDetailsStore({ card: card ?? null, footerPages, currentPage: 0, footerFullView })
   )
 
   // Only effects may update the store

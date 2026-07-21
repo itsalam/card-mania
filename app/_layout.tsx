@@ -87,6 +87,15 @@ export default Sentry.wrap(function RootLayout() {
           }}
         />
         <Stack.Screen
+          name="cards/[card]/add-to-collection"
+          options={{
+            presentation: Platform.OS === 'android' ? 'transparentModal' : 'transparentModal',
+            headerShown: false,
+            animation: 'fade',
+            contentStyle: { backgroundColor: 'transparent' },
+          }}
+        />
+        <Stack.Screen
           name="cart"
           options={{
             presentation: 'transparentModal',
