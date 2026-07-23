@@ -164,8 +164,11 @@ export const CollectionItemEntry = ({
   // never cancelled, firing stale INSERTs and producing duplicate rows).
   const editableItemRef = useRef(editableItem)
   editableItemRef.current = editableItem
-  const cardRef = useRef(card)
-  cardRef.current = card
+  // Prefer the resolved card from useCardQuery over the (possibly partial, still-
+  // populating) prefetch prop, so ensure_card_stub seeds the fullest data available
+  // when the row is first created from a search handoff.
+  const cardRef = useRef<TCard | null>(card)
+  cardRef.current = cardData ?? card
   const initialDraftRef = useRef(initialDraft)
   initialDraftRef.current = initialDraft
   // Tracks the most-recently committed draft so the debounce can detect a rollback.

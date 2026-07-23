@@ -1,6 +1,6 @@
 import { CollectionItem } from '@/client/collections/types'
 import { ImageProxyOpts } from '@/client/image-proxy'
-import { ItemKinds } from '@/constants/types'
+import { ItemKinds, TCard } from '@/constants/types'
 import type { ExpoRouter } from 'expo-router/build/types'
 import { ReactNode } from 'react'
 import { StyleProp, ViewStyle } from 'react-native'
@@ -31,8 +31,9 @@ export type GalleryListingProps = BaseListingProps & {
   renderItemAccessories?: (isCurrent: boolean) => (props: BaseListingProps) => ReactNode
 }
 
-export type BaseListingProps = {
-  item?: { id: string }
+export type BaseListingProps<T = TCard> = {
+  itemId: string
+  item: T
   kind?: ItemKinds
   expanded?: boolean
   isLoading?: boolean

@@ -516,6 +516,7 @@ const DetailCollectionView = ({ direction }: { direction: 'forward' | 'backward'
             />
           )}
           <CardListView
+            itemId={card.id}
             card={card}
             renderAccessories={({ isLoading }) => (
               <CollectionCardItemEntries

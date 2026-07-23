@@ -32,10 +32,14 @@ export type CollectionView = {
   excluded: CollectionLike[]
 }
 
-export type CollectionLike = Partial<
+export type Nullable<T> = {
+  [P in keyof T]?: T[P] extends object ? Nullable<T[P]> | null : T[P] | null
+}
+
+export type CollectionLike = Nullable<
   Database['public']['Functions']['collections_with_membership']['Returns'][number]
 > &
-  Partial<CollectionRow>
+  Nullable<CollectionRow>
 
 export type CollectionItem = Database['public']['Tables']['collection_items']['Row'] & {
   grade_condition?: {
@@ -66,10 +70,10 @@ export type InifiniteQueryParams<T = CollectionItemRow> = Parameters<
 export type CollectionItemQueryRow =
   Database['public']['Functions']['collection_item_query']['Returns'][number]
 
-export type CollectionIdArgs = {
-  collectionId?: string
-  collectionType?: DefaultPageTypes
-}
+export type CollectionIdArgs = Nullable<{
+  collectionId: string
+  collectionType: DefaultPageTypes
+}>
 
 export type CollectionReturn = CollectionItemQueryRow
 

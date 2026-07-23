@@ -1,5 +1,5 @@
 // lib/cardSearch.types.ts
-import { Card } from '@/constants/types'
+import { Card, TCard } from '@/constants/types'
 import { z } from 'zod'
 
 export const CardSearchItem = z.object({
@@ -44,7 +44,7 @@ export const SearchResponse = z.object({
   results: z.array(CardSearchItem),
 })
 
-export type TCardSearchItem = z.infer<typeof CardSearchItem>
+export type TCardSearchItem = Omit<z.infer<typeof CardSearchItem>, 'card'> & { card: TCard }
 export type TSearchReq = z.infer<typeof SearchRequest>
 export type TSearchRes = z.infer<typeof SearchResponse>
 export type TSearchFilters = z.infer<typeof SearchFilters>

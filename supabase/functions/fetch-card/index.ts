@@ -315,9 +315,18 @@ async function commitCard(
     // do not set images here; handled below
   } satisfies TablesInsert<'cards'>
 
-  const cardInsert = await supabase.from('cards').insert(cardInsertRecord).select('*').single()
+  // Upsert (not insert): a lightweight `ensure_card_stub` row may already exist
+  // for this id if the user added the card to a collection before this populate
+  // finished. A plain insert would hit a PK conflict, abort, and skip the image /
+  // price-history / history-backfill wiring below — leaving an incomplete card.
+  // Upserting upgrades that thin stub to the full card_hints data instead.
+  const cardInsert = await supabase
+    .from('cards')
+    .upsert(cardInsertRecord, { onConflict: 'id' })
+    .select('*')
+    .single()
   if (cardInsert.error) {
-    console.error('Error inserting card', cardInsert.error)
+    console.error('Error upserting card', cardInsert.error)
     return null
   }
 

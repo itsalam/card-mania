@@ -54,6 +54,7 @@ function StorefrontPreviewItems({ collection, isOwnProfile }: CollectionPreviewI
         const graded = collectionItem?.price_key !== 'ungraded'
         return (
           <CardListView
+            itemId={collectionItem.ref_id}
             key={collectionItem.collection_item_id}
             collectionItem={{ ...collectionItem, id: collectionItem.collection_item_id }}
             cardContainerStyle={
@@ -292,6 +293,7 @@ export function StorefrontCardItem({ item }: { item: CollectionItemQueryView & T
   const graded = item?.price_key !== 'ungraded'
   return (
     <CardListView
+      itemId={item.id}
       cardContainerStyle={
         graded
           ? {

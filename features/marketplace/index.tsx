@@ -1,4 +1,4 @@
-import { useFeaturedListings, usePublicStorefronts } from '@/client/marketplace'
+import { useMarketplaceSections, usePublicStorefronts } from '@/client/marketplace'
 import { CARD_ASPECT_RATIO } from '@/components/consts'
 import { FadeScrollView } from '@/components/ui/fade-scroll'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -46,6 +46,16 @@ type MarketFilters = {
 }
 
 const DEFAULT_FILTERS: MarketFilters = { genres: [], sets: [], grading: 'all' }
+
+type MarketSection = { key: string; title: string; items: FeaturedCardItem[] }
+
+// Skeleton placeholders shown before the first fetch resolves (the real
+// titles/order come from the DB once `useMarketplaceSections` returns).
+const PLACEHOLDER_SECTIONS: { key: string; title: string }[] = [
+  { key: 'featured', title: 'Featured' },
+  { key: 'auctions_graded', title: 'Auctions · Graded' },
+  { key: 'auctions_sealed', title: 'Auctions · Sealed' },
+]
 
 const VIEW_MODES: { mode: ViewMode; Icon: React.ComponentType<any> }[] = [
   { mode: 'compact', Icon: LayoutGrid },
@@ -452,18 +462,26 @@ export default function MarketplaceScreen() {
   const [filters, setFilters] = useState<MarketFilters>(DEFAULT_FILTERS)
 
   const {
-    data: rawListings = [],
+    data: sections = [],
     isLoading,
     error,
-    refetch: refetchListings,
-  } = useFeaturedListings()
+    refetch: refetchSections,
+  } = useMarketplaceSections()
   const { data: storefronts = [], refetch: refetchStorefronts } = usePublicStorefronts()
-  const { refreshing, onRefresh } = useRefresh([refetchListings, refetchStorefronts])
+  const { refreshing, onRefresh } = useRefresh([refetchSections, refetchStorefronts])
 
-  const allListings: FeaturedCardItem[] = useMemo(
-    () => rawListings.map((l) => ({ ...l, id: l.collection_item_id })),
-    [rawListings]
-  )
+  // Flatten every section's items (deduped) for building filter option lists.
+  const allListings: FeaturedCardItem[] = useMemo(() => {
+    const seen = new Map<string, FeaturedCardItem>()
+    for (const section of sections) {
+      for (const l of section.items) {
+        if (!seen.has(l.collection_item_id)) {
+          seen.set(l.collection_item_id, { ...l, id: l.collection_item_id })
+        }
+      }
+    }
+    return Array.from(seen.values())
+  }, [sections])
 
   const allGenres = useMemo(
     () => Array.from(new Set(allListings.map((l) => l.genre).filter(Boolean) as string[])).sort(),
@@ -478,9 +496,30 @@ export default function MarketplaceScreen() {
     [allListings]
   )
 
-  const listings = useMemo(() => applyFilters(allListings, filters), [allListings, filters])
-  const graded = useMemo(() => listings.filter((l) => l.grading_company !== null), [listings])
-  const sealed = useMemo(() => listings.filter((l) => l.item_kind !== 'card'), [listings])
+  // Each section keeps its server-side ordering; client filters apply within it.
+  const filteredSections: MarketSection[] = useMemo(
+    () =>
+      sections.map((s) => ({
+        key: s.section_key,
+        title: s.title,
+        items: applyFilters(
+          s.items.map((l) => ({ ...l, id: l.collection_item_id })),
+          filters
+        ),
+      })),
+    [sections, filters]
+  )
+
+  const sectionsToRender: MarketSection[] =
+    isLoading && filteredSections.length === 0
+      ? PLACEHOLDER_SECTIONS.map((p) => ({ key: p.key, title: p.title, items: [] }))
+      : filteredSections
+
+  // Unique listings across all sections (drives the header subtitle count).
+  const totalListings = useMemo(
+    () => new Set(filteredSections.flatMap((s) => s.items.map((i) => i.id))).size,
+    [filteredSections]
+  )
 
   const filterCount = activeFilterCount(filters)
 
@@ -493,7 +532,7 @@ export default function MarketplaceScreen() {
           <Text style={styles.headerSubtitle}>
             {isLoading
               ? 'Loading…'
-              : `${listings.length} listing${listings.length !== 1 ? 's' : ''} · ${storefronts.length} seller${storefronts.length !== 1 ? 's' : ''}`}
+              : `${totalListings} listing${totalListings !== 1 ? 's' : ''} · ${storefronts.length} seller${storefronts.length !== 1 ? 's' : ''}`}
           </Text>
         </View>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
@@ -520,7 +559,7 @@ export default function MarketplaceScreen() {
             {String((error as any)?.message ?? 'Something went wrong')}
           </Text>
           <TouchableOpacity
-            onPress={() => refetchListings()}
+            onPress={() => refetchSections()}
             activeOpacity={0.75}
             style={styles.retryBtn}
           >
@@ -554,51 +593,31 @@ export default function MarketplaceScreen() {
           </CardContainer>
         )}
 
-        {/* Featured */}
-        <CardContainer>
-          <SectionHeader label="Featured" count={listings.length} />
-          {isLoading ? (
-            <SectionSkeleton mode={viewMode} />
-          ) : listings.length === 0 ? (
-            <SectionEmpty
-              message={
-                filterCount > 0
-                  ? 'No listings match your filters.'
-                  : 'No listings available right now.'
-              }
-            />
-          ) : (
-            <SectionItems items={listings} mode={viewMode} />
-          )}
-        </CardContainer>
-
-        {/* Auctions · Graded */}
-        {(isLoading || graded.length > 0) && (
-          <CardContainer>
-            <SectionHeader label="Auctions · Graded" count={graded.length} />
-            {isLoading ? (
-              <SectionSkeleton mode={viewMode} />
-            ) : graded.length === 0 ? (
-              <SectionEmpty message="No graded listings match your filters." />
-            ) : (
-              <SectionItems items={graded} mode={viewMode} />
-            )}
-          </CardContainer>
-        )}
-
-        {/* Auctions · Sealed */}
-        {(isLoading || sealed.length > 0) && (
-          <CardContainer>
-            <SectionHeader label="Auctions · Sealed" count={sealed.length} />
-            {isLoading ? (
-              <SectionSkeleton mode={viewMode} />
-            ) : sealed.length === 0 ? (
-              <SectionEmpty message="No sealed listings match your filters." />
-            ) : (
-              <SectionItems items={sealed} mode={viewMode} />
-            )}
-          </CardContainer>
-        )}
+        {/* Sections (Featured / Auctions·Graded / Auctions·Sealed) from cache */}
+        {sectionsToRender.map((section) => {
+          const isFeatured = section.key === 'featured'
+          // Featured always renders (even empty, to show the empty state);
+          // secondary sections hide once loaded with nothing to show.
+          if (!isLoading && !isFeatured && section.items.length === 0) return null
+          return (
+            <CardContainer key={section.key}>
+              <SectionHeader label={section.title} count={section.items.length} />
+              {isLoading ? (
+                <SectionSkeleton mode={viewMode} />
+              ) : section.items.length === 0 ? (
+                <SectionEmpty
+                  message={
+                    filterCount > 0
+                      ? `No ${section.title} listings match your filters.`
+                      : 'No listings available right now.'
+                  }
+                />
+              ) : (
+                <SectionItems items={section.items} mode={viewMode} />
+              )}
+            </CardContainer>
+          )
+        })}
       </ScrollView>
 
       {/* ── Filter Modal ── */}

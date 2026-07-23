@@ -59,7 +59,7 @@ export function measureInWindowAsync(
   })
 }
 
-export function useNavigateToItem({
+export function useNavigateToItem<T = TCard>({
   kind,
   item,
   path = '/cards/[card]',
@@ -67,7 +67,7 @@ export function useNavigateToItem({
   params,
 }: {
   kind: ItemKinds
-  item?: { id: string }
+  item: T
   path?: AppPathname
   paramName?: string
   params?: Record<string, string>

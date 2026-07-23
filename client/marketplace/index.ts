@@ -59,6 +59,33 @@ export function useFeaturedListings(limit = 20) {
   })
 }
 
+export type MarketplaceSection = {
+  section_key: string
+  title: string
+  sort_order: number
+  refreshed_at: string | null
+  items: FeaturedListing[]
+}
+
+/**
+ * Marketplace sections served from the DB-side cache
+ * (`get_marketplace_sections`), refreshed every 15 min by pg_cron. Each section
+ * — Featured, Auctions·Graded, Auctions·Sealed — is a precomputed value with
+ * its own query/ordering, not a client-side slice of one feed.
+ */
+export function useMarketplaceSections() {
+  return useQuery<MarketplaceSection[]>({
+    queryKey: [supabaseUrl, 'marketplace', 'sections'],
+    queryFn: async () => {
+      const { data, error } = await (getSupabase() as any).rpc('get_marketplace_sections')
+      if (error) throw error
+      return (data ?? []) as MarketplaceSection[]
+    },
+    staleTime: 60_000,
+    gcTime: 5 * 60_000,
+  })
+}
+
 export function usePublicStorefronts(limit = 20, pageParam?: string) {
   return useQuery<PublicStorefront[]>({
     queryKey: [supabaseUrl, 'marketplace', 'storefronts', limit, pageParam],

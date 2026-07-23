@@ -148,7 +148,7 @@ export const DefaultAccessories = ({
   )
 }
 
-export type CardListViewProps = { card?: TCard & Partial<CollectionItemQueryView> } & Omit<
+export type CardListViewProps = { card: TCard & Partial<CollectionItemQueryView> } & Omit<
   ItemListViewProps,
   'item' | 'displayData'
 >
