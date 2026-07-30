@@ -692,8 +692,8 @@ export function AuthModal({ onClose }: Props) {
               style={[
                 { overflow: 'visible' },
                 {
-                  maxHeight: (mainTab === 'email' ? emailFlow.error : error) ? 40 : 0,
-                  opacity: (mainTab === 'email' ? emailFlow.error : error) ? 1 : 0,
+                  maxHeight: showErrorContent ? 40 : 0,
+                  opacity: showErrorContent ? 1 : 0,
                   transition: 'max-height 200ms ease, opacity 180ms ease',
                 } as any,
               ]}

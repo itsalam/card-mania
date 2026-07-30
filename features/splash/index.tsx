@@ -9,27 +9,24 @@ import { ProfileSetupWizard } from '@/features/onboarding'
 import { useUserStore } from '@/lib/store/useUserStore'
 import { cn } from '@/lib/utils'
 import AsyncStorage from '@react-native-async-storage/async-storage'
-import { AtSign, Eye, EyeOff, Lock, Phone, RefreshCw, User } from 'lucide-react-native'
+import { Eye, EyeOff, Lock, RefreshCw, User } from 'lucide-react-native'
 import { MotiView } from 'moti'
 import { ComponentProps, useEffect, useRef, useState } from 'react'
 import { TouchableOpacity, View } from 'react-native'
-import {
-  KeyboardAvoidingView,
-  useReanimatedKeyboardAnimation,
-} from 'react-native-keyboard-controller'
+import { KeyboardAvoidingView } from 'react-native-keyboard-controller'
 import Animated, {
-  interpolate,
   useAnimatedStyle,
   useSharedValue,
   withSequence,
   withTiming,
 } from 'react-native-reanimated'
-import { SafeAreaView } from 'react-native-safe-area-context'
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import Svg, { G, Path } from 'react-native-svg'
 import { Colors } from 'react-native-ui-lib'
 import { CountryPicker } from './CountryPicker'
 import { OtpInput } from './OtpInput'
 import { SignUpForm } from './SignUpForm'
+import { PillToggle } from './components'
 import { COUNTRIES, Country, formatLocalNumber, isValidE164, toE164 } from './phoneUtils'
 import { useEmailAuthFlow } from './useEmailAuthFlow'
 
@@ -151,10 +148,7 @@ export function SplashPage({ initialSignUp }: { initialSignUp?: boolean }) {
     })
   }, [])
   const isDev = process.env.NODE_ENV !== 'production'
-  const { progress: kbProgress } = useReanimatedKeyboardAnimation()
-  const logoKbStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: interpolate(kbProgress.value, [0, 1], [1, 0.6]) }],
-  }))
+  const insets = useSafeAreaInsets()
 
   // 'phone' is the primary / default view
   const [view, setView] = useState<'phone' | 'signup'>('phone')
@@ -180,6 +174,7 @@ export function SplashPage({ initialSignUp }: { initialSignUp?: boolean }) {
   const tabSwitchDir = useRef<1 | -1>(1)
   const passwordFieldRef = useRef<TextFieldHandle>(null)
 
+  const showErrorContent = mainTab === 'email' ? emailFlow.error : error
   const maxDigits = country.format.split('').filter((c) => c === 'X').length
   const e164 = toE164(country.dial, localNumber)
 
@@ -311,25 +306,31 @@ export function SplashPage({ initialSignUp }: { initialSignUp?: boolean }) {
   // Shared logo node — flex:1 keeps it in the keyboard-avoiding flow so it moves with the form;
   // maxHeight caps the area so both screens place the logo at the same position.
   const logoNode = (
-    <Animated.View
+    <View
       style={[
         {
           flex: 1,
           alignItems: 'center',
           justifyContent: 'flex-end',
-          paddingBottom: 24,
+          maxHeight: '50%',
         },
-        logoKbStyle,
       ]}
     >
       <MotiView
         from={{ opacity: 0, translateY: 60 }}
         animate={{ opacity: 1, translateY: 0 }}
         transition={{ type: 'spring', damping: 100, stiffness: 300, overshootClamping: true }}
+        style={{
+          width: '100%',
+          height: '100%',
+          justifyContent: 'center',
+          alignItems: 'center',
+          paddingTop: insets.top,
+        }}
       >
-        <Logo width={192} height={192} />
+        <Logo height={'50%'} preserveAspectRatio="1" />
       </MotiView>
-    </Animated.View>
+    </View>
   )
 
   const formWrapStyle = {
@@ -338,7 +339,6 @@ export function SplashPage({ initialSignUp }: { initialSignUp?: boolean }) {
     gap: 16,
     width: '100%' as const,
     paddingBottom: 32,
-    height: '50%' as const,
   }
 
   // ── Sign-up ──────────────────────────────────────────────────────────────────
@@ -347,7 +347,7 @@ export function SplashPage({ initialSignUp }: { initialSignUp?: boolean }) {
       <KeyboardAvoidingView behavior="padding" style={{ flex: 1 }}>
         <GradientBackground style={{ flex: 1 }}>
           {logoNode}
-          <View style={{ height: '50%', paddingHorizontal: 24 }}>
+          <View style={{ height: '50%', paddingHorizontal: 24, flex: 0.6 }}>
             <SignUpForm
               initialEmail={emailFlow.signupEmail ?? undefined}
               onBack={() => {
@@ -378,7 +378,7 @@ export function SplashPage({ initialSignUp }: { initialSignUp?: boolean }) {
   // ── Main page (phone + email inline) ─────────────────────────────────────────
   return (
     <KeyboardAvoidingView behavior="padding" style={{ flex: 1 }}>
-      <GradientBackground style={{ flex: 1, justifyContent: 'space-between' }}>
+      <GradientBackground style={{ flex: 1 }}>
         {logoNode}
 
         {/* Form — sits at the bottom */}
@@ -422,56 +422,20 @@ export function SplashPage({ initialSignUp }: { initialSignUp?: boolean }) {
             </View>
           </View>
 
-          {/* Pill toggle */}
-          <View
-            style={{
-              flexDirection: 'row',
-              backgroundColor: 'rgba(255,255,255,0.12)',
-              borderRadius: 20,
-              padding: 3,
-              alignSelf: 'flex-start',
+          <PillToggle
+            value={mainTab}
+            onChange={(tab) => {
+              tabSwitchDir.current = tab === 'email' ? 1 : -1
+              setMainTab(tab)
+              setError(null)
+              setPhoneOtpSent(false)
+              setPhoneCode('')
+              emailFlow.resetToEmailStep()
             }}
-          >
-            {(['phone', 'email'] as const).map((tab) => {
-              const active = mainTab === tab
-              const color = active ? '#000' : 'rgba(255,255,255,0.6)'
-              return (
-                <TouchableOpacity
-                  key={tab}
-                  onPress={() => {
-                    tabSwitchDir.current = tab === 'email' ? 1 : -1
-                    setMainTab(tab)
-                    setError(null)
-                    setPhoneOtpSent(false)
-                    setPhoneCode('')
-                    emailFlow.resetToEmailStep()
-                  }}
-                  style={{
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    gap: 5,
-                    paddingVertical: 5,
-                    paddingHorizontal: 14,
-                    borderRadius: 17,
-                    backgroundColor: active ? 'white' : 'transparent',
-                  }}
-                  accessibilityRole="tab"
-                  accessibilityState={{ selected: active }}
-                >
-                  {tab === 'phone' ? (
-                    <Phone size={12} color={color} />
-                  ) : (
-                    <AtSign size={12} color={color} />
-                  )}
-                  <Text style={{ color, fontWeight: '600', fontSize: 12 }}>
-                    {tab === 'phone' ? 'Phone' : 'Email'}
-                  </Text>
-                </TouchableOpacity>
-              )
-            })}
-          </View>
+          />
 
           {/* ── Tab content (animates on tab switch) ── */}
+
           <MotiView
             key={mainTab}
             from={{ opacity: 0, translateX: tabSwitchDir.current * 30 }}
@@ -481,6 +445,7 @@ export function SplashPage({ initialSignUp }: { initialSignUp?: boolean }) {
           >
             {mainTab === 'phone' && !phoneOtpSent && (
               <TextField
+                testID="phone_input"
                 leadingAccessory={
                   <CountryPicker
                     selected={country}
@@ -555,10 +520,18 @@ export function SplashPage({ initialSignUp }: { initialSignUp?: boolean }) {
                 </TouchableOpacity>
               </MotiView>
             )}
-
+            {emailFlow.emailStep === 'password' && (
+              <TouchableOpacity
+                onPress={emailFlow.resetToEmailStep}
+                style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}
+              >
+                <Text style={{ color: Colors.$textGeneral, fontSize: 13 }}>← Change email</Text>
+              </TouchableOpacity>
+            )}
             {mainTab === 'email' && (
               <Animated.View style={[{ width: '100%', gap: 8 }, shakeStyle]}>
                 <TextField
+                  testID="email_input"
                   leadingAccessory={
                     <User size={20} onPress={handleAnonSignIn} color={Colors.$textPrimary} />
                   }
@@ -593,14 +566,6 @@ export function SplashPage({ initialSignUp }: { initialSignUp?: boolean }) {
                     transition={{ type: 'spring', damping: 20, stiffness: 260, mass: 0.9 }}
                     style={{ gap: 8 }}
                   >
-                    <TouchableOpacity
-                      onPress={emailFlow.resetToEmailStep}
-                      style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}
-                    >
-                      <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 13 }}>
-                        ← Change email
-                      </Text>
-                    </TouchableOpacity>
                     <TextField
                       ref={passwordFieldRef}
                       leadingAccessory={<Lock size={20} color={Colors.$textPrimary} />}
@@ -650,17 +615,19 @@ export function SplashPage({ initialSignUp }: { initialSignUp?: boolean }) {
           <View style={{ alignItems: 'center', width: '100%' }}>
             <MotiView
               animate={{
-                opacity: (mainTab === 'email' ? emailFlow.error : error) ? 1 : 0,
-                translateY: (mainTab === 'email' ? emailFlow.error : error) ? 0 : -6,
-                minHeight: (mainTab === 'email' ? emailFlow.error : error) ? 20 : 0,
+                opacity: showErrorContent ? 1 : 0,
+                translateY: showErrorContent ? 0 : -6,
+                minHeight: showErrorContent ? 20 : 0,
               }}
               transition={{ type: 'timing', duration: 180 }}
               style={{ width: '100%', justifyContent: 'center' }}
               pointerEvents="none"
             >
-              <Text className="text-red-400 text-sm text-center w-full px-4">
-                {mainTab === 'email' ? (emailFlow.error ?? '') : (error ?? '')}
-              </Text>
+              {showErrorContent && (
+                <Text className="text-red-400 text-sm text-center w-full px-4">
+                  {mainTab === 'email' ? (emailFlow.error ?? '') : (error ?? '')}
+                </Text>
+              )}
             </MotiView>
             {mainTab === 'phone' && !phoneOtpSent && (
               <BaseButton onPress={handleSendCode} disabled={loading || !localNumber.trim()}>
@@ -698,14 +665,18 @@ export function SplashPage({ initialSignUp }: { initialSignUp?: boolean }) {
           </View>
 
           {/* Divider */}
-          <View className="w-full flex flex-row items-center gap-6 justify-center">
-            <Separator orientation="horizontal" className="flex-1 bg-white" />
-            <Text className="text-white">or</Text>
-            <Separator orientation="horizontal" className="flex-1 bg-white" />
-          </View>
+          {emailFlow.emailStep === 'email' && mainTab !== 'phone' && !phoneOtpSent && (
+            <View style={{ gap: 8, width: '100%' }}>
+              <View className="w-full flex flex-row items-center gap-6 justify-center">
+                <Separator orientation="horizontal" className="flex-1 bg-white" />
+                <Text className="text-white">or</Text>
+                <Separator orientation="horizontal" className="flex-1 bg-white" />
+              </View>
 
-          <GoogleSignInButton />
-          <FacebookSignInButton />
+              <GoogleSignInButton />
+              <FacebookSignInButton />
+            </View>
+          )}
         </MotiView>
       </GradientBackground>
     </KeyboardAvoidingView>

@@ -5,6 +5,7 @@ import { LinearGradient } from 'expo-linear-gradient'
 import { ChevronDown, Search } from 'lucide-react-native'
 import { useMemo, useState } from 'react'
 import { FlatList, TextInput, TouchableOpacity, View, useWindowDimensions } from 'react-native'
+import { Colors } from 'react-native-ui-lib'
 import { COUNTRIES, Country } from './phoneUtils'
 
 export function CountryPicker({
@@ -41,7 +42,7 @@ export function CountryPicker({
       >
         <Text style={{ fontSize: 20 }}>{selected.flag}</Text>
         <Text style={{ color: 'white', fontSize: 15 }}>{selected.dial}</Text>
-        <ChevronDown size={14} color="rgba(255,255,255,0.6)" />
+        <ChevronDown size={14} color={Colors.$outlineDefault} />
       </TouchableOpacity>
 
       <BottomSheet
@@ -59,17 +60,17 @@ export function CountryPicker({
             marginHorizontal: 16,
             // marginBottom: 8,
             marginTop: 4,
-            backgroundColor: 'rgba(255,255,255,0.08)',
+            backgroundColor: Colors.rgba(Colors.$backgroundDefault, 0.08),
             borderRadius: 10,
             paddingHorizontal: 12,
             paddingVertical: 8,
           }}
         >
-          <Search size={15} color="rgba(255,255,255,0.4)" />
+          <Search size={15} color={Colors.rgba(Colors.$backgroundDefault, 0.4)} />
           <TextInput
             style={{ flex: 1, color: 'white', fontSize: 15, padding: 0 }}
             placeholder="Search country or code"
-            placeholderTextColor="rgba(255,255,255,0.35)"
+            placeholderTextColor={Colors.rgba(Colors.$backgroundDefault, 0.4)}
             value={query}
             onChangeText={setQuery}
             autoCorrect={false}
@@ -96,7 +97,7 @@ export function CountryPicker({
             ListEmptyComponent={
               <Text
                 style={{
-                  color: 'rgba(255,255,255,0.4)',
+                  color: Colors.rgba(Colors.$backgroundDefault, 0.4),
                   textAlign: 'center',
                   paddingVertical: 24,
                   fontSize: 14,
@@ -123,8 +124,18 @@ export function CountryPicker({
                 accessibilityLabel={`${item.name} ${item.dial}`}
               >
                 <Text style={{ fontSize: 22 }}>{item.flag}</Text>
-                <Text style={{ color: 'white', fontSize: 16, flex: 1 }}>{item.name}</Text>
-                <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 15 }}>{item.dial}</Text>
+                <Text
+                  style={{
+                    color: Colors.rgba(Colors.$backgroundDefault, 1),
+                    fontSize: 16,
+                    flex: 1,
+                  }}
+                >
+                  {item.name}
+                </Text>
+                <Text style={{ color: Colors.rgba(Colors.$backgroundDefault, 0.5), fontSize: 15 }}>
+                  {item.dial}
+                </Text>
               </TouchableOpacity>
             )}
           />

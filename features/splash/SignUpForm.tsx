@@ -4,12 +4,13 @@ import { Separator } from '@/components/ui/separator'
 import { Text } from '@/components/ui/text/base-text'
 import { getSupabase } from '@/lib/store/client'
 import { useUserStore } from '@/lib/store/useUserStore'
-import { AtSign, ChevronLeft, Eye, EyeOff, Lock, Phone, RefreshCw } from 'lucide-react-native'
+import { AtSign, ChevronLeft, Eye, EyeOff, Lock, RefreshCw } from 'lucide-react-native'
 import { MotiView } from 'moti'
 import { useEffect, useRef, useState } from 'react'
 import { TouchableOpacity, View } from 'react-native'
 import Svg, { G, Path } from 'react-native-svg'
 import { Colors } from 'react-native-ui-lib'
+import { PillToggle } from './components'
 import { CountryPicker } from './CountryPicker'
 import { OtpInput } from './OtpInput'
 import { PasswordStrengthGauge } from './PasswordStrengthGauge'
@@ -47,53 +48,6 @@ function friendlyOtpError(message: string): string {
   if (msg.includes('network') || msg.includes('fetch'))
     return 'Network error. Please check your connection.'
   return message
-}
-
-// ── Pill toggle ────────────────────────────────────────────────────────────────
-
-function PillToggle({ value, onChange }: { value: TabMode; onChange: (v: TabMode) => void }) {
-  return (
-    <View
-      style={{
-        flexDirection: 'row',
-        backgroundColor: 'rgba(255,255,255,0.12)',
-        borderRadius: 20,
-        padding: 3,
-        alignSelf: 'flex-start',
-      }}
-    >
-      {(['email', 'phone'] as TabMode[]).map((tab) => {
-        const active = value === tab
-        const color = active ? '#000' : 'rgba(255,255,255,0.6)'
-        return (
-          <TouchableOpacity
-            key={tab}
-            onPress={() => onChange(tab)}
-            style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              gap: 5,
-              paddingVertical: 5,
-              paddingHorizontal: 14,
-              borderRadius: 17,
-              backgroundColor: active ? 'white' : 'transparent',
-            }}
-            accessibilityRole="tab"
-            accessibilityState={{ selected: active }}
-          >
-            {tab === 'email' ? (
-              <AtSign size={12} color={color} />
-            ) : (
-              <Phone size={12} color={color} />
-            )}
-            <Text style={{ color, fontWeight: '600', fontSize: 12 }}>
-              {tab === 'email' ? 'Email' : 'Phone'}
-            </Text>
-          </TouchableOpacity>
-        )
-      })}
-    </View>
-  )
 }
 
 // ── Main form ──────────────────────────────────────────────────────────────────

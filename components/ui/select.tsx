@@ -7,7 +7,6 @@ import { Check, ChevronDown, ChevronDownIcon, ChevronUpIcon } from 'lucide-react
 import * as React from 'react'
 import { Platform, PressableStateCallbackType, ScrollView, StyleSheet, View } from 'react-native'
 import { FadeIn, FadeOut } from 'react-native-reanimated'
-import { FullWindowOverlay as RNFullWindowOverlay } from 'react-native-screens'
 import { BorderRadiuses, Colors } from 'react-native-ui-lib'
 import { useCombinedRefs } from '../hooks/useCombinedRefs'
 import { MeasuredLayout, useMeasure } from '../hooks/useMeasure'
@@ -167,7 +166,7 @@ function SelectTrigger({
   )
 }
 
-const FullWindowOverlay = Platform.OS === 'ios' ? RNFullWindowOverlay : React.Fragment
+const FullWindowOverlay = React.Fragment
 
 function SelectContent({
   className,

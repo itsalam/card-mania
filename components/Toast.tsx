@@ -153,7 +153,7 @@ export const ToastProvider = ({ children }: { children: ReactNode }) => {
   return (
     <ToastContext.Provider value={ctx}>
       {children}
-      {Platform.OS === 'ios' ? (
+      {Platform.OS !== 'ios' ? (
         <FullWindowOverlay>{overlay}</FullWindowOverlay>
       ) : (
         <Modal visible={visible} transparent animationType="none" statusBarTranslucent>

@@ -5,13 +5,12 @@ import * as TooltipPrimitive from '@rn-primitives/tooltip'
 import * as React from 'react'
 import { Platform, StyleSheet } from 'react-native'
 import { FadeInDown, FadeInUp, FadeOut } from 'react-native-reanimated'
-import { FullWindowOverlay as RNFullWindowOverlay } from 'react-native-screens'
 
 const Tooltip = TooltipPrimitive.Root
 
 const TooltipTrigger = TooltipPrimitive.Trigger
 
-const FullWindowOverlay = Platform.OS === 'ios' ? RNFullWindowOverlay : React.Fragment
+const FullWindowOverlay = React.Fragment
 
 function TooltipContent({
   className,

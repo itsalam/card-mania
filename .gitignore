@@ -61,3 +61,5 @@ app-example
 ds-bundle/
 .design-sync/ds-prebundle.mjs
 .design-sync/compiled.css
+
+artifacts/

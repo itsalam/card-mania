@@ -1,0 +1,6 @@
+name: E2E tests
+jobs:
+  e2e:
+    type: maestro
+    params:
+      flow_path: e2e/critical-path.yaml

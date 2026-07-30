@@ -5,13 +5,12 @@ import * as PopoverPrimitive from '@rn-primitives/popover'
 import * as React from 'react'
 import { Platform, StyleSheet } from 'react-native'
 import { FadeIn, FadeOut } from 'react-native-reanimated'
-import { FullWindowOverlay as RNFullWindowOverlay } from 'react-native-screens'
 
 const Popover = PopoverPrimitive.Root
 
 const PopoverTrigger = PopoverPrimitive.Trigger
 
-const FullWindowOverlay = Platform.OS === 'ios' ? RNFullWindowOverlay : React.Fragment
+const FullWindowOverlay = React.Fragment
 
 function PopoverContent({
   className,
