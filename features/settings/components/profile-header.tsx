@@ -2,7 +2,6 @@ import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import { Text } from '@/components/ui/text/base-text'
 import { UserAvatar } from '@/features/users/components/UserAvatars'
-import { UserDisplayInfo } from '@/features/users/types'
 import { useUserStore } from '@/lib/store/useUserStore'
 import { useRouter } from 'expo-router'
 import { LogOut } from 'lucide-react-native'
@@ -18,12 +17,6 @@ export function ProfileHeader() {
   // Resolve display name and handle from profile, falling back to auth data
   const displayName = profile?.display_name ?? profile?.username ?? 'CardMania User'
   const handle = profile?.username ?? user?.email?.split('@')[0] ?? 'username'
-
-  const displayInfo: UserDisplayInfo = {
-    name: displayName,
-    handle: `@${handle}`,
-    avatar: profile?.avatar_url ?? '',
-  }
 
   const stats = [
     { label: 'Followers', value: 0 },
@@ -58,7 +51,7 @@ export function ProfileHeader() {
         paddingBottom: 20,
       }}
     >
-      <UserAvatar size="2xl" user={displayInfo} />
+      <UserAvatar size="2xl" user={profile} fallbackId={user?.id} />
       <View
         style={{
           paddingTop: 20,

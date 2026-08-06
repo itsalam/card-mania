@@ -4,7 +4,6 @@ import { Button } from '@/components/ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { ExpandableText, Text } from '@/components/ui/text'
 import { UserContact } from '@/features/users/components/UserAvatars'
-import { UserDisplayInfo } from '@/features/users/types'
 import { useUserStore } from '@/lib/store/useUserStore'
 import { Copy, Ellipsis, LucideIcon, Star, TrendingUp } from 'lucide-react-native'
 import React, { ReactNode, useMemo } from 'react'
@@ -42,14 +41,6 @@ export function ProfileHeader() {
     }
   }
 
-  const displayInfo: UserDisplayInfo | undefined = user
-    ? {
-        name: user.display_name ?? user.username ?? 'Unknown',
-        handle: user.username ? `@${user.username}` : '',
-        avatar: user.avatar_url ?? '',
-      }
-    : undefined
-
   return (
     <View
       style={{
@@ -74,7 +65,7 @@ export function ProfileHeader() {
             width: '100%',
           }}
         >
-          <UserContact size="xl" user={displayInfo} />
+          <UserContact size="xl" user={user} fallbackId={user?.user_id} />
 
           <View style={{ flexDirection: 'row', gap: 10 }}>
             <Popover>

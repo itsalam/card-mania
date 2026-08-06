@@ -11,9 +11,8 @@ import { Separator } from '@/components/ui/separator'
 import { Skeleton } from '@/components/ui/skeleton'
 import { SkeletonText } from '@/components/ui/text'
 import { Text } from '@/components/ui/text/base-text'
-import { useProfiles } from '@/features/users/client/load-user'
+import { PublicProfile, useProfiles } from '@/features/users/client/load-user'
 import { UserContact } from '@/features/users/components/UserAvatars'
-import { UserDisplayInfo } from '@/features/users/types'
 import {
   AlertTriangle,
   Check,
@@ -164,21 +163,21 @@ export function TransactionParties({
 }) {
   const { data: profiles } = useProfiles([buyerId, sellerId])
 
-  const makeUser = (id: string): UserDisplayInfo | undefined => {
-    const p = profiles?.[id]
-    if (!p) return undefined
-    return {
-      name: p.display_name ?? p.username ?? id.slice(0, 8),
-      handle: `@${p.username ?? id.slice(0, 8)}`,
-      avatar: p.avatar_url ?? '',
-    }
-  }
-
   return (
     <View style={partyStyles.container}>
-      <PartyCard label="Buyer" user={makeUser(buyerId)} isYou={currentUserId === buyerId} />
+      <PartyCard
+        label="Buyer"
+        user={profiles?.[buyerId]}
+        userId={buyerId}
+        isYou={currentUserId === buyerId}
+      />
       <ShoppingBag size={26} color={Colors.$iconNeutral} />
-      <PartyCard label="Seller" user={makeUser(sellerId)} isYou={currentUserId === sellerId} />
+      <PartyCard
+        label="Seller"
+        user={profiles?.[sellerId]}
+        userId={sellerId}
+        isYou={currentUserId === sellerId}
+      />
     </View>
   )
 }
@@ -186,10 +185,12 @@ export function TransactionParties({
 function PartyCard({
   label,
   user,
+  userId,
   isYou,
 }: {
   label: string
-  user: UserDisplayInfo | undefined
+  user: PublicProfile | undefined
+  userId: string
   isYou: boolean
 }) {
   return (
@@ -208,7 +209,7 @@ function PartyCard({
           />
         )}
       </View>
-      <UserContact user={user} size="md" variant="outline" />
+      <UserContact user={user} fallbackId={userId} size="md" variant="outline" />
     </View>
   )
 }
@@ -486,13 +487,6 @@ export function TransactionListCard({
   const counterpartyId = isSeller ? offer.buyer_id : offer.seller_id
   const { data: profiles } = useProfiles([counterpartyId])
   const counterparty = profiles?.[counterpartyId]
-  const counterpartyUser: UserDisplayInfo | undefined = counterparty
-    ? {
-        name: counterparty.display_name ?? counterparty.username ?? counterpartyId.slice(0, 8),
-        handle: `@${counterparty.username ?? counterpartyId.slice(0, 8)}`,
-        avatar: counterparty.avatar_url ?? '',
-      }
-    : undefined
 
   const itemCount = offer.offer_items?.length ?? 0
   const statusColor =
@@ -501,7 +495,7 @@ export function TransactionListCard({
   return (
     <TouchableOpacity onPress={onPress} activeOpacity={0.75} style={listCardStyles.container}>
       <View style={listCardStyles.row}>
-        <UserContact user={counterpartyUser} size="sm" />
+        <UserContact user={counterparty} fallbackId={counterpartyId} size="sm" />
         <View style={listCardStyles.meta}>
           <View style={listCardStyles.statusRow}>
             <View style={[listCardStyles.statusDot, { backgroundColor: statusColor }]} />

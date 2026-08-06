@@ -1,9 +1,8 @@
 import { useSendTransactionMessage, useTransactionMessages } from '@/client/transactions/messages'
 import { TransactionMessage } from '@/client/transactions/types'
 import { Text } from '@/components/ui/text/base-text'
-import { useProfiles } from '@/features/users/client/load-user'
+import { PublicProfile, useProfiles } from '@/features/users/client/load-user'
 import { UserAvatar } from '@/features/users/components/UserAvatars'
-import { UserDisplayInfo } from '@/features/users/types'
 import { SendHorizonal } from 'lucide-react-native'
 import { useRef, useState } from 'react'
 import { Platform, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native'
@@ -25,19 +24,21 @@ function formatMessageTime(isoString: string): string {
 function ChatMessage({
   message,
   isMine,
-  otherUser,
+  otherProfile,
+  otherUserId,
   showAvatar,
 }: {
   message: TransactionMessage
   isMine: boolean
-  otherUser: UserDisplayInfo | undefined
+  otherProfile: PublicProfile | undefined
+  otherUserId: string
   showAvatar: boolean
 }) {
   return (
     <View style={[msgStyles.row, isMine ? msgStyles.rowMine : msgStyles.rowTheirs]}>
       {!isMine && (
         <View style={msgStyles.avatarSlot}>
-          {showAvatar && <UserAvatar user={otherUser} size="sm" />}
+          {showAvatar && <UserAvatar user={otherProfile} fallbackId={otherUserId} size="sm" />}
         </View>
       )}
       <View style={msgStyles.bubbleWrapper}>
@@ -104,13 +105,6 @@ export function TransactionChatSection({
   const { data: profiles } = useProfiles([otherUserId])
 
   const otherProfile = profiles?.[otherUserId]
-  const otherUser: UserDisplayInfo | undefined = otherProfile
-    ? {
-        name: otherProfile.display_name ?? otherProfile.username ?? otherUserId.slice(0, 8),
-        handle: `@${otherProfile.username ?? otherUserId.slice(0, 8)}`,
-        avatar: otherProfile.avatar_url ?? '',
-      }
-    : undefined
 
   return (
     <View style={sectionStyles.container}>
@@ -134,7 +128,8 @@ export function TransactionChatSection({
                 key={msg.id}
                 message={msg}
                 isMine={isMine}
-                otherUser={otherUser}
+                otherProfile={otherProfile}
+                otherUserId={otherUserId}
                 showAvatar={showAvatar}
               />
             )

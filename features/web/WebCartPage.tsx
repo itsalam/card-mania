@@ -189,14 +189,7 @@ export default function WebCartPage() {
                     }}
                   >
                     {profile ? (
-                      <UserContact
-                        user={{
-                          name: profile.display_name ?? profile.username ?? '',
-                          handle: `@${profile.username ?? ''}`,
-                          avatar: profile.avatar_url ?? '',
-                        }}
-                        size="sm"
-                      />
+                      <UserContact user={profile} fallbackId={sellerId} size="sm" />
                     ) : (
                       <Text variant="muted">Unknown seller</Text>
                     )}
