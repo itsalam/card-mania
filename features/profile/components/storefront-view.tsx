@@ -1,13 +1,15 @@
 import { useIsWishlisted, useToggleWishlist } from '@/client/card/wishlist'
 import { CollectionItem, CollectionLike } from '@/client/collections/types'
+import { THUMBNAIL_HEIGHT } from '@/components/tcg-card/consts'
 import { useNavigateToItem } from '@/components/tcg-card/helpers'
+import { Button } from '@/components/ui/button'
 import { Modal } from '@/components/ui/modal'
 import { Text } from '@/components/ui/text/base-text'
-import { formatLabel, formatPrice } from '@/components/utils'
 import { TCard } from '@/constants/types'
 import { useAddToCart, useCartItems, useClearCart } from '@/features/cart/hooks'
+import { CollectionInfo } from '@/features/collection/components/CollectionInfo'
 import { useGetCollection, useGetCollectionItems } from '@/features/collection/hooks'
-import { CardListView } from '@/features/tcg-card-views/ListCard'
+import { CardListView, MainInfoAccessories } from '@/features/tcg-card-views/ListCard'
 import { ItemListViewProps } from '@/features/tcg-card-views/types'
 import { CollectionItemQueryView } from '@/lib/store/functions/types'
 import { EllipsisVertical, Heart, ShoppingCart } from 'lucide-react-native'
@@ -22,10 +24,14 @@ export function StorefrontView({ collectionId, isOwnProfile }: CollectionPreview
   return (
     <View
       style={{
-        borderRadius: BorderRadiuses.br40,
-        backgroundColor: Colors.$backgroundElevated,
+        backgroundColor: Colors.$backgroundElevatedLight,
+        borderRadius: BorderRadiuses.br60,
+        overflow: 'hidden',
+        borderWidth: 2,
+        borderColor: Colors.$outlineNeutral,
       }}
     >
+      <CollectionInfo collectionId={collectionId} />
       {collection && <StorefrontPreviewItems collection={collection} isOwnProfile={isOwnProfile} />}
     </View>
   )
@@ -49,34 +55,65 @@ function StorefrontPreviewItems({ collection, isOwnProfile }: CollectionPreviewI
   }
 
   return (
-    <View>
-      {flatData.map((collectionItem) => {
+    <View style={{ gap: 18, paddingTop: 18, paddingBottom: 20 }}>
+      {flatData.map((collectionItem, index) => {
         const graded = collectionItem?.price_key !== 'ungraded'
+        const isLast = index === flatData.length - 1
         return (
-          <CardListView
-            itemId={collectionItem.ref_id}
+          <View
             key={collectionItem.collection_item_id}
-            collectionItem={{ ...collectionItem, id: collectionItem.collection_item_id }}
-            cardContainerStyle={
-              graded
-                ? {
-                    paddingVertical: 8,
-                    paddingHorizontal: 2,
-                    backgroundColor: Colors.$backgroundElevatedLight,
-                  }
-                : {
-                    paddingVertical: 8,
-                    paddingHorizontal: 2,
-                  }
-            }
-            style={{ padding: 8 }}
-            card={collectionItem}
-            expanded={true}
-            navigateTo="/profile/[shop-item]"
-            renderAccessories={
-              isOwnProfile ? undefined : (props) => <StorefrontAccessories {...props} />
-            }
-          />
+            style={{ position: 'relative', paddingHorizontal: 12 }}
+          >
+            <View
+              style={{
+                position: 'absolute',
+                left: 4,
+                top: THUMBNAIL_HEIGHT,
+                bottom: 0,
+                width: 3,
+                marginTop: 8,
+                marginBottom: 20,
+                backgroundColor: Colors.$outlineNeutral,
+                opacity: 0.7,
+                borderRadius: 999,
+              }}
+            />
+            {isLast && (
+              <View
+                style={{
+                  position: 'absolute',
+                  bottom: 0,
+                  left: 0,
+                  right: 0,
+                  height: 0,
+                  backgroundColor: Colors.$outlineNeutral,
+                }}
+              />
+            )}
+            <CardListView
+              itemId={collectionItem.ref_id}
+              collectionItem={{ ...collectionItem, id: collectionItem.collection_item_id }}
+              cardContainerStyle={
+                graded
+                  ? {
+                      paddingVertical: 8,
+                      paddingHorizontal: 2,
+                      backgroundColor: Colors.$backgroundElevatedLight,
+                    }
+                  : {
+                      paddingVertical: 8,
+                      paddingHorizontal: 2,
+                    }
+              }
+              style={{ padding: 8 }}
+              card={collectionItem}
+              expanded={true}
+              navigateTo="/profile/[shop-item]"
+              renderAccessories={
+                isOwnProfile ? undefined : (props) => <StorefrontAccessories {...props} />
+              }
+            />
+          </View>
         )
       })}
     </View>
@@ -160,49 +197,17 @@ function StorefrontAccessories(props: ItemListViewProps) {
       style={{ position: 'relative', alignSelf: 'stretch' }}
     >
       {/* Price + metadata — mirrors DefaultAccessories layout */}
-      <View style={storefrontStyles.priceSection}>
-        {displayData?.metadata && (
-          <Text
-            className="text-base uppercase font-spaceMono"
-            style={{ color: Colors.$textNeutralLight }}
-          >
-            {formatLabel(displayData.metadata)}
-          </Text>
-        )}
-        <View style={storefrontStyles.priceContainer}>
-          {displayData?.displayPrice ? (
-            <Text className="text-4xl font-bold" style={{ color: Colors.$textDefault }}>
-              {formatPrice(displayData.displayPrice)}
-            </Text>
-          ) : (
-            <Text
-              className="text-4xl font-medium opacity-70"
-              style={{ color: Colors.$textDefault }}
-            >
-              $-.--
-            </Text>
-          )}
-          {displayData?.quantity && (
-            <Text
-              variant="small"
-              className="font-medium opacity-70"
-              style={{ color: Colors.$textNeutralHeavy }}
-            >
-              {` x Qty: ${displayData.quantity}`}
-            </Text>
-          )}
-        </View>
-      </View>
+      <MainInfoAccessories {...props} />
 
       {/* Buttons: ellipsis (icon) + labeled cart */}
       <View style={storefrontStyles.buttons}>
         <TouchableOpacity style={storefrontStyles.iconButton} onPress={() => setMenuOpen(true)}>
           <EllipsisVertical size={24} color={Colors.$iconGeneral} />
         </TouchableOpacity>
-        <TouchableOpacity style={storefrontStyles.cartButton} onPress={handleAddToCart}>
+        <Button shape="rounded">
           <ShoppingCart size={16} color={Colors.$iconGeneral} />
           <Text style={storefrontStyles.cartLabel}>Add to Cart</Text>
-        </TouchableOpacity>
+        </Button>
       </View>
 
       <Modal visible={menuOpen} onDismiss={() => setMenuOpen(false)}>
@@ -248,10 +253,9 @@ const storefrontStyles = StyleSheet.create({
     alignSelf: 'flex-start',
   },
   buttons: {
-    position: 'absolute',
     right: 0,
     bottom: 0,
-    flexDirection: 'column',
+    flexDirection: 'row',
     gap: 4,
     alignItems: 'flex-end',
   },

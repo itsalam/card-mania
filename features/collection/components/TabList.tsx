@@ -3,13 +3,14 @@ import { WishlistCard } from '@/components/ui/icon'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Spinner } from '@/components/ui/spinner'
 import { TabsLabel, TabsScrollList, TabsTrigger } from '@/components/ui/tabs'
+import { Text } from '@/components/ui/text'
 import { Coins, Layers, LucideIcon, Plus, Vault, X } from 'lucide-react-native'
 import React, { useEffect, useRef } from 'react'
 import { LayoutChangeEvent, TouchableOpacity, View } from 'react-native'
 import Animated from 'react-native-reanimated'
 import { BorderRadiuses, Colors } from 'react-native-ui-lib'
 import { getCollectionName } from '../helpers'
-import { useGetCollection } from '../hooks'
+import { useDefaultCollectionIds, useGetCollection } from '../hooks'
 import {
   DefaultPageTypes,
   defaultPages,
@@ -23,13 +24,17 @@ type CollectionTabProps = {
 }
 
 export const CollectionTabList = () => {
-  const { currentPage, preferenceState, setCurrentPage, newCollectionInfo } =
+  const { currentPage, pinnedCollectionsState, setCurrentPage, newCollectionInfo } =
     useCollectionsPageStore()
-  const { preferences } = preferenceState
+  const { data: defaultIds } = useDefaultCollectionIds()
 
   const tabs = React.useMemo(() => {
-    return [...new Set([...defaultPages.slice(1), ...(preferences?.tabs ?? [])])]
-  }, [preferences?.tabs])
+    const defaultIdValues = Object.values(defaultIds ?? {}).filter(Boolean) as string[]
+    const customIds = pinnedCollectionsState.data
+      .map((row) => row.collection_id)
+      .filter((id): id is string => !!id && !defaultIdValues.includes(id))
+    return [...new Set([...defaultPages.slice(1), ...customIds])]
+  }, [pinnedCollectionsState.data, defaultIds])
 
   // ── Left slot: the "default" (all collections) trigger ──────────────────
   const leftSlot = (
@@ -111,7 +116,18 @@ export const CollectionTabList = () => {
     )
 
   return (
-    <View className="mx-3 overflow-hidden mr-5" style={{ borderRadius: BorderRadiuses.br30 }}>
+    <View className="mx-3 overflow-hidden mr-5" style={{ gap: 6 }}>
+      <Text
+        variant="stats"
+        style={{
+          paddingLeft: 12,
+          color: Colors.$textNeutral,
+          textTransform: 'uppercase',
+          letterSpacing: 0.8,
+        }}
+      >
+        Pinned
+      </Text>
       <TabsScrollList
         masked
         leftSlot={leftSlot}
@@ -134,9 +150,9 @@ export const CollectionTabList = () => {
 }
 
 const CollectionTab = ({ collectionKey, onLayout }: CollectionTabProps) => {
-  const { currentPage, preferenceState, setCurrentPage } = useCollectionsPageStore()
+  const { currentPage, pinnedCollectionsState, setCurrentPage } = useCollectionsPageStore()
 
-  const key = [...Object.values(collectionKey)][0]
+  const key = [...Object.values(collectionKey)][0] as string
 
   const handledMissingRef = useRef(false)
   const isDefault = Boolean(collectionKey.collectionType)
@@ -155,15 +171,10 @@ const CollectionTab = ({ collectionKey, onLayout }: CollectionTabProps) => {
 
     if (!isDefault && missingCollection) {
       handledMissingRef.current = true
-      const nextTabs = (preferenceState.preferences.tabs ?? []).filter((t) => t !== key)
-      preferenceState
-        .updatePreferences({ tabs: nextTabs })
-        .then(() => {
-          if (currentPage === key) setCurrentPage('default')
-        })
-        .catch(() => {})
+      pinnedCollectionsState.remove(key)
+      if (currentPage === key) setCurrentPage('default')
     }
-  }, [currentPage, isDefault, key, other.error, preferenceState, setCurrentPage])
+  }, [currentPage, isDefault, key, other.error, pinnedCollectionsState, setCurrentPage])
 
   return (
     <TabsTrigger
@@ -197,17 +208,10 @@ const CollectionTab = ({ collectionKey, onLayout }: CollectionTabProps) => {
           current && !isDefault ? (
             <TouchableOpacity
               hitSlop={10}
-              onPress={() =>
-                preferenceState
-                  .updatePreferences({
-                    tabs: Array.from(
-                      new Set([
-                        ...(preferenceState.preferences.tabs?.filter((t) => t !== key) ?? []),
-                      ])
-                    ),
-                  })
-                  .then(() => setCurrentPage('default'))
-              }
+              onPress={() => {
+                pinnedCollectionsState.remove(key)
+                setCurrentPage('default')
+              }}
             >
               <X size={13} color={Colors.$backgroundPrimaryHeavy} />
             </TouchableOpacity>

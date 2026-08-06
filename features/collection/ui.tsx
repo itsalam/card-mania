@@ -105,6 +105,13 @@ export function useCollaspableHeader(opts?: {
     () =>
       Gesture.Pan()
         .withRef(gestureRef)
+        // Vertical-only: this gesture simulates the page's vertical scroll (it
+        // only ever reads changeY/velocityY below). Without these bounds it has
+        // no axis restriction and wins the gesture arena over any nested
+        // horizontal scrollable (e.g. the collapsed CollectionSection's
+        // FadeScrollView row), breaking horizontal drags there.
+        .activeOffsetY([-10, 10])
+        .failOffsetX([-10, 10])
         .onBegin(() => {
           blockHeaderMeasurement.value = true
         })

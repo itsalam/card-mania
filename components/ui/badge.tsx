@@ -21,7 +21,7 @@ require('@/assets/rn-ui')
 // ── Constants ─────────────────────────────────────────────────────────────────
 
 export const BASE_BADGE_HEIGHT = 36
-export const BASE_ICON_SIZE = 20
+export const BASE_ICON_SIZE = 16
 export const SQUARE_BADGE_HEIGHT = 32
 export const SQUARE_ICON_SIZE = 40
 
@@ -57,12 +57,12 @@ export function Chip({
   backgroundColor = ThemeColors.$backgroundPrimaryHeavy,
   borderRadius = BorderRadiuses.br100,
   containerStyle,
-  size = 26,
+  size = 22,
   onPress,
   style,
   testID,
 }: ChipProps) {
-  const minHeight = typeof size === 'object' ? (size.height ?? 26) : size
+  const minHeight = typeof size === 'object' ? (size.height ?? 22) : size
   const minWidth = typeof size === 'object' ? size.width : undefined
 
   // Padding rules:
@@ -116,8 +116,8 @@ export const BaseBadgeProps = (Colors: typeof ThemeColors) => ({
   iconStyle: { width: BASE_ICON_SIZE, height: BASE_ICON_SIZE },
   containerStyle: {} as StyleProp<ViewStyle>,
   labelStyle: { color: Colors.$textDefault } as StyleProp<TextStyle>,
-  size: { height: BASE_BADGE_HEIGHT } as ChipSize,
-  backgroundColor: Colors.$backgroundGeneral,
+  size: { height: 28 } as ChipSize,
+  backgroundColor: Colors.$backgroundPrimaryMedium,
   iconStrokeWidth: 2.5,
 })
 
@@ -125,8 +125,8 @@ export const SquareBadgeProps = (Colors: typeof ThemeColors) => ({
   iconStyle: { width: SQUARE_ICON_SIZE, height: SQUARE_ICON_SIZE },
   containerStyle: {} as StyleProp<ViewStyle>,
   labelStyle: { color: Colors.$textDefault } as StyleProp<TextStyle>,
-  size: { height: SQUARE_BADGE_HEIGHT } as ChipSize,
-  backgroundColor: Colors.$backgroundGeneral,
+  size: { height: 28 } as ChipSize,
+  backgroundColor: Colors.$backgroundPrimaryMedium,
   borderRadius: BorderRadiuses.br20 as number,
   iconStrokeWidth: 1.5,
 })

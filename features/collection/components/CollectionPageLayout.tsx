@@ -7,6 +7,7 @@ import { CollectionItemQueryView, CollectionRow } from '@/lib/store/functions/ty
 import { useIsWishlisted } from '@/client/card/wishlist'
 import { CollectionLike } from '@/client/collections/types'
 import { THUMBNAIL_HEIGHT } from '@/components/tcg-card/consts'
+import { FadeScrollView } from '@/components/ui/fade-scroll'
 import { Tabs } from '@/components/ui/tabs'
 import { Text } from '@/components/ui/text/base-text'
 import { VISIBILITY_OPTIONS } from '@/features/tcg-card-views/DetailCardView/components/ui'
@@ -19,13 +20,18 @@ import React, { useCallback, useMemo, useRef, useState } from 'react'
 import { Pressable, RefreshControl, TouchableOpacity, View } from 'react-native'
 import { FlatList, GestureDetector } from 'react-native-gesture-handler'
 import Animated, {
+  FadeIn,
   FadeInLeft,
   FadeInRight,
+  FadeOut,
   FadeOutLeft,
   FadeOutRight,
   interpolate,
+  interpolateColor,
+  LinearTransition,
   useAnimatedStyle,
   useSharedValue,
+  withDelay,
   withTiming,
 } from 'react-native-reanimated'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -72,19 +78,23 @@ const AnimatedCollectionItemList = Animated.createAnimatedComponent(FlatList<Lis
 export const CollectionsPageLayout = () => {
   const insets = useSafeAreaInsets()
   const tabBarHeight = useBottomTabBarHeight()
-  const { currentPage, setCurrentPage, preferenceState, setShowEditView, showEditView } =
+  const { currentPage, setCurrentPage, pinnedCollectionsState, setShowEditView, showEditView } =
     useCollectionsPageStore()
+  const { data: defaultIds } = useDefaultCollectionIds()
 
   const { data: collection } = useGetCollection(getCollectionIdArgs(currentPage))
 
   const orderedPages = useMemo(() => {
-    const customTabs = preferenceState.preferences.tabs ?? []
+    const defaultIdValues = Object.values(defaultIds ?? {}).filter(Boolean) as string[]
+    const customTabs = pinnedCollectionsState.data
+      .map((row) => row.collection_id)
+      .filter((id): id is string => !!id && !defaultIdValues.includes(id))
     const merged = [...defaultPages]
     for (const tab of customTabs) {
       if (!merged.includes(tab as any)) merged.push(tab as any)
     }
     return merged
-  }, [preferenceState.preferences.tabs])
+  }, [pinnedCollectionsState.data, defaultIds])
 
   const prevPageIndexRef = useRef(orderedPages.indexOf(currentPage as any) ?? 0)
   const direction = useMemo(() => {
@@ -131,14 +141,19 @@ export const CollectionsPageLayout = () => {
 
 // ─── Card-style item for the DefaultCollectionView list ─────────────────────
 
+const COMPACT_CARD_WIDTH = 132
+const COMPACT_CARD_HEIGHT = 128
+
 function CollectionCard({
   collection,
   onPress,
   isLoading,
+  compact,
 }: {
   collection: CollectionRow
   onPress: () => void
   isLoading?: boolean
+  compact?: boolean
 }) {
   const { data: count } = useGetCollectionCountInfo(
     isLoading || !collection?.id ? {} : { collectionId: collection.id }
@@ -149,17 +164,55 @@ function CollectionCard({
   if (isLoading) {
     return (
       <View
-        style={{
-          borderRadius: BorderRadiuses.br50,
-          borderWidth: 2,
-          borderColor: Colors.$outlineNeutral,
-          backgroundColor: Colors.$backgroundElevatedLight,
-          padding: 14,
-          flexDirection: 'row',
-          gap: 12,
-          alignItems: 'flex-start',
-        }}
+        style={
+          compact
+            ? {
+                width: COMPACT_CARD_WIDTH,
+                height: COMPACT_CARD_HEIGHT,
+                borderRadius: BorderRadiuses.br50,
+                borderWidth: 2,
+                borderColor: Colors.$outlineNeutral,
+                backgroundColor: Colors.$backgroundElevatedLight,
+              }
+            : {
+                borderRadius: BorderRadiuses.br50,
+                borderWidth: 2,
+                borderColor: Colors.$outlineNeutral,
+                backgroundColor: Colors.$backgroundElevatedLight,
+                padding: 14,
+                flexDirection: 'row',
+                gap: 12,
+                alignItems: 'flex-start',
+              }
+        }
       />
+    )
+  }
+
+  if (compact) {
+    return (
+      <TouchableOpacity onPress={onPress} activeOpacity={0.75}>
+        <View
+          style={{
+            width: COMPACT_CARD_WIDTH,
+            borderRadius: BorderRadiuses.br50,
+            borderWidth: 2,
+            borderColor: Colors.$outlineNeutral,
+            backgroundColor: Colors.$backgroundElevatedLight,
+            padding: 12,
+            gap: 8,
+            alignItems: 'center',
+          }}
+        >
+          <CollectionsAvatar iconImageSrc={collection.cover_image_url ?? undefined} />
+          <View style={{ gap: 2, alignItems: 'center', width: '100%' }}>
+            <Text variant="h4" numberOfLines={1} style={{ textAlign: 'center' }}>
+              {collection.name}
+            </Text>
+            <Text style={{ color: Colors.$textNeutral }}>{count ?? 0} items</Text>
+          </View>
+        </View>
+      </TouchableOpacity>
     )
   }
 
@@ -201,7 +254,27 @@ function CollectionCard({
   )
 }
 
+// Fetches its own collection data — used for "Shared with me", where each id
+// comes from saved_collections rather than a single already-fetched list.
+function SharedCollectionCard({
+  collectionId,
+  onPress,
+}: {
+  collectionId: string
+  onPress: (collection: CollectionRow) => void
+}) {
+  const { data: collection, isLoading } = useGetCollection({ collectionId })
+
+  if (isLoading || !collection) {
+    return <CollectionCard collection={{} as CollectionRow} onPress={() => {}} isLoading />
+  }
+
+  return <CollectionCard collection={collection} onPress={() => onPress(collection)} />
+}
+
 // ─── Collapseable section header ─────────────────────────────────────────────
+
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable)
 
 function CollectionSection({
   title,
@@ -215,32 +288,62 @@ function CollectionSection({
   isEmpty?: boolean
 }) {
   const [expanded, setExpanded] = useState(defaultExpanded)
-  const rotation = useSharedValue(defaultExpanded ? 1 : 0)
+  const progress = useSharedValue(defaultExpanded ? 1 : 0)
 
   const chevronStyle = useAnimatedStyle(() => ({
-    transform: [{ rotate: `${rotation.value * 180}deg` }],
+    transform: [{ rotate: `${progress.value * 180}deg` }],
+  }))
+
+  const transitionBackgroundColors = useSharedValue([
+    Colors.rgba(Colors.$backgroundElevatedLight, 0.5) as string,
+    Colors.rgba(Colors.$backgroundNeutral, 0) as string,
+  ])
+
+  const transitionBorderColors = useSharedValue([
+    Colors.$outlineNeutral,
+    Colors.rgba(Colors.$outlineNeutral, 0) as string,
+  ])
+
+  const pressableStyle = useAnimatedStyle(() => ({
+    marginRight: interpolate(progress.value, [0, 1], [0, 12]),
+    paddingTop: interpolate(progress.value, [0, 1], [16, 18]),
+    paddingBottom: interpolate(progress.value, [0, 1], [16, 6]),
+    // borderWidth: interpolate(progress.value, [0, 1], [2, 0]),
+    // borderColor: interpolateColor(progress.value, [0, 1], transitionBorderColors.value),
+    backgroundColor: interpolateColor(progress.value, [0, 1], transitionBackgroundColors.value),
   }))
 
   const toggle = () => {
     const next = !expanded
     setExpanded(next)
-    rotation.value = withTiming(next ? 1 : 0, { duration: 200 })
+    progress.value = withDelay(next ? 0 : 50, withTiming(next ? 1 : 0, { duration: 150 }))
   }
 
   if (isEmpty) return null
 
+  const items = React.Children.toArray(children)
+
   return (
-    <View style={{ gap: 10 }}>
-      <Pressable
+    <Animated.View
+      layout={!expanded ? LinearTransition.duration(100) : LinearTransition.duration(100)}
+      style={[{ marginLeft: 12, borderRadius: BorderRadiuses.br50, gap: 12 }, pressableStyle]}
+    >
+      <AnimatedPressable
         onPress={toggle}
-        style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 4 }}
+        style={[
+          {
+            paddingHorizontal: 12,
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 6,
+          },
+        ]}
       >
         <Text
-          variant="stats"
+          variant="stats-header"
           style={{
             flex: 1,
             color: Colors.$textNeutral,
-            textTransform: 'uppercase',
             letterSpacing: 0.8,
           }}
         >
@@ -249,16 +352,60 @@ function CollectionSection({
         <Animated.View style={chevronStyle}>
           <ChevronDown size={14} color={Colors.$textNeutral} />
         </Animated.View>
-      </Pressable>
-      {expanded && <View style={{ gap: 10 }}>{children}</View>}
-    </View>
+      </AnimatedPressable>
+
+      {expanded ? (
+        <View style={{ gap: 10 }}>
+          {items.map((child, index) => (
+            <Animated.View
+              key={(child as React.ReactElement).key ?? index}
+              layout={LinearTransition.duration(150)}
+              entering={FadeIn.delay(index * 40).duration(220)}
+              exiting={FadeOut.delay(index * 20).duration(110)}
+            >
+              {React.isValidElement(child)
+                ? React.cloneElement(child as React.ReactElement<any>, { compact: false })
+                : child}
+            </Animated.View>
+          ))}
+        </View>
+      ) : (
+        <FadeScrollView
+          horizontal
+          style={{ height: COMPACT_CARD_HEIGHT + 6 }}
+          contentContainerStyle={{
+            gap: 10,
+            paddingHorizontal: 12,
+          }}
+        >
+          {items.map((child, index) => (
+            <Animated.View
+              key={(child as React.ReactElement).key ?? index}
+              layout={LinearTransition.duration(150)}
+              entering={FadeIn.delay(index * 40).duration(220)}
+              exiting={FadeOut.delay(index * 20).duration(110)}
+            >
+              {React.isValidElement(child)
+                ? React.cloneElement(child as React.ReactElement<any>, { compact: true })
+                : child}
+            </Animated.View>
+          ))}
+        </FadeScrollView>
+      )}
+    </Animated.View>
   )
 }
 
 // ─── Default view: grouped, card-style list ──────────────────────────────────
 
 const DefaultCollectionView = ({ direction }: { direction: 'forward' | 'backward' }) => {
-  const { currentPage, setCurrentPage, preferenceState } = useCollectionsPageStore()
+  const {
+    currentPage,
+    setCurrentPage,
+    preferenceState,
+    savedCollectionsState,
+    pinnedCollectionsState,
+  } = useCollectionsPageStore()
 
   const {
     headerAnimatedStyle,
@@ -288,19 +435,23 @@ const DefaultCollectionView = ({ direction }: { direction: 'forward' | 'backward
     }
   }, [collections])
 
+  // Saved collections not owned by the current user — bookmarked from someone
+  // else's storefront (see AddToCollectionToggle in CollectionInfo.tsx).
+  const sharedWithMeIds = useMemo(() => {
+    const ownedIds = new Set((collections ?? []).map((c) => c.id))
+    return savedCollectionsState.data
+      .map((row) => row.collection_id)
+      .filter((id) => !ownedIds.has(id))
+  }, [collections, savedCollectionsState.data])
+
   const navigateTo = useCallback(
     (item: CollectionRow) => {
       const defaultValues = Object.entries(preferenceState.preferences.defaultIds)
       const defaultPage = defaultValues.find(([, id]) => id && id === item.id)
-      const isDefaultType = item.is_selling || item.is_vault || item.is_wishlist
-      if (!isDefaultType) {
-        preferenceState.updatePreferences({
-          tabs: Array.from(new Set([...(preferenceState.preferences.tabs ?? []), item.id])),
-        })
-      }
+      pinnedCollectionsState.touch(item.id)
       setCurrentPage(defaultPage?.[0] ?? item.id)
     },
-    [preferenceState, setCurrentPage]
+    [preferenceState, pinnedCollectionsState, setCurrentPage]
   )
 
   const skeletons = Array(3).fill(null)
@@ -330,8 +481,8 @@ const DefaultCollectionView = ({ direction }: { direction: 'forward' | 'backward
           bounces={false}
           style={{ marginBottom: 24 }}
           contentContainerStyle={{
-            gap: 20,
-            paddingHorizontal: 12,
+            gap: 8,
+
             paddingTop: 18,
             paddingBottom: 24,
           }}
@@ -375,9 +526,23 @@ const DefaultCollectionView = ({ direction }: { direction: 'forward' | 'backward
                 ))}
           </CollectionSection>
 
-          {/* Watching section — will populate when collection_follows is added */}
-          <CollectionSection title="Watching" defaultExpanded isEmpty>
-            {null}
+          <CollectionSection
+            title="Shared with me"
+            defaultExpanded
+            isEmpty={!savedCollectionsState.isLoading && sharedWithMeIds.length === 0}
+          >
+            {savedCollectionsState.isLoading
+              ? skeletons.map((_, i) => (
+                  <CollectionCard
+                    key={`skeleton-shared-${i}`}
+                    collection={{} as CollectionRow}
+                    onPress={() => {}}
+                    isLoading
+                  />
+                ))
+              : sharedWithMeIds.map((id) => (
+                  <SharedCollectionCard key={id} collectionId={id} onPress={navigateTo} />
+                ))}
           </CollectionSection>
         </Animated.ScrollView>
       </Animated.View>
@@ -386,7 +551,8 @@ const DefaultCollectionView = ({ direction }: { direction: 'forward' | 'backward
 }
 
 const DetailCollectionView = ({ direction }: { direction: 'forward' | 'backward' }) => {
-  const { currentPage, setCurrentPage, preferenceState } = useCollectionsPageStore()
+  const { currentPage, setCurrentPage, preferenceState, pinnedCollectionsState } =
+    useCollectionsPageStore()
 
   // 'default' is a UI-only page with no backing collection; only wishlist/selling/vault have real IDs
   const isBackedDefaultPage =
@@ -465,18 +631,12 @@ const DetailCollectionView = ({ direction }: { direction: 'forward' | 'backward'
       if (!collectionRef) return
       const refCollection = allCollections?.find((c) => c.id === collectionRef)
       if (!refCollection) return
-      const isDefaultPage =
-        refCollection.is_selling || refCollection.is_vault || refCollection.is_wishlist
       const defaultValues = Object.entries(preferenceState.preferences.defaultIds)
       const defaultPage = defaultValues.find(([, id]) => id && id === collectionRef)
-      if (!isDefaultPage) {
-        preferenceState.updatePreferences({
-          tabs: Array.from(new Set([...(preferenceState.preferences.tabs ?? []), collectionRef])),
-        })
-      }
+      pinnedCollectionsState.touch(collectionRef)
       setCurrentPage(defaultPage?.[0] ?? collectionRef)
     },
-    [allCollections, preferenceState, setCurrentPage]
+    [allCollections, preferenceState, pinnedCollectionsState, setCurrentPage]
   )
 
   const renderCardItem = useCallback(
@@ -634,7 +794,7 @@ const DetailCollectionView = ({ direction }: { direction: 'forward' | 'backward'
 }
 
 const NewCollectionView = () => {
-  const { setNewCollectionInfo, preferenceState, setCurrentPage } = useCollectionsPageStore()
+  const { setNewCollectionInfo, setCurrentPage } = useCollectionsPageStore()
   const lastRef = useRef<Partial<CollectionLike> | null>(null)
 
   const handleChange = useCallback(
@@ -658,15 +818,7 @@ const NewCollectionView = () => {
       <ModifyCollectionView
         onChange={(ci) => handleChange(ci)}
         onSubmit={(res) => {
-          preferenceState
-            .updatePreferences({
-              tabs: Array.from(
-                new Set([...(preferenceState.preferences.tabs ?? []), res.collection.id])
-              ),
-            })
-            .then(() => {
-              setCurrentPage(res.collection.id)
-            })
+          setCurrentPage(res.collection.id)
         }}
       />
     </Animated.View>

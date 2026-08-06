@@ -1,8 +1,18 @@
 // store.ts
 import { CollectionLike } from '@/client/collections/types'
+import { PinnedCollectionItemRow, SavedCollectionRow } from '@/lib/store/functions/types'
 import { createContext, ReactNode, useContext, useEffect, useRef } from 'react'
 import { createStore, StoreApi, useStore } from 'zustand'
-import { PreferenceState, useCollectionUiPreferences } from './hooks'
+import {
+  PreferenceState,
+  useCollectionUiPreferences,
+  usePinnedCollections,
+  useRemovePinnedCollection,
+  useRemoveSavedCollection,
+  useSavedCollections,
+  useTouchPinnedCollection,
+  useTouchSavedCollection,
+} from './hooks'
 
 export const defaultPages = ['default', 'vault', 'wishlist', 'selling'] as const
 export type DefaultPageTypes = (typeof defaultPages)[number]
@@ -12,8 +22,42 @@ export const getCollectionIdArgs = (currentPage: string) =>
     ? { collectionType: currentPage as DefaultPageTypes }
     : { collectionId: currentPage }
 
+export type SavedCollectionsState = {
+  data: SavedCollectionRow[]
+  isLoading: boolean
+  isFetching: boolean
+  touch: (collectionId: string) => void
+  remove: (collectionId: string) => void
+}
+
+const defaultSavedCollectionsState: SavedCollectionsState = {
+  data: [],
+  isLoading: false,
+  isFetching: false,
+  touch: () => {},
+  remove: () => {},
+}
+
+export type PinnedCollectionsState = {
+  data: PinnedCollectionItemRow[]
+  isLoading: boolean
+  isFetching: boolean
+  touch: (collectionId: string) => void
+  remove: (collectionId: string) => void
+}
+
+const defaultPinnedCollectionsState: PinnedCollectionsState = {
+  data: [],
+  isLoading: false,
+  isFetching: false,
+  touch: () => {},
+  remove: () => {},
+}
+
 type CollectionsState = {
   preferenceState: PreferenceState
+  savedCollectionsState: SavedCollectionsState
+  pinnedCollectionsState: PinnedCollectionsState
   currentPage: string
   exploreLayout: string
   expanded?: boolean
@@ -32,6 +76,8 @@ type CollectionsState = {
 export const createCollectionPageStore = (preferenceState: PreferenceState) =>
   createStore<CollectionsState>((set) => ({
     preferenceState,
+    savedCollectionsState: defaultSavedCollectionsState,
+    pinnedCollectionsState: defaultPinnedCollectionsState,
     currentPage: defaultPages[0],
     exploreLayout: 'grid',
     setExploreLayout: (layout) => set({ exploreLayout: layout }),
@@ -52,6 +98,28 @@ export const CollectionPageContext = createContext<StoreApi<CollectionsState> | 
 export const CollectionsViewProvider = (props: { children: ReactNode }) => {
   const preferencesState = useCollectionUiPreferences()
 
+  const savedCollectionsQuery = useSavedCollections()
+  const touchSavedCollectionMutation = useTouchSavedCollection()
+  const removeSavedCollectionMutation = useRemoveSavedCollection()
+  const savedCollectionsState: SavedCollectionsState = {
+    data: savedCollectionsQuery.data ?? [],
+    isLoading: savedCollectionsQuery.isLoading,
+    isFetching: savedCollectionsQuery.isFetching,
+    touch: (collectionId) => touchSavedCollectionMutation.mutate(collectionId),
+    remove: (collectionId) => removeSavedCollectionMutation.mutate(collectionId),
+  }
+
+  const pinnedCollectionsQuery = usePinnedCollections()
+  const touchPinnedCollectionMutation = useTouchPinnedCollection()
+  const removePinnedCollectionMutation = useRemovePinnedCollection()
+  const pinnedCollectionsState: PinnedCollectionsState = {
+    data: pinnedCollectionsQuery.data ?? [],
+    isLoading: pinnedCollectionsQuery.isLoading,
+    isFetching: pinnedCollectionsQuery.isFetching,
+    touch: (collectionId) => touchPinnedCollectionMutation.mutate(collectionId),
+    remove: (collectionId) => removePinnedCollectionMutation.mutate(collectionId),
+  }
+
   const storeRef = useRef<StoreApi<CollectionsState> | null>(null)
   if (!storeRef.current) storeRef.current = createCollectionPageStore(preferencesState)
 
@@ -59,6 +127,14 @@ export const CollectionsViewProvider = (props: { children: ReactNode }) => {
   useEffect(() => {
     storeRef.current?.setState({ preferenceState: preferencesState })
   }, [preferencesState])
+
+  useEffect(() => {
+    storeRef.current?.setState({ savedCollectionsState })
+  }, [savedCollectionsState])
+
+  useEffect(() => {
+    storeRef.current?.setState({ pinnedCollectionsState })
+  }, [pinnedCollectionsState])
 
   return <CollectionPageContext.Provider value={storeRef.current} {...props} />
 }

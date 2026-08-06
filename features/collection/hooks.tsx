@@ -2,14 +2,34 @@ import { DEFAULT_INF_Q_OPTIONS, useViewCollectionItems } from '@/client/collecti
 import { CollectionIdArgs, InfQueryOptions, InifiniteQueryParams } from '@/client/collections/types'
 import { TCard } from '@/constants/types'
 import { getSupabase } from '@/lib/store/client'
+import {
+  listMyPinnedCollections,
+  removePinnedCollection,
+  touchPinnedCollection,
+} from '@/lib/store/functions/collection-groups'
 import { qk, requireUser, unwrap } from '@/lib/store/functions/helpers'
-import { CollectionItemQueryView, CollectionItemRow } from '@/lib/store/functions/types'
+import {
+  listMySavedCollections,
+  removeSavedCollection,
+  touchSavedCollection,
+} from '@/lib/store/functions/saved-collections'
+import {
+  CollectionItemQueryView,
+  CollectionItemRow,
+  PinnedCollectionItemRow,
+  SavedCollectionRow,
+} from '@/lib/store/functions/types'
 import { useUserStore } from '@/lib/store/useUserStore'
 import AsyncStorage from '@react-native-async-storage/async-storage'
-import { useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { getDefaultPageCollectionId } from './cached-ids'
+import {
+  readCachedPinnedCollections,
+  writeCachedPinnedCollections,
+} from './pinned-collections-cache'
 import { defaultPages, DefaultPageTypes } from './provider'
+import { readCachedSavedCollections, writeCachedSavedCollections } from './saved-collections-cache'
 
 export type CollectionHistoryPoint = {
   snapshotted_at: string
@@ -61,7 +81,6 @@ const COLLECTION_UI_PREFERENCES_KEY = 'collections-ui-preferences'
 export type CollectionUiPreferences = {
   layout?: 'grid' | 'list'
   sortBy?: string
-  tabs?: string[]
   defaultIds: Partial<Record<DefaultPageTypes, string | null>>
   [key: string]: unknown
 }
@@ -75,7 +94,6 @@ export type PreferenceState = {
 }
 
 const defaultCollectionUiPreferences: CollectionUiPreferences = {
-  tabs: defaultPages.slice(1),
   defaultIds: {},
 }
 
@@ -152,11 +170,7 @@ export function useCollectionUiPreferences() {
           Object.values(preferences.defaultIds).filter(Boolean).length < defaultPages.length - 1
         ) {
           const defaultIds = await resolveDefaultIds()
-          const ids = Object.values(defaultIds).filter(Boolean)
-          const tabs = preferences.tabs?.filter(
-            (t) => !ids.includes(t) && !Object.keys(defaultIds).includes(t)
-          )
-          preferences = { ...preferences, tabs, defaultIds }
+          preferences = { ...preferences, defaultIds }
         }
 
         AsyncStorage.setItem(storageKey, JSON.stringify(preferences))
@@ -206,6 +220,178 @@ export function useCollectionUiPreferences() {
     refresh: loadPreferences,
     updatePreferences,
   }
+}
+
+/**
+ * Server-backed list of the user's saved collections (defaults, own, and viewed
+ * non-owned collections). Seeded from an on-device cache on mount via
+ * setQueryData — not initialData, which is only honored the first time a Query
+ * is constructed for this key and would be dropped if any consumer mounts this
+ * hook before the AsyncStorage read resolves — so staleTime still governs
+ * whether a background refetch fires against the seeded (possibly stale) data.
+ */
+export function useSavedCollections() {
+  const userId = useUserStore((s) => s.user?.id)
+  const qc = useQueryClient()
+
+  const query = useQuery({
+    queryKey: qk.savedCollections(userId),
+    enabled: !!userId,
+    staleTime: 60_000,
+    queryFn: async () => {
+      const rows = await listMySavedCollections()
+      if (userId) writeCachedSavedCollections(userId, rows)
+      return rows
+    },
+  })
+
+  useEffect(() => {
+    if (!userId) return
+    let cancelled = false
+    readCachedSavedCollections(userId).then((cached) => {
+      if (cancelled || !cached) return
+      qc.setQueryData(qk.savedCollections(userId), cached.data, { updatedAt: cached.ts })
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [userId, qc])
+
+  return query
+}
+
+export function useTouchSavedCollection() {
+  const userId = useUserStore((s) => s.user?.id)
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (collectionId: string) => touchSavedCollection(collectionId),
+    onMutate: (collectionId) => {
+      if (!userId) return
+      const now = new Date().toISOString()
+      qc.setQueryData(qk.savedCollections(userId), (old) => {
+        const prev = (old ?? []) as SavedCollectionRow[]
+        const existing = prev.find((r) => r.collection_id === collectionId)
+        if (existing) {
+          return prev.map((r) =>
+            r.collection_id === collectionId ? { ...r, last_viewed_at: now } : r
+          )
+        }
+        const optimisticRow: SavedCollectionRow = {
+          user_id: userId,
+          collection_id: collectionId,
+          saved_at: now,
+          last_viewed_at: now,
+        }
+        return [...prev, optimisticRow]
+      })
+    },
+    onSettled: () => qc.invalidateQueries({ queryKey: qk.savedCollections(userId) }),
+  })
+}
+
+export function useRemoveSavedCollection() {
+  const userId = useUserStore((s) => s.user?.id)
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (collectionId: string) => removeSavedCollection(collectionId),
+    onMutate: (collectionId) => {
+      if (!userId) return
+      const prev = qc.getQueryData<SavedCollectionRow[]>(qk.savedCollections(userId))
+      qc.setQueryData(
+        qk.savedCollections(userId),
+        (prev ?? []).filter((r) => r.collection_id !== collectionId)
+      )
+      return { prev }
+    },
+    onError: (_err, _collectionId, ctx) => {
+      if (ctx?.prev && userId) qc.setQueryData(qk.savedCollections(userId), ctx.prev)
+    },
+    onSettled: () => qc.invalidateQueries({ queryKey: qk.savedCollections(userId) }),
+  })
+}
+
+/**
+ * The user's "Pinned" collection_group items — the tab strip on the Collections
+ * page. Same cache-first/SWR shape as useSavedCollections (see its comment).
+ */
+export function usePinnedCollections() {
+  const userId = useUserStore((s) => s.user?.id)
+  const qc = useQueryClient()
+
+  const query = useQuery({
+    queryKey: qk.pinnedCollections(userId),
+    enabled: !!userId,
+    staleTime: 60_000,
+    queryFn: async () => {
+      const rows = await listMyPinnedCollections()
+      if (userId) writeCachedPinnedCollections(userId, rows)
+      return rows
+    },
+  })
+
+  useEffect(() => {
+    if (!userId) return
+    let cancelled = false
+    readCachedPinnedCollections(userId).then((cached) => {
+      if (cancelled || !cached) return
+      qc.setQueryData(qk.pinnedCollections(userId), cached.data, { updatedAt: cached.ts })
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [userId, qc])
+
+  return query
+}
+
+export function useTouchPinnedCollection() {
+  const userId = useUserStore((s) => s.user?.id)
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (collectionId: string) => touchPinnedCollection(collectionId),
+    onMutate: (collectionId) => {
+      if (!userId) return
+      const now = new Date().toISOString()
+      qc.setQueryData(qk.pinnedCollections(userId), (old) => {
+        const prev = (old ?? []) as PinnedCollectionItemRow[]
+        const existing = prev.find((r) => r.collection_id === collectionId)
+        if (existing) {
+          return prev.map((r) =>
+            r.collection_id === collectionId ? { ...r, last_viewed_at: now } : r
+          )
+        }
+        const optimisticRow: PinnedCollectionItemRow = {
+          group_id: null,
+          collection_id: collectionId,
+          added_at: now,
+          last_viewed_at: now,
+        }
+        return [...prev, optimisticRow]
+      })
+    },
+    onSettled: () => qc.invalidateQueries({ queryKey: qk.pinnedCollections(userId) }),
+  })
+}
+
+export function useRemovePinnedCollection() {
+  const userId = useUserStore((s) => s.user?.id)
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (collectionId: string) => removePinnedCollection(collectionId),
+    onMutate: (collectionId) => {
+      if (!userId) return
+      const prev = qc.getQueryData<PinnedCollectionItemRow[]>(qk.pinnedCollections(userId))
+      qc.setQueryData(
+        qk.pinnedCollections(userId),
+        (prev ?? []).filter((r) => r.collection_id !== collectionId)
+      )
+      return { prev }
+    },
+    onError: (_err, _collectionId, ctx) => {
+      if (ctx?.prev && userId) qc.setQueryData(qk.pinnedCollections(userId), ctx.prev)
+    },
+    onSettled: () => qc.invalidateQueries({ queryKey: qk.pinnedCollections(userId) }),
+  })
 }
 
 function getCollectionItemsArgs<T extends CollectionItemRow>(

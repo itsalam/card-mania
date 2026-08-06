@@ -41,6 +41,7 @@ const textVariants = cva(
         info: 'text-base uppercase font-spaceMono',
         badge: 'font-semibold',
         stats: 'font-spaceMono text-xs',
+        ['stats-header']: 'font-spaceMono text-sm uppercase',
       },
     },
     defaultVariants: {

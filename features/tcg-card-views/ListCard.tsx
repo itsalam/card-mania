@@ -49,6 +49,53 @@ function GainBadge({ gain, value }: { gain: number; value: number }) {
   )
 }
 
+export const MainInfoAccessories = ({ displayData, gain, hide }: ItemListViewProps) => {
+  return (
+    <View className="flex-1 flex flex-col justify-start">
+      {displayData?.metadata && !hide?.grade && (
+        <Text variant={'stats'}>{formatLabel(displayData?.metadata)}</Text>
+      )}
+      {!hide?.price && (
+        <View style={[styles.priceContainer]}>
+          {displayData?.displayPrice ? (
+            <Text
+              className="text-4xl font-bold"
+              style={{
+                color: Colors.$textDefault,
+              }}
+            >
+              {formatPrice(displayData.displayPrice * 100)}
+            </Text>
+          ) : (
+            <Text
+              className="text-4xl font-medium opacity-70"
+              style={{
+                color: Colors.$textDefault,
+              }}
+            >
+              $-.--
+            </Text>
+          )}
+          {displayData?.quantity && (
+            <Text
+              variant={'small'}
+              className="font-medium opacity-70"
+              style={{
+                color: Colors.$textNeutralHeavy,
+              }}
+            >
+              {` x Qty: ${displayData?.quantity}`}
+            </Text>
+          )}
+          {typeof gain === 'number' && gain !== 0 && displayData?.displayPrice && (
+            <GainBadge gain={gain} value={gain * displayData.displayPrice} />
+          )}
+        </View>
+      )}
+    </View>
+  )
+}
+
 export const DefaultAccessories = ({
   renderButtons,
   ...props
@@ -65,55 +112,7 @@ export const DefaultAccessories = ({
       className="self-stretch flex-1 flex flex-col items-stretch justify-between px-4 relative"
       style={{ position: 'relative', alignSelf: 'stretch' }}
     >
-      <View className="flex-1 flex flex-col justify-start">
-        {displayData?.metadata && (
-          <Text
-            className="text-base uppercase font-spaceMono"
-            style={{
-              color: Colors.$textNeutralLight,
-            }}
-          >
-            {formatLabel(displayData?.metadata)}
-          </Text>
-        )}
-        <View style={[styles.priceContainer]}>
-          <Text>
-            {displayData?.displayPrice ? (
-              <Text
-                className="text-4xl font-bold"
-                style={{
-                  color: Colors.$textDefault,
-                }}
-              >
-                {formatPrice(displayData.displayPrice * 100)}
-              </Text>
-            ) : (
-              <Text
-                className="text-4xl font-medium opacity-70"
-                style={{
-                  color: Colors.$textDefault,
-                }}
-              >
-                $-.--
-              </Text>
-            )}
-            {displayData?.quantity && (
-              <Text
-                variant={'small'}
-                className="font-medium opacity-70"
-                style={{
-                  color: Colors.$textNeutralHeavy,
-                }}
-              >
-                {` x Qty: ${displayData?.quantity}`}
-              </Text>
-            )}
-          </Text>
-          {typeof gain === 'number' && gain !== 0 && displayData?.displayPrice && (
-            <GainBadge gain={gain} value={gain * displayData.displayPrice} />
-          )}
-        </View>
-      </View>
+      <MainInfoAccessories {...props} />
       {renderButtons ? (
         renderButtons(props)
       ) : (
@@ -259,10 +258,10 @@ export const ItemListView = forwardRef<View, ItemListViewProps>(function ItemLis
 })
 
 function HorizontalAccessory(props: ItemListViewProps) {
-  const { isLoading, displayData, renderAccessories } = props
+  const { isLoading, displayData, renderAccessories, hide } = props
   return (
-    <View className="flex flex-col h-full w-full items-startpr-0 flex-1 pt-2">
-      <View className="px-4">
+    <View className="flex flex-col h-full w-full items-start pr-0 flex-1">
+      <View className="pl-4">
         {isLoading ? (
           <>
             <Skeleton style={{ height: 18, width: 190, marginBottom: 6 }} />
@@ -270,23 +269,27 @@ function HorizontalAccessory(props: ItemListViewProps) {
           </>
         ) : (
           <>
-            <Text
-              variant={'large'}
-              style={{
-                color: Colors.$textDefault,
-              }}
-            >
-              {displayData?.title}
-            </Text>
-            <Text
-              variant={'muted'}
-              className="capitalize"
-              style={{
-                color: Colors.$textNeutral,
-              }}
-            >
-              {displayData?.subHeading}
-            </Text>
+            {!hide?.title && (
+              <Text
+                variant={'large'}
+                style={{
+                  color: Colors.$textDefault,
+                }}
+              >
+                {displayData?.title}
+              </Text>
+            )}
+            {!hide?.subtitle && (
+              <Text
+                variant={'muted'}
+                className="capitalize"
+                style={{
+                  color: Colors.$textNeutral,
+                }}
+              >
+                {displayData?.subHeading}
+              </Text>
+            )}
           </>
         )}
       </View>
