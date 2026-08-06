@@ -33,6 +33,10 @@ export const qk = {
   collectionItems: (id?: string) => [supabaseUrl, 'collections', id, 'items'] as const,
   collectionItemSingle: (id?: string) => [supabaseUrl, 'collection-item', id] as const,
   recent: [supabaseUrl, 'recent', 'me'] as const,
+  savedCollections: (userId?: string) =>
+    [supabaseUrl, 'collections', 'saved', userId ?? 'me'] as const,
+  pinnedCollections: (userId?: string) =>
+    [supabaseUrl, 'collections', 'pinned', userId ?? 'me'] as const,
   wishlist: (kind: string, userId?: string) => [supabaseUrl, WishlistKey.Default, kind, userId],
   userCards: (userId?: string) => [supabaseUrl, 'user', userId ?? 'me', 'cards'] as const,
   priceQuery: (cardId?: string, grade?: string | object) => [
