@@ -12,4 +12,4 @@ appId: com.smoodee.cardmania
 - tapOn: 'Password'
 - inputText: '789456123V'
 - tapOn: 'Sign in'
-- - assertVisible: '.*Welcome back.*'
+- assertVisible: '.*Welcome back.*'

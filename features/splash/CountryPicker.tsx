@@ -119,7 +119,9 @@ export function CountryPicker({
                   paddingHorizontal: 24,
                   paddingVertical: 14,
                   backgroundColor:
-                    item.code === selected.code ? 'rgba(255,255,255,0.08)' : 'transparent',
+                    item.code === selected.code
+                      ? Colors.rgba(Colors.$textDefault, 0.08)
+                      : 'transparent',
                 }}
                 accessibilityLabel={`${item.name} ${item.dial}`}
               >

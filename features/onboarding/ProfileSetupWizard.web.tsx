@@ -1,11 +1,11 @@
 import { ShippingAddress } from '@/client/transactions/types'
-import { Spinner } from '@/components/ui/spinner'
 import { TextField } from '@/components/ui/input/base-input'
+import { Spinner } from '@/components/ui/spinner'
 import { Text } from '@/components/ui/text/base-text'
 import { useOnboardingStore } from '@/features/onboarding/OnboardingProvider'
+import LocationPicker from '@/features/settings/components/location-picker'
 import { PasswordStrengthGauge } from '@/features/splash/PasswordStrengthGauge'
 import { DEFAULT_POLICY, policyError } from '@/features/splash/usePasswordPolicy'
-import LocationPicker from '@/features/settings/components/location-picker'
 import { useUserStore } from '@/lib/store/useUserStore'
 import { Eye, EyeOff, Lock, MapPin, Star, TrendingUp } from 'lucide-react-native'
 import { useRef, useState } from 'react'
@@ -207,7 +207,7 @@ export function ProfileSetupWizard() {
           right: 0,
           bottom: 0,
           zIndex: 1000,
-          backgroundColor: 'rgba(0,0,0,0.65)',
+          backgroundColor: Colors.rgba(Colors.$backgroundDefault, 0.65),
           alignItems: 'center',
           justifyContent: 'center',
           padding: 16,

@@ -190,7 +190,7 @@ function OnboardingOverlayContent() {
             React.createElement('path', {
               key: currentIndex,
               d: buildCutoutPath(screenW, screenH, measurement),
-              fill: 'rgba(0,0,0,0.72)',
+              fill: Colors.rgba(Colors.$backgroundDefault, 0.72),
               fillRule: 'evenodd',
             } as any)
           )
@@ -199,7 +199,7 @@ function OnboardingOverlayContent() {
             style: {
               position: 'absolute',
               inset: 0,
-              backgroundColor: 'rgba(0,0,0,0.72)',
+              backgroundColor: Colors.rgba(Colors.$backgroundDefault, 0.72),
               pointerEvents: 'none',
             },
           } as any)}
@@ -216,7 +216,7 @@ function OnboardingOverlayContent() {
             height: measurement.height + 8,
             borderRadius: 14,
             borderWidth: 2,
-            borderColor: 'rgba(255,255,255,0.3)',
+            borderColor: Colors.rgba(Colors.$textDefault, 0.3),
           }}
         />
       )}

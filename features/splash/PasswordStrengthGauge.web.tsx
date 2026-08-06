@@ -2,6 +2,7 @@ import { Text } from '@/components/ui/text/base-text'
 import { Check, X } from 'lucide-react-native'
 import React, { useEffect, useRef } from 'react'
 import { Animated, Easing, View } from 'react-native'
+import { Colors } from 'react-native-ui-lib'
 import { type PasswordPolicy, type RuleResult, evaluatePassword } from './usePasswordPolicy'
 
 type Props = {
@@ -11,9 +12,10 @@ type Props = {
 }
 
 const SEGMENT_COLORS = ['#ef4444', '#f97316', '#eab308', '#22c55e'] as const
-const EMPTY_COLOR = 'rgba(255,255,255,0.12)'
 
 export function PasswordStrengthGauge({ password, policy, focused }: Props) {
+  const EMPTY_COLOR = Colors.rgba(Colors.$textDefault, 0.12)
+
   const { score, label, rules } = evaluatePassword(password, policy)
   const visible = !!password.length || !!focused
   const activeColor = score > 0 ? SEGMENT_COLORS[score - 1] : EMPTY_COLOR
@@ -74,7 +76,7 @@ export function PasswordStrengthGauge({ password, policy, focused }: Props) {
 }
 
 function RuleRow({ label, met }: RuleResult) {
-  const color = met ? '#22c55e' : 'rgba(255,255,255,0.45)'
+  const color = met ? '#22c55e' : Colors.rgba(Colors.$textDefault, 0.45)
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
       {met ? <Check size={13} color={color} /> : <X size={13} color={color} />}

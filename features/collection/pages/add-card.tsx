@@ -14,6 +14,7 @@ import { Check, RotateCcw } from 'lucide-react-native'
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { TouchableOpacity, View } from 'react-native'
 import { SharedValue, useSharedValue } from 'react-native-reanimated'
+import { Colors } from 'react-native-ui-lib'
 import { useGetCollection } from '../hooks'
 
 const AddCardToCollectionAccessories = ({
@@ -272,7 +273,7 @@ export default function AddCardToCollection({ collectionId }: { collectionId: st
           >
             <View
               style={{
-                backgroundColor: 'rgba(255,255,255,0.25)',
+                backgroundColor: Colors.rgba(Colors.$textDefault, 0.25),
                 borderRadius: 999,
                 minWidth: 18,
                 height: 18,
@@ -287,7 +288,9 @@ export default function AddCardToCollection({ collectionId }: { collectionId: st
             </View>
             <RotateCcw size={13} color="#fff" strokeWidth={2.5} />
           </TouchableOpacity>
-          <View style={{ width: 1, height: 14, backgroundColor: 'rgba(255,255,255,0.3)' }} />
+          <View
+            style={{ width: 1, height: 14, backgroundColor: Colors.rgba(Colors.$textDefault, 0.3) }}
+          />
         </>
       )}
       {/* ✓ owns the back navigation — avoids the outer ShoulderCutout TouchableOpacity

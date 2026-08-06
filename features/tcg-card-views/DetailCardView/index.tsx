@@ -737,9 +737,9 @@ const CardDetailContainer = ({
               width: 40,
               height: 40,
               borderRadius: 20,
-              backgroundColor: 'rgba(0,0,0,0.48)',
+              backgroundColor: Colors.rgba(Colors.$backgroundDefault, 0.48),
               borderWidth: 1,
-              borderColor: 'rgba(255,255,255,0.16)',
+              borderColor: Colors.rgba(Colors.$textDefault, 0.16),
               alignItems: 'center',
               justifyContent: 'center',
             }}

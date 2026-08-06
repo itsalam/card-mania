@@ -15,10 +15,10 @@ import { ArrowLeft, Download, ExternalLink, Eye, EyeOff } from 'lucide-react-nat
 import React, { useEffect, useMemo, useState } from 'react'
 import { Linking, Pressable, ScrollView, View, useWindowDimensions } from 'react-native'
 import { Colors } from 'react-native-ui-lib'
-import { NAV_CLEARANCE, NAV_TOP } from './layout-constants'
-import { useWebUser } from './hooks/useWebUser'
-import { WebNav } from './WebNav'
 import { AuthModal } from './AuthModal'
+import { useWebUser } from './hooks/useWebUser'
+import { NAV_CLEARANCE, NAV_TOP } from './layout-constants'
+import { WebNav } from './WebNav'
 
 const APP_STORE_URL = 'https://apps.apple.com'
 const PLAY_STORE_URL = 'https://play.google.com'
@@ -237,9 +237,9 @@ export default function WebCardDetailPage({ cardId }: { cardId: string }) {
                   width: 36,
                   height: 36,
                   borderRadius: 18,
-                  backgroundColor: 'rgba(0,0,0,0.48)',
+                  backgroundColor: Colors.rgba(Colors.$backgroundDefault, 0.48),
                   borderWidth: 1,
-                  borderColor: 'rgba(255,255,255,0.16)',
+                  borderColor: Colors.rgba(Colors.$textDefault, 0.16),
                   alignItems: 'center',
                   justifyContent: 'center',
                   transform: [{ scale: pressed ? 0.88 : 1 }],
@@ -259,7 +259,7 @@ export default function WebCardDetailPage({ cardId }: { cardId: string }) {
                 backgroundColor: Colors.$backgroundElevated,
                 borderRadius: 20,
                 borderWidth: 1,
-                borderColor: Colors.$outlineNeutral ?? 'rgba(255,255,255,0.08)',
+                borderColor: Colors.$outlineNeutral ?? Colors.rgba(Colors.$textDefault, 0.08),
                 padding: isDesktop ? 20 : 14,
                 gap: 12,
                 minWidth: 0,
@@ -500,7 +500,7 @@ export default function WebCardDetailPage({ cardId }: { cardId: string }) {
                   borderRadius: 14,
                   padding: 14,
                   borderWidth: 1,
-                  borderColor: Colors.$outlineNeutral ?? 'rgba(255,255,255,0.06)',
+                  borderColor: Colors.$outlineNeutral ?? Colors.rgba(Colors.$textDefault, 0.06),
                 }}
               >
                 <Text variant="h3" style={{ fontSize: 16, fontWeight: '600' }}>
