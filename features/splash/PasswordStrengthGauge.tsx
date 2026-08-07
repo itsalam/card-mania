@@ -3,6 +3,7 @@ import { Check, X } from 'lucide-react-native'
 import React, { useEffect } from 'react'
 import { View } from 'react-native'
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated'
+import { Colors } from 'react-native-ui-lib'
 import { type PasswordPolicy, type RuleResult, evaluatePassword } from './usePasswordPolicy'
 
 type Props = {
@@ -13,9 +14,8 @@ type Props = {
 
 const SEGMENT_COLORS = ['#ef4444', '#f97316', '#eab308', '#22c55e'] as const
 
-const EMPTY_COLOR = 'rgba(255,255,255,0.12)'
-
 export function PasswordStrengthGauge({ password, policy, focused }: Props) {
+  const EMPTY_COLOR = Colors.rgba(Colors.$textDefault, 0.12)
   const { score, label, rules } = evaluatePassword(password, policy)
   const visible = !!password.length || !!focused
 
@@ -42,7 +42,7 @@ export function PasswordStrengthGauge({ password, policy, focused }: Props) {
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
           <View style={{ flex: 1, flexDirection: 'row', gap: 4 }}>
             {([1, 2, 3, 4] as const).map((seg) => (
-              <Segment key={seg} filled={score >= seg && visible} color={activeColor} />
+              <Segment key={seg} filled={score >= seg && visible} color={activeColor as string} />
             ))}
           </View>
           <Text style={{ fontSize: 12, fontWeight: '600', color: activeColor, minWidth: 36 }}>
@@ -58,6 +58,7 @@ export function PasswordStrengthGauge({ password, policy, focused }: Props) {
 }
 
 function Segment({ filled, color }: { filled: boolean; color: string }) {
+  const EMPTY_COLOR = Colors.rgba(Colors.$textDefault, 0.12) as string
   const style = useAnimatedStyle(() => ({
     backgroundColor: withTiming(filled ? color : EMPTY_COLOR, { duration: 250 }),
   }))
@@ -65,7 +66,7 @@ function Segment({ filled, color }: { filled: boolean; color: string }) {
 }
 
 function RuleRow({ label, met }: RuleResult) {
-  const color = met ? '#22c55e' : 'rgba(255,255,255,0.45)'
+  const color = met ? '#22c55e' : Colors.rgba(Colors.$textSuccess, 0.45)
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
       {met ? <Check size={13} color={color} /> : <X size={13} color={color} />}

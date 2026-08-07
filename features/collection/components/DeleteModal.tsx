@@ -16,7 +16,7 @@ export const DeleteModal = ({
   showDeleteModal: boolean
   setShowDeleteModal: (s: boolean) => void
 }) => {
-  const { setCurrentPage, preferenceState } = useCollectionsPageStore()
+  const { setCurrentPage } = useCollectionsPageStore()
   const deleteMutate = useDeleteCollection()
 
   const { showToast } = useToast()
@@ -26,9 +26,6 @@ export const DeleteModal = ({
       deleteMutate.mutateAsync(collectionId).then(() => {
         setShowDeleteModal(false)
         setCurrentPage('default')
-        preferenceState.updatePreferences({
-          tabs: preferenceState.preferences.tabs?.filter((tab) => tab !== collectionId),
-        })
         setTimeout(
           () =>
             showToast({

@@ -547,6 +547,69 @@ export type Database = {
           },
         ]
       }
+      collection_group: {
+        Row: {
+          created_at: string
+          id: string
+          is_system: boolean
+          name: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_system?: boolean
+          name: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_system?: boolean
+          name?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      collection_group_items: {
+        Row: {
+          added_at: string
+          collection_id: string
+          group_id: string
+          last_viewed_at: string
+        }
+        Insert: {
+          added_at?: string
+          collection_id: string
+          group_id: string
+          last_viewed_at?: string
+        }
+        Update: {
+          added_at?: string
+          collection_id?: string
+          group_id?: string
+          last_viewed_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'collection_group_items_collection_id_fkey'
+            columns: ['collection_id']
+            isOneToOne: false
+            referencedRelation: 'collections'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'collection_group_items_group_id_fkey'
+            columns: ['group_id']
+            isOneToOne: false
+            referencedRelation: 'collection_group'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       collections: {
         Row: {
           cover_image_url: string | null
@@ -1342,6 +1405,35 @@ export type Database = {
           },
         ]
       }
+      saved_collections: {
+        Row: {
+          collection_id: string
+          last_viewed_at: string
+          saved_at: string
+          user_id: string
+        }
+        Insert: {
+          collection_id: string
+          last_viewed_at?: string
+          saved_at?: string
+          user_id: string
+        }
+        Update: {
+          collection_id?: string
+          last_viewed_at?: string
+          saved_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'saved_collections_collection_id_fkey'
+            columns: ['collection_id']
+            isOneToOne: false
+            referencedRelation: 'collections'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       search_cache: {
         Row: {
           created_at: string
@@ -1942,6 +2034,30 @@ export type Database = {
         }
         Relationships: []
       }
+      my_pinned_collection_items: {
+        Row: {
+          added_at: string | null
+          collection_id: string | null
+          group_id: string | null
+          last_viewed_at: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'collection_group_items_collection_id_fkey'
+            columns: ['collection_id']
+            isOneToOne: false
+            referencedRelation: 'collections'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'collection_group_items_group_id_fkey'
+            columns: ['group_id']
+            isOneToOne: false
+            referencedRelation: 'collection_group'
+            referencedColumns: ['id']
+          },
+        ]
+      }
     }
     Functions: {
       _clamp_nonnegative: { Args: { val: number }; Returns: number }
@@ -2164,6 +2280,10 @@ export type Database = {
         Args: { p_base_user_id: string }
         Returns: undefined
       }
+      ensure_pinned_group_for_user: {
+        Args: { p_user_id: string }
+        Returns: string
+      }
       get_portfolio_history: {
         Args: { p_collection_id: string; p_from?: string; p_to?: string }
         Returns: {
@@ -2224,6 +2344,10 @@ export type Database = {
           p_title: string
         }
         Returns: string
+      }
+      remove_pinned_collection: {
+        Args: { p_collection_id: string }
+        Returns: undefined
       }
       resolve_external_refs: {
         Args: { p_ids: string[]; p_provider: string }
@@ -2286,6 +2410,14 @@ export type Database = {
           score: number
         }[]
       }
+      touch_collection_group_item: {
+        Args: { p_collection_id: string; p_group_id: string }
+        Returns: undefined
+      }
+      touch_pinned_collection: {
+        Args: { p_collection_id: string }
+        Returns: undefined
+      }
       touch_recent_view:
         | {
             Args: {
@@ -2305,6 +2437,10 @@ export type Database = {
             }
             Returns: undefined
           }
+      touch_saved_collection: {
+        Args: { p_collection_id: string }
+        Returns: undefined
+      }
       upsert_collection_items: {
         Args: { p_collection_id: string; p_items: Json; p_owner: string }
         Returns: undefined

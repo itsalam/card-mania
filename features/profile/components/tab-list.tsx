@@ -8,7 +8,7 @@ import { BorderRadiuses, Colors } from 'react-native-ui-lib'
 import { tabsRecords, useUserProfilePage } from '../providers'
 import { TabIcons } from './icons'
 
-export function ProfileTabList({ style }: { style: StyleProp<ViewStyle> }) {
+export function ProfileTabList({ style }: { style?: StyleProp<ViewStyle> }) {
   const tabs = useUserProfilePage((s) => s.tabs)
   const [isScrolling, setIsScrolling] = useState(false)
 

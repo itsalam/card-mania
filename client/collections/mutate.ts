@@ -4,7 +4,7 @@ import { TCard, TCollection, TTag } from '@/constants/types'
 import { getGradedPrice } from '@/components/tcg-card/helpers'
 import { getSupabase } from '@/lib/store/client'
 import { qk, requireUser } from '@/lib/store/functions/helpers'
-import { CollectionRow } from '@/lib/store/functions/types'
+import { CollectionRow, PinnedCollectionItemRow } from '@/lib/store/functions/types'
 import { useUserStore } from '@/lib/store/useUserStore'
 import { reportError } from '@/lib/utils/report-error'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
@@ -120,6 +120,7 @@ const mutateCollectionFn =
 
 export const useEditCollection = (collectionId?: string) => {
   const qc = useQueryClient()
+  const userId = useUserStore((s) => s.user?.id)
   const collectionData = qc.getQueryData([...qk.collections, collectionId]) as
     | TCollection
     | undefined
@@ -168,6 +169,11 @@ export const useEditCollection = (collectionId?: string) => {
         .concat(_data?.addedTagIds ?? [])
       if (collection) {
         qc.setQueryData([...qk.userCollections, collectionId, 'tags'], updatedTags)
+      }
+      if (!collectionData) {
+        // New collection — the DB trigger already auto-pinned it for its owner,
+        // just make sure the client's pinned-collections cache reflects it.
+        qc.invalidateQueries({ queryKey: qk.pinnedCollections(userId) })
       }
     },
   })
@@ -324,6 +330,7 @@ export const useEditCollectionItem = (collectionId?: string, cardId?: string, it
 // Delete a collection and clean related cache
 export const useDeleteCollection = () => {
   const qc = useQueryClient()
+  const userId = useUserStore((s) => s.user?.id)
 
   return useMutation({
     mutationFn: async (collectionId: string) => {
@@ -348,16 +355,30 @@ export const useDeleteCollection = () => {
         )
       }
 
-      return { prevList }
+      const prevPinnedCollections = qc.getQueryData<PinnedCollectionItemRow[]>(
+        qk.pinnedCollections(userId)
+      )
+      if (prevPinnedCollections) {
+        qc.setQueryData(
+          qk.pinnedCollections(userId),
+          prevPinnedCollections.filter((r) => r.collection_id !== collectionId)
+        )
+      }
+
+      return { prevList, prevPinnedCollections }
     },
     onError: (_err, collectionId, ctx) => {
       if (ctx?.prevList) {
         qc.setQueryData([...qk.userCollections], ctx.prevList)
       }
+      if (ctx?.prevPinnedCollections) {
+        qc.setQueryData(qk.pinnedCollections(userId), ctx.prevPinnedCollections)
+      }
       reportError({ context: 'useDeleteCollection', error: _err, metadata: { collectionId } })
     },
     onSettled: (_data, _err, collectionId) => {
       qc.invalidateQueries({ queryKey: [...qk.userCollections] })
+      qc.invalidateQueries({ queryKey: qk.pinnedCollections(userId) })
       qc.removeQueries({
         queryKey: [...qk.collectionItems(collectionId)],
       })

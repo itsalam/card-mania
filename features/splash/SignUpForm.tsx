@@ -216,9 +216,15 @@ export function SignUpForm({ onBack, onSuccess, onPhone, initialEmail }: Props) 
           disabled={resendCooldown > 0}
           style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}
         >
-          <RefreshCw size={14} color={resendCooldown > 0 ? 'rgba(255,255,255,0.3)' : 'white'} />
+          <RefreshCw
+            size={14}
+            color={resendCooldown > 0 ? Colors.rgba(Colors.$textDefault, 0.3) : 'white'}
+          />
           <Text
-            style={{ color: resendCooldown > 0 ? 'rgba(255,255,255,0.3)' : 'white', fontSize: 13 }}
+            style={{
+              color: resendCooldown > 0 ? Colors.rgba(Colors.$textDefault, 0.3) : 'white',
+              fontSize: 13,
+            }}
           >
             {resendCooldown > 0 ? `Resend code in ${resendCooldown}s` : 'Resend code'}
           </Text>
@@ -252,7 +258,7 @@ export function SignUpForm({ onBack, onSuccess, onPhone, initialEmail }: Props) 
           paddingHorizontal: 10,
           borderRadius: 8,
           borderWidth: 1,
-          borderColor: 'rgba(255,255,255,0.25)',
+          borderColor: Colors.rgba(Colors.$textDefault, 0.25),
           alignSelf: 'flex-start',
         }}
         accessibilityLabel="Back to sign in"

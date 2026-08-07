@@ -210,7 +210,7 @@ function OnboardingOverlayContent() {
               height: measurement.height + 6,
               borderRadius: 11,
               borderWidth: 2,
-              borderColor: 'rgba(255,255,255,0.35)',
+              borderColor: Colors.rgba(Colors.$textDefault, 0.35),
             }}
           />
 
@@ -229,7 +229,10 @@ function OnboardingOverlayContent() {
       ) : (
         // Waiting for measurement — show full dim
         <View
-          style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.75)' }]}
+          style={[
+            StyleSheet.absoluteFill,
+            { backgroundColor: Colors.rgba(Colors.$backgroundDark, 0.75) },
+          ]}
           pointerEvents="none"
         />
       )}

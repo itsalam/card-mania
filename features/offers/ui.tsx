@@ -9,7 +9,6 @@ import { Text } from '@/components/ui/text/base-text'
 import { formatPrice } from '@/components/utils'
 import { useProfiles } from '@/features/users/client/load-user'
 import { UserContact } from '@/features/users/components/UserAvatars'
-import { UserDisplayInfo } from '@/features/users/types'
 import { ReactNode } from 'react'
 import { StyleSheet, View } from 'react-native'
 import { Colors } from 'react-native-ui-lib'
@@ -195,11 +194,6 @@ export function OfferCardBase({
   const partyId = counterpartyId ?? offer.buyer_id
   const { data: profiles } = useProfiles([partyId])
   const profile = profiles?.[partyId]
-  const user: UserDisplayInfo = {
-    name: profile?.display_name ?? profile?.username ?? `${partyId.slice(0, 8)}…`,
-    handle: `@${profile?.username ?? partyId.slice(0, 8)}`,
-    avatar: profile?.avatar_url ?? '',
-  }
 
   return (
     <View
@@ -214,7 +208,7 @@ export function OfferCardBase({
       {/* Header: buyer info + date + status */}
       <View style={styles.cardHeader}>
         <View style={styles.buyerInfo}>
-          <UserContact user={profile ? user : undefined} size="sm" />
+          <UserContact user={profile} fallbackId={partyId} size="sm" />
           <Text variant="default" style={[styles.offerDate, { color: Colors.$textNeutral }]}>
             {offer.created_at ? formatDate(offer.created_at) : ''}
           </Text>

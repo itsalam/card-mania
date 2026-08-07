@@ -75,17 +75,7 @@ export const CollectionInfoCard = (props: { collectionItemId: string; cardId: st
         </SkeletonText>
       </View>
 
-      <UserContact
-        user={
-          user.data
-            ? {
-                name: user.data?.display_name ?? '',
-                handle: user.data?.username ?? '',
-                avatar: user.data?.avatar_url ?? '',
-              }
-            : undefined
-        }
-      />
+      <UserContact user={user.data} fallbackId={collectionItem?.user_id} />
       <View
         style={{
           flexDirection: 'row',

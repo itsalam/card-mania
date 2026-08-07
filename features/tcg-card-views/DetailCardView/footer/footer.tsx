@@ -173,7 +173,7 @@ export const Footer = ({
                                   {/* count badge */}
                                   <View
                                     style={{
-                                      backgroundColor: 'rgba(255,255,255,0.25)',
+                                      backgroundColor: Colors.rgba(Colors.$textDefault, 0.25),
                                       borderRadius: 999,
                                       minWidth: 18,
                                       height: 18,
@@ -200,7 +200,7 @@ export const Footer = ({
                                   style={{
                                     width: 1,
                                     height: 14,
-                                    backgroundColor: 'rgba(255,255,255,0.3)',
+                                    backgroundColor: Colors.rgba(Colors.$textDefault, 0.3),
                                   }}
                                 />
                               </>

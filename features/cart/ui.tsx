@@ -12,7 +12,6 @@ import { PriceModifiedBadge, pricesMatch } from '@/features/offers/ui'
 import { useEffectiveColorScheme } from '@/features/settings/hooks/effective-color-scheme'
 import { useProfiles } from '@/features/users/client/load-user'
 import { UserContact } from '@/features/users/components/UserAvatars'
-import { UserDisplayInfo } from '@/features/users/types'
 import { useRouter } from 'expo-router'
 import { EllipsisVertical, Pencil, Trash2 } from 'lucide-react-native'
 import { useEffect, useMemo, useRef, useState } from 'react'
@@ -215,11 +214,6 @@ export function CartSheetInner() {
                   >
                     {groupedBySeller.map(([sellerId, sellerItems], groupIdx) => {
                       const profile = profiles?.[sellerId]
-                      const user: UserDisplayInfo = {
-                        name: profile?.display_name ?? profile?.username ?? 'Unknown',
-                        handle: `@${profile?.username ?? 'unknown'}`,
-                        avatar: profile?.avatar_url ?? '',
-                      }
                       return (
                         <View key={sellerId}>
                           {groupIdx > 0 && (
@@ -233,7 +227,7 @@ export function CartSheetInner() {
                               alignItems: 'center',
                             }}
                           >
-                            <UserContact user={profile ? user : undefined} size="sm" />
+                            <UserContact user={profile} fallbackId={sellerId} size="sm" />
                           </TouchableOpacity>
                           {sellerItems.map((item, idx) => (
                             <View key={`${item.data.id}_${item.cart.quantity}`}>

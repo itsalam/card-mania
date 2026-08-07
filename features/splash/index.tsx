@@ -488,11 +488,13 @@ export function SplashPage({ initialSignUp }: { initialSignUp?: boolean }) {
                     justifyContent: 'space-between',
                   }}
                 >
-                  <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 13 }}>
+                  <Text style={{ color: Colors.rgba(Colors.$textDefault, 0.6), fontSize: 13 }}>
                     Code sent to <Text style={{ color: 'white', fontWeight: '600' }}>{e164}</Text>
                   </Text>
                   <TouchableOpacity onPress={handleResetPhoneOtp}>
-                    <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 13 }}>Change</Text>
+                    <Text style={{ color: Colors.rgba(Colors.$textDefault, 0.5), fontSize: 13 }}>
+                      Change
+                    </Text>
                   </TouchableOpacity>
                 </View>
                 <OtpInput
@@ -507,11 +509,11 @@ export function SplashPage({ initialSignUp }: { initialSignUp?: boolean }) {
                 >
                   <RefreshCw
                     size={14}
-                    color={resendCooldown > 0 ? 'rgba(255,255,255,0.3)' : 'white'}
+                    color={resendCooldown > 0 ? Colors.rgba(Colors.$textDefault, 0.3) : 'white'}
                   />
                   <Text
                     style={{
-                      color: resendCooldown > 0 ? 'rgba(255,255,255,0.3)' : 'white',
+                      color: resendCooldown > 0 ? Colors.rgba(Colors.$textDefault, 0.3) : 'white',
                       fontSize: 13,
                     }}
                   >

@@ -118,7 +118,7 @@ export function CartPanel() {
               left: 0,
               right: 0,
               bottom: 0,
-              backgroundColor: 'rgba(0,0,0,0.4)',
+              backgroundColor: Colors.rgba(Colors.$backgroundDefault, 0.4),
               zIndex: 199,
             } as any
           }
@@ -180,14 +180,7 @@ export function CartPanel() {
                     }}
                   >
                     {profile ? (
-                      <UserContact
-                        user={{
-                          name: profile.display_name ?? profile.username ?? '',
-                          handle: `@${profile.username ?? ''}`,
-                          avatar: profile.avatar_url ?? '',
-                        }}
-                        size="sm"
-                      />
+                      <UserContact user={profile} fallbackId={sellerId} size="sm" />
                     ) : (
                       <Text variant="muted">Unknown seller</Text>
                     )}

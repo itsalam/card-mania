@@ -8,10 +8,10 @@ import { TabsContent } from '@/components/ui/tabs'
 import { Text } from '@/components/ui/text/base-text'
 import { useCartCount, useOpenCart } from '@/features/cart/hooks'
 import { useUserStore } from '@/lib/store/useUserStore'
+import { ShoppingCart } from 'lucide-react-native'
 import { GestureDetector } from 'react-native-gesture-handler'
 import Animated from 'react-native-reanimated'
 import { BorderRadiuses, Colors, TouchableOpacity } from 'react-native-ui-lib'
-import { ShoppingCart } from 'lucide-react-native'
 import { GestureBlockerProvider, useCollaspableHeader } from '../collection/ui'
 import { Body } from './components/body'
 import { ProfileHeader, SubHeader } from './components/profile-header'
@@ -71,17 +71,23 @@ function CartFab({ bottom }: { bottom: number }) {
   )
 }
 
-export default function ProfilePageLayout({ userId }: { userId?: string }) {
+export default function ProfilePageLayout({
+  userId,
+  presentedAsModal,
+}: {
+  userId: string
+  presentedAsModal?: boolean
+}) {
   return (
     <UserProfilePageStoreProvider userId={userId}>
       <GestureBlockerProvider>
-        <ProfilePageLayoutInner />
+        <ProfilePageLayoutInner presentedAsModal={presentedAsModal} />
       </GestureBlockerProvider>
     </UserProfilePageStoreProvider>
   )
 }
 
-function ProfilePageLayoutInner() {
+function ProfilePageLayoutInner({ presentedAsModal }: { presentedAsModal?: boolean }) {
   const insets = useSafeAreaInsets()
   const profileUser = useUserProfilePage((s) => s.user)
   const { user: authUser } = useUserStore()
@@ -111,7 +117,13 @@ function ProfilePageLayoutInner() {
   }
 
   return (
-    <View style={{ flex: 1, paddingTop: insets.top + 12, paddingBottom: insets.bottom }}>
+    <View
+      style={{
+        flex: 1,
+        paddingTop: presentedAsModal ? 12 : insets.top + 12,
+        paddingBottom: insets.bottom,
+      }}
+    >
       <ProfileHeader />
 
       <Body style={{ flex: 1 }}>

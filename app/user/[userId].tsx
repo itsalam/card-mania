@@ -3,5 +3,5 @@ import { useLocalSearchParams } from 'expo-router'
 
 export default function UserProfilePage() {
   const { userId } = useLocalSearchParams<{ userId: string }>()
-  return <ProfilePageLayout userId={userId} />
+  return <ProfilePageLayout userId={userId} presentedAsModal />
 }

@@ -39,8 +39,8 @@ export function OtpInput({ value, onChange, onComplete }: OtpInputProps) {
               borderColor: isActive
                 ? Colors.$textPrimary
                 : char
-                  ? 'rgba(255,255,255,0.35)'
-                  : 'rgba(255,255,255,0.15)',
+                  ? Colors.rgba(Colors.$textDefault, 0.35)
+                  : Colors.rgba(Colors.$textDefault, 0.15),
               justifyContent: 'center',
               alignItems: 'center',
             }}

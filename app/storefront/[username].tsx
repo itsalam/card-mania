@@ -47,5 +47,5 @@ export default function PublicStorefrontPage() {
     )
   }
 
-  return <ProfilePageLayout userId={userId} />
+  return <ProfilePageLayout userId={userId} presentedAsModal />
 }

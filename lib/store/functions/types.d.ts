@@ -26,3 +26,9 @@ export type CollectionItemQueryView =
   Database['public']['Functions']['collection_item_query']['Returns'][number]
 
 export type RecentViewRow = Database['public']['Tables']['recent_views']['Row']
+
+export type SavedCollectionRow = Database['public']['Tables']['saved_collections']['Row']
+
+export type CollectionGroupRow = Database['public']['Tables']['collection_group']['Row']
+export type PinnedCollectionItemRow =
+  Database['public']['Views']['my_pinned_collection_items']['Row']

@@ -98,7 +98,7 @@ function WebCountryPicker({
         <Pressable
           style={{
             flex: 1,
-            backgroundColor: 'rgba(0,0,0,0.5)',
+            backgroundColor: Colors.rgba(Colors.$backgroundDefault, 0.5),
             justifyContent: 'center',
             alignItems: 'center',
             padding: 16,
@@ -297,7 +297,7 @@ export function AuthModal({ onClose }: Props) {
         right: 0,
         bottom: 0,
         zIndex: 200,
-        backgroundColor: 'rgba(0,0,0,0.6)',
+        backgroundColor: Colors.rgba(Colors.$backgroundDefault, 0.6),
         justifyContent: 'center',
         alignItems: 'center',
         padding: 16,
