@@ -75,7 +75,7 @@
     "babel-plugin-module-resolver": "^5.0.2",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
-    "expo": "55.0.24",
+    "expo": "~55.0.28",
     "expo-asset": "~55.0.17",
     "expo-blur": "~55.0.14",
     "expo-build-properties": "~55.0.14",
@@ -105,13 +105,13 @@
     "react-dom": "19.2.0",
     "react-native": "^0.83.6",
     "react-native-css-interop": "^0.2.1",
-    "react-native-gesture-handler": "^2.32.0",
+    "react-native-gesture-handler": "~2.30.0",
     "react-native-get-random-values": "~1.11.0",
     "react-native-gifted-chat": "2.6.3",
     "react-native-keyboard-controller": "1.20.7",
     "react-native-maps": "1.27.2",
     "react-native-performance": "^6.0.0",
-    "react-native-reanimated": "^4.2.1",
+    "react-native-reanimated": "4.2.1",
     "react-native-safe-area-context": "~5.6.0",
     "react-native-screens": "~4.23.0",
     "react-native-svg": "15.15.3",
@@ -140,6 +140,7 @@
     "@types/react": "~19.2.10",
     "@vitejs/plugin-react": "^6.0.3",
     "babel-plugin-react-docgen-typescript": "^1.5.1",
+    "esbuild": "^0.28.0",
     "eslint": "^9.39.3",
     "eslint-config-expo": "~55.0.1",
     "gojs": "^3.1.5",
@@ -161,6 +162,14 @@
       "npm run format",
       "git add"
     ]
+  },
+  "overrides": {
+    "@storybook/react-vite": {
+      "vite": "$vite"
+    },
+    "@storybook/core": {
+      "esbuild": "0.25.12"
+    }
   },
   "private": true
 }
