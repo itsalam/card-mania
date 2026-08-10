@@ -1,6 +1,11 @@
 // store/useUserStore.ts
 import { getSupabase } from '@/lib/store/client'
-import type { AuthStatusType, Profile } from '@/lib/store/types'
+import {
+  patchOnboardingState,
+  resolveOnboardingState,
+  writeDeviceOnboardingState,
+} from '@/lib/store/onboardingState'
+import type { AuthStatusType, OnboardingStateFlags, Profile } from '@/lib/store/types'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import type { Session, User } from '@supabase/supabase-js'
 import { create } from 'zustand'
@@ -12,6 +17,7 @@ type State = {
   user: User | null
   profile: Profile | null
   profileSetupComplete: boolean | null // null = not yet loaded
+  onboardingState: OnboardingStateFlags | null // device-first resolved onboarding flags; null = not yet resolved
   hydrated: boolean
   error?: string
 }
@@ -59,6 +65,7 @@ export const useUserStore = create<State & Actions>()(
       user: null,
       profile: null,
       profileSetupComplete: null,
+      onboardingState: null,
       hydrated: false,
 
       setHydrated: () => set({ hydrated: true }),
@@ -74,6 +81,13 @@ export const useUserStore = create<State & Actions>()(
         })
 
         if (user) {
+          // Device-first: resolve onboarding gating from the on-device cache
+          // before anything else proceeds. Only falls through to the DB when
+          // the cache is empty; once the cache shows onboarding fully done,
+          // the DB is never read for it.
+          const onboardingState = await resolveOnboardingState(user.id)
+          set({ onboardingState, profileSetupComplete: onboardingState.profile_setup ?? false })
+
           await get().loadProfile(user.id)
           // Only subscribe to live profile changes for real (non-anonymous) users.
           if (!user.is_anonymous) {
@@ -94,28 +108,31 @@ export const useUserStore = create<State & Actions>()(
               .subscribe()
           }
         } else {
-          set({ profile: null, profileSetupComplete: null })
+          set({ profile: null, profileSetupComplete: null, onboardingState: null })
         }
       },
 
       loadProfile: async (userId) => {
-        const [profileRes, settingsRes] = await Promise.all([
-          getSupabase().from('user_profile').select('*').eq('user_id', userId).maybeSingle(),
-          getSupabase()
-            .from('user_settings')
-            .select('profile_setup_complete')
-            .eq('user_id', userId)
-            .maybeSingle(),
-        ])
+        const profileRes = await getSupabase()
+          .from('user_profile')
+          .select('*')
+          .eq('user_id', userId)
+          .maybeSingle()
 
         if (profileRes.error) {
           set({ error: profileRes.error.message })
         } else {
+          const profile = profileRes.data as Profile | null
+          const onboardingState = profile?.onboarding_state ?? {}
           set({
-            profile: profileRes.data as Profile | null,
-            profileSetupComplete: settingsRes.data?.profile_setup_complete ?? false,
+            profile,
+            onboardingState,
+            profileSetupComplete: onboardingState.profile_setup ?? false,
             error: undefined,
           })
+          // Keep the device cache in sync with whatever the DB says (e.g. a
+          // realtime update from onboarding progress made on another device).
+          await writeDeviceOnboardingState(userId, onboardingState)
         }
       },
 
@@ -131,11 +148,15 @@ export const useUserStore = create<State & Actions>()(
       setProfileSetupComplete: async (v) => {
         const userId = get().user?.id
         if (!userId) return
-        set({ profileSetupComplete: v })
-        const { error } = await getSupabase()
-          .from('user_settings')
-          .upsert({ user_id: userId, profile_setup_complete: v }, { onConflict: 'user_id' })
-        if (error) console.error('[setProfileSetupComplete] DB write failed:', error.message)
+        set((s) => ({
+          profileSetupComplete: v,
+          onboardingState: { ...s.onboardingState, profile_setup: v },
+        }))
+        try {
+          await patchOnboardingState(userId, { profile_setup: v })
+        } catch (error: any) {
+          console.error('[setProfileSetupComplete] DB write failed:', error.message)
+        }
       },
 
       verifySignUpOtp: async (email, token) => {
@@ -250,6 +271,7 @@ export const useUserStore = create<State & Actions>()(
           user: null,
           profile: null,
           profileSetupComplete: null,
+          onboardingState: null,
           status: 'signed_out',
         })
         // scope: 'local' clears the session in storage without a server roundtrip.

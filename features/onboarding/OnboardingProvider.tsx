@@ -1,4 +1,4 @@
-import { getSupabase } from '@/lib/store/client'
+import { patchOnboardingState } from '@/lib/store/onboardingState'
 import { useUserStore } from '@/lib/store/useUserStore'
 import React, { useEffect, useRef } from 'react'
 import { View } from 'react-native'
@@ -63,32 +63,21 @@ export const useOnboardingStore = create<OnboardingStore>((set, get) => ({
 
   complete: () => {
     set({ active: false })
-    persistOnboardingComplete().catch(console.error)
+    persistTourComplete().catch(console.error)
   },
 }))
 
-async function checkOnboardingComplete(): Promise<boolean> {
-  const user = useUserStore.getState().user
-  if (!user) return true
-  const { data } = await getSupabase()
-    .from('user_settings')
-    .select('onboarding_complete')
-    .eq('user_id', user.id)
-    .maybeSingle()
-  return data?.onboarding_complete === true
-}
-
-async function persistOnboardingComplete(): Promise<void> {
+async function persistTourComplete(): Promise<void> {
   const user = useUserStore.getState().user
   if (!user) return
-  await getSupabase()
-    .from('user_settings')
-    .upsert({ user_id: user.id, onboarding_complete: true }, { onConflict: 'user_id' })
+  const next = await patchOnboardingState(user.id, { tour: true })
+  useUserStore.setState({ onboardingState: next })
 }
 
 export function OnboardingProvider() {
   const status = useUserStore((s) => s.status)
   const profileSetupComplete = useUserStore((s) => s.profileSetupComplete)
+  const tourComplete = useUserStore((s) => s.onboardingState?.tour === true)
   const hasTriggered = useRef(false)
 
   useEffect(() => {
@@ -97,16 +86,14 @@ export function OnboardingProvider() {
     if (hasTriggered.current) return
     hasTriggered.current = true
 
-    checkOnboardingComplete().then((complete) => {
-      if (!complete) {
-        setTimeout(() => {
-          if (!useOnboardingStore.getState().active) {
-            useOnboardingStore.getState().start()
-          }
-        }, 1200)
-      }
-    })
-  }, [status, profileSetupComplete])
+    if (!tourComplete) {
+      setTimeout(() => {
+        if (!useOnboardingStore.getState().active) {
+          useOnboardingStore.getState().start()
+        }
+      }, 1200)
+    }
+  }, [status, profileSetupComplete, tourComplete])
 
   return null
 }
