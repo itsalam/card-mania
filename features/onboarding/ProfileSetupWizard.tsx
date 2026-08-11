@@ -4,15 +4,15 @@ import { Button } from '@/components/ui/button'
 import { TextField } from '@/components/ui/input/base-input'
 import { Text } from '@/components/ui/text/base-text'
 import { useOnboardingStore } from '@/features/onboarding/OnboardingProvider'
+import LocationPicker from '@/features/settings/components/location-picker'
 import { PasswordStrengthGauge } from '@/features/splash/PasswordStrengthGauge'
 import { DEFAULT_POLICY, policyError } from '@/features/splash/usePasswordPolicy'
-import LocationPicker from '@/features/settings/components/location-picker'
 import { useUserStore } from '@/lib/store/useUserStore'
-import { Eye, EyeOff, Lock, MapPin, Star, TrendingUp } from 'lucide-react-native'
+import { AlertCircle, Eye, EyeOff, Lock, MapPin, Star, TrendingUp } from 'lucide-react-native'
 import { MotiTransitionProp, MotiView } from 'moti'
 import { useRef, useState } from 'react'
 import { TouchableOpacity, View } from 'react-native'
-import { Colors } from 'react-native-ui-lib'
+import { BorderRadiuses, Colors } from 'react-native-ui-lib'
 
 const TOTAL_STEPS = 6
 const isDev = process.env.NODE_ENV !== 'production'
@@ -28,10 +28,10 @@ const PAGE_TRANSITION: MotiTransitionProp = {
 
 // ── Step dots ─────────────────────────────────────────────────────────────────
 
-function StepDots({ current }: { current: number }) {
+function StepDots({ current, total = TOTAL_STEPS }: { current: number; total?: number }) {
   return (
     <View style={{ flexDirection: 'row', gap: 6 }}>
-      {Array.from({ length: TOTAL_STEPS }).map((_, i) => (
+      {Array.from({ length: total }).map((_, i) => (
         <View
           key={i}
           style={{
@@ -84,10 +84,14 @@ function CollectorChip({ label, description, icon, active, onPress }: CollectorC
     >
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
         {icon}
-        <Text className="text-white text-base font-semibold">{label}</Text>
+        <Text className="text-base font-semibold">{label}</Text>
       </View>
       <Text
-        style={{ color: Colors.rgba('#fff', active ? 0.85 : 0.5), fontSize: 13, lineHeight: 18 }}
+        style={{
+          color: Colors.rgba(Colors.$textDefault, active ? 0.85 : 0.5),
+          fontSize: 13,
+          lineHeight: 18,
+        }}
       >
         {description}
       </Text>
@@ -98,9 +102,14 @@ function CollectorChip({ label, description, icon, active, onPress }: CollectorC
 // ── Wizard ────────────────────────────────────────────────────────────────────
 
 export function ProfileSetupWizard() {
-  const { profile, updateProfile, setProfileSetupComplete, setPassword } = useUserStore()
+  const { user, profile, updateProfile, setProfileSetupComplete, setPassword } = useUserStore()
 
-  const [step, setStep] = useState(0)
+  // The email sign-up flow already collects a password (SignUpForm) — only
+  // phone (and other passwordless) sign-ups still need the password step here.
+  const skipPasswordStep = user?.app_metadata?.provider === 'email'
+  const firstStep = skipPasswordStep ? 1 : 0
+
+  const [step, setStep] = useState(firstStep)
   const direction = useRef<1 | -1>(1)
 
   // Step 0 — password
@@ -214,14 +223,14 @@ export function ProfileSetupWizard() {
             style={{ alignSelf: 'flex-end' }}
             accessibilityLabel="Skip profile setup (dev only)"
           >
-            <Text className="text-white opacity-50 text-xs">Skip setup</Text>
+            <Text className="opacity-50 text-xs">Skip setup</Text>
           </TouchableOpacity>
         )}
         {/* ── Step 0: Password ── */}
         {step === 0 && (
           <>
-            <Text className="text-white text-2xl font-bold">Secure your account</Text>
-            <Text className="text-white opacity-70 leading-6">
+            <Text className="text-2xl font-bold">Secure your account</Text>
+            <Text className="opacity-70 leading-6">
               Set a password so you can sign in with email next time.
             </Text>
 
@@ -280,10 +289,8 @@ export function ProfileSetupWizard() {
         {/* ── Step 1: Identity ── */}
         {step === 1 && (
           <>
-            <Text className="text-white text-2xl font-bold">Your identity</Text>
-            <Text className="text-white opacity-70 leading-6">
-              How should others know you on CardMania?
-            </Text>
+            <Text className="text-2xl font-bold">Your identity</Text>
+            <Text className="opacity-70 leading-6">How should others know you on CardMania?</Text>
 
             <TextField
               placeholder="Display name"
@@ -315,8 +322,8 @@ export function ProfileSetupWizard() {
         {/* ── Step 2: Bio ── */}
         {step === 2 && (
           <>
-            <Text className="text-white text-2xl font-bold">About you</Text>
-            <Text className="text-white opacity-70 leading-6">
+            <Text className="text-2xl font-bold">About you</Text>
+            <Text className="opacity-70 leading-6">
               A short intro shown on your profile. Totally optional.
             </Text>
 
@@ -335,8 +342,8 @@ export function ProfileSetupWizard() {
         {/* ── Step 3: Collector type ── */}
         {step === 3 && (
           <>
-            <Text className="text-white text-2xl font-bold">How you collect</Text>
-            <Text className="text-white opacity-70 leading-6">
+            <Text className="text-2xl font-bold">How you collect</Text>
+            <Text className="opacity-70 leading-6">
               Select all that apply — you can change this any time.
             </Text>
 
@@ -344,14 +351,24 @@ export function ProfileSetupWizard() {
               <CollectorChip
                 label="Hobbyist"
                 description="You're building specific sets or collections. Nearby sellers and traders can find you when they have cards you're looking for. You have more control over how public your profile and location are."
-                icon={<Star size={20} color={isHobbyist ? '#fff' : Colors.rgba('#fff', 0.5)} />}
+                icon={
+                  <Star
+                    size={20}
+                    color={isHobbyist ? Colors.$textDefault : Colors.rgba(Colors.$textDefault, 0.5)}
+                  />
+                }
                 active={isHobbyist}
                 onPress={() => setIsHobbyist((v) => !v)}
               />
               <CollectorChip
                 label="Trader"
                 description="You buy and sell actively for margins. Your storefront is discoverable at greater distances and your profile is more publicly visible, making it easier for hobbyists and other traders to find you."
-                icon={<TrendingUp size={20} color={isTrader ? '#fff' : Colors.rgba('#fff', 0.5)} />}
+                icon={
+                  <TrendingUp
+                    size={20}
+                    color={isTrader ? Colors.$textDefault : Colors.rgba(Colors.$textDefault, 0.5)}
+                  />
+                }
                 active={isTrader}
                 onPress={() => setIsTrader((v) => !v)}
               />
@@ -362,8 +379,8 @@ export function ProfileSetupWizard() {
         {/* ── Step 4: Location ── */}
         {step === 4 && (
           <>
-            <Text className="text-white text-2xl font-bold">Your location</Text>
-            <Text className="text-white opacity-70 leading-6">
+            <Text className="text-2xl font-bold">Your location</Text>
+            <Text className="opacity-70 leading-6">
               Connects you with nearby collectors and sellers. Hobbyists get more privacy control;
               traders get broader reach. You can change this any time.
             </Text>
@@ -372,8 +389,8 @@ export function ProfileSetupWizard() {
               style={{
                 borderRadius: 14,
                 borderWidth: 2,
-                borderColor: Colors.rgba('#fff', 0.3),
-                backgroundColor: Colors.rgba('#fff', 0.05),
+                borderColor: Colors.rgba(Colors.$textDefault, 0.3),
+                backgroundColor: Colors.rgba(Colors.$textDefault, 0.05),
                 paddingHorizontal: 8,
               }}
             >
@@ -381,8 +398,8 @@ export function ProfileSetupWizard() {
                 <View
                   style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingLeft: 4 }}
                 >
-                  <MapPin size={20} color={Colors.rgba('#fff', 0.7)} />
-                  <Text className="text-white opacity-70">Location</Text>
+                  <MapPin size={20} color={Colors.rgba(Colors.$textDefault, 0.7)} />
+                  <Text className="opacity-70">Location</Text>
                 </View>
               </LocationPicker>
             </View>
@@ -392,8 +409,8 @@ export function ProfileSetupWizard() {
         {/* ── Step 5: Shipping address ── */}
         {step === 5 && (
           <>
-            <Text className="text-white text-2xl font-bold">Shipping address</Text>
-            <Text className="text-white opacity-70 leading-6">
+            <Text className="text-2xl font-bold">Shipping address</Text>
+            <Text className="opacity-70 leading-6">
               {
                 "We\'ll pre-fill this when you confirm a trade. You can update or change it at any time before shipping."
               }
@@ -465,7 +482,25 @@ export function ProfileSetupWizard() {
         )}
 
         {/* Error */}
-        {error ? <Text className="text-red-400 text-sm text-center">{error}</Text> : null}
+        {error ? (
+          <View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              alignSelf: 'center',
+              gap: 8,
+              paddingVertical: 8,
+              paddingHorizontal: 12,
+              borderRadius: BorderRadiuses.br30,
+              backgroundColor: Colors.rgba(Colors.$backgroundDangerHeavy, 0.15),
+              borderWidth: 1,
+              borderColor: Colors.rgba(Colors.$textDanger, 0.3),
+            }}
+          >
+            <AlertCircle size={14} color={Colors.$textDanger} />
+            <Text style={{ color: Colors.$textDanger, fontSize: 13, flexShrink: 1 }}>{error}</Text>
+          </View>
+        ) : null}
 
         {/* Navigation */}
         <View
@@ -476,32 +511,32 @@ export function ProfileSetupWizard() {
             marginTop: 8,
           }}
         >
-          <StepDots current={step} />
+          <StepDots current={step - firstStep} total={TOTAL_STEPS - firstStep} />
 
           <View style={{ flexDirection: 'row', gap: 10, alignItems: 'center' }}>
-            {/* Skip link — not available on step 0 (password is required) */}
+            {/* Skip link — not available on the password/identity steps (both required) */}
             {step > 1 && (
               <TouchableOpacity
                 onPress={step === TOTAL_STEPS - 1 ? handleFinish : handleNext}
                 accessibilityLabel="Skip this step"
               >
-                <Text className="text-white opacity-50 text-sm">Skip</Text>
+                <Text className="opacity-50 text-sm">Skip</Text>
               </TouchableOpacity>
             )}
 
-            {step > 0 && (
+            {step > firstStep && (
               <Button variant="outline" onPress={handleBack} disabled={saving}>
-                <Text className="text-white">Back</Text>
+                <Text>Back</Text>
               </Button>
             )}
 
             {step < TOTAL_STEPS - 1 ? (
               <Button onPress={handleNext}>
-                <Text className="text-white">Next</Text>
+                <Text>Next</Text>
               </Button>
             ) : (
               <Button onPress={handleFinish} disabled={saving}>
-                <Text className="text-white">{saving ? 'Saving…' : 'Finish'}</Text>
+                <Text>{saving ? 'Saving…' : 'Finish'}</Text>
               </Button>
             )}
           </View>

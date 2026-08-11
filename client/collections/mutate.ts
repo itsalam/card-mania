@@ -122,12 +122,10 @@ export const useEditCollection = (collectionId?: string) => {
   const qc = useQueryClient()
   const userId = useUserStore((s) => s.user?.id)
   const collectionData = qc.getQueryData([...qk.collections, collectionId]) as
-    | TCollection
-    | undefined
+    TCollection | undefined
 
   const collectionTagData = qc.getQueryData([...qk.collections, collectionId, 'tags']) as
-    | TTag['id'][]
-    | undefined
+    TTag['id'][] | undefined
 
   return useMutation({
     mutationFn: mutateCollectionFn(collectionData ?? null),

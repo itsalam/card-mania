@@ -6,14 +6,7 @@ import { SettingsStoreState } from './store'
 export type ProfileSettings = Record<string, SettingsLayoutSection>
 
 export type SettingsType =
-  | 'string'
-  | 'boolean'
-  | 'number'
-  | 'page'
-  | 'custom'
-  | 'toggle'
-  | 'select'
-  | 'action'
+  'string' | 'boolean' | 'number' | 'page' | 'custom' | 'toggle' | 'select' | 'action'
 
 type NonBasicSettingType = Exclude<SettingsType, 'toggle' | 'select' | 'page' | 'action'>
 

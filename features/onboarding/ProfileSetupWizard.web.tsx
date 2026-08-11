@@ -554,7 +554,7 @@ export function ProfileSetupWizard() {
               }}
             >
               {saving && <Spinner style={{ width: 14, height: 14 }} />}
-              <Text style={{ fontSize: 14, fontWeight: '600', color: '#fff' }}>
+              <Text style={{ fontSize: 14, fontWeight: '600', color: Colors.$textDefault }}>
                 {saving ? 'Saving…' : step < TOTAL_STEPS - 1 ? 'Next' : 'Finish'}
               </Text>
             </Pressable>

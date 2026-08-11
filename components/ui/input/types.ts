@@ -21,11 +21,9 @@ export type InputProps = Omit<
     // Label
     // Accessory Buttons
     leadingAccessory?:
-      | React.ReactElement<any, string | React.JSXElementConstructor<any>>
-      | undefined
+      React.ReactElement<any, string | React.JSXElementConstructor<any>> | undefined
     trailingAccessory?:
-      | React.ReactElement<any, string | React.JSXElementConstructor<any>>
-      | undefined
+      React.ReactElement<any, string | React.JSXElementConstructor<any>> | undefined
     bottomAccessory?: React.ReactElement<any, string | React.JSXElementConstructor<any>> | undefined
     showClearButton?: boolean
     // Validation

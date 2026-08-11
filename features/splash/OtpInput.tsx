@@ -45,7 +45,9 @@ export function OtpInput({ value, onChange, onComplete }: OtpInputProps) {
               alignItems: 'center',
             }}
           >
-            <Text style={{ color: 'white', fontSize: 22, fontWeight: '600' }}>{char ?? ''}</Text>
+            <Text style={{ color: Colors.$textDefault, fontSize: 22, fontWeight: '600' }}>
+              {char ?? ''}
+            </Text>
           </View>
         )
       })}
