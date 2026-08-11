@@ -707,16 +707,14 @@ const fetchBlendedCache = async (supa: string, srole: string, queryHash: string)
     headers: { apikey: srole, authorization: `Bearer ${srole}` },
   })
   const rows = (await check?.json()) as
-    | Array<{ payload: string; updated_at: string; ttl_seconds: number }>
-    | undefined
+    Array<{ payload: string; updated_at: string; ttl_seconds: number }> | undefined
   const row = rows?.[0]
   const fresh = row && new Date(row.updated_at).getTime() + row.ttl_seconds * 1000 > Date.now()
 
   if (row && fresh) {
     cacheHit = true
     const parsed = (typeof row.payload === 'string' ? JSON.parse(row.payload) : row.payload) as
-      | { results?: SearchResultItem[] }
-      | SearchResultItem[]
+      { results?: SearchResultItem[] } | SearchResultItem[]
     vendorResults = Array.isArray(parsed) ? parsed : (parsed.results ?? [])
   }
 
@@ -734,8 +732,7 @@ const fetchProviderCache = async (supa: string, srole: string, queryHash: string
     headers: { apikey: srole, authorization: `Bearer ${srole}` },
   })
   const rows = (await check?.json()) as
-    | Array<{ normalized_items: string; expires_at: string }>
-    | undefined
+    Array<{ normalized_items: string; expires_at: string }> | undefined
 
   const row = rows?.[0]
   const fresh = row && new Date(row.expires_at).getTime() > Date.now()
@@ -928,8 +925,7 @@ async function fetchEbayProviderCache(supa: string, srole: string, queryHash: st
     headers: { apikey: srole, authorization: `Bearer ${srole}` },
   })
   const rows = (await check?.json()) as
-    | Array<{ normalized_items: string; expires_at: string }>
-    | undefined
+    Array<{ normalized_items: string; expires_at: string }> | undefined
   const row = rows?.[0]
   const fresh = row && new Date(row.expires_at).getTime() > Date.now()
   if (check.ok && row && fresh) {
@@ -1079,8 +1075,7 @@ async function fetchCardHedgeProviderCache(supa: string, srole: string, queryHas
     headers: { apikey: srole, authorization: `Bearer ${srole}` },
   })
   const rows = (await check?.json()) as
-    | Array<{ normalized_items: string; expires_at: string }>
-    | undefined
+    Array<{ normalized_items: string; expires_at: string }> | undefined
   const row = rows?.[0]
   const fresh = row && new Date(row.expires_at).getTime() > Date.now()
   if (check.ok && row && fresh) {

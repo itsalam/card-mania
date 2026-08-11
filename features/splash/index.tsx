@@ -347,7 +347,10 @@ export function SplashPage({ initialSignUp }: { initialSignUp?: boolean }) {
       <KeyboardAvoidingView behavior="padding" style={{ flex: 1 }}>
         <GradientBackground style={{ flex: 1 }}>
           {logoNode}
-          <View style={{ height: '50%', paddingHorizontal: 24, flex: 0.6 }}>
+          {/* No fixed height — the form sizes to its own content (e.g. the
+              password strength gauge expanding) and the logo above shrinks
+              to make room, instead of clipping or requiring a scroll. */}
+          <View style={{ paddingHorizontal: 24 }}>
             <SignUpForm
               initialEmail={emailFlow.signupEmail ?? undefined}
               onBack={() => {
@@ -489,7 +492,8 @@ export function SplashPage({ initialSignUp }: { initialSignUp?: boolean }) {
                   }}
                 >
                   <Text style={{ color: Colors.rgba(Colors.$textDefault, 0.6), fontSize: 13 }}>
-                    Code sent to <Text style={{ color: 'white', fontWeight: '600' }}>{e164}</Text>
+                    Code sent to{' '}
+                    <Text style={{ color: Colors.$textDefault, fontWeight: '600' }}>{e164}</Text>
                   </Text>
                   <TouchableOpacity onPress={handleResetPhoneOtp}>
                     <Text style={{ color: Colors.rgba(Colors.$textDefault, 0.5), fontSize: 13 }}>
@@ -509,11 +513,18 @@ export function SplashPage({ initialSignUp }: { initialSignUp?: boolean }) {
                 >
                   <RefreshCw
                     size={14}
-                    color={resendCooldown > 0 ? Colors.rgba(Colors.$textDefault, 0.3) : 'white'}
+                    color={
+                      resendCooldown > 0
+                        ? Colors.rgba(Colors.$textDefault, 0.3)
+                        : Colors.$textDefault
+                    }
                   />
                   <Text
                     style={{
-                      color: resendCooldown > 0 ? Colors.rgba(Colors.$textDefault, 0.3) : 'white',
+                      color:
+                        resendCooldown > 0
+                          ? Colors.rgba(Colors.$textDefault, 0.3)
+                          : Colors.$textDefault,
                       fontSize: 13,
                     }}
                   >
@@ -626,7 +637,10 @@ export function SplashPage({ initialSignUp }: { initialSignUp?: boolean }) {
               pointerEvents="none"
             >
               {showErrorContent && (
-                <Text className="text-red-400 text-sm text-center w-full px-4">
+                <Text
+                  className="text-sm text-center w-full px-4"
+                  style={{ color: Colors.$textDanger }}
+                >
                   {mainTab === 'email' ? (emailFlow.error ?? '') : (error ?? '')}
                 </Text>
               )}
@@ -670,9 +684,9 @@ export function SplashPage({ initialSignUp }: { initialSignUp?: boolean }) {
           {emailFlow.emailStep === 'email' && mainTab !== 'phone' && !phoneOtpSent && (
             <View style={{ gap: 8, width: '100%' }}>
               <View className="w-full flex flex-row items-center gap-6 justify-center">
-                <Separator orientation="horizontal" className="flex-1 bg-white" />
-                <Text className="text-white">or</Text>
-                <Separator orientation="horizontal" className="flex-1 bg-white" />
+                <Separator orientation="horizontal" className="flex-1" />
+                <Text>or</Text>
+                <Separator orientation="horizontal" className="flex-1" />
               </View>
 
               <GoogleSignInButton />

@@ -121,7 +121,9 @@ function SpotlightPanel({
           onPress={onNext}
           style={[styles.btnPrimary, { backgroundColor: Colors.$backgroundPrimaryHeavy }]}
         >
-          <Text style={[styles.btnPrimaryText, { color: '#fff' }]}>{isLast ? 'Done' : 'Next'}</Text>
+          <Text style={[styles.btnPrimaryText, { color: Colors.$textDefault }]}>
+            {isLast ? 'Done' : 'Next'}
+          </Text>
         </Pressable>
       </View>
     </View>

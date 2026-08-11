@@ -18,7 +18,7 @@
     return b ? b.call(a) : { next: aa(a) }
   }
   function da(a) {
-    for (var b, c = []; !(b = a.next()).done; ) c.push(b.value)
+    for (var b, c = []; !(b = a.next()).done;) c.push(b.value)
     return c
   }
   var ea =
@@ -236,7 +236,7 @@
   }
   function Ja(a, b) {
     if (a.hasOwnProperty(b)) return !0
-    for (a = Object.getPrototypeOf(a); a && a !== Function; ) {
+    for (a = Object.getPrototypeOf(a); a && a !== Function;) {
       if (a.hasOwnProperty(b)) return !0
       var c = a.GA
       if (c && c[b]) return !0
@@ -527,7 +527,7 @@
       c = ++this.Za,
       d = this.qf
     if (null !== d)
-      for (; c < b; ) {
+      for (; c < b;) {
         var e = a[c]
         if (d(e)) return ((this.key = this.Za = c), (this.value = e), !0)
         c++
@@ -549,7 +549,7 @@
     var b = a.length,
       c = this.qf
     if (null !== c) {
-      for (var d = 0; d < b; ) {
+      for (var d = 0; d < b;) {
         var e = a[d]
         if (c(e)) return ((this.key = this.Za = d), (this.value = e))
         d++
@@ -816,7 +816,7 @@
     this._isFrozen && va(this)
     var b = this.s
     if (Aa(a)) for (var c = a.length, d = 0; d < c; d++) b.push(a[d])
-    else for (a = a.iterator; a.next(); ) b.push(a.value)
+    else for (a = a.iterator; a.next();) b.push(a.value)
     this.yb()
     return this
   }
@@ -929,7 +929,7 @@
     b >= d && (b = d - 1)
     if (a > b) return this
     this._isFrozen && va(this)
-    for (var e = a, f = b + 1; f < d; ) c[e++] = c[f++]
+    for (var e = a, f = b + 1; f < d;) c[e++] = c[f++]
     c.length = d - (b - a + 1)
     this.yb()
     return this
@@ -1087,7 +1087,7 @@
   cb.prototype.any = function (a) {
     var b = this.eg
     this.sa = b.Sa = null
-    for (b = b.ea; null !== b; ) {
+    for (b = b.ea; null !== b;) {
       if (a(b.value)) return !0
       b = b.va
     }
@@ -1096,7 +1096,7 @@
   cb.prototype.all = function (a) {
     var b = this.eg
     this.sa = b.Sa = null
-    for (b = b.ea; null !== b; ) {
+    for (b = b.ea; null !== b;) {
       if (!a(b.value)) return !1
       b = b.va
     }
@@ -1105,21 +1105,21 @@
   cb.prototype.each = function (a) {
     var b = this.eg
     this.sa = b.Sa = null
-    for (b = b.ea; null !== b; ) (a(b.value), (b = b.va))
+    for (b = b.ea; null !== b;) (a(b.value), (b = b.va))
     return this
   }
   cb.prototype.map = function (a) {
     var b = this.eg
     b.Sa = null
     var c = new F()
-    for (b = b.ea; null !== b; ) (c.add(a(b.value)), (b = b.va))
+    for (b = b.ea; null !== b;) (c.add(a(b.value)), (b = b.va))
     return c.iterator
   }
   cb.prototype.filter = function (a) {
     var b = this.eg
     b.Sa = null
     var c = new F()
-    for (b = b.ea; null !== b; ) {
+    for (b = b.ea; null !== b;) {
       var d = b.value
       a(d) && c.add(d)
       b = b.va
@@ -1200,7 +1200,7 @@
     if (null === a) return this
     this._isFrozen && va(this)
     if (Aa(a)) for (var b = a.length, c = 0; c < b; c++) this.add(a[c])
-    else for (a = a.iterator; a.next(); ) this.add(a.value)
+    else for (a = a.iterator; a.next();) this.add(a.value)
     return this
   }
   t.contains = function (a) {
@@ -1213,12 +1213,12 @@
   }
   t.Xy = function (a) {
     if (null === a) return !0
-    for (a = a.iterator; a.next(); ) if (!this.contains(a.value)) return !1
+    for (a = a.iterator; a.next();) if (!this.contains(a.value)) return !1
     return !0
   }
   t.Yy = function (a) {
     if (null === a) return !0
-    for (a = a.iterator; a.next(); ) if (this.contains(a.value)) return !0
+    for (a = a.iterator; a.next();) if (this.contains(a.value)) return !0
     return !1
   }
   t.first = function () {
@@ -1226,29 +1226,29 @@
     return null === a ? null : a.value
   }
   H.prototype.any = function (a) {
-    for (var b = this.ea; null !== b; ) {
+    for (var b = this.ea; null !== b;) {
       if (a(b.value)) return !0
       b = b.va
     }
     return !1
   }
   H.prototype.all = function (a) {
-    for (var b = this.ea; null !== b; ) {
+    for (var b = this.ea; null !== b;) {
       if (!a(b.value)) return !1
       b = b.va
     }
     return !0
   }
   H.prototype.each = function (a) {
-    for (var b = this.ea; null !== b; ) (a(b.value), (b = b.va))
+    for (var b = this.ea; null !== b;) (a(b.value), (b = b.va))
     return this
   }
   H.prototype.map = function (a) {
-    for (var b = new H(), c = this.ea; null !== c; ) (b.add(a(c.value)), (c = c.va))
+    for (var b = new H(), c = this.ea; null !== c;) (b.add(a(c.value)), (c = c.va))
     return b
   }
   H.prototype.filter = function (a) {
-    for (var b = new H(), c = this.ea; null !== c; ) {
+    for (var b = new H(), c = this.ea; null !== c;) {
       var d = c.value
       a(d) && b.add(d)
       c = c.va
@@ -1281,7 +1281,7 @@
     if (null === a) return this
     this._isFrozen && va(this)
     if (Aa(a)) for (var b = a.length, c = 0; c < b; c++) this.remove(a[c])
-    else for (a = a.iterator; a.next(); ) this.remove(a.value)
+    else for (a = a.iterator; a.next();) this.remove(a.value)
     return this
   }
   t.tA = function (a) {
@@ -1290,7 +1290,7 @@
     var b = new H()
     b.addAll(a)
     a = []
-    for (var c = this.iterator; c.next(); ) {
+    for (var c = this.iterator; c.next();) {
       var d = c.value
       b.contains(d) || a.push(d)
     }
@@ -1408,7 +1408,7 @@
   kb.prototype.any = function (a) {
     var b = this.ma
     this.sa = null
-    for (b = b.ea; null !== b; ) {
+    for (b = b.ea; null !== b;) {
       if (a(b.key)) return !0
       b = b.va
     }
@@ -1417,7 +1417,7 @@
   kb.prototype.all = function (a) {
     var b = this.ma
     this.sa = null
-    for (b = b.ea; null !== b; ) {
+    for (b = b.ea; null !== b;) {
       if (!a(b.key)) return !1
       b = b.va
     }
@@ -1426,21 +1426,21 @@
   kb.prototype.each = function (a) {
     var b = this.ma
     this.sa = null
-    for (b = b.ea; null !== b; ) (a(b.key), (b = b.va))
+    for (b = b.ea; null !== b;) (a(b.key), (b = b.va))
     return this
   }
   kb.prototype.map = function (a) {
     var b = this.ma
     this.sa = null
     var c = new F()
-    for (b = b.ea; null !== b; ) (c.add(a(b.key)), (b = b.va))
+    for (b = b.ea; null !== b;) (c.add(a(b.key)), (b = b.va))
     return c.iterator
   }
   kb.prototype.filter = function (a) {
     var b = this.ma
     this.sa = null
     var c = new F()
-    for (b = b.ea; null !== b; ) {
+    for (b = b.ea; null !== b;) {
       var d = b.key
       a(d) && c.add(d)
       b = b.va
@@ -1511,29 +1511,29 @@
     return null !== a ? a.key : null
   }
   lb.prototype.any = function (a) {
-    for (var b = this.ma.ea; null !== b; ) {
+    for (var b = this.ma.ea; null !== b;) {
       if (a(b.key)) return !0
       b = b.va
     }
     return !1
   }
   lb.prototype.all = function (a) {
-    for (var b = this.ma.ea; null !== b; ) {
+    for (var b = this.ma.ea; null !== b;) {
       if (!a(b.key)) return !1
       b = b.va
     }
     return !0
   }
   lb.prototype.each = function (a) {
-    for (var b = this.ma.ea; null !== b; ) (a(b.key), (b = b.va))
+    for (var b = this.ma.ea; null !== b;) (a(b.key), (b = b.va))
     return this
   }
   lb.prototype.map = function (a) {
-    for (var b = new H(), c = this.ma.ea; null !== c; ) (b.add(a(c.key)), (c = c.va))
+    for (var b = new H(), c = this.ma.ea; null !== c;) (b.add(a(c.key)), (c = c.va))
     return b
   }
   lb.prototype.filter = function (a) {
-    for (var b = new H(), c = this.ma.ea; null !== c; ) {
+    for (var b = new H(), c = this.ma.ea; null !== c;) {
       var d = c.key
       a(d) && b.add(d)
       c = c.va
@@ -1634,7 +1634,7 @@
   mb.prototype.any = function (a) {
     var b = this.ma
     this.sa = b.jf = null
-    for (b = b.ea; null !== b; ) {
+    for (b = b.ea; null !== b;) {
       if (a(b.value)) return !0
       b = b.va
     }
@@ -1643,7 +1643,7 @@
   mb.prototype.all = function (a) {
     var b = this.ma
     this.sa = b.jf = null
-    for (b = b.ea; null !== b; ) {
+    for (b = b.ea; null !== b;) {
       if (!a(b.value)) return !1
       b = b.va
     }
@@ -1652,21 +1652,21 @@
   mb.prototype.each = function (a) {
     var b = this.ma
     this.sa = b.jf = null
-    for (b = b.ea; null !== b; ) (a(b.value), (b = b.va))
+    for (b = b.ea; null !== b;) (a(b.value), (b = b.va))
     return this
   }
   mb.prototype.map = function (a) {
     var b = this.ma
     this.sa = b.jf = null
     var c = new F()
-    for (b = b.ea; null !== b; ) (c.add(a(b.value)), (b = b.va))
+    for (b = b.ea; null !== b;) (c.add(a(b.value)), (b = b.va))
     return c.iterator
   }
   mb.prototype.filter = function (a) {
     var b = this.ma
     this.sa = b.jf = null
     var c = new F()
-    for (b = b.ea; null !== b; ) {
+    for (b = b.ea; null !== b;) {
       var d = b.value
       a(d) && c.add(d)
       b = b.va
@@ -1740,7 +1740,7 @@
   nb.prototype.any = function (a) {
     var b = this.ma
     this.sa = b.Sa = null
-    for (b = b.ea; null !== b; ) {
+    for (b = b.ea; null !== b;) {
       if (a(b)) return !0
       b = b.va
     }
@@ -1749,7 +1749,7 @@
   nb.prototype.all = function (a) {
     var b = this.ma
     this.sa = b.Sa = null
-    for (b = b.ea; null !== b; ) {
+    for (b = b.ea; null !== b;) {
       if (!a(b)) return !1
       b = b.va
     }
@@ -1758,21 +1758,21 @@
   nb.prototype.each = function (a) {
     var b = this.ma
     this.sa = b.Sa = null
-    for (b = b.ea; null !== b; ) (a(b), (b = b.va))
+    for (b = b.ea; null !== b;) (a(b), (b = b.va))
     return this
   }
   nb.prototype.map = function (a) {
     var b = this.ma
     this.sa = b.Sa = null
     var c = new F()
-    for (b = b.ea; null !== b; ) (c.add(a(b)), (b = b.va))
+    for (b = b.ea; null !== b;) (c.add(a(b)), (b = b.va))
     return c.iterator
   }
   nb.prototype.filter = function (a) {
     var b = this.ma
     this.sa = b.Sa = null
     var c = new F()
-    for (b = b.ea; null !== b; ) (a(b) && c.add(b), (b = b.va))
+    for (b = b.ea; null !== b;) (a(b) && c.add(b), (b = b.va))
     return c.iterator
   }
   nb.prototype.de = function () {
@@ -1856,37 +1856,37 @@
         var d = a[c]
         this.add(d.key, d.value)
       }
-    else if (a instanceof ob) for (a = a.iterator; a.next(); ) this.add(a.key, a.value)
-    else for (a = a.iterator; a.next(); ) ((b = a.value), this.add(b.key, b.value))
+    else if (a instanceof ob) for (a = a.iterator; a.next();) this.add(a.key, a.value)
+    else for (a = a.iterator; a.next();) ((b = a.value), this.add(b.key, b.value))
     return this
   }
   t.first = function () {
     return this.ea
   }
   ob.prototype.any = function (a) {
-    for (var b = this.ea; null !== b; ) {
+    for (var b = this.ea; null !== b;) {
       if (a(b)) return !0
       b = b.va
     }
     return !1
   }
   ob.prototype.all = function (a) {
-    for (var b = this.ea; null !== b; ) {
+    for (var b = this.ea; null !== b;) {
       if (!a(b)) return !1
       b = b.va
     }
     return !0
   }
   ob.prototype.each = function (a) {
-    for (var b = this.ea; null !== b; ) (a(b), (b = b.va))
+    for (var b = this.ea; null !== b;) (a(b), (b = b.va))
     return this
   }
   ob.prototype.map = function (a) {
-    for (var b = new ob(), c = this.ea; null !== c; ) (b.add(c.key, a(c)), (c = c.va))
+    for (var b = new ob(), c = this.ea; null !== c;) (b.add(c.key, a(c)), (c = c.va))
     return b
   }
   ob.prototype.filter = function (a) {
-    for (var b = new ob(), c = this.ea; null !== c; ) (a(c) && b.add(c.key, c.value), (c = c.va))
+    for (var b = new ob(), c = this.ea; null !== c;) (a(c) && b.add(c.key, c.value), (c = c.va))
     return b
   }
   t = ob.prototype
@@ -2064,10 +2064,10 @@
   function ub(a) {
     if ('string' === typeof a) {
       a = a.split(' ')
-      for (var b = 0, c = 0; '' === a[b]; ) b++
+      for (var b = 0, c = 0; '' === a[b];) b++
       var d = a[b++]
       d && (c = parseFloat(d))
-      for (var e = 0; '' === a[b]; ) b++
+      for (var e = 0; '' === a[b];) b++
       ;(d = a[b++]) && (e = parseFloat(d))
       return new I(c, e)
     }
@@ -2344,10 +2344,10 @@
   function Mb(a) {
     if ('string' === typeof a) {
       a = a.split(' ')
-      for (var b = 0, c = 0; '' === a[b]; ) b++
+      for (var b = 0, c = 0; '' === a[b];) b++
       var d = a[b++]
       d && (c = parseFloat(d))
-      for (var e = 0; '' === a[b]; ) b++
+      for (var e = 0; '' === a[b];) b++
       ;(d = a[b++]) && (e = parseFloat(d))
       return new M(c, e)
     }
@@ -2503,14 +2503,14 @@
   function Qb(a) {
     if ('string' === typeof a) {
       a = a.split(' ')
-      for (var b = 0, c = 0; '' === a[b]; ) b++
+      for (var b = 0, c = 0; '' === a[b];) b++
       var d = a[b++]
       d && (c = parseFloat(d))
-      for (var e = 0; '' === a[b]; ) b++
+      for (var e = 0; '' === a[b];) b++
       ;(d = a[b++]) && (e = parseFloat(d))
-      for (var f = 0; '' === a[b]; ) b++
+      for (var f = 0; '' === a[b];) b++
       ;(d = a[b++]) && (f = parseFloat(d))
-      for (var g = 0; '' === a[b]; ) b++
+      for (var g = 0; '' === a[b];) b++
       ;(d = a[b++]) && (g = parseFloat(d))
       return new N(c, e, f, g)
     }
@@ -2864,17 +2864,17 @@
   function gc(a) {
     if ('string' === typeof a) {
       a = a.split(' ')
-      for (var b = 0, c = NaN; '' === a[b]; ) b++
+      for (var b = 0, c = NaN; '' === a[b];) b++
       var d = a[b++]
       d && (c = parseFloat(d))
       if (isNaN(c)) return new cc()
-      for (var e = NaN; '' === a[b]; ) b++
+      for (var e = NaN; '' === a[b];) b++
       ;(d = a[b++]) && (e = parseFloat(d))
       if (isNaN(e)) return new cc(c)
-      for (var f = NaN; '' === a[b]; ) b++
+      for (var f = NaN; '' === a[b];) b++
       ;(d = a[b++]) && (f = parseFloat(d))
       if (isNaN(f)) return new cc(c, e)
-      for (var g = NaN; '' === a[b]; ) b++
+      for (var g = NaN; '' === a[b];) b++
       ;(d = a[b++]) && (g = parseFloat(d))
       return isNaN(g) ? new cc(c, e) : new cc(c, e, f, g)
     }
@@ -3072,16 +3072,16 @@
       if ('AllSides' === a) return Rc
       if ('Default' === a) return Sc
       a = a.split(' ')
-      for (var b = 0, c = 0; '' === a[b]; ) b++
+      for (var b = 0, c = 0; '' === a[b];) b++
       var d = a[b++]
       void 0 !== d && 0 < d.length && (c = parseFloat(d))
-      for (var e = 0; '' === a[b]; ) b++
+      for (var e = 0; '' === a[b];) b++
       d = a[b++]
       void 0 !== d && 0 < d.length && (e = parseFloat(d))
-      for (var f = 0; '' === a[b]; ) b++
+      for (var f = 0; '' === a[b];) b++
       d = a[b++]
       void 0 !== d && 0 < d.length && (f = parseFloat(d))
-      for (var g = 0; '' === a[b]; ) b++
+      for (var g = 0; '' === a[b];) b++
       d = a[b++]
       void 0 !== d && 0 < d.length && (g = parseFloat(d))
       return new O(c, e, f, g)
@@ -3911,7 +3911,7 @@
           f.push([h, l, c, k, c, k, a, b]),
           f
         )
-      for (; 1e-5 < d; )
+      for (; 1e-5 < d;)
         ((e = l + h * Math.min(d, k)), f.push(K.$y(c, l, e, a, b)), (d -= Math.abs(e - l)), (l = e))
       return f
     },
@@ -4297,7 +4297,7 @@
     p = n = m = !1
     q = !0
     r = null
-    for (var B = /[UuBbMmZzLlHhVvCcSsQqTtAaFfXx]/; !(u >= A - 1); )
+    for (var B = /[UuBbMmZzLlHhVvCcSsQqTtAaFfXx]/; !(u >= A - 1);)
       if (((v = w), (w = d()), '' !== w))
         switch (w.toUpperCase()) {
           case 'X':
@@ -4307,21 +4307,21 @@
           case 'M':
             r = f()
             null === a.oc || !0 === q ? (rd(a, r.x, r.y, m, !n, p), (q = !1)) : a.moveTo(r.x, r.y)
-            for (k.assign(z); !c(); ) ((r = f()), a.lineTo(r.x, r.y))
+            for (k.assign(z); !c();) ((r = f()), a.lineTo(r.x, r.y))
             break
           case 'L':
-            for (; !c(); ) ((r = f()), a.lineTo(r.x, r.y))
+            for (; !c();) ((r = f()), a.lineTo(r.x, r.y))
             break
           case 'H':
-            for (; !c(); )
+            for (; !c();)
               (z.h((w === w.toLowerCase() ? z.x : 0) + parseFloat(d()), z.y), a.lineTo(z.x, z.y))
             break
           case 'V':
-            for (; !c(); )
+            for (; !c();)
               (z.h(z.x, (w === w.toLowerCase() ? z.y : 0) + parseFloat(d())), a.lineTo(z.x, z.y))
             break
           case 'C':
-            for (; !c(); ) {
+            for (; !c();) {
               r = new I()
               e(r)
               var E = g(),
@@ -4330,17 +4330,17 @@
             }
             break
           case 'S':
-            for (; !c(); ) ((r = h()), (E = g()), (L = f()), sd(a, r.x, r.y, E.x, E.y, L.x, L.y))
+            for (; !c();) ((r = h()), (E = g()), (L = f()), sd(a, r.x, r.y, E.x, E.y, L.x, L.y))
             break
           case 'Q':
-            for (; !c(); ) ((r = g()), (E = f()), td(a, r.x, r.y, E.x, E.y))
+            for (; !c();) ((r = g()), (E = f()), td(a, r.x, r.y, E.x, E.y))
             break
           case 'T':
-            for (; !c(); )
+            for (; !c();)
               ((r = h()), y.assign(r), (E = f()), td(a, r.x, r.y, E.x, E.y), y.assign(E))
             break
           case 'B':
-            for (; !c(); ) {
+            for (; !c();) {
               r = parseFloat(d())
               E = parseFloat(d())
               L = parseFloat(d())
@@ -4354,7 +4354,7 @@
             }
             break
           case 'A':
-            for (; !c(); )
+            for (; !c();)
               ((r = Math.abs(parseFloat(d()))),
                 (E = Math.abs(parseFloat(d()))),
                 (L = parseFloat(d())),
@@ -4379,7 +4379,7 @@
             break
           case 'F':
             r = ''
-            for (E = 1; l[u + E]; )
+            for (E = 1; l[u + E];)
               if ('0' === l[u + E]) ((p = !0), E++)
               else if (null !== l[u + E].match(/[Uu]/)) E++
               else if (null === l[u + E].match(B)) E++
@@ -4391,7 +4391,7 @@
             break
           case 'U':
             r = ''
-            for (E = 1; l[u + E]; )
+            for (E = 1; l[u + E];)
               if (null !== l[u + E].match(/[Ff]/)) E++
               else if (null === l[u + E].match(B)) E++
               else {
@@ -4402,7 +4402,7 @@
         }
     k = a.os
     yd = a
-    if (b) for (b = k.figures.iterator; b.next(); ) b.value.isFilled = !0
+    if (b) for (b = k.figures.iterator; b.next();) b.value.isFilled = !0
     return k
   }
   P.Ha = function (a, b) {
@@ -5096,7 +5096,7 @@
         b.push(d)
         c.push(Sd(d))
       } else
-        for (a = a.figures.iterator; a.next(); ) {
+        for (a = a.figures.iterator; a.next();) {
           e = a.value
           d = []
           d.push(e.startX)
@@ -6714,7 +6714,7 @@
         }
       }
       for (c = b = 0; c < a.count; c++) ((d = a.M(c)), null !== d && (c > b && a.cd(b, d), b++))
-      for (; a.length > b; ) a.pop()
+      for (; a.length > b;) a.pop()
       a.freeze()
     }
   }
@@ -6943,7 +6943,7 @@
     d.propertyName = a
     d.object = c
     d.oldValue = b
-    for (a = this.models; a.next(); ) ((b = a.value), (d.model = b), b.ds(d))
+    for (a = this.models; a.next();) ((b = a.value), (d.model = b), b.ds(d))
   }
   ie.prototype.Vu = function (a) {
     if (this.isEnabled && !this.isUndoingRedoing && !this.skipsEvent(a)) {
@@ -7197,19 +7197,19 @@
       if (null !== c)
         if (Pa ? b.meta : b.control) {
           a.S('ChangingSelection', a.selection)
-          for (b = c; null !== b && !b.canSelect(); ) b = b.containingGroup
+          for (b = c; null !== b && !b.canSelect();) b = b.containingGroup
           null !== b && (b.isSelected = !b.isSelected)
           a.S('ChangedSelection', a.selection)
         } else if (b.shift) {
           if (!c.isSelected) {
             a.S('ChangingSelection', a.selection)
-            for (b = c; null !== b && !b.canSelect(); ) b = b.containingGroup
+            for (b = c; null !== b && !b.canSelect();) b = b.containingGroup
             null !== b && (b.isSelected = !0)
             a.S('ChangedSelection', a.selection)
           }
         } else {
           if (!c.isSelected) {
-            for (b = c; null !== b && !b.canSelect(); ) b = b.containingGroup
+            for (b = c; null !== b && !b.canSelect();) b = b.containingGroup
             null !== b && a.select(b)
           }
         }
@@ -7263,7 +7263,7 @@
         0 !== d && c.S(e)
       }
       if (null !== a)
-        for (; null !== a; ) {
+        for (; null !== a;) {
           c = null
           switch (d) {
             case 1:
@@ -7309,7 +7309,7 @@
           g = f
         a.Bk = d
         this.doCurrentObjectChanged(f, d)
-        for (b.handled = !1; null !== f; ) {
+        for (b.handled = !1; null !== f;) {
           var h = f.mouseLeave
           if (null !== h) {
             if (d === f) break
@@ -7321,7 +7321,7 @@
           f = f.panel
         }
         f = g
-        for (b.handled = !1; null !== d; ) {
+        for (b.handled = !1; null !== d;) {
           g = d.mouseEnter
           if (null !== g) {
             if (f === d) break
@@ -7336,14 +7336,14 @@
       }
       if (null !== d) {
         f = d
-        for (g = ''; null !== f; ) {
+        for (g = ''; null !== f;) {
           g = f.cursor
           if ('' !== g) break
           f = f.panel
         }
         a.currentCursor = g
         b.handled = !1
-        for (f = d; null !== f; ) {
+        for (f = d; null !== f;) {
           d = f.mouseOver
           if (null !== d && (d(b, f), (e = !0), b.handled)) break
           f = f.panel
@@ -7430,7 +7430,7 @@
   ke.prototype.doWaitAfter = function () {}
   ke.prototype.findToolHandleAt = function (a, b) {
     a = this.diagram.kc(a, function (a) {
-      for (; null !== a && !(a.panel instanceof pe); ) a = a.panel
+      for (; null !== a && !(a.panel instanceof pe);) a = a.panel
       return a
     })
     return null === a ? null : a.part.category === b ? a : null
@@ -7603,7 +7603,7 @@
     null === b.targetObject && (b.targetObject = a.kc(b.documentPoint, null, null))
     var c = b.targetObject
     if (null !== c)
-      for (b.handled = !1; null !== c; ) {
+      for (b.handled = !1; null !== c;) {
         a = this.isActive ? c.mouseHold : c.mouseHover
         if (null !== a && (a(b, c), b.handled)) break
         c = c.panel
@@ -7617,7 +7617,7 @@
     b = b.targetObject
     if (null !== b) {
       if (((a = this.currentToolTip), !(a instanceof pe) || (b !== a && !b.rg(a)))) {
-        for (; null !== b; ) {
+        for (; null !== b;) {
           a = b.toolTip
           if (null !== a) {
             this.showToolTip(a, b)
@@ -7874,7 +7874,7 @@
     var a = this.diagram
     a = a.Ol(a.firstInput.documentPoint, !1)
     if (null === a) return null
-    for (; null !== a && !a.canSelect(); ) a = a.containingGroup
+    for (; null !== a && !a.canSelect();) a = a.containingGroup
     return null !== a && (a.canMove() || a.canCopy()) ? a : null
   }
   De.prototype.standardMouseSelect = function () {
@@ -7882,7 +7882,7 @@
     if (a.allowSelect) {
       var b = a.Ol(a.firstInput.documentPoint, !1)
       if (null !== b) {
-        for (; null !== b && !b.canSelect(); ) b = b.containingGroup
+        for (; null !== b && !b.canSelect();) b = b.containingGroup
         this.currentPart = b
         null === this.currentPart ||
           this.currentPart.isSelected ||
@@ -8036,14 +8036,14 @@
         b = a.copiesEffectiveCollection ? a.draggedParts.Lf() : c.selection
         b = c.Kj(b, c, !0)
         c = new ob()
-        for (d = a.draggedParts.iterator; d.next(); ) {
+        for (d = a.draggedParts.iterator; d.next();) {
           var e = d.key
           if (e.Zc() && e.canCopy()) {
             var f = b.I(e)
             null !== f && ((f.location = e.location), f.Va(), c.add(f, a.Pd(f.location)))
           }
         }
-        for (b = b.iterator; b.next(); )
+        for (b = b.iterator; b.next();)
           ((d = b.value), d instanceof T && d.canCopy() && c.add(d, a.Pd()))
         a.copiedParts = c
         He(a, c.Lf())
@@ -8061,7 +8061,7 @@
       b.Js(a.copiedParts.Lf(), !1)
       a.copiedParts = null
       if (null !== a.draggedParts)
-        for (var c = a.draggedParts.iterator; c.next(); )
+        for (var c = a.draggedParts.iterator; c.next();)
           c.key instanceof T && (c.value.point = new I(0, 0))
       a.doUpdateCursor(null)
     }
@@ -8097,11 +8097,11 @@
   }
   function bf(a) {
     if (null !== a.draggedParts) {
-      for (var b = a.diagram, c = a.draggedParts.iterator; c.next(); ) {
+      for (var b = a.diagram, c = a.draggedParts.iterator; c.next();) {
         var d = c.key
         d.Zc() && (d.location = c.value.point)
       }
-      for (c = a.draggedParts.iterator; c.next(); )
+      for (c = a.draggedParts.iterator; c.next();)
         if (((d = c.key), d instanceof T && d.suspendsRouting)) {
           var e = c.value.point
           a.draggedParts.add(d, a.Pd())
@@ -8182,7 +8182,7 @@
     a.Cg.length = 0
     if ((!a.isActive && null === Ge) || null === c) return d
     b.handled = !1
-    for (e = c; null !== e; ) (a.Cg.push(e), (e = rf(e)))
+    for (e = c; null !== e;) (a.Cg.push(e), (e = rf(e)))
     e = a.Cg.length
     for (
       c = 0;
@@ -8211,7 +8211,7 @@
     a = I.alloc()
     var f = Infinity,
       g = null
-    for (e = e.iterator; e.next(); ) {
+    for (e = e.iterator; e.next();) {
       var h = e.value
       if (null !== h.part) {
         var k = h.ga(wc, a)
@@ -8262,7 +8262,7 @@
     e.targetObject = d
     if (null !== d) {
       e.handled = !1
-      for (var f = d; null !== f; ) {
+      for (var f = d; null !== f;) {
         var g = f.mouseDrop
         if (null !== g && (g(e, f), e.handled)) break
         vf(a, e, f)
@@ -8270,7 +8270,7 @@
       }
     } else ((f = c.mouseDrop), null !== f && f(e))
     if (a.isActive || null !== Ge) {
-      for (e = (a.copiedParts || a.draggedParts).iterator; e.next(); )
+      for (e = (a.copiedParts || a.draggedParts).iterator; e.next();)
         ((f = e.key),
           f instanceof V &&
             f.linksConnected.each(function (a) {
@@ -8279,7 +8279,7 @@
       a.doDropOnto(b, d)
       if (a.isActive || null !== Ge) {
         a = N.alloc()
-        for (b = c.selection.iterator; b.next(); ) ((d = b.value), d instanceof V && wf(c, d, a))
+        for (b = c.selection.iterator; b.next();) ((d = b.value), d instanceof V && wf(c, d, a))
         N.free(a)
       }
     }
@@ -8311,7 +8311,7 @@
       d
     )
     if (0 !== a.count)
-      for (a = a.iterator; a.next(); ) ((c = a.value), !c.Td(b) && c.isAvoiding && c.bb())
+      for (a = a.iterator; a.next();) ((c = a.value), !c.Td(b) && c.isAvoiding && c.bb())
   }
   De.prototype.doDropOnto = function () {}
   De.prototype.doMouseMove = function () {
@@ -8444,7 +8444,7 @@
   }
   function xf(a) {
     if (null !== a.draggedParts)
-      for (var b = a.draggedParts.iterator; b.next(); ) {
+      for (var b = a.draggedParts.iterator; b.next();) {
         var c = b.key
         c instanceof V &&
           ((c = c.containingGroup),
@@ -8462,20 +8462,20 @@
       (Pa ? !a.lastInput.alt : !a.lastInput.control)
     )
       return !1
-    for (a = a.selection.iterator; a.next(); ) if (a.value.canCopy()) return !0
+    for (a = a.selection.iterator; a.next();) if (a.value.canCopy()) return !0
     return null !== this.draggedLink && this.dragsLink && this.draggedLink.canCopy() ? !0 : !1
   }
   De.prototype.mayDragOut = function () {
     if (!this.isCopyEnabled) return !1
     var a = this.diagram
     if (!a.allowDragOut || !a.allowCopy || a.allowMove) return !1
-    for (a = a.selection.iterator; a.next(); ) if (a.value.canCopy()) return !0
+    for (a = a.selection.iterator; a.next();) if (a.value.canCopy()) return !0
     return null !== this.draggedLink && this.dragsLink && this.draggedLink.canCopy() ? !0 : !1
   }
   De.prototype.mayMove = function () {
     var a = this.diagram
     if (a.isReadOnly || !a.allowMove) return !1
-    for (a = a.selection.iterator; a.next(); ) if (a.value.canMove()) return !0
+    for (a = a.selection.iterator; a.next();) if (a.value.canMove()) return !0
     return null !== this.draggedLink && this.dragsLink && this.draggedLink.canMove() ? !0 : !1
   }
   De.prototype.computeBorder = function (a, b, c) {
@@ -8563,7 +8563,7 @@
         c = e.Kj(b, e, !0)
         var f = N.alloc()
         e = d = Infinity
-        for (var g = -Infinity, h = -Infinity, k = b.iterator; k.next(); ) {
+        for (var g = -Infinity, h = -Infinity, k = b.iterator; k.next();) {
           var l = k.value
           if (l.isVisible()) {
             var m = l.location
@@ -8581,7 +8581,7 @@
         f = a.Fr
         g = new ob()
         h = I.alloc()
-        for (k = b.iterator; k.next(); )
+        for (k = b.iterator; k.next();)
           ((l = k.value),
             l instanceof T &&
               l.canCopy() &&
@@ -8591,7 +8591,7 @@
                 df(m, f.x - d, f.y - e),
                 (m.suspendsRouting = !0),
                 g.add(m, a.Pd()))))
-        for (b = b.iterator; b.next(); )
+        for (b = b.iterator; b.next();)
           ((l = b.value),
             l.Zc() &&
               l.canCopy() &&
@@ -8943,7 +8943,7 @@
     if (null === a) return null
     var c = a.part
     if (!(c instanceof V)) return null
-    for (; null !== a; ) {
+    for (; null !== a;) {
       var d = b ? a.toLinkable : a.fromLinkable
       if (
         !0 === d &&
@@ -8973,7 +8973,7 @@
       )
     d = Infinity
     b = null
-    for (f = f.iterator; f.next(); ) {
+    for (f = f.iterator; f.next();) {
       var g = f.value,
         h = g.part
       if (h instanceof V) {
@@ -9047,7 +9047,7 @@
     if (!(d instanceof V)) return !1
     b = b.portId
     null === b && (b = '')
-    for (b = d.Sd(b); b.next(); )
+    for (b = d.Sd(b); b.next();)
       if (((d = b.value), d.fromNode === c && d.fromPortId === a)) return !0
     return !1
   }
@@ -9103,7 +9103,7 @@
       if (d === Ef) {
         d = c || this.temporaryLink
         if (null !== d && !d.isTreeLink) return !0
-        for (d = b.linksConnected; d.next(); ) {
+        for (d = b.linksConnected; d.next();) {
           var e = d.value
           if (e !== c && e.isTreeLink && e.toNode === b) return !1
         }
@@ -9112,7 +9112,7 @@
       if (d === Gf) {
         d = c || this.temporaryLink
         if (null !== d && !d.isTreeLink) return !0
-        for (d = a.linksConnected; d.next(); )
+        for (d = a.linksConnected; d.next();)
           if (((e = d.value), e !== c && e.isTreeLink && e.fromNode === a)) return !1
         return !Ff(this, a, b, c, !0)
       }
@@ -9127,7 +9127,7 @@
   function Ff(a, b, c, d, e) {
     if (b === c) return !0
     if (null === b || null === c) return !1
-    for (var f = b.linksConnected; f.next(); ) {
+    for (var f = b.linksConnected; f.next();) {
       var g = f.value
       if (
         g !== d &&
@@ -9143,7 +9143,7 @@
     if (c === d) return !0
     if (null === c || null === d || b.contains(c)) return !1
     b.add(c)
-    for (var f = c.linksConnected; f.next(); ) {
+    for (var f = c.linksConnected; f.next();) {
       var g = f.value
       if (g !== e && g.toNode === c && ((g = g.fromNode), g !== c && If(a, b, g, d, e))) return !0
     }
@@ -9153,7 +9153,7 @@
     if (c === d) return !0
     if (null === c || null === d || b.contains(c)) return !1
     b.add(c)
-    for (var f = c.linksConnected; f.next(); ) {
+    for (var f = c.linksConnected; f.next();) {
       var g = f.value
       if (g !== e) {
         var h = g.fromNode
@@ -10299,7 +10299,7 @@
                             ? 'ne-resize'
                             : 'e-resize'
         }
-      else if (a instanceof W) for (a = a.elements; a.next(); ) this.updateResizeHandles(a.value, b)
+      else if (a instanceof W) for (a = a.elements; a.next();) this.updateResizeHandles(a.value, b)
   }
   gg.prototype.canStart = function () {
     if (!this.isEnabled) return !1
@@ -10944,7 +10944,7 @@
     var a = this.diagram,
       b = a.lastInput,
       c = a.kc(b.documentPoint, function (a) {
-        for (; null !== a.panel && !a.isActionable; ) a = a.panel
+        for (; null !== a.panel && !a.isActionable;) a = a.panel
         return a
       })
     if (null !== c) {
@@ -10978,7 +10978,7 @@
       null !== b.actionUp && b.actionUp(a, b)
       this.standardMouseClick(
         function (a) {
-          for (; null !== a.panel && (!a.isActionable || a !== b); ) a = a.panel
+          for (; null !== a.panel && (!a.isActionable || a !== b);) a = a.panel
           return a
         },
         function (a) {
@@ -11170,18 +11170,18 @@
     a = b.wx(a, this.isPartialInclusion)
     if (Pa ? c.meta : c.control)
       if (c.shift)
-        for (a = a.iterator; a.next(); ) ((b = a.value), b.isSelected && (b.isSelected = !1))
-      else for (a = a.iterator; a.next(); ) ((b = a.value), (b.isSelected = !b.isSelected))
+        for (a = a.iterator; a.next();) ((b = a.value), b.isSelected && (b.isSelected = !1))
+      else for (a = a.iterator; a.next();) ((b = a.value), (b.isSelected = !b.isSelected))
     else if (c.shift)
-      for (a = a.iterator; a.next(); ) ((b = a.value), b.isSelected || (b.isSelected = !0))
+      for (a = a.iterator; a.next();) ((b = a.value), b.isSelected || (b.isSelected = !0))
     else {
       c = new F()
-      for (b = b.selection.iterator; b.next(); ) {
+      for (b = b.selection.iterator; b.next();) {
         var d = b.value
         a.contains(d) || c.add(d)
       }
-      for (b = c.iterator; b.next(); ) b.value.isSelected = !1
-      for (a = a.iterator; a.next(); ) ((b = a.value), b.isSelected || (b.isSelected = !0))
+      for (b = c.iterator; b.next();) b.value.isSelected = !1
+      for (a = a.iterator; a.next();) ((b = a.value), b.isSelected || (b.isSelected = !0))
     }
   }
   ma.Object.defineProperties(sg.prototype, {
@@ -11466,7 +11466,7 @@
             return !a.layer.isTemporary
           })))
     if (null !== d) {
-      for (a = d; null !== a; ) {
+      for (a = d; null !== a;) {
         if (null !== a.contextMenu) return a
         a = a.panel
       }
@@ -11735,7 +11735,7 @@
     c.className = 'goCXul'
     zg.appendChild(c)
     c.innerHTML = ''
-    for (var d = this.kt.iterator; d.next(); ) {
+    for (var d = this.kt.iterator; d.next();) {
       var e = d.value,
         f = e.visible
       if ('function' === typeof e.jx && ('function' !== typeof f || f(a))) {
@@ -12249,12 +12249,12 @@
       0 < e.Sr.count && (d.addAll(e.Sr), e.Sr.clear(), (e.dc = !0))
       if (!1 !== e.dc && 0 !== d.count) {
         e.qu.addAll(d)
-        for (var a = e.qu.iterator; a.next(); ) {
+        for (var a = e.qu.iterator; a.next();) {
           var b = a.value
           if (!1 !== b.dc) {
             a: if (0 < b.yl.count) var h = !0
             else {
-              for (h = b.vc.iterator; h.next(); ) {
+              for (h = b.vc.iterator; h.next();) {
                 var k = h.key
                 if ((k instanceof Y && null !== k.diagram) || k instanceof Q) {
                   h = !0
@@ -12282,7 +12282,7 @@
         }))
   }
   function xh(a) {
-    for (a = a.Fi.iterator; a.next(); ) a.value.Wk = !1
+    for (a = a.Fi.iterator; a.next();) a.value.Wk = !1
   }
   function qh(a) {
     if (!a.vq) {
@@ -12332,7 +12332,7 @@
     b.fd && ((b.Tg = c), a.pr.add(b))
   }
   function yh(a, b) {
-    for (b = b.findLinksConnected(); b.next(); ) {
+    for (b = b.findLinksConnected(); b.next();) {
       var c = b.value
       c.fd && ((c.Tg = c.points.copy()), a.pr.add(c))
     }
@@ -12545,12 +12545,12 @@
     a.Gd = NaN
     0 < a.yl.count && a.yl.clear()
     0 < a.Vt.count && a.Vt.clear()
-    if (null !== b) for (a = b.links; a.next(); ) a.value.Tg = null
+    if (null !== b) for (a = b.links; a.next();) a.value.Tg = null
   }
   t = hh.prototype
   t.start = function () {
     if (0 === this.vc.count || this.dc) return this
-    for (var a = this.H, b = this.vc.iterator; b.next(); ) {
+    for (var a = this.H, b = this.vc.iterator; b.next();) {
       var c = b.key
       null === a && (c instanceof Q ? (a = c) : c instanceof Y && (a = c.diagram))
     }
@@ -12656,7 +12656,7 @@
     }
   }
   function rh(a, b) {
-    for (var c = a.Gd, d = a.vc.iterator, e = a.Vk; d.next(); ) {
+    for (var c = a.Gd, d = a.vc.iterator, e = a.Vk; d.next();) {
       var f = d.key
       if (!(f instanceof Y && null === f.diagram)) {
         var g = d.value,
@@ -12683,11 +12683,11 @@
         c = this.Yd
       this.Wk = this.dc = c.Nk = !1
       qh(c)
-      for (var d = this.vc, e = this.yl.iterator; e.next(); ) b.remove(e.value)
-      for (e = this.Vt.iterator; e.next(); ) e.value.v()
+      for (var d = this.vc, e = this.yl.iterator; e.next();) b.remove(e.value)
+      for (e = this.Vt.iterator; e.next();) e.value.v()
       e = this.io
       d = d.iterator
-      for (var f = Dh; d.next(); ) {
+      for (var f = Dh; d.next();) {
         var g = d.key,
           h = d.value,
           k = e ? h.end : h.start,
@@ -12719,7 +12719,7 @@
       b.N()
       yf(b, !0)
       if (c.defaultAnimation === this) {
-        for (n = c.pr.iterator; n.next(); )
+        for (n = c.pr.iterator; n.next();)
           ((e = n.value), null !== e.Tg && ((e.points = e.Tg), (e.Tg = null)))
         c.pr.clear()
       }
@@ -12745,7 +12745,7 @@
       : this.add(a, 'position', new I(c.x + c.width / 2, c.y + c.height / 2), a.position, !1)
     this.add(a, 'scale', 0.01, a.scale, !1)
     if (a instanceof jf)
-      for (a = a.memberParts; a.next(); ) ((d = a.value), d instanceof V && this.Dj(d, b))
+      for (a = a.memberParts; a.next();) ((d = a.value), d instanceof V && this.Dj(d, b))
   }
   t.Bj = function (a, b) {
     if (a.isVisible()) {
@@ -12762,7 +12762,7 @@
       d = this.vc
       d.contains(a) && (d.I(a).pv = !0)
       if (a instanceof jf)
-        for (a = a.memberParts; a.next(); ) ((d = a.value), d instanceof V && this.Bj(d, b))
+        for (a = a.memberParts; a.next();) ((d = a.value), d instanceof V && this.Bj(d, b))
     }
   }
   t.Jz = function (a) {
@@ -12963,7 +12963,7 @@
     void 0 === a && (a = 0)
     var b = 'Layer "' + this.name + '"'
     if (0 >= a) return b
-    for (var c = 0, d = 0, e = 0, f = 0, g = 0, h = this.Pa.iterator; h.next(); ) {
+    for (var c = 0, d = 0, e = 0, f = 0, g = 0, h = this.Pa.iterator; h.next();) {
       var k = h.value
       k instanceof jf
         ? e++
@@ -12982,7 +12982,7 @@
     0 < f && (h += f + ' Links ')
     0 < g && (h += g + ' Adornments ')
     if (1 < a)
-      for (a = this.Pa.iterator; a.next(); )
+      for (a = this.Pa.iterator; a.next();)
         ((c = a.value),
           (h += '\n    ' + c.toString()),
           (d = c.data),
@@ -12998,7 +12998,7 @@
     if (!1 === this.Uh) return null
     var d = !1
     null !== this.diagram && this.diagram.viewportBounds.ca(a) && (d = !0)
-    for (var e = I.alloc(), f = this.Pa.s, g = f.length; g--; ) {
+    for (var e = I.alloc(), f = this.Pa.s, g = f.length; g--;) {
       var h = f[g]
       if (
         (!0 !== d || !1 !== hg(h)) &&
@@ -13020,7 +13020,7 @@
     if (!1 === this.Uh) return d
     var e = !1
     null !== this.diagram && this.diagram.viewportBounds.ca(a) && (e = !0)
-    for (var f = I.alloc(), g = this.Pa.s, h = g.length; h--; ) {
+    for (var f = I.alloc(), g = this.Pa.s, h = g.length; h--;) {
       var k = g[h]
       if ((!0 !== e || !1 !== hg(k)) && k.isVisible()) {
         f.assign(a)
@@ -13041,7 +13041,7 @@
     if (!1 === this.Uh) return e
     var f = !1
     null !== this.diagram && this.diagram.viewportBounds.Re(a) && (f = !0)
-    for (var g = this.Pa.s, h = g.length; h--; ) {
+    for (var g = this.Pa.s, h = g.length; h--;) {
       var k = g[h]
       if ((!0 !== f || !1 !== hg(k)) && k.isVisible()) {
         var l = k
@@ -13053,7 +13053,7 @@
   }
   t.Pu = function (a, b, c, d, e, f, g) {
     if (!1 === this.Uh) return e
-    for (var h = this.Pa.s, k = h.length; k--; ) {
+    for (var h = this.Pa.s, k = h.length; k--;) {
       var l = h[k]
       if ((!0 !== g || !1 !== hg(l)) && f(l) && l.isVisible()) {
         var m = l
@@ -13075,7 +13075,7 @@
     if (!1 === this.Uh) return f
     var g = !1
     null !== this.diagram && this.diagram.viewportBounds.ca(a) && (g = !0)
-    for (var h = I.alloc(), k = I.alloc(), l = this.Pa.s, m = l.length; m--; ) {
+    for (var h = I.alloc(), k = I.alloc(), l = this.Pa.s, m = l.length; m--;) {
       var n = l[m]
       if ((!0 !== g || !1 !== hg(n)) && n.isVisible()) {
         h.assign(a)
@@ -13109,7 +13109,7 @@
             : (g.Fd(!1), null !== g.adornments && 0 < g.adornments.count && e.push(g))
         }
         for (b = 0; b < a.length; b++)
-          for (c = a[b], fi(c), c = c.adornments; c.next(); )
+          for (c = a[b], fi(c), c = c.adornments; c.next();)
             ((d = c.value), d.measure(Infinity, Infinity), d.arrange(), d.Fd(!0))
         for (b = 0; b < e.length; b++) fi(e[b])
         Ga(a)
@@ -13163,7 +13163,7 @@
         return
       }
       g = !1
-      for (d = b.containingGroup; null !== d; )
+      for (d = b.containingGroup; null !== d;)
         (g ? null !== d.tb && f.Gx(d.tb) : null !== d.tb && ((g = !0), f.assign(d.tb)),
           (d = d.containingGroup))
       var h = b.actualBounds
@@ -13267,12 +13267,12 @@
     if (1 >= e) return b
     0 > b && (b = a.indexOf(c))
     if (0 > b) return -1
-    for (var f = b - 1, g = NaN; 0 <= f; ) {
+    for (var f = b - 1, g = NaN; 0 <= f;) {
       g = a.M(f).zOrder
       if (!isNaN(g)) break
       f--
     }
-    for (var h = b + 1, k = NaN; h < e; ) {
+    for (var h = b + 1, k = NaN; h < e;) {
       k = a.M(h).zOrder
       if (!isNaN(k)) break
       h++
@@ -13286,7 +13286,7 @@
           a.Hb(f, c)
           return f
         }
-        for (g = NaN; 0 <= --f && ((g = a.M(f).zOrder), isNaN(g)); );
+        for (g = NaN; 0 <= --f && ((g = a.M(f).zOrder), isNaN(g)););
       }
     else if (!isNaN(k) && k < d)
       for (;;) {
@@ -13297,7 +13297,7 @@
           a.Hb(h, c)
           return h
         }
-        for (k = NaN; ++h < e && ((k = a.M(h).zOrder), isNaN(k)); );
+        for (k = NaN; ++h < e && ((k = a.M(h).zOrder), isNaN(k)););
       }
     return b
   }
@@ -13326,11 +13326,11 @@
         if (b !== a) {
           var c = this.diagram
           if (null !== c)
-            for ('' === b && C('Cannot rename default Layer to: ' + a), c = c.layers; c.next(); )
+            for ('' === b && C('Cannot rename default Layer to: ' + a), c = c.layers; c.next();)
               c.value.name === a && C('Layer.name is already present in this diagram: ' + a)
           this.xa = a
           this.g('name', b, a)
-          for (a = this.Pa.iterator; a.next(); ) a.value.layerName = this.xa
+          for (a = this.Pa.iterator; a.next();) a.value.layerName = this.xa
         }
       },
     },
@@ -13369,7 +13369,7 @@
         if (b !== a) {
           this.u = a
           this.g('visible', b, a)
-          for (b = this.Pa.iterator; b.next(); ) b.value.bc(a)
+          for (b = this.Pa.iterator; b.next();) b.value.bc(a)
           a = this.diagram
           null !== a && a.N()
         }
@@ -13851,7 +13851,7 @@
       g = a.Wa.length
     if (b) {
       for (b = 0; b < g; b++)
-        for (var h = a.Wa.s[b].parts; h.next(); ) {
+        for (var h = a.Wa.s[b].parts; h.next();) {
           var k = h.value
           k !== e && null === k.data && f.push(k)
         }
@@ -13945,7 +13945,7 @@
     this.div && this.div.id && (b = this.div.id)
     b = 'Diagram "' + b + '"'
     if (0 >= a) return b
-    for (var c = this.Wa.iterator; c.next(); ) b += '\n  ' + c.value.toString(a - 1)
+    for (var c = this.Wa.iterator; c.next();) b += '\n  ' + c.value.toString(a - 1)
     return b
   }
   function vi(a, b) {
@@ -14495,7 +14495,7 @@
           (e.Va(), null === c ? (c = e.actualBounds.copy()) : c.ed(e.actualBounds))
       }
     else
-      for (a = a.iterator; a.next(); )
+      for (a = a.iterator; a.next();)
         ((d = a.value),
           (!b && d instanceof T) ||
             (d.Va(), null === c ? (c = d.actualBounds.copy()) : c.ed(d.actualBounds)))
@@ -14689,7 +14689,7 @@
     void 0 === b && (b = null)
     void 0 === c && (c = null)
     jh(this)
-    for (var d = this.Wa.iteratorBackwards; d.next(); ) {
+    for (var d = this.Wa.iteratorBackwards; d.next();) {
       var e = d.value
       if (e.visible && ((e = e.kc(a, b, c)), null !== e)) return e
     }
@@ -14699,7 +14699,7 @@
     void 0 === c && (c = null)
     void 0 === d && (d = null)
     jh(a)
-    for (a = a.Wa.iteratorBackwards; a.next(); ) {
+    for (a = a.Wa.iteratorBackwards; a.next();) {
       var e = a.value
       if (e.visible && !e.isTemporary && ((e = e.kc(b, c, d)), null !== e)) return e
     }
@@ -14726,7 +14726,7 @@
     void 0 === d && (d = null)
     e instanceof F || e instanceof H || (e = new H())
     jh(a)
-    for (a = a.Wa.iteratorBackwards; a.next(); ) {
+    for (a = a.Wa.iteratorBackwards; a.next();) {
       var f = a.value
       f.visible && !f.isTemporary && f.ki(b, c, d, e)
     }
@@ -14737,7 +14737,7 @@
     void 0 === c && (c = null)
     d instanceof F || d instanceof H || (d = new H())
     jh(this)
-    for (var e = this.Wa.iteratorBackwards; e.next(); ) {
+    for (var e = this.Wa.iteratorBackwards; e.next();) {
       var f = e.value
       f.visible && f.ki(a, b, c, d)
     }
@@ -14762,7 +14762,7 @@
     void 0 === d && (d = !1)
     e instanceof F || e instanceof H || (e = new H())
     jh(this)
-    for (var f = this.Wa.iteratorBackwards; f.next(); ) {
+    for (var f = this.Wa.iteratorBackwards; f.next();) {
       var g = f.value
       g.visible && g.Cf(a, b, c, d, e)
     }
@@ -14771,7 +14771,7 @@
   t.Pu = function (a, b, c, d, e, f) {
     var g = new H()
     jh(this)
-    for (var h = this.Wa.iteratorBackwards; h.next(); ) {
+    for (var h = this.Wa.iteratorBackwards; h.next();) {
       var k = h.value
       k.visible && k.Pu(a, b, c, d, g, e, f)
     }
@@ -14784,7 +14784,7 @@
     void 0 === d && (d = !1)
     e instanceof F || e instanceof H || (e = new H())
     jh(a)
-    for (a = a.Wa.iteratorBackwards; a.next(); ) {
+    for (a = a.Wa.iteratorBackwards; a.next();) {
       var g = a.value
       g.visible && !g.isTemporary && g.Cf(b, f, c, d, e)
     }
@@ -14814,7 +14814,7 @@
     }
     f instanceof F || f instanceof H || (f = new H())
     jh(this)
-    for (var g = this.Wa.iteratorBackwards; g.next(); ) {
+    for (var g = this.Wa.iteratorBackwards; g.next();) {
       var h = g.value
       h.visible && h.og(a, b, c, d, e, f)
     }
@@ -14831,7 +14831,7 @@
     }
     f instanceof F || f instanceof H || (f = new H())
     jh(a)
-    for (a = a.Wa.iteratorBackwards; a.next(); ) {
+    for (a = a.Wa.iteratorBackwards; a.next();) {
       var h = a.value
       h.visible && !h.isTemporary && h.og(b, c, g, d, e, f)
     }
@@ -15195,26 +15195,26 @@
     }
   }
   t.Pv = function (a, b) {
-    for (a.reset(); a.next(); ) {
+    for (a.reset(); a.next();) {
       var c = a.value
       !c.Zc() ||
         c instanceof jf ||
         (c.ti() ? (c.measure(Infinity, Infinity), c.arrange()) : b.add(c))
     }
-    for (a.reset(); a.next(); ) ((c = a.value), c instanceof jf && c.isVisible() && yj(this, c))
-    for (a.reset(); a.next(); )
+    for (a.reset(); a.next();) ((c = a.value), c instanceof jf && c.isVisible() && yj(this, c))
+    for (a.reset(); a.next();)
       ((c = a.value),
         c instanceof T &&
           c.isVisible() &&
           (c.ti() ? (c.measure(Infinity, Infinity), c.arrange()) : b.add(c)))
-    for (a.reset(); a.next(); )
+    for (a.reset(); a.next();)
       ((c = a.value),
         c instanceof pe &&
           c.isVisible() &&
           (c.ti() ? (c.measure(Infinity, Infinity), c.arrange()) : b.add(c)))
   }
   function yj(a, b) {
-    for (var c = Ea(), d = Ea(), e = b.memberParts; e.next(); ) {
+    for (var c = Ea(), d = Ea(), e = b.memberParts; e.next();) {
       var f = e.value
       f.isVisible() &&
         (f instanceof jf
@@ -15366,7 +15366,7 @@
         if (g) {
           var y = new H(),
             z = g.iterator
-          for (z.reset(); z.next(); ) {
+          for (z.reset(); z.next();) {
             var A = z.value
             A instanceof U && (l || A.layer !== v) && (A.Gj(), y.add(A))
           }
@@ -15485,10 +15485,10 @@
   }
   t.gx = function () {
     if (0 !== this.Eh.count && !(1 < this.undoManager.transactionLevel)) {
-      for (; 0 < this.Eh.count; ) {
+      for (; 0 < this.Eh.count;) {
         var a = this.Eh
         this.Eh = new ob()
-        for (a = a.iterator; a.next(); ) {
+        for (a = a.iterator; a.next();) {
           var b = a.key
           b.Yo(a.value)
           b.rc()
@@ -15524,18 +15524,16 @@
             0 < Math.max(0, Math.min(a.x + a.width, b.x + b.width) - Math.max(a.x, b.x)) * d &&
             0 < Math.max(0, f - e) * d
           ) {
-            if (
-              !(
-                this.ld ||
-                ((this.kg = !1),
-                null === this.Ka ||
-                  ((this.ld = !0),
-                  this.documentBounds.w() ||
-                    ((d = N.alloc()), Jj(this, this.computeBounds(d)), N.free(d)),
-                  (d = this.ta),
-                  null === d || d instanceof Kj))
-              )
-            ) {
+            if (!(
+              this.ld ||
+              ((this.kg = !1),
+              null === this.Ka ||
+                ((this.ld = !0),
+                this.documentBounds.w() ||
+                  ((d = N.alloc()), Jj(this, this.computeBounds(d)), N.free(d)),
+                (d = this.ta),
+                null === d || d instanceof Kj))
+            )) {
               var g = this.Nb
               e = this.Aa * g
               var h = this.ya * g,
@@ -15962,7 +15960,7 @@
         ;(b && !e.canDelete()) || this.remove(e)
       }
     else
-      for (c = new H(), c.addAll(a), a = c.iterator; a.next(); )
+      for (c = new H(), c.addAll(a), a = c.iterator; a.next();)
         ((c = a.value), (b && !c.canDelete()) || this.remove(c))
   }
   t.Kj = function (a, b, c) {
@@ -15976,11 +15974,11 @@
       var e = new ob()
       if (null !== a)
         if (Aa(a)) for (var f = 0; f < a.length; f++) Uj(this, e, a[f], c, d)
-        else for (a = a.iterator; a.next(); ) Uj(this, e, a.value, c, d)
+        else for (a = a.iterator; a.next();) Uj(this, e, a.value, c, d)
       else {
-        for (a = this.parts; a.next(); ) Uj(this, e, a.value, c, d)
-        for (a = this.nodes; a.next(); ) Uj(this, e, a.value, c, d)
-        for (a = this.links; a.next(); ) Uj(this, e, a.value, c, d)
+        for (a = this.parts; a.next();) Uj(this, e, a.value, c, d)
+        for (a = this.nodes; a.next();) Uj(this, e, a.value, c, d)
+        for (a = this.links; a.next();) Uj(this, e, a.value, c, d)
       }
       ff(this, e, b, d, c)
     }
@@ -15990,8 +15988,8 @@
       if ((void 0 === e && (e = Tj(a)), c instanceof V)) {
         b.add(c, a.Pd(e, c, c.location))
         if (c instanceof jf && (null !== c.placeholder || e.dragsMembers))
-          for (f = c.memberParts; f.next(); ) Uj(a, b, f.value, d, e, e.groupsAlwaysMove)
-        for (f = c.linksConnected; f.next(); ) {
+          for (f = c.memberParts; f.next();) Uj(a, b, f.value, d, e, e.groupsAlwaysMove)
+        for (f = c.linksConnected; f.next();) {
           var g = f.value
           if (!b.contains(g)) {
             var h = g.fromNode,
@@ -15999,9 +15997,9 @@
             null !== h && b.contains(h) && null !== k && b.contains(k) && Uj(a, b, g, d, e)
           }
         }
-        if (e.dragsTree) for (c = c.Qu(); c.next(); ) Uj(a, b, c.value, d, e)
+        if (e.dragsTree) for (c = c.Qu(); c.next();) Uj(a, b, c.value, d, e)
       } else if (c instanceof T)
-        for (b.add(c, a.Pd(e, c)), c = c.labelNodes; c.next(); ) Uj(a, b, c.value, d, e)
+        for (b.add(c, a.Pd(e, c)), c = c.labelNodes; c.next();) Uj(a, b, c.value, d, e)
       else c instanceof pe || b.add(c, a.Pd(e, c, c.location))
   }
   function ff(a, b, c, d, e) {
@@ -16012,7 +16010,7 @@
       isNaN(g.x) && (g.x = 0)
       isNaN(g.y) && (g.y = 0)
       ;(c = a.Mr) || Je(a, b)
-      for (var h = Ea(), k = Ea(), l = b.iterator, m = I.alloc(); l.next(); ) {
+      for (var h = Ea(), k = Ea(), l = b.iterator, m = I.alloc(); l.next();) {
         var n = l.key,
           p = l.value
         if (n.Zc()) {
@@ -16144,12 +16142,12 @@
   }
   function Je(a, b) {
     if (null !== b)
-      for (a.Mr = !0, a = b.iterator; a.next(); )
+      for (a.Mr = !0, a = b.iterator; a.next();)
         ((b = a.key), b instanceof T && (b.suspendsRouting = !0))
   }
   function Oe(a, b) {
     if (null !== b) {
-      for (b = b.iterator; b.next(); ) {
+      for (b = b.iterator; b.next();) {
         var c = b.key
         c instanceof T && ((c.suspendsRouting = !1), Xj(c) && c.bb())
       }
@@ -16202,7 +16200,7 @@
     a.Xe(this)
     var b = this.Wa,
       c = b.count - 1
-    if (!a.isTemporary) for (; 0 <= c && b.M(c).isTemporary; ) c--
+    if (!a.isTemporary) for (; 0 <= c && b.M(c).isTemporary;) c--
     b.Hb(c + 1, a)
     null !== this.ec && this.cb(fe, 'layers', this, null, a, null, c + 1)
     this.N()
@@ -16251,7 +16249,7 @@
       var b = this.Wa,
         c = b.indexOf(a)
       if (b.remove(a)) {
-        for (b = a.Pa.copy().iterator; b.next(); ) {
+        for (b = a.Pa.copy().iterator; b.next();) {
           var d = b.value,
             e = d.layerName
           e !== a.name ? (d.layerName = e) : (d.layerName = '')
@@ -16263,7 +16261,7 @@
     }
   }
   t.Pj = function (a) {
-    for (var b = this.layers; b.next(); ) {
+    for (var b = this.layers; b.next();) {
       var c = b.value
       if (c.name === a) return c
     }
@@ -16549,7 +16547,7 @@
         d.isSelected = !0
       }
     else
-      for (a = a.iterator; a.next(); )
+      for (a = a.iterator; a.next();)
         ((b = a.value),
           b instanceof U || C('Diagram.selectCollection given something that is not a Part: ' + b),
           (b.isSelected = !0))
@@ -16573,8 +16571,8 @@
   }
   t.Oz = function (a) {
     a = new H().addAll(a)
-    for (var b = this.highlighteds.copy().hp(a).iterator; b.next(); ) b.value.isHighlighted = !1
-    for (a = a.iterator; a.next(); )
+    for (var b = this.highlighteds.copy().hp(a).iterator; b.next();) b.value.isHighlighted = !1
+    for (a = a.iterator; a.next();)
       ((b = a.value),
         b instanceof U || C('Diagram.highlightCollection given something that is not a Part: ' + b),
         (b.isHighlighted = !0))
@@ -16862,11 +16860,11 @@
     }
   }
   t.xz = function () {
-    for (var a = new H(), b = this.nodes; b.next(); ) {
+    for (var a = new H(), b = this.nodes; b.next();) {
       var c = b.value
       c.isTopLevel && a.add(c)
     }
-    for (b = this.links; b.next(); ) ((c = b.value), c.isTopLevel && a.add(c))
+    for (b = this.links; b.next();) ((c = b.value), c.isTopLevel && a.add(c))
     return a.iterator
   }
   t.wz = function () {
@@ -16878,12 +16876,12 @@
     this.ld ? wj(this, !1) : ((this.Ik = !0), yf(this))
   }
   function kk(a, b) {
-    for (var c = a.ai.iterator; c.next(); ) lk(a, c.value, b)
+    for (var c = a.ai.iterator; c.next();) lk(a, c.value, b)
     a.layout && (b ? (a.layout.isValidLayout = !1) : a.layout.C())
   }
   function lk(a, b, c) {
     if (null !== b) {
-      for (var d = b.fl.iterator; d.next(); ) lk(a, d.value, c)
+      for (var d = b.fl.iterator; d.next();) lk(a, d.value, c)
       null !== b.layout && (c ? (b.layout.isValidLayout = !1) : b.layout.C())
     }
   }
@@ -16898,7 +16896,7 @@
         0 === d && ((a.undoManager.isInternalTransaction = !0), a.Ea('Layout'))
         1 >= d && !f.defaultAnimation.isAnimating && !f.Ab && (b || ih(f, 'Layout'))
         a.xh = !1
-        for (var g = a.ai.iterator; g.next(); ) mk(a, g.value, b, d)
+        for (var g = a.ai.iterator; g.next();) mk(a, g.value, b, d)
         e.isValidLayout ||
           (!b || e.isRealtime || null === e.isRealtime || 0 === d
             ? (e.doLayout(a), jh(a), (e.isValidLayout = !0))
@@ -16913,7 +16911,7 @@
   }
   function mk(a, b, c, d) {
     if (null !== b) {
-      for (var e = b.fl.iterator; e.next(); ) mk(a, e.value, c, d)
+      for (var e = b.fl.iterator; e.next();) mk(a, e.value, c, d)
       e = b.layout
       null === e ||
         e.isValidLayout ||
@@ -16923,7 +16921,7 @@
     }
   }
   t.Dz = function () {
-    for (var a = new F(), b = this.nodes; b.next(); ) {
+    for (var a = new F(), b = this.nodes; b.next();) {
       var c = b.value
       c.isTopLevel && null === c.kh() && a.add(c)
     }
@@ -17041,7 +17039,7 @@
         a.computeOccupiedArea(b)
         b.Bc(100, 100)
         e.initialize(b)
-        for (var f = a.nodes; f.next(); ) {
+        for (var f = a.nodes; f.next();) {
           var g = f.value,
             h = g.layer
           null !== h && h.visible && !h.isTemporary && sk(a, g, d, b)
@@ -17051,7 +17049,7 @@
         0 < c.memberParts.count &&
           ((b = a.computePartsBounds(c.memberParts, !1)), b.Bc(20, 20), e.initialize(b))
         b = N.alloc()
-        for (f = c.memberParts; f.next(); ) ((g = f.value), g instanceof V && sk(a, g, d, b))
+        for (f = c.memberParts; f.next();) ((g = f.value), g instanceof V && sk(a, g, d, b))
         N.free(b)
       }
       e.group = c
@@ -17085,7 +17083,7 @@
         }
       }
       if (b instanceof jf && (!e || b.avoidableMembers))
-        for (b = b.memberParts; b.next(); ) ((e = b.value), e instanceof V && sk(a, e, c, d))
+        for (b = b.memberParts; b.next();) ((e = b.value), e instanceof V && sk(a, e, c, d))
     }
   }
   function wk(a, b) {
@@ -17181,14 +17179,14 @@
     function d() {
       var a = +new Date()
       f = !0
-      for (g.reset(); g.next(); )
+      for (g.reset(); g.next();)
         if (!g.value[0].$k) {
           f = !1
           break
         }
       f || a - l > k ? b(c, e, h) : x.requestAnimationFrame(d)
     }
-    for (var e = c.callback, f = !0, g = a.Og.iterator; g.next(); )
+    for (var e = c.callback, f = !0, g = a.Og.iterator; g.next();)
       if (!g.value[0].$k) {
         f = !1
         break
@@ -17308,7 +17306,7 @@
       z = new N(0, 0, 0, 0)
       A = !0
       B = k.iterator
-      for (B.reset(); B.next(); )
+      for (B.reset(); B.next();)
         ((E = B.value),
           E instanceof U &&
             ((L = E.layer),
@@ -18611,7 +18609,7 @@
           b !== a &&
           ((this.It = a), this.g('isTreePathToChildren', b, a), !this.undoManager.isUndoingRedoing)
         )
-          for (a = this.nodes; a.next(); ) Bk(a.value)
+          for (a = this.nodes; a.next();) Bk(a.value)
       },
     },
     treeCollapsePolicy: {
@@ -18871,7 +18869,7 @@
         if (Lg) {
           var d = Q[Ma('76a115b6ed251eaf4692')]
           if (d)
-            for (var e = Ek.iterator; e.next(); ) {
+            for (var e = Ek.iterator; e.next();) {
               d = e.value
               d = Ma(d).split(Ma('39e9'))
               if (6 > d.length) break
@@ -18913,7 +18911,7 @@
                 if (-1 < h && ((a.Sc = !(g[Ma('73a612b6fb191d')](f) > h)), !a.Sc)) break
                 if ('#' === f[0]) {
                   g = x.document.createElement('div')
-                  for (var k = d[0].replace(/[A-Za-z]/g, ''); 4 > k.length; ) k += '9'
+                  for (var k = d[0].replace(/[A-Za-z]/g, ''); 4 > k.length;) k += '9'
                   h = k
                   k = k.substr(k.length - 4)
                   d = ''
@@ -19483,9 +19481,9 @@
     try {
       a.currentCursor = 'wait'
       a.S('ChangingSelection', a.selection)
-      for (var b = a.parts; b.next(); ) b.value.isSelected = !0
-      for (var c = a.nodes; c.next(); ) c.value.isSelected = !0
-      for (var d = a.links; d.next(); ) d.value.isSelected = !0
+      for (var b = a.parts; b.next();) b.value.isSelected = !0
+      for (var c = a.nodes; c.next();) c.value.isSelected = !0
+      for (var d = a.links; d.next();) d.value.isSelected = !0
     } finally {
       ;(a.S('ChangedSelection', a.selection), (a.currentCursor = ''))
     }
@@ -19500,7 +19498,7 @@
       a.S('ChangingSelection', a.selection)
       a.Ea('Delete')
       a.S('SelectionDeleting', a.selection)
-      for (var b = new H(), c = a.selection.iterator; c.next(); )
+      for (var b = new H(), c = a.selection.iterator; c.next();)
         Nk(
           b,
           c.value,
@@ -19524,7 +19522,7 @@
   Mk.prototype.copySelection = function () {
     var a = this.diagram,
       b = new H()
-    for (a = a.selection.iterator; a.next(); )
+    for (a = a.selection.iterator; a.next();)
       Nk(b, a.value, !0, this.copiesTree ? Infinity : 0, this.copiesConnectedLinks, function (a) {
         return a.canCopy()
       })
@@ -19588,7 +19586,7 @@
         d.Vj() && ((f = d.Ij), (d.Ij = this.copiesGroupKey)),
         (g = c.Kj(b, c, !1)))
     } finally {
-      for (d.Tl() && (d.Jj = e), d.Vj() && (d.Ij = f), b = g.iterator; b.next(); )
+      for (d.Tl() && (d.Jj = e), d.Vj() && (d.Ij = f), b = g.iterator; b.next();)
         ((c = b.value),
           (d = b.key),
           c.location.w() ||
@@ -19608,7 +19606,7 @@
       b.Ea('Paste')
       var c = this.pasteFromClipboard()
       0 < c.count && b.clearSelection(!0)
-      for (var d = c.iterator; d.next(); ) d.value.isSelected = !0
+      for (var d = c.iterator; d.next();) d.value.isSelected = !0
       if (null !== a) {
         var e = b.computePartsBounds(b.selection)
         if (e.w()) {
@@ -19793,7 +19791,7 @@
       var c = new F()
       if (null !== a && a.isTreeExpanded) (a.collapseTree(), c.add(a))
       else if (null === a)
-        for (var d = b.selection.iterator; d.next(); ) {
+        for (var d = b.selection.iterator; d.next();) {
           var e = d.value
           e instanceof V && e.isTreeExpanded && (e.collapseTree(), c.add(e))
         }
@@ -19810,7 +19808,7 @@
       if (!(a instanceof V && a.isTreeExpanded)) return !1
       if (0 < a.Ro().count) return !0
     } else
-      for (a = b.selection.iterator; a.next(); )
+      for (a = b.selection.iterator; a.next();)
         if (((b = a.value), b instanceof V && b.isTreeExpanded && 0 < b.Ro().count)) return !0
     return !1
   }
@@ -19823,7 +19821,7 @@
       var c = new F()
       if (null !== a && !a.isTreeExpanded) (a.expandTree(), c.add(a))
       else if (null === a)
-        for (var d = b.selection.iterator; d.next(); ) {
+        for (var d = b.selection.iterator; d.next();) {
           var e = d.value
           e instanceof V && !e.isTreeExpanded && (e.expandTree(), c.add(e))
         }
@@ -19840,7 +19838,7 @@
       if (!(a instanceof V) || a.isTreeExpanded) return !1
       if (0 < a.Ro().count) return !0
     } else
-      for (a = b.selection.iterator; a.next(); )
+      for (a = b.selection.iterator; a.next();)
         if (((b = a.value), b instanceof V && !b.isTreeExpanded && 0 < b.Ro().count)) return !0
     return !1
   }
@@ -19855,14 +19853,14 @@
           a.currentCursor = 'wait'
           a.S('ChangingSelection', a.selection)
           a.Ea('Group')
-          for (var e = new F(), f = a.selection.iterator; f.next(); ) {
+          for (var e = new F(), f = a.selection.iterator; f.next();) {
             var g = f.value
             g.Zc() && g.canGroup() && e.add(g)
           }
-          for (var h = new F(), k = e.iterator; k.next(); ) {
+          for (var h = new F(), k = e.iterator; k.next();) {
             var l = k.value
             f = !1
-            for (var m = e.iterator; m.next(); )
+            for (var m = e.iterator; m.next();)
               if (l.Td(m.value)) {
                 f = !0
                 break
@@ -19872,9 +19870,9 @@
           if (0 < h.count) {
             var n = h.first().containingGroup
             if (null !== n)
-              for (; null !== n; ) {
+              for (; null !== n;) {
                 e = !1
-                for (var p = h.iterator; p.next(); )
+                for (var p = h.iterator; p.next();)
                   if (!p.value.Td(n)) {
                     e = !0
                     break
@@ -19889,7 +19887,7 @@
             }
             if (null !== d) {
               null !== n && this.isValidMember(n, d) && (d.containingGroup = n)
-              for (var r = h.iterator; r.next(); ) {
+              for (var r = h.iterator; r.next();) {
                 var u = r.value
                 this.isValidMember(d, u) && (u.containingGroup = d)
               }
@@ -19915,7 +19913,7 @@
       null === this.archetypeGroupData
     )
       return !1
-    for (a = a.selection.iterator; a.next(); ) {
+    for (a = a.selection.iterator; a.next();) {
       var b = a.value
       if (b.Zc() && b.canGroup()) return !0
     }
@@ -19923,7 +19921,7 @@
   }
   function Pk(a) {
     var b = Ea()
-    for (a = a.iterator; a.next(); ) {
+    for (a = a.iterator; a.next();) {
       var c = a.value
       c instanceof T || b.push(c)
     }
@@ -19967,20 +19965,20 @@
         var d = new F()
         if (null !== a) d.add(a)
         else
-          for (var e = b.selection.iterator; e.next(); ) {
+          for (var e = b.selection.iterator; e.next();) {
             var f = e.value
             f instanceof jf && f.canUngroup() && d.add(f)
           }
         var g = new F()
         if (0 < d.count) {
           b.clearSelection(!0)
-          for (var h = d.iterator; h.next(); ) {
+          for (var h = d.iterator; h.next();) {
             var k = h.value
             k.expandSubGraph()
             var l = k.containingGroup,
               m = null !== l && null !== l.data ? c.wa(l.data) : void 0
             g.addAll(k.memberParts)
-            for (var n = g.iterator; n.next(); ) {
+            for (var n = g.iterator; n.next();) {
               var p = n.value
               p.isSelected = !0
               if (!(p instanceof T)) {
@@ -20005,13 +20003,13 @@
       if (!(a instanceof jf)) return !1
       if (a.canUngroup()) return !0
     } else
-      for (a = b.selection.iterator; a.next(); )
+      for (a = b.selection.iterator; a.next();)
         if (((b = a.value), b instanceof jf && b.canUngroup())) return !0
     return !1
   }
   Mk.prototype.addTopLevelParts = function (a, b) {
     var c = !0
-    for (a = Pk(a).iterator; a.next(); ) {
+    for (a = Pk(a).iterator; a.next();) {
       var d = a.value
       null !== d.containingGroup &&
         (!b || this.isValidMember(null, d) ? (d.containingGroup = null) : (c = !1))
@@ -20027,7 +20025,7 @@
       var c = new F()
       if (null !== a && a.isSubGraphExpanded) (a.collapseSubGraph(), c.add(a))
       else if (null === a)
-        for (var d = b.selection.iterator; d.next(); ) {
+        for (var d = b.selection.iterator; d.next();) {
           var e = d.value
           e instanceof jf && e.isSubGraphExpanded && (e.collapseSubGraph(), c.add(e))
         }
@@ -20041,7 +20039,7 @@
     var b = this.diagram
     if (b.isReadOnly) return !1
     if (null !== a) return a instanceof jf && a.isSubGraphExpanded ? !0 : !1
-    for (a = b.selection.iterator; a.next(); )
+    for (a = b.selection.iterator; a.next();)
       if (((b = a.value), b instanceof jf && b.isSubGraphExpanded)) return !0
     return !1
   }
@@ -20054,7 +20052,7 @@
       var c = new F()
       if (null !== a && !a.isSubGraphExpanded) (a.expandSubGraph(), c.add(a))
       else if (null === a)
-        for (var d = b.selection.iterator; d.next(); ) {
+        for (var d = b.selection.iterator; d.next();) {
           var e = d.value
           e instanceof jf && !e.isSubGraphExpanded && (e.expandSubGraph(), c.add(e))
         }
@@ -20068,7 +20066,7 @@
     var b = this.diagram
     if (b.isReadOnly) return !1
     if (null !== a) return a instanceof jf && !a.isSubGraphExpanded ? !0 : !1
-    for (a = b.selection.iterator; a.next(); )
+    for (a = b.selection.iterator; a.next();)
       if (((b = a.value), b instanceof jf && !b.isSubGraphExpanded)) return !0
     return !1
   }
@@ -20079,7 +20077,7 @@
     if (null !== c) {
       if (null === a) {
         a = null
-        for (var d = b.selection.iterator; d.next(); ) {
+        for (var d = b.selection.iterator; d.next();) {
           var e = d.value
           if (e.canEdit()) {
             a = e
@@ -20109,7 +20107,7 @@
       a = a.part
       if (null !== a && a.canEdit()) return !0
     } else
-      for (b = b.selection.iterator; b.next(); )
+      for (b = b.selection.iterator; b.next();)
         if (
           ((a = b.value),
           a.canEdit() &&
@@ -20156,9 +20154,9 @@
     void 0 === b && (b = e ? d.dragOptions : c.Xm)
     d = new ob()
     if (null === a) return d
-    for (var f = a.iterator; f.next(); ) Uj(c, d, f.value, e, b)
+    for (var f = a.iterator; f.next();) Uj(c, d, f.value, e, b)
     if (null !== c.draggedLink && b.dragsLink) return d
-    for (f = a.iterator; f.next(); )
+    for (f = a.iterator; f.next();)
       ((a = f.value),
         a instanceof T &&
           ((b = a.fromNode),
@@ -20432,7 +20430,7 @@
   function al(a, b, c) {
     var d = a.ih()
     if (null !== d)
-      for (var e = a.localBindings.iterator; e.next(); ) {
+      for (var e = a.localBindings.iterator; e.next();) {
         var f = e.value,
           g = null
         if (null !== f.sourceName) {
@@ -21000,7 +20998,7 @@
                 null !== b && b.after(c))
               : b.svg.prepend(c)
       else {
-        for (; 0 !== a && !b.M(a - 1).Ed(); ) a--
+        for (; 0 !== a && !b.M(a - 1).Ed();) a--
         0 === a
           ? b.svg.prepend(c)
           : ((a = b.M(a - 1).svg), null !== a ? a.after(c) : b.svg.appendChild(c))
@@ -21389,7 +21387,7 @@
               m = null
             }
           if (c.type !== Ol && ((e = c.colorStops), null !== e))
-            for (e = e.iterator; e.next(); ) m.addColorStop(e.key, e.value)
+            for (e = e.iterator; e.next();) m.addColorStop(e.key, e.value)
           if (
             f &&
             ((c.xe = m),
@@ -21413,7 +21411,7 @@
     if (a instanceof W)
       a: {
         if (this !== a && null !== a)
-          for (var b = this.panel; null !== b; ) {
+          for (var b = this.panel; null !== b;) {
             if (b === a) {
               a = !0
               break a
@@ -21431,7 +21429,7 @@
     return null !== a ? a.Ed() : !0
   }
   t.If = function () {
-    for (var a = this instanceof W ? this : this.panel; null !== a && a.isEnabled; ) a = a.panel
+    for (var a = this instanceof W ? this : this.panel; null !== a && a.isEnabled;) a = a.panel
     return null === a
   }
   function yl(a) {
@@ -21682,7 +21680,7 @@
     return this.ih()
   }
   t.ih = function () {
-    for (var a = this instanceof W ? this : this.panel; null !== a; ) {
+    for (var a = this instanceof W ? this : this.panel; null !== a;) {
       if (null !== a.allBindings) return a
       a = a.panel
     }
@@ -22102,7 +22100,7 @@
         if (this.Dd()) return this
         if (null !== this.Ng) return this.Ng
         var a
-        for (a = this.panel; a; ) {
+        for (a = this.panel; a;) {
           if (a instanceof U) return (this.Ng = a)
           a = a.panel
         }
@@ -22733,7 +22731,7 @@
         a.diagram.kc(
           a.documentPoint,
           function (a) {
-            for (; null !== a.panel && !a.isActionable; ) a = a.panel
+            for (; null !== a.panel && !a.isActionable;) a = a.panel
             return a
           },
           function (a) {
@@ -23766,7 +23764,7 @@
           f.shift() + ',' + f.shift(),
           f.shift() + ',' + f.shift()
         )
-      else for (; f.length; ) g.push(f.shift() + ',' + f.shift())
+      else for (; f.length;) g.push(f.shift() + ',' + f.shift())
       d.push(g.join(' '))
     }
     d = d.join(' ')
@@ -24277,7 +24275,7 @@
       (a += this.start + ' ' + this.end),
       null !== this.colorStops)
     )
-      for (var b = this.colorStops.iterator; b.next(); ) a += ' ' + b.key + ':' + b.value
+      for (var b = this.colorStops.iterator; b.next();) a += ' ' + b.key + ':' + b.value
     return a + ')'
   }
   t.addColorStop = function (a, b) {
@@ -24296,7 +24294,7 @@
     b = void 0 === b ? vm : b
     if (this.type === Ml) (Uh(this.color), (this.color = wm(a, b)))
     else if ((this.type === Pl || this.type === wl) && null !== this.colorStops)
-      for (var c = this.colorStops.iterator; c.next(); )
+      for (var c = this.colorStops.iterator; c.next();)
         (Uh(c.value), this.addColorStop(c.key, wm(a, b)))
     return this
   }
@@ -24312,7 +24310,7 @@
     b = void 0 === b ? vm : b
     if (this.type === Ml) (Uh(this.color), (this.color = wm(-a, b)))
     else if ((this.type === Pl || this.type === wl) && null !== this.colorStops)
-      for (var c = this.colorStops.iterator; c.next(); )
+      for (var c = this.colorStops.iterator; c.next();)
         (Uh(c.value), this.addColorStop(c.key, wm(-a, b)))
     return this
   }
@@ -24349,7 +24347,7 @@
       if (this.type === wl) return Bm(a.first().value)
       if (null !== a.get(0.5)) return Bm(a.get(0.5))
       if (2 === a.count) return ((a = a.Fa()), Bm(zm(a[0].value, a[1].value)))
-      for (var b = a.iterator, c = -1, d = -1, e = 1, f = 1; b.next(); ) {
+      for (var b = a.iterator, c = -1, d = -1, e = 1, f = 1; b.next();) {
         var g = b.key,
           h = Math.abs(0.5 - b.key)
         e > f && h < e ? ((c = g), (e = h)) : f >= e && h < f && ((d = g), (f = h))
@@ -24926,7 +24924,7 @@
             B.arrange(0, 0, p.width, p.height)
             p = E.actualBounds
             p = I.allocAt(p.x + (S.x * p.width - S.offsetX), p.y + (S.y * p.height - S.offsetY))
-            for (E = E.panel; E !== B; ) (E.transform.Ga(p), (E = E.panel))
+            for (E = E.panel; E !== B;) (E.transform.Ga(p), (E = E.panel))
             L += l.x * f + l.offsetX - p.x
             R += l.y * g + l.offsetY - p.y
             I.free(p)
@@ -25028,7 +25026,7 @@
           if (null !== l) {
             var u = l.actualBounds
             r = I.allocAt(u.x + (r.x * u.width - r.offsetX), u.y + (r.y * u.height - r.offsetY))
-            for (l = l.panel; l !== n; ) (l.transform.Ga(r), (l = l.panel))
+            for (l = l.panel; l !== n;) (l.transform.Ga(r), (l = l.panel))
             l = m.x * g.width + m.offsetX - r.x
             m = m.y * g.height + m.offsetY - r.y
             I.free(r)
@@ -25047,10 +25045,7 @@
     var d = null
     a instanceof W && '' !== a.$e && ((d = a.fb(a.$e)), d === a && (d = null))
     if (null !== d)
-      for (
-        c && a.arrange(0, 0, b.width, b.height), b.assign(d.actualBounds), d = d.panel;
-        d !== a;
-      )
+      for (c && a.arrange(0, 0, b.width, b.height), b.assign(d.actualBounds), d = d.panel; d !== a;)
         (d.transform.pp(b), (d = d.panel))
   }
   function Tm() {
@@ -25486,7 +25481,7 @@
               G.actual = Math.min(G.maximum, We + we)
               G.oa !== We && (Zc -= G.oa - We)
             }
-          for (; 0 < Zc; ) {
+          for (; 0 < Zc;) {
             var Eg = G.oa || 0
             isNaN(G.height) &&
               G.maximum > Eg &&
@@ -25512,7 +25507,7 @@
               G.actual = Math.min(G.maximum, ej + xu)
               G.oa !== ej && (Fg -= G.oa - ej)
             }
-          for (; 0 < Fg; ) {
+          for (; 0 < Fg;) {
             var hl = G.oa || 0
             isNaN(G.width) &&
               G.maximum > hl &&
@@ -25602,18 +25597,18 @@
       var p = (n = 0),
         q = Math.min(a.topIndex, l - 1)
       if (0 < k.length) {
-        for (; q !== l && (void 0 === k[q] || 0 === k[q].oa); ) q++
+        for (; q !== l && (void 0 === k[q] || 0 === k[q].oa);) q++
         q = Math.max(Math.min(q, l - 1), 0)
         n = -k[q].position
       }
       var r = Math.min(a.leftIndex, m - 1)
       if (0 < h.length) {
-        for (; r !== m && (void 0 === h[r] || 0 === h[r].oa); ) r++
+        for (; r !== m && (void 0 === h[r] || 0 === h[r].oa);) r++
         r = Math.max(Math.min(r, m - 1), 0)
         p = -h[r].position
       }
-      for (var u = 0, w = 0; u !== l && void 0 === k[u]; ) u++
-      for (; w !== l && void 0 === h[w]; ) w++
+      for (var u = 0, w = 0; u !== l && void 0 === k[u];) u++
+      for (; w !== l && void 0 === h[w];) w++
       m = a.part
       a.Gb(u)
       a.Fb(w)
@@ -26062,7 +26057,7 @@
                 c.ed(J)
               }
           }
-          if (null !== g) for (d = g.labelNodes; d.next(); ) d.value.measure(Infinity, Infinity)
+          if (null !== g) for (d = g.labelNodes; d.next();) d.value.measure(Infinity, Infinity)
           a.jg = c
           a.position.h(b.x + c.x, b.y + c.y)
           Pb(e, c.width || 0, c.height || 0)
@@ -26100,7 +26095,7 @@
       b = d.points
       c = b.count
       if (2 <= c && a instanceof T)
-        for (f = a.labelNodes; f.next(); ) {
+        for (f = a.labelNodes; f.next();) {
           var n = a
           g = f.value
           h = g.segmentIndex
@@ -26354,8 +26349,8 @@
               mc > v && (mc = v),
               dc <= mc && mc <= Se)
             ) {
-              for (var kd = B[Ed][oc], Te = w[Ed][oc]; Ed < w.length; ) {
-                for (; mc > Nf && oc < w[Ed].length - 1; )
+              for (var kd = B[Ed][oc], Te = w[Ed][oc]; Ed < w.length;) {
+                for (; mc > Nf && oc < w[Ed].length - 1;)
                   (oc++, (kd = B[Ed][oc]), (Te = w[Ed][oc]), (Nf += Te))
                 if (mc <= Nf) break
                 Ed++
@@ -26597,14 +26592,12 @@
         r = q.length
       if (p.visible && p !== f && 0 !== q.length)
         if (p instanceof Bf) {
-          if (
-            !(
-              2 >
-                ((a.graduatedTickUnit * p.interval * f.geometry.flattenedTotalLength) /
-                  a.graduatedRange) *
-                  g && null === p.graduatedSkip
-            )
-          ) {
+          if (!(
+            2 >
+              ((a.graduatedTickUnit * p.interval * f.geometry.flattenedTotalLength) /
+                a.graduatedRange) *
+                g && null === p.graduatedSkip
+          )) {
             var u = p.measuredBounds,
               w = p.strokeWidth * p.scale,
               v = p.alignmentFocus
@@ -27104,7 +27097,7 @@
       c = Om(this)
     if (Yb(0, 0, b.width, b.height, a.x, a.y)) {
       b = this.O.s
-      for (var d = b.length, e = I.allocAt(0, 0); d--; ) {
+      for (var d = b.length, e = I.allocAt(0, 0); d--;) {
         var f = b[d]
         if (f.visible || f === c) if ((xb(e.set(a), f.transform), f.ca(e))) return (I.free(e), !0)
       }
@@ -27215,7 +27208,7 @@
         l = (k = this.isClipping && this.na === W.Spot) ? this.Qb() : null
         if (k && (l.se() ? xb(h.set(a), l.transform) : h.set(a), !l.ca(h)))
           return (I.free(h), f || I.free(g), null)
-        for (var n = Om(this); m--; ) {
+        for (var n = Om(this); m--;) {
           var p = e[m]
           if (p.visible || p === n)
             if ((p.se() ? xb(h.set(a), p.transform) : h.set(a), !k || p !== l)) {
@@ -27245,7 +27238,7 @@
     e = Yb(0, 0, e.width, e.height, g.x, g.y)
     if (ol(this) || e) {
       if (!this.isAtomic) {
-        for (var h = this.O.s, k = h.length, l = I.alloc(), m = Om(this); k--; ) {
+        for (var h = this.O.s, k = h.length, l = I.alloc(), m = Om(this); k--;) {
           var n = h[k]
           if (n.visible || n === m) {
             n.se() ? xb(l.set(a), n.transform) : l.set(a)
@@ -27274,7 +27267,7 @@
     if (this.fh(a, g)) return (An(this, b, c, e), void 0 === f && ld.free(g), !0)
     if (this.Yc(a, g)) {
       if (!this.isAtomic)
-        for (var h = Om(this), k = this.O.s, l = k.length; l--; ) {
+        for (var h = Om(this), k = this.O.s, l = k.length; l--;) {
           var m = k[l]
           if (m.visible || m === h) {
             var n = m.actualBounds,
@@ -27297,7 +27290,7 @@
     return !1
   }
   function An(a, b, c, d) {
-    for (var e = a.O.s, f = e.length; f--; ) {
+    for (var e = a.O.s, f = e.length; f--;) {
       var g = e[f]
       if (g.visible) {
         var h = g.actualBounds,
@@ -27338,7 +27331,7 @@
         k = I.alloc()
         l = I.alloc()
         m = Om(this)
-        for (var p = this.O.s, q = p.length; q--; ) {
+        for (var p = this.O.s, q = p.length; q--;) {
           var r = p[q]
           if (r.visible || r === m) {
             var u = r.actualBounds,
@@ -27523,7 +27516,7 @@
         c = b[a]
       if (c) {
         b[a] = void 0
-        for (var d = b.length - 1; 0 <= d && void 0 === b[d--]; ) b.length--
+        for (var d = b.length - 1; 0 <= d && void 0 === b[d--];) b.length--
         this.cb(ge, 'rowdefs', this, c, null, a, null)
         this.v()
       }
@@ -27533,7 +27526,7 @@
     var d = a.rowDefs
     if (!(0 > b)) {
       d[b] = c instanceof ak ? c : void 0
-      if (!c) for (b = d.length - 1; 0 <= b && void 0 === d[b--]; ) d.length--
+      if (!c) for (b = d.length - 1; 0 <= b && void 0 === d[b--];) d.length--
       a.v()
     }
   }
@@ -27559,7 +27552,7 @@
         c = b[a]
       if (c) {
         b[a] = void 0
-        for (var d = b.length - 1; 0 <= d && void 0 === b[d--]; ) b.length--
+        for (var d = b.length - 1; 0 <= d && void 0 === b[d--];) b.length--
         this.cb(ge, 'coldefs', this, c, null, a, null)
         this.v()
       }
@@ -27569,7 +27562,7 @@
     var d = a.colDefs
     if (!(0 > b)) {
       d[b] = c instanceof ak ? c : void 0
-      if (!c) for (b = d.length - 1; 0 <= b && void 0 === d[b--]; ) d.length--
+      if (!c) for (b = d.length - 1; 0 <= b && void 0 === d[b--];) d.length--
       a.v()
     }
   }
@@ -27633,7 +27626,7 @@
       d.th()
       var e = d.localBindings
       if (null !== e)
-        for (Vl(d, !1), e = e.iterator; e.next(); ) {
+        for (Vl(d, !1), e = e.iterator; e.next();) {
           var f = e.value
           f.mode === Dn && Vl(d, !0)
           var g = f.sourceName
@@ -27648,7 +27641,7 @@
         if (0 < d.rowCount)
           for (a = d.rowDefs, e = a.length, f = 0; f < e; f++)
             if (((g = a[f]), void 0 !== g && null !== g.be))
-              for (var h = g.be.iterator; h.next(); ) {
+              for (var h = g.be.iterator; h.next();) {
                 var k = h.value
                 k.xd = g
                 k.uo = 2
@@ -27658,15 +27651,15 @@
         if (0 < d.columnCount)
           for (d = d.colDefs, a = d.length, e = 0; e < a; e++)
             if (((f = d[e]), void 0 !== f && null !== f.be))
-              for (g = f.be.iterator; g.next(); )
+              for (g = f.be.iterator; g.next();)
                 ((h = g.value), (h.xd = f), (h.uo = 1), (h.wl = f.index), b.add(h))
       }
     })
-    for (var d = c.iterator; d.next(); ) {
+    for (var d = c.iterator; d.next();) {
       var e = d.value
       if (null !== e.srcBindings) {
         Vl(e, !0)
-        for (var f = e.srcBindings.iterator; f.next(); ) {
+        for (var f = e.srcBindings.iterator; f.next();) {
           var g = f.value
           null === e.localBindings && (e.localBindings = new F())
           e.localBindings.add(g)
@@ -27674,7 +27667,7 @@
       }
       e.srcBindings = null
     }
-    for (d = b.iterator; d.next(); )
+    for (d = b.iterator; d.next();)
       if (((e = d.value), (f = e.xd), null !== f)) {
         e.xd = null
         var h = e.targetProperty,
@@ -27722,7 +27715,7 @@
   t.La = function (a) {
     var b = this.allBindings
     if (null !== b)
-      for (void 0 === a && (a = ''), b = b.iterator; b.next(); ) {
+      for (void 0 === a && (a = ''), b = b.iterator; b.next();) {
         var c = b.value,
           d = c.sourceProperty
         if ('' === a || '' === d || d === a)
@@ -27767,7 +27760,7 @@
       (e++, (f = a[e]))
     if (c - e !== d) return !0
     if (null === f) return 0 < d
-    for (var g = 0; e < c && g < d; ) {
+    for (var g = 0; e < c && g < d;) {
       f = a[e]
       if (!(f instanceof W) || f.data !== b[g]) return !0
       e++
@@ -27792,12 +27785,12 @@
       : 0
   }
   t.ov = function () {
-    for (var a = yn(this); this.O.length > a; ) this.qc(this.O.length - 1, !1)
+    for (var a = yn(this); this.O.length > a;) this.qc(this.O.length - 1, !1)
     Fn(this, this.itemArray)
   }
   function Fn(a, b) {
     var c = yn(a)
-    if (null === b || 0 === b.length) for (; a.O.length > c; ) a.qc(a.O.length - 1, !1)
+    if (null === b || 0 === b.length) for (; a.O.length > c;) a.qc(a.O.length - 1, !1)
     else if (a.O.length <= c) {
       c = b.length
       for (var d = 0; d < c; d++) Gn(a, b[d], d, !0)
@@ -27816,7 +27809,7 @@
           }
         } else Gn(a, f, e, !1)
       }
-      for (; d < a.O.length; ) a.qc(d, !1)
+      for (; d < a.O.length;) a.qc(d, !1)
       a.$g = null
       Jn(a, c, 0)
       zj(a) || a.v()
@@ -27850,7 +27843,7 @@
     }
   }
   function Jn(a, b, c) {
-    for (a = a.O; b < a.length; ) {
+    for (a = a.O; b < a.length;) {
       var d = a.M(b)
       if (d instanceof W) {
         var e = b,
@@ -28425,7 +28418,7 @@
       set: function (a) {
         var b = this.itemTemplateMap
         if (b !== a) {
-          for (var c = a.iterator; c.next(); );
+          for (var c = a.iterator; c.next(););
           Xk(this)
           this.A.Qc = a
           this.g('itemTemplateMap', b, a)
@@ -28788,7 +28781,7 @@
           !b.skipsModelSourceBindings &&
           ((d = d.ih()), null !== d && ((b = d.data), null !== b))))
     )
-      for (c = this.be.iterator; c.next(); ) c.value.sp(this, b, a, d)
+      for (c = this.be.iterator; c.next();) c.value.sp(this, b, a, d)
   }
   function Xm(a) {
     if (a.sizing === Rn) {
@@ -29140,7 +29133,7 @@
       q = r[1]
       p = r[2]
       r = r[3]
-      for (var y = 0; 0.1 <= u; ) {
+      for (var y = 0; 0.1 <= u;) {
         0 === y && (m ? ((e = c), (e -= l), (u -= l), (m = !1)) : (e = c), 0 === e && (e = 1))
         if (e > u) {
           Ga(w)
@@ -29353,7 +29346,7 @@
           if (f.type === P.o)
             (d.push(f.startX), d.push(f.startY), d.push(f.endX), d.push(f.endY), Un(a, b, d, c))
           else if (f.type === P.j)
-            for (f = f.figures.iterator; f.next(); ) {
+            for (f = f.figures.iterator; f.next();) {
               h = f.value
               d.length = 0
               d.push(h.startX)
@@ -30871,7 +30864,7 @@
       f = this.gc.replace(/\r\n/g, '\n').replace(/\r/g, '\n')
       if (0 === f.length) f = 8
       else if (this.isMultiline) {
-        for (var h = (g = 0), k = !1; !k; ) {
+        for (var h = (g = 0), k = !1; !k;) {
           var l = f.indexOf('\n', h)
           ;-1 === l && ((l = f.length), (k = !0))
           h = f.substr(h, l - h)
@@ -30903,7 +30896,7 @@
     ) {
       this.l |= 16777216
       l = this.Sb[k]
-      for (b = Math.max(1, a - b); mo(l) > b && 1 < l.length; ) l = l.substr(0, l.length - 1)
+      for (b = Math.max(1, a - b); mo(l) > b && 1 < l.length;) l = l.substr(0, l.length - 1)
       l += qo
       b = mo(l)
       this.Sb[k] = l
@@ -30953,7 +30946,7 @@
         f = vo(a, g)
         g = g.substr(f.length)
         b = vo(a, g)
-        for (l = mo(f + b); 0 < b.length && l <= c; )
+        for (l = mo(f + b); 0 < b.length && l <= c;)
           ((f += b),
             (g = g.substr(b.length)),
             (b = vo(a, g)),
@@ -30962,7 +30955,7 @@
             (l = mo(l)))
         e && (b = b.trim())
         f += b
-        for (c = Math.max(1, c - k); mo(f) > c && 1 < f.length; ) f = f.substr(0, f.length - 1)
+        for (c = Math.max(1, c - k); mo(f) > c && 1 < f.length;) f = f.substr(0, f.length - 1)
         a.l |= 16777216
         f += qo
         var m = mo(f)
@@ -30973,12 +30966,12 @@
     } else {
       k = 0
       0 === g.length && ((k = 1), so(a, g, 0))
-      for (; 0 < g.length; ) {
+      for (; 0 < g.length;) {
         b = vo(a, g)
-        for (g = g.substr(b.length); mo(b) > c; ) {
+        for (g = g.substr(b.length); mo(b) > c;) {
           var n = 1
           l = mo(b.substr(0, n))
-          for (m = 0; l <= c; ) (n++, (m = l), (l = mo(b.substr(0, n))))
+          for (m = 0; l <= c;) (n++, (m = l), (l = mo(b.substr(0, n))))
           if (1 === n) {
             var p = l
             f = Math.max(f, l)
@@ -30991,7 +30984,7 @@
           if (a.Gc + k > a.maxLines) break
         }
         m = vo(a, g)
-        for (l = mo(b + m); 0 < m.length && l <= c; )
+        for (l = mo(b + m); 0 < m.length && l <= c;)
           ((b += m),
             (g = g.substr(m.length)),
             (m = vo(a, g)),
@@ -31018,8 +31011,8 @@
   }
   function vo(a, b) {
     if (a.wrap === wo) return b.substr(0, 1)
-    for (var c = b.length, d = 0, e = xo; d < c && !e.test(b.charAt(d)); ) d++
-    for (a.formatting === yo && (c = Math.min(c, d + 1)); d < c && e.test(b.charAt(d)); ) d++
+    for (var c = b.length, d = 0, e = xo; d < c && !e.test(b.charAt(d));) d++
+    for (a.formatting === yo && (c = Math.min(c, d + 1)); d < c && e.test(b.charAt(d));) d++
     return d >= b.length ? b : b.substr(0, d)
   }
   function mo(a) {
@@ -31053,7 +31046,7 @@
       0 <= e && (c = c.substr(0, e))
     }
     e = 0
-    for (var f = (a.Gc = 0), g, h = !1; !h; ) {
+    for (var f = (a.Gc = 0), g, h = !1; !h;) {
       g = c.indexOf('\n', f)
       ;-1 === g && ((g = c.length), (h = !0))
       if (f <= g) {
@@ -31550,7 +31543,7 @@
         b.mn = !1
         var d = b.Bg.copy()
         if (null !== d && void 0 !== d) {
-          for (d = d.iterator; d.next(); ) {
+          for (d = d.iterator; d.next();) {
             var e = d.value
             e.N()
             var f = b.getAttribute('src') || ''
@@ -31571,7 +31564,7 @@
         b.mn = a
         var c = b.Bg.copy()
         if (null !== c && void 0 !== c) {
-          for (c = c.iterator; c.next(); ) {
+          for (c = c.iterator; c.next();) {
             var e = c.value,
               f = b.getAttribute('src') || ''
             var g = e.Og.I(f)
@@ -31606,12 +31599,10 @@
     var c = this.Eg
     if (null !== c) {
       var d = c.getAttribute('src')
-      if (
-        !(
-          (c instanceof HTMLImageElement && (null === d || '' === d)) ||
-          (c.mn instanceof Event && a instanceof Nl)
-        )
-      ) {
+      if (!(
+        (c instanceof HTMLImageElement && (null === d || '' === d)) ||
+        (c.mn instanceof Event && a instanceof Nl)
+      )) {
         var e = a instanceof ii
         d = this.naturalBounds
         var f = 0,
@@ -32450,7 +32441,7 @@
             null !== a.data && a.La()
           })
       }
-      for (b = this.adornments; b.next(); ) b.value.La(a)
+      for (b = this.adornments; b.next();) b.value.La(a)
     }
   }
   U.prototype.updateRelationshipsFromData = function () {
@@ -32501,7 +32492,7 @@
     var a = this.Qf
     if (null !== a) {
       var b = Ea()
-      for (a = a.iterator; a.next(); ) b.push(a.key)
+      for (a = a.iterator; a.next();) b.push(a.key)
       a = b.length
       for (var c = 0; c < a; c++) this.Jf(b[c])
       Ga(b)
@@ -32510,7 +32501,7 @@
   U.prototype.updateAdornments = function () {
     var a = this.diagram
     if (null !== a) {
-      for (var b = this.adornments; b.next(); ) {
+      for (var b = this.adornments; b.next();) {
         var c = b.value
         c.v()
         c.placeholder && c.placeholder.v()
@@ -32547,7 +32538,7 @@
         this.Jf('Selection')
       }
       To(this, a)
-      for (b = this.adornments; b.next(); ) b.value.La()
+      for (b = this.adornments; b.next();) b.value.La()
     }
   }
   U.prototype.Zb = function () {
@@ -32664,7 +32655,7 @@
     d.h(e.width * c.x + c.offsetX, e.height * c.y + c.offsetY)
     if (null === b || b === a) return d
     b.transform.Ga(d)
-    for (b = b.panel; null !== b && b !== a; ) (b.transform.Ga(d), (b = b.panel))
+    for (b = b.panel; null !== b && b !== a;) (b.transform.Ga(d), (b = b.panel))
     null !== a.Mb && a.Mb.Ga(d)
     d.offset(-a.uc.x, -a.uc.y)
     return d
@@ -32684,7 +32675,7 @@
       e = c instanceof Bf ? c.strokeWidth : 0
     b.zi(0, 0, d.width + e, d.height + e, a.locationSpot)
     if (c !== a)
-      for (b.offset(-e / 2, -e / 2), c.transform.Ga(b), c = c.panel; null !== c && c !== a; )
+      for (b.offset(-e / 2, -e / 2), c.transform.Ga(b), c = c.panel; null !== c && c !== a;)
         (c.transform.Ga(b), (c = c.panel))
     null !== a.Mb && a.Mb.Ga(b)
     b.offset(-a.uc.x, -a.uc.y)
@@ -33062,7 +33053,7 @@
   t.sx = function (a) {
     if (null === a) return null
     if (this === a) return this.containingGroup
-    for (var b = this; null !== b; ) {
+    for (var b = this; null !== b;) {
       b instanceof jf && dp(b, !0)
       if (b instanceof V) {
         var c = b.labeledLink
@@ -33071,7 +33062,7 @@
       b = b.containingGroup
     }
     c = null
-    for (b = a; null !== b; ) {
+    for (b = a; null !== b;) {
       if (0 !== (b.G & 1048576)) {
         c = b
         break
@@ -33079,7 +33070,7 @@
       b instanceof V && ((a = b.labeledLink), null !== a && (b = a))
       b = b.containingGroup
     }
-    for (b = this; null !== b; )
+    for (b = this; null !== b;)
       (b instanceof jf && dp(b, !1),
         b instanceof V && ((a = b.labeledLink), null !== a && (b = a)),
         (b = b.containingGroup))
@@ -33113,9 +33104,9 @@
     void 0 === f && (f = null)
     if (!(a.contains(b) || (null !== f && !f(b)) || b instanceof pe))
       if ((a.add(b), b instanceof V)) {
-        if (c && b instanceof jf) for (var g = b.memberParts; g.next(); ) Nk(a, g.value, c, d, e, f)
+        if (c && b instanceof jf) for (var g = b.memberParts; g.next();) Nk(a, g.value, c, d, e, f)
         if (!1 !== e)
-          for (g = b.linksConnected; g.next(); ) {
+          for (g = b.linksConnected; g.next();) {
             var h = g.value
             if (!a.contains(h)) {
               var k = h.fromNode,
@@ -33125,8 +33116,8 @@
               ;(e ? k && l : k || l) && Nk(a, h, c, d, e, f)
             }
           }
-        if (1 < d) for (b = b.Qu(); b.next(); ) Nk(a, b.value, c, d - 1, e, f)
-      } else if (b instanceof T) for (b = b.labelNodes; b.next(); ) Nk(a, b.value, c, d, e, f)
+        if (1 < d) for (b = b.Qu(); b.next();) Nk(a, b.value, c, d - 1, e, f)
+      } else if (b instanceof T) for (b = b.labelNodes; b.next();) Nk(a, b.value, c, d, e, f)
   }
   ma.Object.defineProperties(U.prototype, {
     key: {
@@ -33687,11 +33678,11 @@
               d(this, b, a),
               null !== c && (c.aa = e))
             if (this instanceof jf)
-              for (c = new H(), Nk(c, this, !0, 0, !0), c = c.iterator; c.next(); )
+              for (c = new H(), Nk(c, this, !0, 0, !0), c = c.iterator; c.next();)
                 if (((d = c.value), d instanceof V))
-                  for (d = d.linksConnected; d.next(); ) kp(d.value)
+                  for (d = d.linksConnected; d.next();) kp(d.value)
             if (this instanceof V) {
-              for (c = this.linksConnected; c.next(); ) kp(c.value)
+              for (c = this.linksConnected; c.next();) kp(c.value)
               c = this.labeledLink
               null !== c && kp(c)
             }
@@ -33941,7 +33932,7 @@
   }
   function pp(a, b, c, d) {
     if (null === b || null === a.af) return null
-    for (var e = a.af.iterator; e.next(); ) {
+    for (var e = a.af.iterator; e.next();) {
       var f = e.value
       if (
         (f.Ds === a && f.fv === b && f.Qx === c && f.Rx === d) ||
@@ -33964,13 +33955,13 @@
     U.prototype.fk.call(this, a, b, c, d, e, f, g)
   }
   t.Bd = function (a) {
-    for (var b = this.linksConnected; b.next(); ) {
+    for (var b = this.linksConnected; b.next();) {
       var c = b.value
       ;(void 0 !== a && a.contains(c)) || (qp(c.fromPort), qp(c.toPort), c.bb())
     }
   }
   function sl(a, b) {
-    for (a = a.linksConnected; a.next(); ) {
+    for (a = a.linksConnected; a.next();) {
       var c = a.value
       if (c.fromPort === b || c.toPort === b) (qp(c.fromPort), qp(c.toPort), c.bb())
     }
@@ -33993,7 +33984,7 @@
     return a
   }
   V.prototype.findVisibleNode = function () {
-    for (var a = this; null !== a && !a.isVisible(); ) a = a.containingGroup
+    for (var a = this; null !== a && !a.isVisible();) a = a.containingGroup
     return a
   }
   V.prototype.isVisible = function () {
@@ -34031,7 +34022,7 @@
   }
   V.prototype.bc = function (a) {
     U.prototype.bc.call(this, a)
-    for (var b = this.linksConnected; b.next(); ) {
+    for (var b = this.linksConnected; b.next();) {
       var c = b.value
       if (a && null !== this.containingGroup) {
         var d = c.Uo(this)
@@ -34090,7 +34081,7 @@
   }
   t.Ou = function (a) {
     void 0 === a && (a = null)
-    for (var b = null, c = null, d = this.jb.iterator; d.next(); ) {
+    for (var b = null, c = null, d = this.jb.iterator; d.next();) {
       var e = d.value
       if (e.fromNode === this) {
         if (null === a || e.fromPortId === a)
@@ -34114,7 +34105,7 @@
   }
   t.Qo = function (a) {
     void 0 === a && (a = null)
-    for (var b = null, c = null, d = this.jb.iterator; d.next(); ) {
+    for (var b = null, c = null, d = this.jb.iterator; d.next();) {
       var e = d.value
       e.fromNode !== this ||
         (null !== a && e.fromPortId !== a) ||
@@ -34129,7 +34120,7 @@
   }
   t.Po = function (a) {
     void 0 === a && (a = null)
-    for (var b = null, c = null, d = this.jb.iterator; d.next(); ) {
+    for (var b = null, c = null, d = this.jb.iterator; d.next();) {
       var e = d.value
       e.toNode !== this ||
         (null !== a && e.toPortId !== a) ||
@@ -34241,7 +34232,7 @@
         c = a.diagram
       if (null === c || !c.undoManager.isUndoingRedoing) {
         null !== c && (b = c.isTreePathToChildren)
-        for (c = a.jb.iterator; c.next(); ) {
+        for (c = a.jb.iterator; c.next();) {
           var d = c.value
           if (d.isTreeLink)
             if (b) {
@@ -34312,7 +34303,7 @@
     var d = b.portId
     if (null !== d && (null !== a.wc && a.wc.remove(d), (b = a.diagram), null !== b && c)) {
       c = null
-      for (a = a.findLinksConnected(d); a.next(); )
+      for (a = a.findLinksConnected(d); a.next();)
         ((d = a.value), null === c && (c = Ea()), c.push(d))
       if (null !== c) {
         for (a = 0; a < c.length; a++) b.remove(c[a])
@@ -34327,9 +34318,9 @@
     null !== c && (b = c.isTreePathToChildren)
     c = this
     if (b)
-      for (; c !== a; ) {
+      for (; c !== a;) {
         b = null
-        for (var d = c.jb.iterator; d.next(); ) {
+        for (var d = c.jb.iterator; d.next();) {
           var e = d.value
           if (e.isTreeLink && ((b = e.fromNode), b !== c && b !== this)) break
         }
@@ -34337,7 +34328,7 @@
         c = b
       }
     else
-      for (; c !== a; ) {
+      for (; c !== a;) {
         b = null
         for (
           d = c.jb.iterator;
@@ -34356,7 +34347,7 @@
     if (a)
       for (;;) {
         a = null
-        for (var c = b.jb.iterator; c.next(); ) {
+        for (var c = b.jb.iterator; c.next();) {
           var d = c.value
           if (d.isTreeLink && ((a = d.fromNode), a !== b && a !== this)) break
         }
@@ -34379,16 +34370,16 @@
   t.lz = function (a) {
     if (null === a) return null
     if (this === a) return this
-    for (var b = this; null !== b; ) (dp(b, !0), (b = b.pg()))
+    for (var b = this; null !== b;) (dp(b, !0), (b = b.pg()))
     var c = null
-    for (b = a; null !== b; ) {
+    for (b = a; null !== b;) {
       if (0 !== (b.G & 1048576)) {
         c = b
         break
       }
       b = b.pg()
     }
-    for (b = this; null !== b; ) (dp(b, !1), (b = b.pg()))
+    for (b = this; null !== b;) (dp(b, !1), (b = b.pg()))
     return c
   }
   t.kh = function () {
@@ -34397,10 +34388,10 @@
     null !== b && (a = b.isTreePathToChildren)
     b = this.jb.iterator
     if (a)
-      for (; b.next(); ) {
+      for (; b.next();) {
         if (((a = b.value), a.isTreeLink && a.fromNode !== this)) return a
       }
-    else for (; b.next(); ) if (((a = b.value), a.isTreeLink && a.toNode !== this)) return a
+    else for (; b.next();) if (((a = b.value), a.isTreeLink && a.toNode !== this)) return a
     return null
   }
   t.pg = function () {
@@ -34409,7 +34400,7 @@
     if (a instanceof V) return a
     a = this.diagram
     a = null !== a ? a.isTreePathToChildren : !0
-    for (var b = this.jb.iterator; b.next(); ) {
+    for (var b = this.jb.iterator; b.next();) {
       var c = b.value
       if (c.isTreeLink && ((c = a ? c.fromNode : c.toNode), c !== this)) return (this.ci = c)
     }
@@ -34454,7 +34445,7 @@
     var c = (b = null),
       d = this.jb.iterator
     if (a)
-      for (; d.next(); )
+      for (; d.next();)
         ((a = d.value),
           a.isTreeLink &&
             a.fromNode === this &&
@@ -34465,7 +34456,7 @@
                 ? ((b = new F()), b.add(c), b.add(a))
                 : (c = a)))
     else
-      for (; d.next(); )
+      for (; d.next();)
         ((a = d.value),
           a.isTreeLink &&
             a.toNode === this &&
@@ -34497,7 +34488,7 @@
   }
   function xp(a, b, c, d, e, f, g) {
     if (1 < d)
-      for (var h = c ? a.No() : a.Sd(); h.next(); ) {
+      for (var h = c ? a.No() : a.Sd(); h.next();) {
         var k = h.value
         k.isTreeLink &&
           ((k = k.Uo(a)),
@@ -34506,7 +34497,7 @@
     else yp(a, b, c, e, f, g)
   }
   function yp(a, b, c, d, e, f) {
-    for (var g = e === a ? !0 : a.isTreeExpanded, h = c ? a.No() : a.Sd(), k = {}; h.next(); ) {
+    for (var g = e === a ? !0 : a.isTreeExpanded, h = c ? a.No() : a.Sd(), k = {}; h.next();) {
       var l = h.value
       if (l.isTreeLink && ((l = l.Uo(a)), null !== l && l !== a)) {
         var m = b.contains(l)
@@ -34543,7 +34534,7 @@
     }
   }
   function zp(a, b, c, d, e, f, g) {
-    for (var h = f === a ? !1 : a.isTreeExpanded, k = c ? a.No() : a.Sd(), l = {}; k.next(); ) {
+    for (var h = f === a ? !1 : a.isTreeExpanded, k = c ? a.No() : a.Sd(), l = {}; k.next();) {
       var m = k.value
       if (
         m.isTreeLink &&
@@ -34812,13 +34803,13 @@
   t.Af = function (a) {
     V.prototype.Af.call(this, a)
     var b = a.Qj()
-    for (a = a.memberParts; a.next(); ) {
+    for (a = a.memberParts; a.next();) {
       var c = a.value
       c.v()
       c.C(8)
       c.Ej()
       if (c instanceof V) c.Bd(b)
-      else if (c instanceof T) for (c = c.labelNodes; c.next(); ) c.value.Bd(b)
+      else if (c instanceof T) for (c = c.labelNodes; c.next();) c.value.Bd(b)
     }
   }
   t.fk = function (a, b, c, d, e, f, g) {
@@ -34872,7 +34863,7 @@
   }
   t.ti = function () {
     if (!V.prototype.ti.call(this)) return !1
-    for (var a = this.memberParts; a.next(); ) {
+    for (var a = this.memberParts; a.next();) {
       var b = a.value
       if (b instanceof V) {
         if (b.isVisible() && Aj(b)) return !1
@@ -34922,7 +34913,7 @@
   t.Lj = function () {
     if (0 < this.Hn.count) {
       var a = this.diagram
-      if (null !== a) for (var b = this.Hn.copy().iterator; b.next(); ) a.remove(b.value)
+      if (null !== a) for (var b = this.Hn.copy().iterator; b.next();) a.remove(b.value)
     }
     V.prototype.Lj.call(this)
   }
@@ -34930,7 +34921,7 @@
     var b = this.diagram
     if (null === b) return !1
     b = b.commandHandler
-    for (a = Pk(a).iterator; a.next(); ) if (!b.isValidMember(this, a.value)) return !1
+    for (a = Pk(a).iterator; a.next();) if (!b.isValidMember(this, a.value)) return !1
     return !0
   }
   jf.prototype.addMembers = function (a, b) {
@@ -34938,7 +34929,7 @@
     if (null === c) return !1
     c = c.commandHandler
     var d = !0
-    for (a = Pk(a).iterator; a.next(); ) {
+    for (a = Pk(a).iterator; a.next();) {
       var e = a.value
       !b || c.isValidMember(this, e) ? (e.containingGroup = this) : (d = !1)
     }
@@ -34956,10 +34947,7 @@
     var b = 0 !== (this.R & 65536)
     V.prototype.Bd.call(this, a)
     if (!b)
-      for (
-        (0 !== (this.R & 65536)) !== !0 && (this.R = this.R ^ 65536), b = this.Nu();
-        b.next();
-      ) {
+      for ((0 !== (this.R & 65536)) !== !0 && (this.R = this.R ^ 65536), b = this.Nu(); b.next();) {
         var c = b.value
         if (void 0 === a || !a.contains(c)) {
           var d = c.fromNode
@@ -34979,10 +34967,10 @@
     if (a && null !== this.$p) return this.$p.iterator
     var b = this.Qj()
     b.add(this)
-    for (var c = new H(), d = b.iterator; d.next(); ) {
+    for (var c = new H(), d = b.iterator; d.next();) {
       var e = d.value
       if (e instanceof V)
-        for (e = e.linksConnected; e.next(); ) {
+        for (e = e.linksConnected; e.next();) {
           var f = e.value
           b.contains(f) || c.add(f)
         }
@@ -34993,10 +34981,10 @@
   t.nz = function () {
     var a = this.Qj()
     a.add(this)
-    for (var b = new H(), c = a.iterator; c.next(); ) {
+    for (var b = new H(), c = a.iterator; c.next();) {
       var d = c.value
       if (d instanceof V)
-        for (d = d.linksConnected; d.next(); ) {
+        for (d = d.linksConnected; d.next();) {
           var e = d.value,
             f = e.fromNode
           null === f || (a.contains(f) && f !== this) || b.add(f)
@@ -35022,7 +35010,7 @@
   }
   t.bc = function (a) {
     V.prototype.bc.call(this, a)
-    for (var b = this.memberParts; b.next(); ) b.value.bc(a)
+    for (var b = this.memberParts; b.next();) b.value.bc(a)
   }
   jf.prototype.collapseSubGraph = function () {
     var a = this.diagram
@@ -35034,14 +35022,14 @@
     }
   }
   function Cp(a, b, c, d) {
-    for (var e = a.memberParts; e.next(); ) {
+    for (var e = a.memberParts; e.next();) {
       var f = e.value
       f.bc(!1)
       f instanceof jf &&
         f.isSubGraphExpanded &&
         ((f.wasSubGraphExpanded = f.isSubGraphExpanded), Cp(f, b, c, d))
       if (f instanceof V) (f.Bd(b), c.Bj(f, d))
-      else if (f instanceof T) for (f = f.labelNodes; f.next(); ) f.value.Bd(b)
+      else if (f instanceof T) for (f = f.labelNodes; f.next();) f.value.Bd(b)
     }
     a.isSubGraphExpanded = !1
   }
@@ -35055,12 +35043,12 @@
     }
   }
   function Dp(a, b, c, d) {
-    for (var e = a.memberParts; e.next(); ) {
+    for (var e = a.memberParts; e.next();) {
       var f = e.value
       f.bc(!0)
       f instanceof jf && f.wasSubGraphExpanded && ((f.wasSubGraphExpanded = !1), Dp(f, b, c, d))
       if (f instanceof V) (f.Bd(b), c.Dj(f, d))
-      else if (f instanceof T) for (f = f.labelNodes; f.next(); ) f.value.Bd(b)
+      else if (f instanceof T) for (f = f.labelNodes; f.next();) f.value.Bd(b)
     }
     a.isSubGraphExpanded = !0
   }
@@ -35077,14 +35065,14 @@
       f = I.alloc()
       V.prototype.move.call(this, a, b)
       a = new H()
-      for (b = this.Qj().iterator; b.next(); )
+      for (b = this.Qj().iterator; b.next();)
         if (
           ((e = b.value),
           e instanceof T &&
             (e.suspendsRouting && a.add(e), e.fd || (e.fromNode !== this && e.toNode !== this)))
         )
           e.suspendsRouting = !0
-      for (b.reset(); b.next(); )
+      for (b.reset(); b.next();)
         if (((e = b.value), !(e.ph() || (e instanceof V && e.isLinkLabel)))) {
           var g = e.position,
             h = e.location
@@ -35092,7 +35080,7 @@
             ? ((f.x = g.x + d), (f.y = g.y + c), (e.position = f))
             : h.w() && ((f.x = h.x + d), (f.y = h.y + c), (e.location = f))
         }
-      for (b.reset(); b.next(); )
+      for (b.reset(); b.next();)
         if (
           ((e = b.value),
           e instanceof T &&
@@ -35311,7 +35299,7 @@
       )
       this.Ge(0, 0, d.width, d.height)
       d = a.memberParts
-      for (c = !1; d.next(); )
+      for (c = !1; d.next();)
         if (d.value.isVisible()) {
           c = !0
           break
@@ -35580,7 +35568,7 @@
       }
       !a.fd || (a.Nw !== c && a.Ow !== c) || a.bb()
     }
-    if (a.isLabeledLink) for (a = a.labelNodes; a.next(); ) a.value.containingGroup = d
+    if (a.isLabeledLink) for (a = a.labelNodes; a.next();) a.value.containingGroup = d
   }
   t = T.prototype
   t.oh = function () {
@@ -35638,7 +35626,7 @@
     this.fd = !0
     if (null !== this.wd) {
       var a = this.diagram
-      if (null !== a) for (var b = this.wd.copy().iterator; b.next(); ) a.remove(b.value)
+      if (null !== a) for (var b = this.wd.copy().iterator; b.next();) a.remove(b.value)
     }
     null !== this.data && ((a = this.diagram), null !== a && a.partManager.removeDataForLink(this))
   }
@@ -35660,7 +35648,7 @@
       ? U.prototype.move.call(this, a, !1)
       : ((a = I.allocAt(c.x + d, c.y + e)), U.prototype.move.call(this, a, !1), I.free(a))
     df(this, d, e)
-    for (a = this.labelNodes; a.next(); )
+    for (a = this.labelNodes; a.next();)
       ((b = a.value), (c = b.position), b.moveTo(c.x + d, c.y + e))
   }
   T.prototype.canRelinkFrom = function () {
@@ -35718,7 +35706,7 @@
     }
     var g = this.flattenedLengths
     c = this.flattenedTotalLength
-    for (e = f = d = 0; d < c / 2 && f < b; ) {
+    for (e = f = d = 0; d < c / 2 && f < b;) {
       e = g[f]
       if (d + e > c / 2) break
       d += e
@@ -35760,7 +35748,7 @@
     d = this.flattenedTotalLength
     var e = 0
     c = 0
-    for (var f; e < d / 2 && c < a; ) {
+    for (var f; e < d / 2 && c < a;) {
       f = b[c]
       if (e + f > d / 2) break
       e += f
@@ -35810,7 +35798,7 @@
         (a.defaultFromPoint && a.defaultFromPoint.offset(b, c),
           a.defaultToPoint && a.defaultToPoint.offset(b, c))
       else {
-        for (var d = a.fd, e = new F(), f = a.Ob.iterator; f.next(); ) {
+        for (var d = a.fd, e = new F(), f = a.Ob.iterator; f.next();) {
           var g = f.value
           e.add(new I(g.x + b, g.y + c).freeze())
         }
@@ -35918,7 +35906,7 @@
     }
     this.Nw = a
     if (null === a || !a.location.w()) return !1
-    for (; !(null === b || (b.actualBounds.w() && b.Ed())); ) b = b.panel
+    for (; !(null === b || (b.actualBounds.w() && b.Ed()));) b = b.panel
     if (null === b) return !1
     var d = this.toNode,
       e = null
@@ -35931,7 +35919,7 @@
       ((c = d.findVisibleNode()), null !== c && c !== d ? ((d = c), (e = c.port)) : (d = c))
     this.Ow = d
     if (null === d || !d.location.w()) return !1
-    for (; !(null === e || (e.actualBounds.w() && e.Ed())); ) e = e.panel
+    for (; !(null === e || (e.actualBounds.w() && e.Ed()));) e = e.panel
     if (null === e) return !1
     var f = this.pointsCount,
       g = this.computeSpot(!0, b)
@@ -36295,7 +36283,7 @@
     if (this.Yc(a, g)) {
       var h = !1
       if (!this.isAtomic)
-        for (var k = this.O.s, l = k.length; l--; ) {
+        for (var k = this.O.s, l = k.length; l--;) {
           var m = k[l]
           if (m.visible || m === this.locationObject) {
             var n = m.actualBounds,
@@ -36391,7 +36379,7 @@
       if (e !== a && !e.isPanelMain && (-Infinity === e.segmentIndex || isNaN(e.segmentIndex)))
         return e
     }
-    for (a = this.labelNodes; a.next(); )
+    for (a = this.labelNodes; a.next();)
       if (((b = a.value), -Infinity === b.segmentIndex || isNaN(b.segmentIndex))) return b
     return null
   }
@@ -36983,7 +36971,7 @@
           : aq(b, c, d - k) === l - 1
             ? ((e = 270), (m = c), (n = d - k))
             : aq(b, c, d + k) === l - 1 && ((e = 90), (m = c), (n = d + k)))
-    for (; l > dq && aq(b, m, n) === l - 1; )
+    for (; l > dq && aq(b, m, n) === l - 1;)
       ((c = m),
         (d = n),
         0 === e ? (m += h) : 90 === e ? (n += k) : 180 === e ? (m -= h) : (n -= k),
@@ -37202,7 +37190,7 @@
         e.assign(f)
         g = this.computeCorner()
         n = 1
-        for (l = 0; n < b; ) {
+        for (l = 0; n < b;) {
           n = fq(this, f, n, 1 < n)
           m = this.i(n)
           if (n >= b - 1) {
@@ -37210,7 +37198,7 @@
               (0 !== this.computeShortLength(!1) && (m = eq(this, m.copy(), !1, pb)),
                 hq(this, h, -d, -k, f, m, c))
             else if (0 === l)
-              for (n = 1; n < b; )
+              for (n = 1; n < b;)
                 (e.assign(f), (m = this.i(n++)), hq(this, h, -d, -k, f, m, c), f.assign(m))
             break
           }
@@ -37318,7 +37306,7 @@
     return b
   }
   function fq(a, b, c, d) {
-    for (var e = a.pointsCount, f = b; K.$(b.x, f.x) && K.$(b.y, f.y); ) {
+    for (var e = a.pointsCount, f = b; K.$(b.x, f.x) && K.$(b.y, f.y);) {
       if (c >= e) return e - 1
       f = a.i(c++)
     }
@@ -37346,11 +37334,11 @@
       if (0 < l)
         if (K.B(e.y, f.y))
           if (e.x < f.x)
-            for (var m = 0; m < l; ) {
+            for (var m = 0; m < l;) {
               var n = Math.max(e.x, Math.min(k[m++] - h, f.x - g))
               b.lineTo(n + c, f.y + d)
               var p = n + c
-              for (var q = Math.min(n + g, f.x); m < l; )
+              for (var q = Math.min(n + g, f.x); m < l;)
                 if (((n = k[m]), n < q + g)) (m++, (q = Math.min(n + h, f.x)))
                 else break
               n = f.y - g + d
@@ -37359,11 +37347,11 @@
               a.curve === Yf ? rd(b, q, r, !1) : sd(b, p, n, q, n, q, r)
             }
           else
-            for (--l; 0 <= l; ) {
+            for (--l; 0 <= l;) {
               m = Math.min(e.x, Math.max(k[l--] + h, f.x + g))
               b.lineTo(m + c, f.y + d)
               p = m + c
-              for (n = Math.max(m - g, f.x); 0 <= l; )
+              for (n = Math.max(m - g, f.x); 0 <= l;)
                 if (((m = k[l]), m > n - g)) (l--, (n = Math.max(m - h, f.x)))
                 else break
               m = f.y - g + d
@@ -37373,11 +37361,11 @@
             }
         else if (K.B(e.x, f.x))
           if (e.y < f.y)
-            for (m = 0; m < l; ) {
+            for (m = 0; m < l;) {
               n = Math.max(e.y, Math.min(k[m++] - h, f.y - g))
               b.lineTo(f.x + c, n + d)
               p = n + d
-              for (n = Math.min(n + g, f.y); m < l; )
+              for (n = Math.min(n + g, f.y); m < l;)
                 if (((q = k[m]), q < n + g)) (m++, (n = Math.min(q + h, f.y)))
                 else break
               q = f.x - g + c
@@ -37386,11 +37374,11 @@
               a.curve === Yf ? rd(b, r, n, !1) : sd(b, q, p, q, n, r, n)
             }
           else
-            for (--l; 0 <= l; ) {
+            for (--l; 0 <= l;) {
               m = Math.min(e.y, Math.max(k[l--] + h, f.y + g))
               b.lineTo(f.x + c, m + d)
               p = m + d
-              for (m = Math.max(m - g, f.y); 0 <= l; )
+              for (m = Math.max(m - g, f.y); 0 <= l;)
                 if (((n = k[l]), n > m - g)) (l--, (m = Math.max(n - h, f.y)))
                 else break
               n = f.x - g + c
@@ -37404,7 +37392,7 @@
   function iq(a, b, c, d) {
     var e = a.diagram
     if (null === e || b.D(c)) return 0
-    for (e = e.layers; e.next(); ) {
+    for (e = e.layers; e.next();) {
       var f = e.value
       if (null !== f && f.visible) {
         f = f.Pa.s
@@ -37516,7 +37504,7 @@
       var c = b.diagram
       if (null !== c && !c.animationManager.isTicking) {
         var d = !1
-        for (c = c.layers; c.next(); ) {
+        for (c = c.layers; c.next();) {
           var e = c.value
           if (e.visible)
             if (e === b) {
@@ -37569,7 +37557,7 @@
     if (null !== c) {
       if (this.isTreeLink && b && !c.isTreeExpanded) return !1
       if (c === a) return !0
-      for (var d = c; null !== d; ) {
+      for (var d = c; null !== d;) {
         if (d.labeledLink === this) return !0
         d = d.containingGroup
       }
@@ -37580,7 +37568,7 @@
     if (null !== c) {
       if (this.isTreeLink && !b && !c.isTreeExpanded) return !1
       if (c === a) return !0
-      for (b = c; null !== b; ) {
+      for (b = c; null !== b;) {
         if (b.labeledLink === this) return !0
         b = b.containingGroup
       }
@@ -37593,7 +37581,7 @@
     U.prototype.bc.call(this, a)
     a && Np(this, !1)
     null !== this.Sf && this.Sf.Sl()
-    if (null !== this.wd) for (var b = this.wd.iterator; b.next(); ) b.value.bc(a)
+    if (null !== this.wd) for (var b = this.wd.iterator; b.next();) b.value.bc(a)
   }
   T.prototype.computeAdjusting = function () {
     return this.isAvoiding &&
@@ -38055,7 +38043,7 @@
                 for (c = new F(), d = 0; d < a.length; d++)
                   ((e = a[d]), c.add(new I(e.x, e.y).freeze()))
             }
-          } else if (a instanceof F) for (c = a.copy(), a = c.iterator; a.next(); ) a.value.freeze()
+          } else if (a instanceof F) for (c = a.copy(), a = c.iterator; a.next();) a.value.freeze()
           else C('Link.points value is not an instance of List or Array: ' + a)
           c.freeze()
           this.Ob = c
@@ -38437,7 +38425,7 @@
     c |= 0
     var l = vk,
       m = dq
-    for (a.cc[b][c] = m; l === vk && b > f && b < g && c > h && c < k; )
+    for (a.cc[b][c] = m; l === vk && b > f && b < g && c > h && c < k;)
       ((m += 1), (a.cc[b][c] = m), e ? (c += d) : (b += d), (l = a.cc[b][c]))
   }
   function rq(a, b, c, d, e, f, g, h, k) {
@@ -38445,7 +38433,7 @@
     c |= 0
     var l = vk,
       m = bq
-    for (a.cc[b][c] = m; l === vk && b > f && b < g && c > h && c < k; )
+    for (a.cc[b][c] = m; l === vk && b > f && b < g && c > h && c < k;)
       ((a.cc[b][c] = m), e ? (c += d) : (b += d), (l = a.cc[b][c]))
   }
   function $p(a, b, c, d, e, f, g) {
@@ -38529,7 +38517,7 @@
     }
   }
   function sq(a, b, c, d, e, f, g) {
-    for (var h = a.cc, k = b, l = c; ; ) {
+    for (var h = a.cc, k = b, l = c; ;) {
       if (k === e && l === f) return !0
       var m = k,
         n = l
@@ -38715,7 +38703,7 @@
         I.free(k)
         h = I.allocAt(e.x + e.width / 2, e.y + e.height / 2)
         k = a.port.mi()
-        for (g = g.iterator; g.next(); ) {
+        for (g = g.iterator; g.next();) {
           var l = g.value
           if (l.isVisible() && l.fromPort !== l.toPort) {
             var m = l.fromPort === a.port || (null !== l.fromNode && l.fromNode.Td(d)),
@@ -39002,7 +38990,7 @@
     this.isValidLayout = !0
     var a = this.diagram
     if (null === a && null !== this.network)
-      for (var b = this.network.vertexes.iterator; b.next(); ) {
+      for (var b = this.network.vertexes.iterator; b.next();) {
         var c = b.value.node
         if (null !== c && ((a = c.diagram), null !== a)) break
       }
@@ -39014,8 +39002,8 @@
   }
   ti.prototype.commitLayout = function () {
     if (null !== this.network) {
-      for (var a = this.network.vertexes.iterator; a.next(); ) a.value.commit()
-      if (this.isRouting) for (a = this.network.edges.iterator; a.next(); ) a.value.commit()
+      for (var a = this.network.vertexes.iterator; a.next();) a.value.commit()
+      if (this.isRouting) for (a = this.network.edges.iterator; a.next();) a.value.commit()
     }
   }
   ti.prototype.doLayout = function (a) {
@@ -39041,7 +39029,7 @@
       e = this.arrangementOrigin.y,
       f = 0,
       g = 0
-    for (a = a.iterator; a.next(); ) {
+    for (a = a.iterator; a.next();) {
       var h = a.value
       yq(h)
       var k = h.measuredBounds,
@@ -39083,7 +39071,7 @@
     return !a.location.w() || (a instanceof jf && a.rh) ? !0 : !1
   }
   function xq(a, b, c, d, e, f, g, h) {
-    for (c = c.iterator; c.next(); ) {
+    for (c = c.iterator; c.next();) {
       var k = c.value
       ;(d && !k.isTopLevel) ||
         (null !== e && !e(k)) ||
@@ -39242,8 +39230,8 @@
     this.zs = new ob()
   }
   wq.prototype.clear = function () {
-    if (this.wf) for (var a = this.wf.iterator; a.next(); ) a.value.clear()
-    if (this.ye) for (a = this.ye.iterator; a.next(); ) a.value.clear()
+    if (this.wf) for (var a = this.wf.iterator; a.next();) a.value.clear()
+    if (this.ye) for (a = this.ye.iterator; a.next();) a.value.clear()
     this.wf = new H()
     this.ye = new H()
     this.Es = new ob()
@@ -39255,8 +39243,8 @@
     if (0 >= a) return b
     b += ' vertexes: ' + this.wf.count + ' edges: ' + this.ye.count
     if (1 < a) {
-      for (var c = this.wf.iterator; c.next(); ) b += '\n    ' + c.value.toString(a - 1)
-      for (c = this.ye.iterator; c.next(); ) b += '\n    ' + c.value.toString(a - 1)
+      for (var c = this.wf.iterator; c.next();) b += '\n    ' + c.value.toString(a - 1)
+      for (c = this.ye.iterator; c.next();) b += '\n    ' + c.value.toString(a - 1)
     }
     return b
   }
@@ -39281,7 +39269,7 @@
           }
           return !1
         })
-      for (a = a.iterator; a.next(); ) {
+      for (a = a.iterator; a.next();) {
         var d = a.value
         if (d instanceof V && (!b || d.isTopLevel) && d.canLayout() && c(d))
           if (d instanceof jf && null === d.layout) this.lg(d.memberParts, !1)
@@ -39291,7 +39279,7 @@
             this.dh(e)
           }
       }
-      for (a.reset(); a.next(); )
+      for (a.reset(); a.next();)
         if (
           ((d = a.value),
           d instanceof T && (!b || d.isTopLevel) && d.canLayout() && c(d) && null === this.Mo(d))
@@ -39313,7 +39301,7 @@
     if (null === b) return null
     a = this.li(b)
     if (null !== a) return a
-    for (b = b.containingGroup; null !== b; ) {
+    for (b = b.containingGroup; null !== b;) {
       a = this.li(b)
       if (null !== a) return a
       b = b.containingGroup
@@ -39427,7 +39415,7 @@
     }
   }
   t.Lo = function () {
-    for (var a = Ea(), b = this.ye.iterator; b.next(); ) {
+    for (var a = Ea(), b = this.ye.iterator; b.next();) {
       var c = b.value
       c.fromVertex === c.toVertex && a.push(c)
     }
@@ -39436,14 +39424,14 @@
     Ga(a)
   }
   wq.prototype.deleteArtificialVertexes = function () {
-    for (var a = Ea(), b = this.wf.iterator; b.next(); ) {
+    for (var a = Ea(), b = this.wf.iterator; b.next();) {
       var c = b.value
       null === c.node && null === c.data && a.push(c)
     }
     c = a.length
     for (b = 0; b < c; b++) this.Ku(a[b])
     b = Ea()
-    for (c = this.ye.iterator; c.next(); ) {
+    for (c = this.ye.iterator; c.next();) {
       var d = c.value
       null === d.link && null === d.data && b.push(d)
     }
@@ -39453,7 +39441,7 @@
     Ga(b)
   }
   function Eq(a) {
-    for (var b = Ea(), c = a.ye.iterator; c.next(); ) {
+    for (var b = Ea(), c = a.ye.iterator; c.next();) {
       var d = c.value
       ;(null !== d.fromVertex && null !== d.toVertex) || b.push(d)
     }
@@ -39465,9 +39453,9 @@
     void 0 === a && (a = !0)
     a && (this.deleteArtificialVertexes(), Eq(this), this.Lo())
     a = new F()
-    for (var b = !0; b; ) {
+    for (var b = !0; b;) {
       b = !1
-      for (var c = this.wf.iterator; c.next(); ) {
+      for (var c = this.wf.iterator; c.next();) {
         var d = c.value
         if (0 < d.tg.count || 0 < d.mg.count) {
           b = this.layout.createNetwork()
@@ -39487,17 +39475,17 @@
     if (null !== c && c.network !== b) {
       Bq(a, c)
       b.dh(c)
-      for (var d = c.sourceEdges; d.next(); ) {
+      for (var d = c.sourceEdges; d.next();) {
         var e = d.value
         e.network !== b && (Dq(a, e), Cq(b, e), Fq(a, b, e.fromVertex))
       }
-      for (d = c.destinationEdges; d.next(); )
+      for (d = c.destinationEdges; d.next();)
         ((c = d.value), c.network !== b && (Dq(a, c), Cq(b, c), Fq(a, b, c.toVertex)))
     }
   }
   wq.prototype.iz = function () {
-    for (var a = new H(), b = this.wf.iterator; b.next(); ) a.add(b.value.node)
-    for (b = this.ye.iterator; b.next(); ) a.add(b.value.link)
+    for (var a = new H(), b = this.wf.iterator; b.next();) a.add(b.value.node)
+    for (b = this.ye.iterator; b.next();) a.add(b.value.link)
     return a
   }
   ma.Object.defineProperties(wq.prototype, {
@@ -39556,14 +39544,14 @@
     var b = 'LayoutVertex#' + bb(this)
     if (0 < a && ((b += null !== this.node ? '(' + this.node.toString() + ')' : ''), 1 < a)) {
       a = ''
-      for (var c = !0, d = this.tg.iterator; d.next(); ) {
+      for (var c = !0, d = this.tg.iterator; d.next();) {
         var e = d.value
         c ? (c = !1) : (a += ',')
         a += e.toString(0)
       }
       e = ''
       c = !0
-      for (d = this.mg.iterator; d.next(); ) {
+      for (d = this.mg.iterator; d.next();) {
         var f = d.value
         c ? (c = !1) : (e += ',')
         e += f.toString(0)
@@ -39773,20 +39761,20 @@
     },
     sourceVertexes: {
       get: function () {
-        for (var a = new H(), b = this.sourceEdges; b.next(); ) a.add(b.value.fromVertex)
+        for (var a = new H(), b = this.sourceEdges; b.next();) a.add(b.value.fromVertex)
         return a.iterator
       },
     },
     destinationVertexes: {
       get: function () {
-        for (var a = new H(), b = this.destinationEdges; b.next(); ) a.add(b.value.toVertex)
+        for (var a = new H(), b = this.destinationEdges; b.next();) a.add(b.value.toVertex)
         return a.iterator
       },
     },
     vertexes: {
       get: function () {
-        for (var a = new H(), b = this.sourceEdges; b.next(); ) a.add(b.value.fromVertex)
-        for (b = this.destinationEdges; b.next(); ) a.add(b.value.toVertex)
+        for (var a = new H(), b = this.sourceEdges; b.next();) a.add(b.value.fromVertex)
+        for (b = this.destinationEdges; b.next();) a.add(b.value.toVertex)
         return a.iterator
       },
     },
@@ -39802,8 +39790,8 @@
     },
     edges: {
       get: function () {
-        for (var a = new F(), b = this.sourceEdges; b.next(); ) a.add(b.value)
-        for (b = this.destinationEdges; b.next(); ) a.add(b.value)
+        for (var a = new F(), b = this.sourceEdges; b.next();) a.add(b.value)
+        for (b = this.destinationEdges; b.next();) a.add(b.value)
         return a.iterator
       },
     },
@@ -39964,10 +39952,10 @@
     this.arrangementOrigin = this.initialOrigin(this.arrangementOrigin)
     var b = this.hx(a)
     a = this.diagram
-    for (var c = b.copy().iterator; c.next(); ) {
+    for (var c = b.copy().iterator; c.next();) {
       var d = c.value
       if (!d.ph() || (null === d.fromNode && null === d.toNode)) {
-        if ((d.Va(), d instanceof jf)) for (d = d.memberParts; d.next(); ) b.remove(d.value)
+        if ((d.Va(), d instanceof jf)) for (d = d.memberParts; d.next();) b.remove(d.value)
       } else b.remove(d)
     }
     var e = b.Fa()
@@ -40342,7 +40330,7 @@
   t.Wd = function () {
     var a = this.H
     if (null !== a) {
-      for (var b = a.nodeTemplateMap.iterator; b.next(); ) {
+      for (var b = a.nodeTemplateMap.iterator; b.next();) {
         var c = b.value,
           d = b.key
         ;(!c.Zc() || c instanceof jf) &&
@@ -40353,7 +40341,7 @@
               c
           )
       }
-      for (b = a.groupTemplateMap.iterator; b.next(); )
+      for (b = a.groupTemplateMap.iterator; b.next();)
         ((c = b.value),
           (d = b.key),
           c instanceof jf ||
@@ -40363,7 +40351,7 @@
                 '" must be a Group, not a normal Node or Link: ' +
                 c
             ))
-      for (b = a.linkTemplateMap.iterator; b.next(); )
+      for (b = a.linkTemplateMap.iterator; b.next();)
         ((c = b.value),
           (d = b.key),
           c instanceof T ||
@@ -40374,17 +40362,17 @@
                 c
             ))
       b = Ea()
-      for (c = a.selection.iterator; c.next(); ) (d = c.value.data) && b.push(d)
+      for (c = a.selection.iterator; c.next();) (d = c.value.data) && b.push(d)
       c = Ea()
-      for (a = a.highlighteds.iterator; a.next(); ) (d = a.value.data) && c.push(d)
+      for (a = a.highlighteds.iterator; a.next();) (d = a.value.data) && c.push(d)
       a = Ea()
-      for (d = this.nodes.iterator; d.next(); ) {
+      for (d = this.nodes.iterator; d.next();) {
         var e = d.value
         null !== e.data && (a.push(e.data), a.push(e.location))
       }
-      for (d = this.links.iterator; d.next(); )
+      for (d = this.links.iterator; d.next();)
         ((e = d.value), null !== e.data && (a.push(e.data), a.push(e.location)))
-      for (d = this.parts.iterator; d.next(); )
+      for (d = this.parts.iterator; d.next();)
         ((e = d.value), null !== e.data && (a.push(e.data), a.push(e.location)))
       this.removeAllModeledParts()
       this.addAllModeledParts()
@@ -40538,7 +40526,7 @@
   t.ms = function (a) {
     for (var b = 0; b < arguments.length; ++b);
     b = new H()
-    for (var c = this.Pn.iterator; c.next(); ) {
+    for (var c = this.Pn.iterator; c.next();) {
       var d = c.value,
         e = d.data
       if (null !== e)
@@ -40555,7 +40543,7 @@
   t.ls = function (a) {
     for (var b = 0; b < arguments.length; ++b);
     b = new H()
-    for (var c = this.En.iterator; c.next(); ) {
+    for (var c = this.En.iterator; c.next();) {
       var d = c.value,
         e = d.data
       if (null !== e)
@@ -40661,9 +40649,9 @@
   }
   pi.prototype.updateAllTargetBindings = function (a) {
     void 0 === a && (a = '')
-    for (var b = this.parts.iterator; b.next(); ) b.value.La(a)
-    for (b = this.nodes.iterator; b.next(); ) b.value.La(a)
-    for (b = this.links.iterator; b.next(); ) b.value.La(a)
+    for (var b = this.parts.iterator; b.next();) b.value.La(a)
+    for (b = this.nodes.iterator; b.next();) b.value.La(a)
+    for (b = this.links.iterator; b.next();) b.value.La(a)
   }
   pi.prototype.rp = function () {
     for (var a = this.H.model, b = new H(), c = a.nodeDataArray, d = 0; d < c.length; d++)
@@ -40683,9 +40671,9 @@
       null === this.Mc(f) && Xq(a, f, !1)
     }
     this.refreshDataBoundLinks()
-    for (c = this.parts.iterator; c.next(); ) c.value.updateRelationshipsFromData()
-    for (c = this.nodes.iterator; c.next(); ) c.value.updateRelationshipsFromData()
-    for (c = this.links.iterator; c.next(); ) c.value.updateRelationshipsFromData()
+    for (c = this.parts.iterator; c.next();) c.value.updateRelationshipsFromData()
+    for (c = this.nodes.iterator; c.next();) c.value.updateRelationshipsFromData()
+    for (c = this.links.iterator; c.next();) c.value.updateRelationshipsFromData()
   }
   pi.prototype.refreshDataBoundLinks = function () {}
   pi.prototype.updateRelationshipsFromData = function () {}
@@ -40695,7 +40683,7 @@
       if (null !== c) c.La(b)
       else {
         c = null
-        for (var d = this.bj.iterator; d.next(); ) {
+        for (var d = this.bj.iterator; d.next();) {
           for (var e = d.value, f = 0; f < e.length; f++) {
             var g = e[f].ux(a)
             null !== g && (null === c && (c = Ea()), c.push(g))
@@ -40742,13 +40730,13 @@
     void 0 === c && (c = !1)
     var d = new ob()
     if (Aa(a)) for (var e = 0; e < a.length; e++) Yq(this, a[e], b, d, c)
-    else for (a = a.iterator; a.next(); ) Yq(this, a.value, b, d, c)
+    else for (a = a.iterator; a.next();) Yq(this, a.value, b, d, c)
     if (null !== b) {
       c = b.model
       a = b.toolManager.findTool('Dragging')
       a = null !== a ? a.dragOptions.dragsLink : b.Xm.dragsLink
       e = new H()
-      for (var f = new ob(), g = d.iterator; g.next(); ) {
+      for (var f = new ob(), g = d.iterator; g.next();) {
         var h = g.value
         if (h instanceof T) a || (null !== h.fromNode && null !== h.toNode) || e.add(h)
         else if (h instanceof V && null !== h.data && c.Tl()) {
@@ -40766,7 +40754,7 @@
         }
       }
       0 < e.count && b.Js(e, !1)
-      if (0 < f.count) for (c = f.iterator; c.next(); ) d.add(c.key, c.value)
+      if (0 < f.count) for (c = f.iterator; c.next();) d.add(c.key, c.value)
     }
     if (null !== b && null !== this.H && ((b = b.model), (c = b.afterCopyFunction), null !== c)) {
       var m = new ob()
@@ -40775,7 +40763,7 @@
       })
       c(m, b, this.H.model)
     }
-    for (b = d.iterator; b.next(); ) b.value.La()
+    for (b = d.iterator; b.next();) b.value.La()
     return d
   }
   function Yq(a, b, c, d, e) {
@@ -40787,7 +40775,7 @@
     f.isHighlighted = !1
     d.add(b, f)
     if (b instanceof V) {
-      for (var g = b.linksConnected; g.next(); ) {
+      for (var g = b.linksConnected; g.next();) {
         var h = g.value
         if (h.fromNode === b) {
           var k = d.I(h)
@@ -40796,7 +40784,7 @@
         h.toNode === b && ((h = d.I(h)), null !== h && (h.toNode = f))
       }
       if (b instanceof jf && f instanceof jf)
-        for (b = b.memberParts; b.next(); )
+        for (b = b.memberParts; b.next();)
           ((g = Yq(a, b.value, c, d, e)), g instanceof T || null === g || (g.containingGroup = f))
     } else if (b instanceof T && f instanceof T)
       for (
@@ -40888,7 +40876,7 @@
   }
   Zq.prototype.addModeledParts = function (a) {
     pi.prototype.addModeledParts.call(this, a, !1)
-    for (a = this.links.iterator; a.next(); ) kp(a.value)
+    for (a = this.links.iterator; a.next();) kp(a.value)
     kk(this.diagram, !1)
   }
   function $q(a, b) {
@@ -41156,7 +41144,7 @@
         e = this.Mc(a)
       if (null !== d && null !== e) {
         d = d.iterator
-        for (var f = {}; d.next(); ) {
+        for (var f = {}; d.next();) {
           var g = d.value
           b.lb(g)
             ? e instanceof jf &&
@@ -41189,10 +41177,10 @@
     if (a instanceof V) {
       var c = b.wa(a.data)
       if (void 0 !== c) {
-        for (var d = a.linksConnected; d.next(); ) jr(b, c, d.value.data)
+        for (var d = a.linksConnected; d.next();) jr(b, c, d.value.data)
         a.isLinkLabel && ((d = a.labeledLink), null !== d && jr(b, c, d.data))
         if (a instanceof jf)
-          for (a = a.memberParts; a.next(); ) ((d = a.value.data), b.lb(d) && jr(b, c, d))
+          for (a = a.memberParts; a.next();) ((d = a.value.data), b.lb(d) && jr(b, c, d))
       }
     }
   }
@@ -41413,7 +41401,7 @@
       var d = hr(b, c),
         e = this.Mc(a)
       if (null !== d && null !== e) {
-        for (d = d.iterator; d.next(); ) {
+        for (d = d.iterator; d.next();) {
           var f = d.value
           b.lb(f) && e instanceof V && b.mh(f) === c && nr(this, e, this.ji(f))
         }
@@ -41440,7 +41428,7 @@
         }
       }
       d = this.diagram.isTreePathToChildren
-      for (a = a.linksConnected; a.next(); )
+      for (a = a.linksConnected; a.next();)
         ((e = a.value), (e = (d ? e.toNode : e.fromNode).data), b.lb(e) && jr(b, c, e))
     }
   }
@@ -41597,7 +41585,7 @@
       var k = d.get(b)
       if (k) return k
     } else
-      for (e || (e = new ob()), k = e.iterator; k.next(); ) {
+      for (e || (e = new ob()), k = e.iterator; k.next();) {
         var l = k.key
         if (k.value === b && (l = d.get(l))) return l
       }
@@ -41977,7 +41965,7 @@
             isNaN(c.endRadius) || (b.endRadius = yr(c.endRadius))))
       if (null !== c.colorStops) {
         var d = {}
-        for (c = c.colorStops.iterator; c.next(); ) d[c.key] = c.value
+        for (c = c.colorStops.iterator; c.next();) d[c.key] = c.value
         b.colorStops = d
       }
     } else
@@ -42001,7 +41989,7 @@
           (c ? (c = !1) : (d += ','), (d += a.quote(e) + ':'), 'points' === e && f instanceof F)
         ) {
           var g = '['
-          for (f = f.iterator; f.next(); ) {
+          for (f = f.iterator; f.next();) {
             var h = f.value
             1 < g.length && (g += ',')
             g += a.tm(h.x)
@@ -42232,10 +42220,10 @@
             return
           }
           if ('string' === typeof c) {
-            for (d = 2; this.kb.contains(c + d); ) d++
+            for (d = 2; this.kb.contains(c + d);) d++
             Zj(a, b, c + d)
           } else if (void 0 === c || 'number' === typeof c) {
-            for (c = -this.kb.count - 1; this.kb.contains(c); ) c--
+            for (c = -this.kb.count - 1; this.kb.contains(c);) c--
             Zj(a, b, c)
           }
         }
@@ -42261,7 +42249,7 @@
   }
   t.Hy = function (a) {
     if (Aa(a)) for (var b = a.length, c = 0; c < b; c++) this.xf(a[c])
-    else for (a = a.iterator; a.next(); ) this.xf(a.value)
+    else for (a = a.iterator; a.next();) this.xf(a.value)
   }
   t.dm = function (a) {
     null !== a && Wq(this, a, !0)
@@ -42289,7 +42277,7 @@
   }
   t.rA = function (a) {
     if (Aa(a)) for (var b = a.length, c = 0; c < b; c++) this.dm(a[c])
-    else for (a = a.iterator; a.next(); ) this.dm(a.value)
+    else for (a = a.iterator; a.next();) this.dm(a.value)
   }
   t.eA = function (a) {
     if (a !== this.nodeDataArray && Aa(a)) {
@@ -42310,7 +42298,7 @@
               : ((f = this.cloneDeep(f)), this.lm(f, g), this.xf(f)))
         } else ((g = this.cloneDeep(f)), this.xf(g), c.add(this.wa(g)))
       }
-      for (a = b.iterator; a.next(); )
+      for (a = b.iterator; a.next();)
         ((d = a.value), c.contains(d) || ((d = this.jc(d)) && this.dm(d)))
       b.clear()
       c.clear()
@@ -42622,7 +42610,7 @@
               g = this.wa(f)
             void 0 === g ? d.add(f) : null !== this.kb.I(g) ? d.add(f) : this.kb.add(g, f)
           }
-          for (d = d.iterator; d.next(); )
+          for (d = d.iterator; d.next();)
             ((e = d.value), this.bv(e), (f = this.wa(e)), void 0 !== f && this.kb.add(f, e))
           Br(this, 'nodeDataArray', de, 'nodeDataArray', this, b, a)
           for (b = 0; b < c; b++) ((d = a[b]), this.gm(d), this.fm(d))
@@ -43547,10 +43535,10 @@
             return
           }
           if ('string' === typeof c) {
-            for (d = 2; this.xb.contains(c + d); ) d++
+            for (d = 2; this.xb.contains(c + d);) d++
             Zj(a, b, c + d)
           } else if (void 0 === c || 'number' === typeof c) {
-            for (c = -this.xb.count - 1; this.xb.contains(c); ) c--
+            for (c = -this.xb.count - 1; this.xb.contains(c);) c--
             Zj(a, b, c)
           }
         }
@@ -43581,7 +43569,7 @@
   }
   t.Gy = function (a) {
     if (Array.isArray(a)) for (var b = a.length, c = 0; c < b; c++) this.fi(a[c])
-    else for (a = a.iterator; a.next(); ) this.fi(a.value)
+    else for (a = a.iterator; a.next();) this.fi(a.value)
   }
   t.cm = function (a) {
     null !== a && fr(this, a, !0)
@@ -43606,7 +43594,7 @@
   }
   t.pA = function (a) {
     if (Array.isArray(a)) for (var b = a.length, c = 0; c < b; c++) this.cm(a[c])
-    else for (a = a.iterator; a.next(); ) this.cm(a.value)
+    else for (a = a.iterator; a.next();) this.cm(a.value)
   }
   t.dA = function (a) {
     '' === this.linkKeyProperty &&
@@ -43631,7 +43619,7 @@
               : ((f = this.cloneDeep(f)), this.Ls(f, g), this.fi(f)))
         } else ((g = this.cloneDeep(f)), this.fi(g), c.add(this.Ac(g)))
       }
-      for (a = b.iterator; a.next(); )
+      for (a = b.iterator; a.next();)
         ((d = a.value), c.contains(d) || ((d = this.jh(d)) && this.cm(d)))
       b.clear()
       c.clear()
@@ -43758,8 +43746,8 @@
   }
   t.jp = function (a, b) {
     Z.prototype.jp.call(this, a, b)
-    for (var c = this.kb.iterator; c.next(); ) this.sv(c.value, a, b)
-    for (c = this.$f.iterator; c.next(); ) {
+    for (var c = this.kb.iterator; c.next();) this.sv(c.value, a, b)
+    for (c = this.$f.iterator; c.next();) {
       var d = c.value,
         e = a,
         f = b
@@ -43798,7 +43786,7 @@
     var b = hr(this, a)
     if (null !== b) {
       var c = Ea()
-      for (b = b.iterator; b.next(); ) {
+      for (b = b.iterator; b.next();) {
         var d = b.value
         if (this.lb(d)) {
           if (this.lh(d) === a) {
@@ -43968,7 +43956,7 @@
                 g = this.Ac(f)
               void 0 === g ? d.add(f) : null !== this.xb.I(g) ? d.add(f) : this.xb.add(g, f)
             }
-            for (d = d.iterator; d.next(); )
+            for (d = d.iterator; d.next();)
               ((e = d.value), this.Bs(e), (f = this.Ac(e)), void 0 !== f && this.xb.add(f, e))
           }
           d = new H()
@@ -44230,7 +44218,7 @@
   t = Lr.prototype
   t.jp = function (a, b) {
     Z.prototype.jp.call(this, a, b)
-    for (var c = this.kb.iterator; c.next(); ) this.sv(c.value, a, b)
+    for (var c = this.kb.iterator; c.next();) this.sv(c.value, a, b)
   }
   t.sv = function (a, b, c) {
     if (this.mh(a) === b) {
@@ -44246,7 +44234,7 @@
     var b = hr(this, a)
     if (null !== b) {
       var c = Ea()
-      for (b = b.iterator; b.next(); ) {
+      for (b = b.iterator; b.next();) {
         var d = b.value
         if (this.lb(d) && this.mh(d) === a) {
           var e = this.Ke
@@ -44631,7 +44619,7 @@
     a.nj = 0
     a.Xr = new Pr()
     if (360 > c) {
-      for (f = d + (e === Qr ? f : -f); 0 > f; ) f += 360
+      for (f = d + (e === Qr ? f : -f); 0 > f;) f += 360
       f %= 360
       180 < f && (f -= 360)
       f *= Math.PI / 180
@@ -44806,7 +44794,7 @@
     a
       ? (c = new I(0, 0))
       : ((c.x = this.arrangementOrigin.x + this.nc), (c.y = this.arrangementOrigin.y + this.me))
-    for (var d = this.network.vertexes.iterator; d.next(); ) {
+    for (var d = this.network.vertexes.iterator; d.next();) {
       var e = d.value
       e.x += c.x
       e.y += c.y
@@ -44821,7 +44809,7 @@
       (this.aw = b.re(a)))
   }
   Nr.prototype.commitLinks = function () {
-    for (var a = this.network.edges.iterator; a.next(); ) a.value.commit()
+    for (var a = this.network.edges.iterator; a.next();) a.value.commit()
   }
   function gs(a, b, c, d, e) {
     var f = a.vy
@@ -44887,9 +44875,9 @@
       c.add(a.M(f))
       b[f] = -1
       f = a.M(f)
-      for (g = f.sourceEdges; g.next(); )
+      for (g = f.sourceEdges; g.next();)
         ((e = a.indexOf(g.value.fromVertex)), 0 > e || (0 <= b[e] && b[e]++))
-      for (f = f.destinationEdges; f.next(); )
+      for (f = f.destinationEdges; f.next();)
         ((e = a.indexOf(f.value.toVertex)), 0 > e || (0 <= b[e] && b[e]++))
     }
     return c
@@ -44898,9 +44886,9 @@
     for (var b = [], c = 0; c < a.length; c++) {
       var d = a.M(c)
       b[c] = []
-      for (var e, f = d.destinationEdges; f.next(); )
+      for (var e, f = d.destinationEdges; f.next();)
         ((e = a.indexOf(f.value.toVertex)), e !== c && 0 > b[c].indexOf(e) && b[c].push(e))
-      for (d = d.sourceEdges; d.next(); )
+      for (d = d.sourceEdges; d.next();)
         ((e = a.indexOf(d.value.fromVertex)), e !== c && 0 > b[c].indexOf(e) && b[c].push(e))
     }
     f = []
@@ -44962,7 +44950,7 @@
         k++
       }
     }
-    for (g = c.length; ; ) {
+    for (g = c.length; ;) {
       f = !0
       for (h = 0; h < d.length; h++)
         if (((k = d[h]), (l = b[k][0]), (m = c.indexOf(l)), 0 <= m)) {
@@ -45243,21 +45231,21 @@
     a = this.maxIterations
     if (0 < this.network.vertexes.count) {
       this.network.Lo()
-      for (var b = this.network.vertexes.iterator; b.next(); ) {
+      for (var b = this.network.vertexes.iterator; b.next();) {
         var c = b.value
         c.charge = this.electricalCharge(c)
         c.mass = this.gravitationalMass(c)
       }
-      for (b = this.network.edges.iterator; b.next(); )
+      for (b = this.network.edges.iterator; b.next();)
         ((c = b.value), (c.stiffness = this.springStiffness(c)), (c.length = this.springLength(c)))
       this.Du()
       this.Bn = 0
       if (this.needsClusterLayout()) {
         b = this.network
         c = b.ay()
-        for (var d = c.iterator; d.next(); ) {
+        for (var d = c.iterator; d.next();) {
           this.network = d.value
-          for (var e = this.network.vertexes.iterator; e.next(); ) {
+          for (var e = this.network.vertexes.iterator; e.next();) {
             var f = e.value
             f.Vd = f.vertexes.count
             f.sh = 1
@@ -45275,7 +45263,7 @@
         for (var l = Ea(), m = 0; m < h + b.vertexes.count + 2; m++) l[m] = null
         h = 0
         g.reset()
-        for (var n = N.alloc(); g.next(); )
+        for (var n = N.alloc(); g.next();)
           if (((m = g.value), this.computeBounds(m, n), k))
             ((k = !1),
               (e = n.x + n.width / 2),
@@ -45294,11 +45282,11 @@
             h++
             p = q.x - n.x
             q = q.y - n.y
-            for (m = m.vertexes.iterator; m.next(); )
+            for (m = m.vertexes.iterator; m.next();)
               ((r = m.value), (r.centerX += p), (r.centerY += q))
           }
         N.free(n)
-        for (m = b.vertexes.iterator; m.next(); )
+        for (m = b.vertexes.iterator; m.next();)
           ((g = m.value),
             (p = g.bounds),
             2 > h
@@ -45318,10 +45306,10 @@
                 (g.centerX = n.x + g.width / 2),
                 (g.centerY = n.y + g.height / 2)))
         Ga(l)
-        for (d = c.iterator; d.next(); ) {
+        for (d = c.iterator; d.next();) {
           c = d.value
-          for (e = c.vertexes.iterator; e.next(); ) b.dh(e.value)
-          for (c = c.edges.iterator; c.next(); ) b.Co(c.value)
+          for (e = c.vertexes.iterator; e.next();) b.dh(e.value)
+          for (c = c.edges.iterator; c.next();) b.Co(c.value)
         }
       }
       xs(this, a)
@@ -45348,7 +45336,7 @@
   }
   ts.prototype.computeBounds = function (a, b) {
     var c = !0
-    for (a = a.vertexes.iterator; a.next(); ) {
+    for (a = a.vertexes.iterator; a.next();) {
       var d = a.value
       c ? ((c = !1), b.set(d.bounds)) : b.ed(d.bounds)
     }
@@ -45379,7 +45367,7 @@
     a.sort(function (a, b) {
       return null === a || null === b || a === b ? 0 : b.Vd - a.Vd
     })
-    for (b = a.length - 1; 0 <= b && 1 >= a[b].Vd; ) b--
+    for (b = a.length - 1; 0 <= b && 1 >= a[b].Vd;) b--
     return 1 < a.length - b
   }
   function zs(a, b) {
@@ -45398,7 +45386,7 @@
         f.uv = f.We.count - 1
       } else break
     }
-    for (f = c.edges.iterator; f.next(); ) {
+    for (f = c.edges.iterator; f.next();) {
       var h = f.value
       e = h.fromVertex
       g = h.toVertex
@@ -45417,17 +45405,17 @@
             g.Vd--,
             (g.sh += e.sh))
     }
-    for (e = d.edges.iterator; e.next(); )
+    for (e = d.edges.iterator; e.next();)
       ((f = e.value),
         (f.length *= Math.max(1, K.sqrt((f.fromVertex.sh + f.toVertex.sh) / (4 * b + 1)))))
-    for (b = d.vertexes.iterator; b.next(); ) {
+    for (b = d.vertexes.iterator; b.next();) {
       e = b.value
       var k = e.Hj
       if (null !== k && 0 < k.count && ((g = e.We.M(e.We.count - 1).Ss - e.Vd), !(0 >= g))) {
         for (var l = (h = 0), m = k.count - g; m < k.count; m++) {
           var n = k.M(m),
             p = null
-          for (f = n.edges.iterator; f.next(); ) {
+          for (f = n.edges.iterator; f.next();) {
             var q = f.value
             if (q.Cx(n) === e) {
               p = q
@@ -45454,7 +45442,7 @@
     return c
   }
   function As(a, b) {
-    for (var c = a.network.vertexes.iterator; c.next(); ) {
+    for (var c = a.network.vertexes.iterator; c.next();) {
       var d = c.value
       d.network = b
       if (null !== d.We) {
@@ -45467,7 +45455,7 @@
         d.uv--
       }
     }
-    for (c = a.network.edges.iterator; c.next(); ) c.value.network = b
+    for (c = a.network.edges.iterator; c.next();) c.value.network = b
     a.network = b
   }
   function Bs(a, b) {
@@ -45479,7 +45467,7 @@
         g = b.height
       null !== b.We && 0 < b.We.count && ((g = b.We.M(0)), (f = g.Ts), (g = g.Rs))
       f = K.sqrt(f * f + g * g) / 2
-      for (var h = !1, k = (g = 0), l = 0, m = b.vertexes.iterator; m.next(); ) {
+      for (var h = !1, k = (g = 0), l = 0, m = b.vertexes.iterator; m.next();) {
         var n = m.value
         1 >= n.Vd
           ? k++
@@ -45503,7 +45491,7 @@
         )
           if (((k = c.value), !(1 < k.Vd || a.isFixed(k)))) {
             m = null
-            for (n = k.edges.iterator; n.next(); ) {
+            for (n = k.edges.iterator; n.next();) {
               m = n.value
               break
             }
@@ -45538,19 +45526,19 @@
   }
   ts.prototype.Du = function () {
     if (this.comments)
-      for (var a = this.network.vertexes.iterator; a.next(); ) this.addComments(a.value)
+      for (var a = this.network.vertexes.iterator; a.next();) this.addComments(a.value)
   }
   ts.prototype.addComments = function (a) {
     var b = a.node
     if (null !== b)
-      for (b = b.Ou(); b.next(); ) {
+      for (b = b.Ou(); b.next();) {
         var c = b.value
         if ('Comment' === c.category && c.isVisible()) {
           var d = this.network.li(c)
           null === d && (d = this.network.Bl(c))
           d.charge = this.defaultCommentElectricalCharge
           c = null
-          for (var e = d.destinationEdges; e.next(); ) {
+          for (var e = d.destinationEdges; e.next();) {
             var f = e.value
             if (f.toVertex === a) {
               c = f
@@ -45558,7 +45546,7 @@
             }
           }
           if (null === c)
-            for (e = d.sourceEdges; e.next(); )
+            for (e = d.sourceEdges; e.next();)
               if (((f = e.value), f.fromVertex === a)) {
                 c = f
                 break
@@ -45599,7 +45587,7 @@
   }
   function xs(a, b) {
     a.ah = null
-    for (b = a.Bn + b; a.Bn < b && (a.Bn++, Es(a)); );
+    for (b = a.Bn + b; a.Bn < b && (a.Bn++, Es(a)););
     a.ah = null
   }
   function Es(a) {
@@ -45680,7 +45668,7 @@
         }
       }
     }
-    for (e = a.network.edges.iterator; e.next(); )
+    for (e = a.network.edges.iterator; e.next();)
       ((h = e.value),
         (c = h.fromVertex),
         (f = h.toVertex),
@@ -45727,7 +45715,7 @@
   }
   ts.prototype.Av = function () {
     if (this.setsPortSpots)
-      for (var a = this.network.edges.iterator; a.next(); ) {
+      for (var a = this.network.edges.iterator; a.next();) {
         var b = a.value.link
         null !== b && ((b.fromSpot = Sc), (b.toSpot = Sc))
       }
@@ -45744,7 +45732,7 @@
       N.free(c)
     }
     c = N.alloc()
-    for (var d = this.network.vertexes.iterator; d.next(); ) {
+    for (var d = this.network.vertexes.iterator; d.next();) {
       var e = d.value
       if (0 !== a || 0 !== b) (c.assign(e.bounds), (c.x += a), (c.y += b), (e.bounds = c))
       e.commit()
@@ -45752,7 +45740,7 @@
     N.free(c)
   }
   ts.prototype.commitLinks = function () {
-    for (var a = this.network.edges.iterator; a.next(); ) a.value.commit()
+    for (var a = this.network.edges.iterator; a.next();) a.value.commit()
   }
   ts.prototype.springStiffness = function (a) {
     a = a.stiffness
@@ -46097,13 +46085,13 @@
     if (0 < this.network.vertexes.count) {
       this.network.Lo()
       this.cycleRemoveOption !== Os && this.removeCycles()
-      for (a = this.network.vertexes.iterator; a.next(); ) a.value.layer = -1
+      for (a = this.network.vertexes.iterator; a.next();) a.value.layer = -1
       this.Ia = -1
       this.assignLayers()
-      for (a.reset(); a.next(); ) this.Ia = Math.max(this.Ia, a.value.layer)
+      for (a.reset(); a.next();) this.Ia = Math.max(this.Ia, a.value.layer)
       this.cycleRemoveOption === Os && this.removeCycles()
       a = this.network
-      for (var b = [], c = a.edges.iterator; c.next(); ) {
+      for (var b = [], c = a.edges.iterator; c.next();) {
         var d = c.value
         d.valid = !1
         b.push(d)
@@ -46112,13 +46100,11 @@
         d = b[c]
         var e = d.fromVertex,
           f = d.toVertex
-        if (
-          !(
-            d.valid ||
-            (((null === e.node && null === e.data) || (null === f.node && null === f.data)) &&
-              e.layer === f.layer)
-          )
-        ) {
+        if (!(
+          d.valid ||
+          (((null === e.node && null === e.data) || (null === f.node && null === f.data)) &&
+            e.layer === f.layer)
+        )) {
           var g = 0,
             h = 0,
             k = 0,
@@ -46131,8 +46117,8 @@
             if (null === m || null === g) continue
             var n = h.fromNode
             k = h.toNode
-            for (var p = h.fromPort; null !== p && !p.Ed(); ) p = p.panel
-            for (h = h.toPort; null !== h && !h.Ed(); ) h = h.panel
+            for (var p = h.fromPort; null !== p && !p.Ed();) p = p.panel
+            for (h = h.toPort; null !== h && !h.Ed();) h = h.panel
             if (d.rev) {
               l = n
               var q = p
@@ -46262,7 +46248,7 @@
             e.portFromPos = p ? 0 : k
             e.portToPos = 0
             e = r
-            for (q--; q - m > v && 0 < q; )
+            for (q--; q - m > v && 0 < q;)
               ((r = a.createVertex()),
                 (r.node = null),
                 (r.Eu = 3),
@@ -46291,7 +46277,7 @@
       }
       a = this.vb = []
       for (b = 0; b <= this.Ia; b++) a[b] = 0
-      for (b = this.network.vertexes.iterator; b.next(); ) b.value.index = -1
+      for (b = this.network.vertexes.iterator; b.next();) b.value.index = -1
       this.initializeIndices()
       this.Iq = -1
       for (c = this.Md = this.In = 0; c <= this.Ia; c++)
@@ -46299,7 +46285,7 @@
           a[c] < a[this.In] && (this.In = c))
       this.el = []
       for (c = 0; c < a.length; c++) this.el[c] = []
-      for (b.reset(); b.next(); ) ((a = b.value), (this.el[a.layer][a.index] = a))
+      for (b.reset(); b.next();) ((a = b.value), (this.el[a.layer][a.index] = a))
       this.Ra = -1
       for (a = 0; a <= this.Ia; a++) {
         b = Ss(this, a)
@@ -46355,7 +46341,7 @@
   }
   function Vs(a) {
     null === a.lj && (a.lj = [])
-    for (var b = 0, c = a.network.vertexes.iterator; c.next(); ) {
+    for (var b = 0, c = a.network.vertexes.iterator; c.next();) {
       var d = c.value
       a.lj[b] = d.layer
       b++
@@ -46368,7 +46354,7 @@
   }
   function Ws(a, b) {
     var c = 0
-    for (a = a.network.vertexes.iterator; a.next(); ) {
+    for (a = a.network.vertexes.iterator; a.next();) {
       var d = a.value
       d.layer = b[c]
       c++
@@ -46496,12 +46482,12 @@
   Is.prototype.normalize = function () {
     var a = Infinity
     this.Ra = -1
-    for (var b = this.network.vertexes.iterator; b.next(); ) {
+    for (var b = this.network.vertexes.iterator; b.next();) {
       var c = b.value
       a = Math.min(a, c.column - this.nodeMinColumnSpace(c, !0))
       this.Ra = Math.max(this.Ra, c.column + this.nodeMinColumnSpace(c, !1))
     }
-    for (b.reset(); b.next(); ) b.value.column -= a
+    for (b.reset(); b.next();) b.value.column -= a
     this.Ra -= a
   }
   function Zs(a, b, c) {
@@ -46569,7 +46555,7 @@
     if (b.component === d) {
       b.component = c
       if (e)
-        for (var g = b.destinationEdges; g.next(); ) {
+        for (var g = b.destinationEdges; g.next();) {
           var h = g.value
           var k = h.toVertex
           var l = b.layer - k.layer
@@ -46577,7 +46563,7 @@
           l === h && at(a, k, c, d, e, f)
         }
       if (f)
-        for (g = b.sourceEdges; g.next(); )
+        for (g = b.sourceEdges; g.next();)
           ((h = g.value),
             (k = h.fromVertex),
             (l = k.layer - b.layer),
@@ -46588,12 +46574,12 @@
   function bt(a, b, c, d, e, f) {
     if (b.component === d) {
       b.component = c
-      if (e) for (var g = b.destinationEdges; g.next(); ) bt(a, g.value.toVertex, c, d, e, f)
-      if (f) for (b = b.sourceEdges; b.next(); ) bt(a, b.value.fromVertex, c, d, e, f)
+      if (e) for (var g = b.destinationEdges; g.next();) bt(a, g.value.toVertex, c, d, e, f)
+      if (f) for (b = b.sourceEdges; b.next();) bt(a, b.value.fromVertex, c, d, e, f)
     }
   }
   Is.prototype.removeCycles = function () {
-    for (var a = this.network.edges.iterator; a.next(); ) a.value.rev = !1
+    for (var a = this.network.edges.iterator; a.next();) a.value.rev = !1
     switch (this.Ck) {
       default:
       case ct:
@@ -46602,34 +46588,34 @@
           c = a.vertexes.count - 1,
           d = []
         d.length = c + 1
-        for (var e = a.vertexes.iterator; e.next(); ) e.value.valid = !0
-        for (; null !== dt(a); ) {
-          for (e = et(a); null !== e; ) ((d[c] = e), c--, (e.valid = !1), (e = et(a)))
-          for (e = ft(a); null !== e; ) ((d[b] = e), b++, (e.valid = !1), (e = ft(a)))
+        for (var e = a.vertexes.iterator; e.next();) e.value.valid = !0
+        for (; null !== dt(a);) {
+          for (e = et(a); null !== e;) ((d[c] = e), c--, (e.valid = !1), (e = et(a)))
+          for (e = ft(a); null !== e;) ((d[b] = e), b++, (e.valid = !1), (e = ft(a)))
           e = null
-          for (var f = 0, g = this.network.vertexes.iterator; g.next(); ) {
+          for (var f = 0, g = this.network.vertexes.iterator; g.next();) {
             var h = g.value
             if (h.valid) {
-              for (var k = 0, l = h.destinationEdges; l.next(); ) l.value.toVertex.valid && k++
+              for (var k = 0, l = h.destinationEdges; l.next();) l.value.toVertex.valid && k++
               l = 0
-              for (var m = h.sourceEdges; m.next(); ) m.value.fromVertex.valid && l++
+              for (var m = h.sourceEdges; m.next();) m.value.fromVertex.valid && l++
               if (null === e || f < k - l) ((e = h), (f = k - l))
             }
           }
           null !== e && ((d[b] = e), b++, (e.valid = !1))
         }
         for (b = 0; b < a.vertexes.count; b++) d[b].index = b
-        for (d = a.edges.iterator; d.next(); )
+        for (d = a.edges.iterator; d.next();)
           ((b = d.value), b.fromVertex.index > b.toVertex.index && (a.hm(b), (b.rev = !0)))
         break
       case Js:
-        for (d = this.network.vertexes.iterator; d.next(); )
+        for (d = this.network.vertexes.iterator; d.next();)
           ((a = d.value), (a.Ll = -1), (a.finish = -1))
-        for (a = this.network.edges.iterator; a.next(); ) a.value.forest = !1
+        for (a = this.network.edges.iterator; a.next();) a.value.forest = !1
         this.Ln = 0
-        for (d.reset(); d.next(); ) ((b = d.value), 0 === b.sourceEdges.count && gt(this, b))
-        for (d.reset(); d.next(); ) ((b = d.value), -1 === b.Ll && gt(this, b))
-        for (a.reset(); a.next(); )
+        for (d.reset(); d.next();) ((b = d.value), 0 === b.sourceEdges.count && gt(this, b))
+        for (d.reset(); d.next();) ((b = d.value), -1 === b.Ll && gt(this, b))
+        for (a.reset(); a.next();)
           ((d = a.value),
             d.forest ||
               ((b = d.fromVertex),
@@ -46641,32 +46627,32 @@
       case Os:
         a = this.network
         b = a.vertexes.iterator
-        for (d = Infinity; b.next(); ) d = Math.min(d, b.value.layer)
+        for (d = Infinity; b.next();) d = Math.min(d, b.value.layer)
         if (Infinity > d) {
-          if (0 > d) for (b.reset(); b.next(); ) b.value.layer -= d
+          if (0 > d) for (b.reset(); b.next();) b.value.layer -= d
           d = []
-          for (b.reset(); b.next(); )
+          for (b.reset(); b.next();)
             ((c = b.value), (e = d[c.layer]), void 0 === e ? (d[c.layer] = [c]) : e.push(c))
           for (c = b = 0; c < d.length; c++)
             if (((e = d[c]), !e || 0 === e.length)) b++
             else if (0 < c) for (f = 0; f < e.length; f++) e[f].layer -= b
-          for (d = a.edges.iterator; d.next(); )
+          for (d = a.edges.iterator; d.next();)
             ((b = d.value), b.fromVertex.layer < b.toVertex.layer && (a.hm(b), (b.rev = !0)))
         }
     }
   }
   function dt(a) {
-    for (a = a.vertexes.iterator; a.next(); ) {
+    for (a = a.vertexes.iterator; a.next();) {
       var b = a.value
       if (b.valid) return b
     }
     return null
   }
   function et(a) {
-    for (a = a.vertexes.iterator; a.next(); ) {
+    for (a = a.vertexes.iterator; a.next();) {
       var b = a.value
       if (b.valid) {
-        for (var c = !0, d = b.destinationEdges; d.next(); )
+        for (var c = !0, d = b.destinationEdges; d.next();)
           if (d.value.toVertex.valid) {
             c = !1
             break
@@ -46677,10 +46663,10 @@
     return null
   }
   function ft(a) {
-    for (a = a.vertexes.iterator; a.next(); ) {
+    for (a = a.vertexes.iterator; a.next();) {
       var b = a.value
       if (b.valid) {
-        for (var c = !0, d = b.sourceEdges; d.next(); )
+        for (var c = !0, d = b.sourceEdges; d.next();)
           if (d.value.fromVertex.valid) {
             c = !1
             break
@@ -46693,7 +46679,7 @@
   function gt(a, b) {
     b.Ll = a.Ln
     a.Ln++
-    for (var c = b.destinationEdges; c.next(); ) {
+    for (var c = b.destinationEdges; c.next();) {
       var d = c.value,
         e = d.toVertex
       ;-1 === e.Ll && ((d.forest = !0), gt(a, e))
@@ -46707,19 +46693,19 @@
         it(this)
         break
       case jt:
-        for (var a, b = this.network.vertexes.iterator; b.next(); )
+        for (var a, b = this.network.vertexes.iterator; b.next();)
           ((a = kt(this, b.value)), (this.Ia = Math.max(a, this.Ia)))
-        for (b.reset(); b.next(); ) ((a = b.value), (a.layer = this.Ia - a.layer))
+        for (b.reset(); b.next();) ((a = b.value), (a.layer = this.Ia - a.layer))
         break
       default:
       case Ks:
         it(this)
-        for (b = this.network.vertexes.iterator; b.next(); ) b.value.valid = !1
-        for (b.reset(); b.next(); ) ((a = b.value), 0 === a.sourceEdges.count && lt(this, a))
+        for (b = this.network.vertexes.iterator; b.next();) b.value.valid = !1
+        for (b.reset(); b.next();) ((a = b.value), 0 === a.sourceEdges.count && lt(this, a))
         a = Infinity
-        for (b.reset(); b.next(); ) a = Math.min(a, b.value.layer)
+        for (b.reset(); b.next();) a = Math.min(a, b.value.layer)
         this.Ia = -1
-        for (b.reset(); b.next(); ) {
+        for (b.reset(); b.next();) {
           var c = b.value
           c.layer -= a
           this.Ia = Math.max(this.Ia, c.layer)
@@ -46727,7 +46713,7 @@
     }
   }
   function it(a) {
-    for (var b = a.network.vertexes.iterator; b.next(); ) {
+    for (var b = a.network.vertexes.iterator; b.next();) {
       var c = mt(a, b.value)
       a.Ia = Math.max(c, a.Ia)
     }
@@ -46735,7 +46721,7 @@
   function mt(a, b) {
     var c = 0
     if (-1 === b.layer) {
-      for (var d = b.destinationEdges; d.next(); ) {
+      for (var d = b.destinationEdges; d.next();) {
         var e = d.value,
           f = e.toVertex
         e = a.linkMinLength(e)
@@ -46748,7 +46734,7 @@
   function kt(a, b) {
     var c = 0
     if (-1 === b.layer) {
-      for (var d = b.sourceEdges; d.next(); ) {
+      for (var d = b.sourceEdges; d.next();) {
         var e = d.value,
           f = e.fromVertex
         e = a.linkMinLength(e)
@@ -46761,8 +46747,8 @@
   function lt(a, b) {
     if (!b.valid) {
       b.valid = !0
-      for (var c = b.destinationEdges; c.next(); ) lt(a, c.value.toVertex)
-      for (c = a.network.vertexes.iterator; c.next(); ) c.value.component = -1
+      for (var c = b.destinationEdges; c.next();) lt(a, c.value.toVertex)
+      for (c = a.network.vertexes.iterator; c.next();) c.value.component = -1
       for (var d = b.sourceEdgesArrayAccess, e = d.length, f = 0; f < e; f++) {
         var g = d[f],
           h = g.fromVertex,
@@ -46770,12 +46756,12 @@
         g = a.linkMinLength(g)
         h.layer - k.layer > g && at(a, h, 0, -1, !0, !1)
       }
-      for (at(a, b, 1, -1, !0, !0); 0 !== b.component; ) {
+      for (at(a, b, 1, -1, !0, !0); 0 !== b.component;) {
         f = 0
         d = Infinity
         h = 0
         k = null
-        for (g = a.network.vertexes.iterator; g.next(); ) {
+        for (g = a.network.vertexes.iterator; g.next();) {
           var l = g.value
           if (1 === l.component) {
             var m = 0,
@@ -46799,17 +46785,17 @@
           }
         }
         if (0 < f) {
-          for (c.reset(); c.next(); ) ((e = c.value), 1 === e.component && (e.layer += d))
+          for (c.reset(); c.next();) ((e = c.value), 1 === e.component && (e.layer += d))
           b.component = 0
         } else k.component = 0
       }
-      for (c = a.network.vertexes.iterator; c.next(); ) c.value.component = -1
-      for (at(a, b, 1, -1, !0, !1); 0 !== b.component; ) {
+      for (c = a.network.vertexes.iterator; c.next();) c.value.component = -1
+      for (at(a, b, 1, -1, !0, !1); 0 !== b.component;) {
         d = 0
         e = Infinity
         f = 0
         h = null
-        for (k = a.network.vertexes.iterator; k.next(); )
+        for (k = a.network.vertexes.iterator; k.next();)
           if (((g = k.value), 1 === g.component)) {
             l = 0
             m = !1
@@ -46831,7 +46817,7 @@
             ;(null === h || l > f) && !m && ((h = g), (f = l))
           }
         if (0 > d) {
-          for (c.reset(); c.next(); ) ((d = c.value), 1 === d.component && (d.layer -= e))
+          for (c.reset(); c.next();) ((d = c.value), 1 === d.component && (d.layer -= e))
           b.component = 0
         } else h.component = 0
       }
@@ -46855,7 +46841,7 @@
             : 0
   }
   function Rs(a, b, c) {
-    for (var d = c[c.length - 1].sourceEdges.iterator; d.next(); ) {
+    for (var d = c[c.length - 1].sourceEdges.iterator; d.next();) {
       var e = d.value
       if (!e.rev && e.valid) {
         e = e.fromVertex
@@ -46876,7 +46862,7 @@
         var a = null,
           b = this.network.vertexes.iterator
         if (this._experimental)
-          for (; b.next(); ) {
+          for (; b.next();) {
             var c = b.value
             if (c.near && (null === a && (a = new ob()), c.layer === c.near.layer)) {
               var d = a.get(c.near) || []
@@ -46885,21 +46871,21 @@
             }
           }
         for (c = this.Ia; 0 <= c; c--)
-          for (b.reset(); b.next(); )
+          for (b.reset(); b.next();)
             ((d = b.value), d.layer === c && -1 === d.index && pt(this, d, a))
         break
       case qt:
         a = null
         b = this.network.vertexes.iterator
         if (this._experimental)
-          for (; b.next(); )
+          for (; b.next();)
             ((c = b.value),
               c.near &&
                 (null === a && (a = new ob()),
                 c.layer === c.near.layer &&
                   ((d = a.get(c.near) || []), d.push(c), a.set(c.near, d))))
         for (c = 0; c <= this.Ia; c++)
-          for (b.reset(); b.next(); )
+          for (b.reset(); b.next();)
             ((d = b.value), d.layer === c && -1 === d.index && rt(this, d, a))
     }
   }
@@ -46907,7 +46893,7 @@
     var b = null,
       c = a.network.vertexes.iterator
     if (a._experimental) {
-      for (; c.next(); ) {
+      for (; c.next();) {
         var d = c.value
         if (d.near && (null === b && (b = new ob()), d.layer === d.near.layer)) {
           var e = b.get(d.near) || []
@@ -46917,7 +46903,7 @@
       }
       c.reset()
     }
-    for (d = {}; c.next(); )
+    for (d = {}; c.next();)
       ((e = c.value),
         (b && e.near) ||
           ((d.layer = e.layer),
@@ -46950,7 +46936,7 @@
           })
       }
       b = b.destinationEdgesArrayAccess
-      for (e = !0; e; ) {
+      for (e = !0; e;) {
         e = !1
         for (var f = 0; f < b.length - 1; f++) {
           var g = b[f],
@@ -46977,7 +46963,7 @@
       }
       b = b.sourceEdgesArrayAccess
       var f = !0
-      for (e = 0; f; )
+      for (e = 0; f;)
         for (f = !1, e = 0; e < b.length - 1; e++) {
           var g = b[e],
             h = b[e + 1]
@@ -47015,42 +47001,42 @@
       case ut:
         break
       case vt:
-        for (h = a + 1; (d = this.countCrossings()) < h; )
+        for (h = a + 1; (d = this.countCrossings()) < h;)
           for (h = d, c = this.Ia; 0 <= c; c--)
             for (g = 0; g <= c; g++) {
-              for (f = !0; f; ) for (f = !1, d = c; d >= g; d--) f = tt(this, d, -1) || f
+              for (f = !0; f;) for (f = !1, d = c; d >= g; d--) f = tt(this, d, -1) || f
               e = this.countCrossings()
               e >= a ? Ws(this, b) : ((a = e), (b = Vs(this)))
-              for (f = !0; f; ) for (f = !1, d = c; d >= g; d--) f = tt(this, d, 1) || f
+              for (f = !0; f;) for (f = !1, d = c; d >= g; d--) f = tt(this, d, 1) || f
               e = this.countCrossings()
               e >= a ? Ws(this, b) : ((a = e), (b = Vs(this)))
-              for (f = !0; f; ) for (f = !1, d = g; d <= c; d++) f = tt(this, d, 1) || f
+              for (f = !0; f;) for (f = !1, d = g; d <= c; d++) f = tt(this, d, 1) || f
               e >= a ? Ws(this, b) : ((a = e), (b = Vs(this)))
-              for (f = !0; f; ) for (f = !1, d = g; d <= c; d++) f = tt(this, d, -1) || f
+              for (f = !0; f;) for (f = !1, d = g; d <= c; d++) f = tt(this, d, -1) || f
               e >= a ? Ws(this, b) : ((a = e), (b = Vs(this)))
-              for (f = !0; f; ) for (f = !1, d = c; d >= g; d--) f = tt(this, d, 0) || f
+              for (f = !0; f;) for (f = !1, d = c; d >= g; d--) f = tt(this, d, 0) || f
               e >= a ? Ws(this, b) : ((a = e), (b = Vs(this)))
-              for (f = !0; f; ) for (f = !1, d = g; d <= c; d++) f = tt(this, d, 0) || f
+              for (f = !0; f;) for (f = !1, d = g; d <= c; d++) f = tt(this, d, 0) || f
               e >= a ? Ws(this, b) : ((a = e), (b = Vs(this)))
             }
         break
       default:
       case Ms:
-        for (c = this.Ia, g = 0, h = a + 1; (d = this.countCrossings()) < h; ) {
+        for (c = this.Ia, g = 0, h = a + 1; (d = this.countCrossings()) < h;) {
           h = d
-          for (f = !0; f; ) for (f = !1, d = c; d >= g; d--) f = tt(this, d, -1) || f
+          for (f = !0; f;) for (f = !1, d = c; d >= g; d--) f = tt(this, d, -1) || f
           e = this.countCrossings()
           e >= a ? Ws(this, b) : ((a = e), (b = Vs(this)))
-          for (f = !0; f; ) for (f = !1, d = c; d >= g; d--) f = tt(this, d, 1) || f
+          for (f = !0; f;) for (f = !1, d = c; d >= g; d--) f = tt(this, d, 1) || f
           e = this.countCrossings()
           e >= a ? Ws(this, b) : ((a = e), (b = Vs(this)))
-          for (f = !0; f; ) for (f = !1, d = g; d <= c; d++) f = tt(this, d, 1) || f
+          for (f = !0; f;) for (f = !1, d = g; d <= c; d++) f = tt(this, d, 1) || f
           e >= a ? Ws(this, b) : ((a = e), (b = Vs(this)))
-          for (f = !0; f; ) for (f = !1, d = g; d <= c; d++) f = tt(this, d, -1) || f
+          for (f = !0; f;) for (f = !1, d = g; d <= c; d++) f = tt(this, d, -1) || f
           e >= a ? Ws(this, b) : ((a = e), (b = Vs(this)))
-          for (f = !0; f; ) for (f = !1, d = c; d >= g; d--) f = tt(this, d, 0) || f
+          for (f = !0; f;) for (f = !1, d = c; d >= g; d--) f = tt(this, d, 0) || f
           e >= a ? Ws(this, b) : ((a = e), (b = Vs(this)))
-          for (f = !0; f; ) for (f = !1, d = g; d <= c; d++) f = tt(this, d, 0) || f
+          for (f = !0; f;) for (f = !1, d = g; d <= c; d++) f = tt(this, d, 0) || f
           e >= a ? Ws(this, b) : ((a = e), (b = Vs(this)))
         }
     }
@@ -47063,7 +47049,7 @@
       g = Zs(a, b, c)
     for (c = 0; c < e; c++)
       (-1 === g[c] && (g[c] = d[c].column), -1 === f[c] && (f[c] = d[c].column))
-    for (var h = !0, k; h; )
+    for (var h = !0, k; h;)
       for (h = !1, c = 0; c < e - 1; c++)
         if (f[c + 1] < f[c] || (f[c + 1] === f[c] && g[c + 1] < g[c]))
           ((h = !0),
@@ -47094,7 +47080,7 @@
     for (f = 0; f < e; f++) g[f] = -1
     var h = []
     for (f = 0; f < e; f++) h[f] = -1
-    for (var k = !1, l = !0; l; )
+    for (var k = !1, l = !0; l;)
       for (l = !1, f = 0; f < e - 1; f++) {
         var m = c[d[f].index * e + d[f + 1].index],
           n = c[d[f + 1].index * e + d[f].index],
@@ -47109,31 +47095,31 @@
         w = r - w + y
         v = u - v + z
         var A = d[f].sourceEdges.iterator
-        for (A.reset(); A.next(); )
+        for (A.reset(); A.next();)
           if (((y = A.value), (z = y.fromVertex), y.valid && z.layer === b)) {
-            for (y = 0; y < d.length && d[y] !== z; ) y++
+            for (y = 0; y < d.length && d[y] !== z;) y++
             y < f && ((p += 2 * (f - y)), (q += 2 * (f + 1 - y)))
             y === f + 1 && (p += 1)
             y > f + 1 && ((p += 4 * (y - f)), (q += 4 * (y - (f + 1))))
           }
         A = d[f].destinationEdges.iterator
-        for (A.reset(); A.next(); )
+        for (A.reset(); A.next();)
           if (((y = A.value), (z = y.toVertex), y.valid && z.layer === b)) {
-            for (y = 0; y < d.length && d[y] !== z; ) y++
+            for (y = 0; y < d.length && d[y] !== z;) y++
             y === f + 1 && (q += 1)
           }
         A = d[f + 1].sourceEdges.iterator
-        for (A.reset(); A.next(); )
+        for (A.reset(); A.next();)
           if (((y = A.value), (z = y.fromVertex), y.valid && z.layer === b)) {
-            for (y = 0; y < d.length && d[y] !== z; ) y++
+            for (y = 0; y < d.length && d[y] !== z;) y++
             y < f && ((p += 2 * (f + 1 - y)), (q += 2 * (f - y)))
             y === f && (q += 1)
             y > f + 1 && ((p += 4 * (y - (f + 1))), (q += 4 * (y - f)))
           }
         A = d[f + 1].destinationEdges.iterator
-        for (A.reset(); A.next(); )
+        for (A.reset(); A.next();)
           if (((y = A.value), (z = y.toVertex), y.valid && z.layer === b)) {
-            for (y = 0; y < d.length && d[y] !== z; ) y++
+            for (y = 0; y < d.length && d[y] !== z;) y++
             y === f && (p += 1)
           }
         y = z = 0
@@ -47165,14 +47151,14 @@
       if (a) {
         var c = []
         for (b = 0; b <= this.Ia; b++) c[b] = 0
-        for (var d, e = this.network.vertexes.iterator; e.next(); ) {
+        for (var d, e = this.network.vertexes.iterator; e.next();) {
           var f = e.value
           b = f.layer
           d = f.column
           f = this.nodeMinColumnSpace(f, !1)
           c[b] = Math.max(c[b], d + f)
         }
-        for (e.reset(); e.next(); )
+        for (e.reset(); e.next();)
           ((f = e.value),
             (b = f.layer),
             (d = f.column),
@@ -47180,7 +47166,7 @@
         this.Ra *= 8
       }
       if (0 !== (this.bg & 2))
-        for (c = !0, d = 0; c && d < this.kl; ) {
+        for (c = !0, d = 0; c && d < this.kl;) {
           c = !1
           for (b = this.Md + 1; b <= this.Ia; b++) c = xt(this, b, 1) || c
           for (b = this.Md - 1; 0 <= b; b--) c = xt(this, b, -1) || c
@@ -47194,7 +47180,7 @@
       }
       a && (zt(this, -1), zt(this, 1))
       if (0 !== (this.bg & 2))
-        for (c = !0, a = 0; c && a < this.kl; ) {
+        for (c = !0, a = 0; c && a < this.kl;) {
           c = !1
           c = xt(this, this.Md, 0) || c
           for (b = this.Md + 1; b <= this.Ia; b++) c = xt(this, b, 0) || c
@@ -47204,7 +47190,7 @@
     } else At(this)
   }
   function xt(a, b, c) {
-    for (var d = !1; Bt(a, b, c); ) d = !0
+    for (var d = !1; Bt(a, b, c);) d = !0
     return d
   }
   function Bt(a, b, c) {
@@ -47215,7 +47201,7 @@
     if (0 < c) for (d = 0; d < f; d++) g[d] = -1
     var h = Zs(a, b, 1)
     if (0 > c) for (d = 0; d < f; d++) h[d] = -1
-    for (var k = !1, l = !0; l; )
+    for (var k = !1, l = !0; l;)
       for (l = !1, d = 0; d < f; d++) {
         var m = e[d].column,
           n = a.nodeMinColumnSpace(e[d], !0),
@@ -47229,7 +47215,7 @@
         var r = (p = 0),
           u = 0
         if (0 >= c)
-          for (var w = e[d].sourceEdges.iterator; w.next(); ) {
+          for (var w = e[d].sourceEdges.iterator; w.next();) {
             var v = w.value
             var y = v.fromVertex
             if (v.valid && y.layer !== b) {
@@ -47243,7 +47229,7 @@
             }
           }
         if (0 <= c)
-          for (w = e[d].destinationEdges.iterator; w.next(); )
+          for (w = e[d].destinationEdges.iterator; w.next();)
             ((v = w.value),
               (y = v.toVertex),
               v.valid &&
@@ -47273,7 +47259,7 @@
       f = $s(a, b, c),
       g = []
     for (c = 0; c < e; c++) g[c] = f[c]
-    for (f = !0; f; )
+    for (f = !0; f;)
       for (f = !1, c = 0; c < e; c++) {
         var h = d[c].column,
           k = a.nodeMinColumnSpace(d[c], !0),
@@ -47315,7 +47301,7 @@
     a.normalize()
   }
   function Ct(a, b) {
-    for (var c = !0, d = a.network.vertexes.iterator; d.next(); ) {
+    for (var c = !0, d = a.network.vertexes.iterator; d.next();) {
       var e = d.value,
         f = a.nodeMinColumnSpace(e, !0),
         g = a.nodeMinColumnSpace(e, !1)
@@ -47325,7 +47311,7 @@
       }
     }
     a = !1
-    if (c) for (d.reset(); d.next(); ) ((c = d.value), c.column > b && (--c.column, (a = !0)))
+    if (c) for (d.reset(); d.next();) ((c = d.value), c.column > b && (--c.column, (a = !0)))
     return a
   }
   function Dt(a, b) {
@@ -47334,7 +47320,7 @@
       e = [],
       f = []
     for (d = 0; d <= a.Ia; d++) ((e[d] = !1), (f[d] = !1))
-    for (var g = a.network.vertexes.iterator; g.next(); ) {
+    for (var g = a.network.vertexes.iterator; g.next();) {
       d = g.value
       var h = d.column - a.nodeMinColumnSpace(d, !0),
         k = d.column + a.nodeMinColumnSpace(d, !1)
@@ -47344,20 +47330,20 @@
     h = !0
     c = !1
     for (d = 0; d <= a.Ia; d++) h = h && !(e[d] && f[d])
-    if (h) for (g.reset(); g.next(); ) ((a = g.value), a.column > b && (--a.column, (c = !0)))
+    if (h) for (g.reset(); g.next();) ((a = g.value), a.column > b && (--a.column, (c = !0)))
     return c
   }
   function zt(a, b) {
-    for (var c = 0; c <= a.Ra; c++) for (; Ct(a, c); );
+    for (var c = 0; c <= a.Ra; c++) for (; Ct(a, c););
     a.normalize()
-    for (c = 0; c < a.Ra; c++) for (; Dt(a, c); );
+    for (c = 0; c < a.Ra; c++) for (; Dt(a, c););
     a.normalize()
     var d
     if (0 < b)
       for (c = 0; c <= a.Ra; c++) {
         var e = Vs(a)
         var f = Ys(a)
-        for (d = f + 1; f < d; ) {
+        for (d = f + 1; f < d;) {
           d = f
           Et(a, c, 1)
           var g = Ys(a)
@@ -47366,30 +47352,30 @@
       }
     if (0 > b)
       for (c = a.Ra; 0 <= c; c--)
-        for (e = Vs(a), f = Ys(a), d = f + 1; f < d; )
+        for (e = Vs(a), f = Ys(a), d = f + 1; f < d;)
           ((d = f), Et(a, c, -1), (g = Ys(a)), g > f ? Ws(a, e) : g < f && ((f = g), (e = Vs(a))))
     a.normalize()
   }
   function Et(a, b, c) {
     a.le = 0
-    for (var d = a.network.vertexes.iterator; d.next(); ) d.value.component = -1
+    for (var d = a.network.vertexes.iterator; d.next();) d.value.component = -1
     if (0 < c)
-      for (d.reset(); d.next(); ) {
+      for (d.reset(); d.next();) {
         var e = d.value
         e.column - a.nodeMinColumnSpace(e, !0) <= b && (e.component = a.le)
       }
     if (0 > c)
-      for (d.reset(); d.next(); )
+      for (d.reset(); d.next();)
         ((e = d.value), e.column + a.nodeMinColumnSpace(e, !1) >= b && (e.component = a.le))
     a.le++
-    for (d.reset(); d.next(); )
+    for (d.reset(); d.next();)
       ((b = d.value), -1 === b.component && (bt(a, b, a.le, -1, !0, !0), a.le++))
     var f
     b = []
     for (f = 0; f < a.le * a.le; f++) b[f] = !1
     e = []
     for (f = 0; f < (a.Ia + 1) * (a.Ra + 1); f++) e[f] = -1
-    for (d.reset(); d.next(); ) {
+    for (d.reset(); d.next();) {
       f = d.value
       for (
         var g = f.layer,
@@ -47417,15 +47403,15 @@
     e = []
     for (f = 0; f < a.le; f++) e[f] = !0
     g = []
-    for (g.push(0); 0 !== g.length; )
+    for (g.push(0); 0 !== g.length;)
       if (((k = g[g.length - 1]), g.pop(), e[k]))
         for (e[k] = !1, f = 0; f < a.le; f++) b[k * a.le + f] && g.splice(0, 0, f)
-    if (0 < c) for (d.reset(); d.next(); ) ((a = d.value), e[a.component] && --a.column)
-    if (0 > c) for (d.reset(); d.next(); ) ((c = d.value), e[c.component] && (c.column += 1))
+    if (0 < c) for (d.reset(); d.next();) ((a = d.value), e[a.component] && --a.column)
+    if (0 > c) for (d.reset(); d.next();) ((c = d.value), e[c.component] && (c.column += 1))
   }
   function At(a) {
     for (var b = Ea(), c = a.el.length, d = 0; d <= c; d++) b[d] = []
-    for (d = a.network.vertexes.iterator; d.next(); ) {
+    for (d = a.network.vertexes.iterator; d.next();) {
       var e = d.value
       b[c - e.layer][e.index] = e
     }
@@ -47482,7 +47468,7 @@
         if (k === h.length - 1 || n) {
           m = g.length - 1
           n && (m = Ht(l)[0].index)
-          for (; f <= k; ) {
+          for (; f <= k;) {
             l = h[f]
             if (!l.co) {
               n = []
@@ -47550,7 +47536,7 @@
       h = ba(h.value)
       for (var k = h.next(); !k.done; k = h.next())
         if (((k = k.value), k.root === k)) {
-          for (var l = 0, m = k; m.align !== k; ) {
+          for (var l = 0, m = k; m.align !== k;) {
             var n = m.align,
               p = g ? m.width : m.height,
               q = g ? n.width : n.height
@@ -47588,7 +47574,7 @@
         g = c
         h = 0
         do {
-          for (f = b[g][h]; f.align !== f.root; )
+          for (f = b[g][h]; f.align !== f.root;)
             ((f = f.align),
               g++,
               0 < f.wi &&
@@ -47628,7 +47614,7 @@
         }
         d = d.align
       } while (d !== b)
-      for (; d.align !== b; ) ((d = d.align), (d.zc = b.zc), (d.sd = b.sd))
+      for (; d.align !== b;) ((d = d.align), (d.zc = b.zc), (d.sd = b.sd))
     }
   }
   function Mt(a, b) {
@@ -47677,7 +47663,7 @@
   }
   Is.prototype.commitLayout = function () {
     if (this.setsPortSpots)
-      for (var a = Ps(this, !0), b = Ps(this, !1), c = this.network.edges.iterator; c.next(); ) {
+      for (var a = Ps(this, !0), b = Ps(this, !1), c = this.network.edges.iterator; c.next();) {
         var d = c.value.link
         null !== d && ((d.fromSpot = a), (d.toSpot = b))
       }
@@ -47709,7 +47695,7 @@
     this.Ta = []
     for (var a = 0; a <= this.Ia; a++)
       ((this.he[a] = 0), (this.Ld[a] = 0), (this.Kd[a] = 0), (this.Ta[a] = 0))
-    for (a = this.network.vertexes.iterator; a.next(); ) {
+    for (a = this.network.vertexes.iterator; a.next();) {
       var b = a.value,
         c = b.layer
       this.he[c] = Math.max(this.he[c], this.nodeMinLayerSpace(b, !0))
@@ -47740,7 +47726,7 @@
     c = 0 !== this.ve
     a.reset()
     d = 270 === this.K || 90 === this.K
-    for (var f = Infinity, g = (e = Infinity), h = -Infinity; a.next(); ) {
+    for (var f = Infinity, g = (e = Infinity), h = -Infinity; a.next();) {
       var k = a.value,
         l = k.layer,
         m = k.column | 0
@@ -47766,7 +47752,7 @@
     f = b.x - f
     b = b.y - e
     this.Rf = new I(c && d ? 0 : f, c && !d ? 0 : b)
-    for (a.reset(); a.next(); ) ((c = a.value), (c.x += f), (c.y += b), c.commit())
+    for (a.reset(); a.next();) ((c = a.value), (c.x += f), (c.y += b), c.commit())
   }
   Is.prototype.Iu = function () {
     for (var a = 0, b = this.ie, c = 0; c <= this.Ia; c++) ((a += this.he[c]), (a += this.Ld[c]))
@@ -47793,10 +47779,10 @@
   }
   Is.prototype.commitLayers = function () {}
   Is.prototype.commitLinks = function () {
-    for (var a = this.network.edges.iterator, b; a.next(); )
+    for (var a = this.network.edges.iterator, b; a.next();)
       ((b = a.value.link), null !== b && (b.uh(), b.Fj(), b.zf()))
-    for (a.reset(); a.next(); ) ((b = a.value.link), null !== b && b.vg())
-    for (a.reset(); a.next(); ) {
+    for (a.reset(); a.next();) ((b = a.value.link), null !== b && b.vg())
+    for (a.reset(); a.next();) {
       var c = a.value
       b = c.link
       if (null !== b && 0 !== b.pointsCount) {
@@ -47874,7 +47860,7 @@
                   : 4 < w && !v && !y && b.points.removeRange(2, w - 3)
           }
           if (c.rev) {
-            for (; null !== n && m !== n; ) {
+            for (; null !== n && m !== n;) {
               var z = (w = null)
               for (
                 v = n.sourceEdges.iterator;
@@ -48033,7 +48019,7 @@
                 b.m(u++, A, B)
               }
           } else {
-            for (; null !== m && m !== n; ) {
+            for (; null !== m && m !== n;) {
               z = w = null
               for (
                 m = m.destinationEdges.iterator;
@@ -48162,7 +48148,7 @@
   }
   Is.prototype.avoidOrthogonalOverlaps = function () {
     if (!(0 >= this.linkSpacing)) {
-      for (var a = new F(), b = this.network.edges.iterator; b.next(); ) {
+      for (var a = new F(), b = this.network.edges.iterator; b.next();) {
         var c = b.value.link
         null !== c && c.isOrthogonal && !a.contains(c) && a.add(c)
       }
@@ -48170,7 +48156,7 @@
         if (90 === this.K || 270 === this.K) {
           b = 0
           c = []
-          for (a = a.iterator; a.next(); ) {
+          for (a = a.iterator; a.next();) {
             var d = a.value
             if (null !== d && d.isOrthogonal)
               for (var e = 2; e < d.pointsCount - 3; e++) {
@@ -48201,13 +48187,13 @@
               }
           }
           if (1 < c.length)
-            for (c.sort(this.Xx), a = 0; a < c.length; ) {
+            for (c.sort(this.Xx), a = 0; a < c.length;) {
               f = c[a].layer
-              for (d = a + 1; d < c.length && c[d].layer === f; ) d++
+              for (d = a + 1; d < c.length && c[d].layer === f;) d++
               if (1 < d - a)
-                for (f = a; f < d; ) {
+                for (f = a; f < d;) {
                   g = c[f].Jc
-                  for (e = a + 1; e < d && c[e].rd < g; ) ((g = Math.max(g, c[e].Jc)), e++)
+                  for (e = a + 1; e < d && c[e].rd < g;) ((g = Math.max(g, c[e].Jc)), e++)
                   g = e - f
                   if (1 < g) {
                     this.Ai(c, this.Ks, f, f + g)
@@ -48245,7 +48231,7 @@
         } else {
           b = 0
           c = []
-          for (a = a.iterator; a.next(); )
+          for (a = a.iterator; a.next();)
             if (((d = a.value), null !== d && d.isOrthogonal))
               for (e = 2; e < d.pointsCount - 3; e++)
                 ((f = d.i(e)),
@@ -48272,13 +48258,13 @@
                       (h.j = m)),
                     c.push(h)))
           if (1 < c.length)
-            for (c.sort(this.Xx), a = 0; a < c.length; ) {
+            for (c.sort(this.Xx), a = 0; a < c.length;) {
               f = c[a].layer
-              for (d = a + 1; d < c.length && c[d].layer === f; ) d++
+              for (d = a + 1; d < c.length && c[d].layer === f;) d++
               if (1 < d - a)
-                for (f = a; f < d; ) {
+                for (f = a; f < d;) {
                   g = c[f].Jc
-                  for (e = a + 1; e < d && c[e].rd < g; ) ((g = Math.max(g, c[e].Jc)), e++)
+                  for (e = a + 1; e < d && c[e].rd < g;) ((g = Math.max(g, c[e].Jc)), e++)
                   g = e - f
                   if (1 < g) {
                     this.Ai(c, this.Ks, f, f + g)
@@ -48852,11 +48838,11 @@
       : (this.ud = this.path === Tt ? Ut : this.path)
     if (0 < this.network.vertexes.count) {
       this.network.Lo()
-      for (a = this.network.vertexes.iterator; a.next(); )
+      for (a = this.network.vertexes.iterator; a.next();)
         ((b = a.value), (b.initialized = !1), (b.level = 0), (b.parent = null), (b.children = []))
       if (0 < this.Xb.count) {
         a = new H()
-        for (b = this.Xb.iterator; b.next(); ) {
+        for (b = this.Xb.iterator; b.next();) {
           var c = b.value
           c instanceof V
             ? ((c = this.network.li(c)), null !== c && a.add(c))
@@ -48865,22 +48851,22 @@
         this.Xb = a
       }
       0 === this.Xb.count && this.findRoots()
-      for (a = this.Xb.copy().iterator; a.next(); )
+      for (a = this.Xb.copy().iterator; a.next();)
         ((b = a.value), b.initialized || ((b.initialized = !0), bu(this, b)))
       b = this.network.vertexes
-      for (a = null; (a = cu(b)), 0 < a.count; )
+      for (a = null; (a = cu(b)), 0 < a.count;)
         ((b = du(this, a)),
           null !== b && this.Xb.add(b),
           (b.initialized = !0),
           bu(this, b),
           (b = a))
-      for (a = this.Xb.iterator; a.next(); ) ((b = a.value), b instanceof Zt && eu(this, b))
-      for (a = this.Xb.iterator; a.next(); ) ((b = a.value), b instanceof Zt && fu(this, b))
-      for (a = this.Xb.iterator; a.next(); ) ((b = a.value), b instanceof Zt && gu(this, b))
+      for (a = this.Xb.iterator; a.next();) ((b = a.value), b instanceof Zt && eu(this, b))
+      for (a = this.Xb.iterator; a.next();) ((b = a.value), b instanceof Zt && fu(this, b))
+      for (a = this.Xb.iterator; a.next();) ((b = a.value), b instanceof Zt && gu(this, b))
       this.Du()
       if (this.layerStyle === hu) {
         a = []
-        for (b = this.network.vertexes.iterator; b.next(); ) {
+        for (b = this.network.vertexes.iterator; b.next();) {
           c = b.value
           var d = c.parent
           null === d && (d = c)
@@ -48891,7 +48877,7 @@
         }
         for (b = 0; b < a.length; b++) void 0 === a[b] && (a[b] = 0)
         this.bw = a
-        for (b = this.network.vertexes.iterator; b.next(); )
+        for (b = this.network.vertexes.iterator; b.next();)
           ((c = b.value),
             (d = c.parent),
             null === d && (d = c),
@@ -48899,7 +48885,7 @@
               ? (180 === d.angle && (c.focusX += a[c.level] - c.width), (c.width = a[c.level]))
               : (270 === d.angle && (c.focusY += a[c.level] - c.height), (c.height = a[c.level])))
       } else if (this.layerStyle === iu)
-        for (a = this.network.vertexes.iterator; a.next(); ) {
+        for (a = this.network.vertexes.iterator; a.next();) {
           b = a.value
           c = 0 === b.angle || 180 === b.angle
           d = -1
@@ -48914,7 +48900,7 @@
                   ? (180 === b.angle && (f.focusX += d - f.width), (f.width = d))
                   : (270 === b.angle && (f.focusY += d - f.height), (f.height = d)))
         }
-      for (a = this.Xb.iterator; a.next(); ) ((b = a.value), b instanceof Zt && this.layoutTree(b))
+      for (a = this.Xb.iterator; a.next();) ((b = a.value), b instanceof Zt && this.layoutTree(b))
       this.arrangeTrees()
       this.updateParts()
     }
@@ -48924,14 +48910,14 @@
   }
   function cu(a) {
     var b = new H()
-    for (a = a.iterator; a.next(); ) {
+    for (a = a.iterator; a.next();) {
       var c = a.value
       c.initialized || b.add(c)
     }
     return b
   }
   St.prototype.findRoots = function () {
-    for (var a = this.network.vertexes, b = a.iterator; b.next(); ) {
+    for (var a = this.network.vertexes, b = a.iterator; b.next();) {
       var c = b.value
       switch (this.ud) {
         case Ut:
@@ -48949,7 +48935,7 @@
   function du(a, b) {
     var c = 999999,
       d = null
-    for (b = b.iterator; b.next(); ) {
+    for (b = b.iterator; b.next();) {
       var e = b.value
       switch (a.ud) {
         case Ut:
@@ -48969,7 +48955,7 @@
       switch (a.ud) {
         case Ut:
           if (0 < b.destinationEdges.count) {
-            for (var c = new F(), d = b.destinationVertexes; d.next(); ) {
+            for (var c = new F(), d = b.destinationVertexes; d.next();) {
               var e = d.value
               ju(a, b, e) && c.add(e)
             }
@@ -48979,7 +48965,7 @@
         case au:
           if (0 < b.sourceEdges.count) {
             c = new F()
-            for (d = b.sourceVertexes; d.next(); ) ((e = d.value), ju(a, b, e) && c.add(e))
+            for (d = b.sourceVertexes; d.next();) ((e = d.value), ju(a, b, e) && c.add(e))
             0 < c.count && (b.children = c.Fa())
           }
           break
@@ -49002,7 +48988,7 @@
     if (c.initialized) {
       if (null === b) var d = !1
       else {
-        for (d = b.parent; null !== d && d !== c; ) d = d.parent
+        for (d = b.parent; null !== d && d !== c;) d = d.parent
         d = d === c
       }
       if (d || c.level > b.level) return !1
@@ -49060,7 +49046,7 @@
   St.prototype.initializeTreeVertexValues = function (a) {
     a.copyInheritedPropertiesFrom(lu(this, a))
     if (null !== a.parent && a.parent.alignment === ku) {
-      for (var b = a.angle, c = a.parent.children, d = 0; d < c.length && a !== c[d]; ) d++
+      for (var b = a.angle, c = a.parent.children, d = 0; d < c.length && a !== c[d];) d++
       0 === d % 2
         ? d !== c.length - 1 && (b = 90 === b ? 180 : 180 === b ? 270 : 270 === b ? 180 : 270)
         : (b = 90 === b ? 0 : 180 === b ? 90 : 270 === b ? 0 : 90)
@@ -49103,7 +49089,7 @@
   }
   St.prototype.Du = function () {
     if (this.comments)
-      for (var a = this.network.vertexes.iterator; a.next(); ) this.addComments(a.value)
+      for (var a = this.network.vertexes.iterator; a.next();) this.addComments(a.value)
   }
   St.prototype.addComments = function (a) {
     var b = a.angle,
@@ -49119,7 +49105,7 @@
       h = 0,
       k = a.commentSpacing
     if (null !== a.node)
-      for (var l = a.node.Ou(); l.next(); ) {
+      for (var l = a.node.Ou(); l.next();) {
         var m = l.value
         'Comment' === m.category &&
           m.canLayout() &&
@@ -49153,7 +49139,7 @@
       if (tu(c)) {
         if (Au(c)) {
           b = b.children
-          for (c = 0; c < b.length && a !== b[c]; ) c++
+          for (c = 0; c < b.length && a !== b[c];) c++
           return 0 === c % 2
         }
         if (c === vu) return !0
@@ -49260,11 +49246,11 @@
       I.free(n)
       b = k - a.commentSpacing - (d ? b.height : b.width)
       if (this.ud === Ut)
-        for (a = a.destinationEdges; a.next(); )
+        for (a = a.destinationEdges; a.next();)
           ((e = a.value.link),
             null === e || e.isAvoiding || (e.fromEndSegmentLength = 0 < b ? b : NaN))
       else
-        for (a = a.sourceEdges; a.next(); )
+        for (a = a.sourceEdges; a.next();)
           ((e = a.value.link),
             null === e || e.isAvoiding || (e.toEndSegmentLength = 0 < b ? b : NaN))
     }
@@ -50079,11 +50065,11 @@
     var e = b.parent
     switch (a.ud) {
       case Ut:
-        for (a = b.sourceEdges; a.next(); )
+        for (a = b.sourceEdges; a.next();)
           ((b = a.value), b.fromVertex === e && b.relativePoint.h(c, d))
         break
       case au:
-        for (a = b.destinationEdges; a.next(); )
+        for (a = b.destinationEdges; a.next();)
           ((b = a.value), b.toVertex === e && b.relativePoint.h(c, d))
         break
       default:
@@ -50118,7 +50104,7 @@
     if (l) {
       p = 9999999
       if (!(null === n || 2 > n.length || null === q || 2 > q.length))
-        for (e = c = 0; c < n.length && e < q.length; ) {
+        for (e = c = 0; c < n.length && e < q.length;) {
           f = n[c]
           var w = q[e]
           k = w.x
@@ -50146,11 +50132,10 @@
       if (null === b || 2 > b.length || null === c || 2 > c.length) d = null
       else {
         m = Ku(a, b.length + c.length)
-        for (d = f = k = 0; f < c.length && c[f].y < b[0].y; )
-          ((l = c[f++]), m[d++].h(l.x + e, l.y))
-        for (; k < b.length; ) ((l = b[k++]), m[d++].h(l.x, l.y))
-        for (k = b[b.length - 1].y; f < c.length && c[f].y <= k; ) f++
-        for (; f < c.length && c[f].y > k; ) ((l = c[f++]), m[d++].h(l.x + e, l.y))
+        for (d = f = k = 0; f < c.length && c[f].y < b[0].y;) ((l = c[f++]), m[d++].h(l.x + e, l.y))
+        for (; k < b.length;) ((l = b[k++]), m[d++].h(l.x, l.y))
+        for (k = b[b.length - 1].y; f < c.length && c[f].y <= k;) f++
+        for (; f < c.length && c[f].y > k;) ((l = c[f++]), m[d++].h(l.x + e, l.y))
         c = Ku(a, d)
         for (k = 0; k < d; k++) c[k].assign(m[k])
         Vu(a, m)
@@ -50161,10 +50146,10 @@
       if (null === n || 2 > n.length || null === f || 2 > f.length) e = null
       else {
         m = Ku(a, n.length + f.length)
-        for (e = l = c = 0; c < n.length && n[c].y < f[0].y; ) ((v = n[c++]), m[e++].h(v.x, v.y))
-        for (; l < f.length; ) ((v = f[l++]), m[e++].h(v.x + k, v.y))
-        for (f = f[f.length - 1].y; c < n.length && n[c].y <= f; ) c++
-        for (; c < n.length && n[c].y > f; ) ((k = n[c++]), m[e++].h(k.x, k.y))
+        for (e = l = c = 0; c < n.length && n[c].y < f[0].y;) ((v = n[c++]), m[e++].h(v.x, v.y))
+        for (; l < f.length;) ((v = f[l++]), m[e++].h(v.x + k, v.y))
+        for (f = f[f.length - 1].y; c < n.length && n[c].y <= f;) c++
+        for (; c < n.length && n[c].y > f;) ((k = n[c++]), m[e++].h(k.x, k.y))
         f = Ku(a, e)
         for (c = 0; c < e; c++) f[c].assign(m[c])
         Vu(a, m)
@@ -50182,7 +50167,7 @@
     }
     d = 9999999
     if (!(null === n || 2 > n.length || null === q || 2 > q.length))
-      for (e = c = 0; c < n.length && e < q.length; )
+      for (e = c = 0; c < n.length && e < q.length;)
         ((f = n[c]),
           (w = q[e]),
           (k = w.x),
@@ -50209,10 +50194,10 @@
     if (null === b || 2 > b.length || null === c || 2 > c.length) d = null
     else {
       m = Ku(a, b.length + c.length)
-      for (d = f = k = 0; f < c.length && c[f].x < b[0].x; ) ((l = c[f++]), m[d++].h(l.x, l.y + e))
-      for (; k < b.length; ) ((l = b[k++]), m[d++].h(l.x, l.y))
-      for (k = b[b.length - 1].x; f < c.length && c[f].x <= k; ) f++
-      for (; f < c.length && c[f].x > k; ) ((l = c[f++]), m[d++].h(l.x, l.y + e))
+      for (d = f = k = 0; f < c.length && c[f].x < b[0].x;) ((l = c[f++]), m[d++].h(l.x, l.y + e))
+      for (; k < b.length;) ((l = b[k++]), m[d++].h(l.x, l.y))
+      for (k = b[b.length - 1].x; f < c.length && c[f].x <= k;) f++
+      for (; f < c.length && c[f].x > k;) ((l = c[f++]), m[d++].h(l.x, l.y + e))
       c = Ku(a, d)
       for (k = 0; k < d; k++) c[k].assign(m[k])
       Vu(a, m)
@@ -50223,10 +50208,10 @@
     if (null === n || 2 > n.length || null === f || 2 > f.length) e = null
     else {
       m = Ku(a, n.length + f.length)
-      for (e = l = c = 0; c < n.length && n[c].x < f[0].x; ) ((v = n[c++]), m[e++].h(v.x, v.y))
-      for (; l < f.length; ) ((v = f[l++]), m[e++].h(v.x, v.y + k))
-      for (f = f[f.length - 1].x; c < n.length && n[c].x <= f; ) c++
-      for (; c < n.length && n[c].x > f; ) ((k = n[c++]), m[e++].h(k.x, k.y))
+      for (e = l = c = 0; c < n.length && n[c].x < f[0].x;) ((v = n[c++]), m[e++].h(v.x, v.y))
+      for (; l < f.length;) ((v = f[l++]), m[e++].h(v.x, v.y + k))
+      for (f = f[f.length - 1].x; c < n.length && n[c].x <= f;) c++
+      for (; c < n.length && n[c].x > f;) ((k = n[c++]), m[e++].h(k.x, k.y))
       f = Ku(a, e)
       for (c = 0; c < e; c++) f[c].assign(m[c])
       Vu(a, m)
@@ -50257,7 +50242,7 @@
   }
   St.prototype.arrangeTrees = function () {
     if (this.Tb === $t)
-      for (var a = this.Xb.iterator; a.next(); ) {
+      for (var a = this.Xb.iterator; a.next();) {
         var b = a.value
         if (b instanceof Zt) {
           var c = b.node
@@ -50273,7 +50258,7 @@
       }
     else {
       a = []
-      for (b = this.Xb.iterator; b.next(); ) ((c = b.value), c instanceof Zt && a.push(c))
+      for (b = this.Xb.iterator; b.next();) ((c = b.value), c instanceof Zt && a.push(c))
       switch (this.sorting) {
         case pu:
           break
@@ -50327,12 +50312,12 @@
     this.isRouting && this.commitLinks()
   }
   St.prototype.commitNodes = function () {
-    for (var a = this.network.vertexes.iterator; a.next(); ) a.value.commit()
-    for (a.reset(); a.next(); ) this.layoutComments(a.value)
+    for (var a = this.network.vertexes.iterator; a.next();) a.value.commit()
+    for (a.reset(); a.next();) this.layoutComments(a.value)
   }
   St.prototype.Iu = function () {
     if (this.layerStyle === hu) {
-      for (var a = this.bw, b = [], c = null, d = this.network.vertexes.iterator; d.next(); ) {
+      for (var a = this.bw, b = [], c = null, d = this.network.vertexes.iterator; d.next();) {
         var e = d.value
         null === c ? (c = e.bounds.copy()) : c.ed(e.bounds)
         var f = b[e.level]
@@ -50367,10 +50352,10 @@
   }
   St.prototype.commitLayers = function () {}
   St.prototype.commitLinks = function () {
-    for (var a = this.network.edges.iterator; a.next(); ) a.value.commit()
+    for (var a = this.network.edges.iterator; a.next();) a.value.commit()
   }
   St.prototype.Av = function () {
-    for (var a = this.Xb.iterator; a.next(); ) {
+    for (var a = this.Xb.iterator; a.next();) {
       var b = a.value
       b instanceof Zt && Zu(this, b)
     }
@@ -50433,7 +50418,7 @@
           break
         case vu:
           d = 90 === d || 270 === d ? cd : dd
-          for (f = c ? a.destinationEdges : a.sourceEdges; f.next(); )
+          for (f = c ? a.destinationEdges : a.sourceEdges; f.next();)
             ((g = f.value.link),
               null !== g &&
                 (c
@@ -50452,7 +50437,7 @@
                   : (a.setsPortSpot && (g.fromSpot = d), a.setsChildPortSpot && (g.toSpot = e))))
       }
     } else if (((c = Fu(a)), this.ud === Ut))
-      for (e = a.destinationEdges; e.next(); ) {
+      for (e = a.destinationEdges; e.next();) {
         if (((d = e.value.link), null !== d)) {
           if (a.setsPortSpot)
             if (a.portSpot.$b())
@@ -50489,7 +50474,7 @@
         }
       }
     else
-      for (e = a.sourceEdges; e.next(); )
+      for (e = a.sourceEdges; e.next();)
         if (((d = e.value.link), null !== d)) {
           if (a.setsPortSpot)
             if (a.portSpot.$b())
@@ -51357,11 +51342,11 @@
             m
           a.uh()
           if (l || k) {
-            for (m = 2; 4 < a.pointsCount; ) a.rv(2)
+            for (m = 2; 4 < a.pointsCount;) a.rv(2)
             var n = a.i(1)
             var p = a.i(2)
           } else {
-            for (m = 1; 3 < a.pointsCount; ) a.rv(1)
+            for (m = 1; 3 < a.pointsCount;) a.rv(1)
             n = a.i(0)
             p = a.i(a.pointsCount - 1)
           }

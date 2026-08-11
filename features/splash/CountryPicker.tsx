@@ -41,7 +41,7 @@ export function CountryPicker({
         accessibilityLabel={`Country dial code: ${selected.name} ${selected.dial}`}
       >
         <Text style={{ fontSize: 20 }}>{selected.flag}</Text>
-        <Text style={{ color: 'white', fontSize: 15 }}>{selected.dial}</Text>
+        <Text style={{ color: Colors.$textDefault, fontSize: 15 }}>{selected.dial}</Text>
         <ChevronDown size={14} color={Colors.$outlineDefault} />
       </TouchableOpacity>
 
@@ -68,7 +68,7 @@ export function CountryPicker({
         >
           <Search size={15} color={Colors.rgba(Colors.$backgroundDefault, 0.4)} />
           <TextInput
-            style={{ flex: 1, color: 'white', fontSize: 15, padding: 0 }}
+            style={{ flex: 1, color: Colors.$textDefault, fontSize: 15, padding: 0 }}
             placeholder="Search country or code"
             placeholderTextColor={Colors.rgba(Colors.$backgroundDefault, 0.4)}
             value={query}

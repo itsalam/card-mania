@@ -54,6 +54,15 @@ Buttons and other interactive controls must respond to a tap immediately — nev
 
 ## Design system
 
+### Color usage
+
+All colors must come from `Colors` (`react-native-ui-lib`, imported as `import { Colors } from 'react-native-ui-lib'`) — e.g. `Colors.$textDefault`, `Colors.$textDanger`, `Colors.$backgroundElevated`, `Colors.rgba(Colors.$outlineNeutral, 0.4)`. `Colors.$xxx` tokens are resolved from the active theme (light/dark) at runtime; a literal hardcoded at compile time (`'white'`, `'#fff'`, `color="white"`) or a static Tailwind color utility (`text-white`, `bg-white`, `text-red-400`) is frozen to that literal value regardless of theme and will visibly mismatch the surrounding UI when the theme changes.
+
+- Never hardcode a hex/named color value or a static Tailwind color class for anything that should track the theme (text, icon, background, border colors). If a `Colors.$xxx` token isn't defined for what you need, use `Colors.rgba(Colors.$someToken, alpha)` rather than inventing a literal.
+- The shared `Text` component (`components/ui/text/base-text.tsx`) already defaults to `color: Colors.$textDefault` — if you just want default text color, don't add a `text-white`/`text-black` class or inline `color` override at all; only override when you need a different token (e.g. `Colors.$textDanger` for errors, `Colors.$textNeutral` for secondary text).
+- Fixed brand colors (e.g. the Google/Facebook logo SVG fills) are the one legitimate exception — they represent a third party's brand mark, not this app's theme, so they stay hardcoded.
+- `shadowColor` is also an accepted exception — shadows read as black in both light and dark mode by convention.
+
 ### Toggle / segmented-control styling
 
 All toggle bars and tab strips (period selectors, Chart/Sales tabs, Vault/Wishlist/Selling tabs, etc.) must share one visual convention — a bordered pill container with a tinted active segment, never a solid-fill rectangle:

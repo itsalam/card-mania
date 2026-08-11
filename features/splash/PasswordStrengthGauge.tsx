@@ -10,11 +10,25 @@ type Props = {
   password: string
   policy: PasswordPolicy
   focused?: boolean
+  /**
+   * 'inline' (default) grows in the normal layout flow, pushing content below it down.
+   * 'floating' anchors as an absolute overlay instead, so it never displaces sibling
+   * content — pass `placement` to control which side of the anchor it expands into.
+   */
+  variant?: 'inline' | 'floating'
+  /** Only meaningful when variant="floating". Defaults to 'below'. */
+  placement?: 'above' | 'below'
 }
 
 const SEGMENT_COLORS = ['#ef4444', '#f97316', '#eab308', '#22c55e'] as const
 
-export function PasswordStrengthGauge({ password, policy, focused }: Props) {
+export function PasswordStrengthGauge({
+  password,
+  policy,
+  focused,
+  variant = 'inline',
+  placement = 'below',
+}: Props) {
   const EMPTY_COLOR = Colors.rgba(Colors.$textDefault, 0.12)
   const { score, label, rules } = evaluatePassword(password, policy)
   const visible = !!password.length || !!focused
@@ -36,11 +50,38 @@ export function PasswordStrengthGauge({ password, policy, focused }: Props) {
 
   const activeColor = score > 0 ? SEGMENT_COLORS[score - 1] : EMPTY_COLOR
 
+  const floatingStyle =
+    variant === 'floating'
+      ? ({
+          position: 'absolute',
+          left: 0,
+          right: 0,
+          zIndex: 20,
+          elevation: 20,
+          ...(placement === 'above'
+            ? ({ bottom: '100%', marginBottom: 8 } as const)
+            : ({ top: '100%', marginTop: 8 } as const)),
+        } as const)
+      : undefined
+
   return (
-    <Animated.View style={containerStyle}>
-      <View style={{ gap: 10, width: '100%' }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-          <View style={{ flex: 1, flexDirection: 'row', gap: 4 }}>
+    <Animated.View style={[containerStyle, floatingStyle]}>
+      <View
+        style={{
+          width: '100%',
+          ...(variant === 'floating'
+            ? {
+                backgroundColor: Colors.rgba(Colors.$backgroundElevated, 0.96),
+                borderWidth: 1,
+                borderColor: Colors.rgba(Colors.$outlineNeutral, 0.4),
+                borderRadius: 14,
+                padding: 12,
+              }
+            : null),
+        }}
+      >
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+          <View style={{ flex: 1, flexDirection: 'row', gap: 4, paddingVertical: 4 }}>
             {([1, 2, 3, 4] as const).map((seg) => (
               <Segment key={seg} filled={score >= seg && visible} color={activeColor as string} />
             ))}

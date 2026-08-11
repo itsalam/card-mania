@@ -1,9 +1,5 @@
 export type OnboardingStepId =
-  | 'settings-icon'
-  | 'search-bar'
-  | 'collection-breakdown'
-  | 'tab-list'
-  | 'collection-graphs'
+  'settings-icon' | 'search-bar' | 'collection-breakdown' | 'tab-list' | 'collection-graphs'
 
 export type OnboardingStep = {
   id: OnboardingStepId

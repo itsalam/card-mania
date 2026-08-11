@@ -18,9 +18,9 @@ export type InputFieldType = number | string
 
 export type GraphInputKey<T> = KeysOfType<RemoveIndex<T>, InputFieldType>
 export type GraphInputFields<T> = {
-  [K in keyof RemoveIndex<T> as RemoveIndex<T>[K] extends InputFieldType
-    ? K
-    : never]: RemoveIndex<T>[K]
+  [
+    K in keyof RemoveIndex<T> as RemoveIndex<T>[K] extends InputFieldType ? K : never
+  ]: RemoveIndex<T>[K]
 }
 
 export type NumericalFields<T> = {
@@ -54,13 +54,15 @@ export type PriceGraphProps<
 
 // drop any index signatures from T
 type RemoveIndex<T> = {
-  [K in keyof T as string extends K
-    ? never
-    : number extends K
+  [
+    K in keyof T as string extends K
       ? never
-      : symbol extends K
+      : number extends K
         ? never
-        : K]: T[K]
+        : symbol extends K
+          ? never
+          : K
+  ]: T[K]
 }
 
 // “keys of T whose values are InputFieldType”
