@@ -29,6 +29,7 @@ export default function ShopItemRoute() {
       collectionIdArgs={{ collectionId, itemId }}
       animateFrom={fromPos}
       returnTo={returnTo}
+      preferredImageId={image}
     />
   )
 }

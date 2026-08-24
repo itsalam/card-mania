@@ -56,6 +56,14 @@ const config = {
       'expo-font',
       'expo-web-browser',
       [
+        'expo-image-picker',
+        {
+          photosPermission:
+            'Card Mania uses your photo library to attach photos to your collection items.',
+          cameraPermission: 'Card Mania uses your camera to take photos of your collection items.',
+        },
+      ],
+      [
         '@sentry/react-native/expo',
         {
           url: 'https://sentry.io/',

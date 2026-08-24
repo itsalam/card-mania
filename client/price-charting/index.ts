@@ -176,7 +176,6 @@ export function useCardGenres() {
     queryKey: ['card-genres'],
     queryFn: async () => {
       const { data, error } = await getSupabase().rpc('list_card_genres' as any)
-      console.log({ data, error })
       if (error) throw error
       return (data ?? []) as GenreOption[]
     },

@@ -332,17 +332,17 @@ export const CollectionItemEntry = ({
   )
 
   return !hide ? (
-    <Animated.View exiting={FadeOutRight} key={scheme + (!hide ? 'show' : '')}>
+    <Animated.View
+      exiting={FadeOutRight}
+      key={scheme + (!hide ? 'show' : '')}
+      style={{ position: 'relative' }}
+    >
       <ReanimatedSwipeable
         ref={swipeableRef}
         enabled={showDelete && !isLoading}
         renderRightActions={showDelete ? renderRightActions : undefined}
         rightThreshold={40}
         overshootRight={false}
-        containerStyle={{
-          borderBottomColor: Colors.$outlineDefault,
-          borderBottomWidth: 1,
-        }}
         childrenContainerStyle={{
           zIndex: 1,
           backgroundColor: Colors.$backgroundElevatedLight,
@@ -353,7 +353,7 @@ export const CollectionItemEntry = ({
             position: 'relative',
             width: '100%',
             paddingVertical: 6,
-            paddingLeft: 16,
+            paddingLeft: 12,
             display: 'flex',
             flexDirection: 'column',
             paddingRight: editable ? 0 : 8,
@@ -365,11 +365,39 @@ export const CollectionItemEntry = ({
               alignItems: 'center',
               display: 'flex',
               flexDirection: 'row',
-              gap: 8,
               flexWrap: 'wrap',
             }}
           >
-            <View style={{ flexShrink: 0, justifyContent: 'flex-end' }}>
+            <NumberTicker
+              disabled={isLoading}
+              containerStyle={{ opacity: isLoading ? 0.6 : 1 }}
+              stepperProps={{ small: true }}
+              min={0}
+              max={999}
+              initialNumber={isLoading ? undefined : (draft.quantity ?? 0)}
+              onChangeNumber={(n) => updateDraft({ quantity: n })}
+            />
+            <View
+              style={{
+                flex: 1,
+                maxWidth: 20,
+                minWidth: 15,
+                alignItems: 'center',
+              }}
+            >
+              <X size={8} color={Colors.$iconDefault} />
+            </View>
+            <View
+              style={{
+                flex: 1,
+                alignItems: 'center',
+                display: 'flex',
+                flexDirection: 'row',
+                flexWrap: 'wrap',
+                alignSelf: 'stretch',
+                alignContent: 'center',
+              }}
+            >
               <SkeletonText
                 className="text-base uppercase font-spaceMono"
                 defaultDimensions={{ height: 12, width: 50 }}
@@ -388,76 +416,69 @@ export const CollectionItemEntry = ({
                     .join(' ')
                 }
               </SkeletonText>
-            </View>
-            <View
-              style={{
-                alignItems: 'center',
-                display: 'flex',
-                flexDirection: 'row',
-                flex: 1,
-                justifyContent: 'flex-end',
-              }}
-            >
-              <SkeletonText
-                className="text-base uppercase font-spaceMono"
-                defaultDimensions={{ height: 15, width: 66 }}
-                style={
-                  price
-                    ? null
-                    : {
-                        color: Colors.$textNeutralLight,
-                      }
-                }
-                loading={isLoading ?? false}
-              >
-                {price ? formatPrice(price) : '--.--'}
-              </SkeletonText>
               <View
                 style={{
-                  flex: 1,
-                  maxWidth: 20,
-                  minWidth: 15,
                   alignItems: 'center',
+                  display: 'flex',
+                  flexDirection: 'row',
+                  flex: 1,
+                  justifyContent: 'flex-end',
+                  paddingHorizontal: 8,
                 }}
               >
-                <X size={8} color={Colors.$iconDefault} />
-              </View>
-              <NumberTicker
-                disabled={isLoading}
-                containerStyle={{ opacity: isLoading ? 0.6 : 1 }}
-                stepperProps={{ small: true }}
-                min={0}
-                max={999}
-                initialNumber={isLoading ? undefined : (draft.quantity ?? 0)}
-                onChangeNumber={(n) => updateDraft({ quantity: n })}
-              />
-
-              {showDelete && (
-                <TouchableOpacity
-                  onPress={
-                    editable
-                      ? () =>
-                          onPriceModalOpen?.({
-                            draft,
-                            updateDraft,
-                            onDelete: () => deleteEntry(draft),
-                            price,
-                            currentGrade,
-                            currentGrader,
-                          })
-                      : undefined
+                <SkeletonText
+                  className="text-base uppercase font-spaceMono"
+                  defaultDimensions={{ height: 15, width: 66 }}
+                  style={
+                    price
+                      ? null
+                      : {
+                          color: Colors.$textNeutralLight,
+                        }
                   }
-                  disabled={isLoading}
-                  style={{ opacity: isLoading ? 0.4 : 1 }}
+                  loading={isLoading ?? false}
                 >
-                  <GripVertical
-                    size={16}
-                    color={Colors.$iconNeutral ?? Colors.$iconDefault}
-                    strokeWidth={1.5}
-                  />
-                </TouchableOpacity>
-              )}
+                  {price ? formatPrice(price) : '--.--'}
+                </SkeletonText>
+              </View>
+              <View
+                pointerEvents="none"
+                style={{
+                  position: 'absolute',
+                  left: 6,
+                  right: 6,
+                  bottom: 4,
+                  height: 1,
+                  backgroundColor: Colors.$outlineDefault,
+                }}
+              />
             </View>
+            <View style={{ flexShrink: 0, justifyContent: 'flex-end' }}></View>
+            {showDelete && (
+              <TouchableOpacity
+                onPress={
+                  editable
+                    ? () =>
+                        onPriceModalOpen?.({
+                          draft,
+                          updateDraft,
+                          onDelete: () => deleteEntry(draft),
+                          price,
+                          currentGrade,
+                          currentGrader,
+                        })
+                    : undefined
+                }
+                disabled={isLoading}
+                style={{ opacity: isLoading ? 0.4 : 1 }}
+              >
+                <GripVertical
+                  size={16}
+                  color={Colors.$iconNeutral ?? Colors.$iconDefault}
+                  strokeWidth={1.5}
+                />
+              </TouchableOpacity>
+            )}
           </View>
           {collectionItem?.variants?.length ? (
             <View style={{ flexDirection: 'row', paddingTop: 2 }}>

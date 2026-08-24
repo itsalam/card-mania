@@ -57,6 +57,21 @@ export function useRequiredUserId() {
   return id
 }
 
+const profileChannelName = (userId: string) => `public:user_profile:user_id=eq.${userId}`
+
+// `getSupabase().channel(name)` returns the *same* channel instance for a
+// repeated name rather than creating a new one — so without this guard,
+// calling `.on().subscribe()` again on an already-subscribed channel throws
+// "cannot add `postgres_changes` callbacks ... after `subscribe()`". This
+// matters because `onAuthStateChange` (app/_providers.tsx) re-runs `setAuth`
+// with the same user on every token refresh, not just on initial sign-in.
+function isChannelSubscribed(name: string) {
+  const topic = `realtime:${name}`
+  return getSupabase()
+    .getChannels()
+    .some((c) => c.topic === topic)
+}
+
 export const useUserStore = create<State & Actions>()(
   persist(
     (set, get) => ({
@@ -90,9 +105,12 @@ export const useUserStore = create<State & Actions>()(
 
           await get().loadProfile(user.id)
           // Only subscribe to live profile changes for real (non-anonymous) users.
-          if (!user.is_anonymous) {
+          // Guarded — setAuth re-runs on every onAuthStateChange event (e.g. token
+          // refresh), and re-subscribing an already-subscribed channel throws.
+          const channelName = profileChannelName(user.id)
+          if (!user.is_anonymous && !isChannelSubscribed(channelName)) {
             getSupabase()
-              .channel(`public:user_profile:user_id=eq.${user.id}`)
+              .channel(channelName)
               .on(
                 'postgres_changes',
                 {
@@ -274,6 +292,16 @@ export const useUserStore = create<State & Actions>()(
           onboardingState: null,
           status: 'signed_out',
         })
+        // Drop the outgoing user's profile-changes channel — it's scoped to their
+        // id, so left alone it would just sit idle, but the next signInAnonymously
+        // could otherwise queue behind a stale (still-subscribing) channel of the
+        // same name if it fires again before this one settles.
+        const profileChannelPrefix = 'realtime:public:user_profile:user_id=eq.'
+        for (const channel of getSupabase().getChannels()) {
+          if (channel.topic.startsWith(profileChannelPrefix)) {
+            getSupabase().removeChannel(channel)
+          }
+        }
         // scope: 'local' clears the session in storage without a server roundtrip.
         // The access token expires server-side on its own TTL.
         try {

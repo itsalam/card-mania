@@ -1,6 +1,7 @@
 import { useRefresh } from '@/lib/hooks/useRefresh'
+import { BottomTabBarHeightContext } from '@react-navigation/bottom-tabs'
 import { useQueryClient } from '@tanstack/react-query'
-import React, { ReactNode } from 'react'
+import React, { ReactNode, useContext } from 'react'
 import { RefreshControl, ScrollView, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
@@ -89,6 +90,10 @@ export default function ProfilePageLayout({
 
 function ProfilePageLayoutInner({ presentedAsModal }: { presentedAsModal?: boolean }) {
   const insets = useSafeAreaInsets()
+  // This layout is also rendered outside the (tabs) navigator (storefront/user modal
+  // routes), where there's no bottom tab bar — useContext (unlike useBottomTabBarHeight)
+  // doesn't throw in that case, it just returns undefined.
+  const tabBarHeight = useContext(BottomTabBarHeightContext) ?? 0
   const profileUser = useUserProfilePage((s) => s.user)
   const { user: authUser } = useUserStore()
   const isOwnProfile = !!authUser?.id && authUser.id === profileUser?.user_id
@@ -121,7 +126,7 @@ function ProfilePageLayoutInner({ presentedAsModal }: { presentedAsModal?: boole
       style={{
         flex: 1,
         paddingTop: presentedAsModal ? 12 : insets.top + 12,
-        paddingBottom: insets.bottom,
+        paddingBottom: Math.max(insets.bottom, tabBarHeight),
       }}
     >
       <ProfileHeader />

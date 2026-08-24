@@ -15,5 +15,12 @@ export default function CardsRoute() {
 
   const fromPos = JSON.parse(from) as { x: number; y: number; width: number; height: number }
 
-  return <FocusCardView cardId={cardId} animateFrom={fromPos} returnTo={returnTo} />
+  return (
+    <FocusCardView
+      cardId={cardId}
+      animateFrom={fromPos}
+      returnTo={returnTo}
+      preferredImageId={image}
+    />
+  )
 }

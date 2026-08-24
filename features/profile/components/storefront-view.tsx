@@ -134,6 +134,12 @@ function StorefrontAccessories(props: ItemListViewProps) {
     kind: kind ?? 'card',
     item,
     path: '/cards/[card]',
+    // Already resolved here (displayData is passed down from the list render) — hand it
+    // off so DetailCardView shows the preferred photo immediately instead of the vendor
+    // card image while its own usePrimaryPhoto fetch is in flight.
+    params: displayData?.imageProxyArgs.imageId
+      ? { image: displayData.imageProxyArgs.imageId }
+      : undefined,
   })
 
   const handleAddToCart = () => {

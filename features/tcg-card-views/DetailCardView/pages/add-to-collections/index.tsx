@@ -1,6 +1,7 @@
 import { useViewCollectionsForCard } from '@/client/collections/query'
 import { CollectionItem, CollectionLike } from '@/client/collections/types'
 import { BlurBackground } from '@/components/Background'
+import { CollectionGroupLabel, CollectionGroupList } from '@/components/collections/group-label'
 import { ExpandableCollectionEntryListItem } from '@/components/collections/items/expandable-entry-item'
 import { SearchBar } from '@/components/ui/search'
 import { Text } from '@/components/ui/text/base-text'
@@ -47,19 +48,18 @@ export const AddToCollectionsView = () => {
     if (!initialIncludedIds || !card?.id || snapshotReady) return
     const cardId = card.id
     const snap = new Map<string, CollectionItem[]>()
-    console.log('[AddToCollections] snapshotting', initialIncludedIds.size, 'collections')
+
     Promise.all(
       [...initialIncludedIds].map(async (colId) => {
         const key = [...qk.collectionItems(colId), 'cardId', cardId]
         const cached = qc.getQueryData<CollectionItem[]>(key)
         if (cached) {
-          console.log('[AddToCollections] snapshot from cache', colId, cached.length, 'items')
           snap.set(colId, cached)
           return
         }
         try {
           const items = await viewCollectionItemsForCard(colId, cardId)
-          console.log('[AddToCollections] snapshot from DB', colId, items?.length ?? 0, 'items')
+
           if (items) {
             qc.setQueryData(key, items)
             snap.set(colId, items as CollectionItem[])
@@ -69,7 +69,6 @@ export const AddToCollectionsView = () => {
         }
       })
     ).then(() => {
-      console.log('[AddToCollections] snapshot ready, collections:', [...snap.keys()])
       setInitialItemsSnapshot(snap)
       setSnapshotReady(true)
     })
@@ -86,7 +85,6 @@ export const AddToCollectionsView = () => {
   useEffect(() => {
     if (!snapshotReady || !card?.id || !initialIncludedIds || !username) return
     const cardId = card.id
-    console.log('[AddToCollections] subscriber active, snapshot size:', initialItemsSnapshot.size)
 
     const recompute = () => {
       // The cache stores CollectionLike[] (flat array); the included/excluded split is derived
@@ -110,20 +108,11 @@ export const AddToCollectionsView = () => {
               !s || s.quantity !== ci.quantity || s.grade_condition_id !== ci.grade_condition_id
             )
           }) || snap.some((si) => !cur.find((ci) => ci.id === si.id))
-        console.log('[AddToCollections] diff', colId, {
-          snapQtys: snap.map((i) => i.quantity),
-          curQtys: cur.map((i) => i.quantity),
-          changed,
-        })
+
         if (changed) modifiedColIds.push(colId)
       }
 
       const totalCount = newlyAdded.length + modifiedColIds.length
-      console.log('[AddToCollections] recompute', {
-        newlyAdded: newlyAdded.length,
-        modified: modifiedColIds.length,
-        totalCount,
-      })
 
       // Always keep the execute ref fresh so undo always uses current state.
       executeRef.current =
@@ -250,8 +239,10 @@ export const AddToCollectionsView = () => {
         </View>
         {!!collection?.included.length && (
           <>
-            <Text style={{ paddingHorizontal: Spacings.s4 }}>Saved In</Text>
-            <View className="py-2 flex flex-col">
+            <CollectionGroupLabel style={{ paddingHorizontal: Spacings.s4 }}>
+              Saved In
+            </CollectionGroupLabel>
+            <CollectionGroupList style={{ paddingVertical: Spacings.s2 }}>
               {collection?.included.map((c) => (
                 <ExpandableCollectionEntryListItem
                   card={card ?? undefined}
@@ -259,15 +250,17 @@ export const AddToCollectionsView = () => {
                   collection={c}
                 />
               ))}
-            </View>
+            </CollectionGroupList>
           </>
         )}
         {!!collection?.excluded && (
           <>
-            {collection?.included.length && (
-              <Text style={{ paddingHorizontal: Spacings.s4 }}>Other Collections</Text>
+            {!!collection?.included.length && (
+              <CollectionGroupLabel style={{ paddingHorizontal: Spacings.s4 }}>
+                Other Collections
+              </CollectionGroupLabel>
             )}
-            <View className="py-2 flex flex-col gap-2">
+            <CollectionGroupList style={{ paddingVertical: Spacings.s2 }}>
               {collection?.excluded.length ? (
                 collection?.excluded.map((c) => (
                   <ExpandableCollectionEntryListItem
@@ -281,7 +274,7 @@ export const AddToCollectionsView = () => {
                   <Text className="text-sm text-muted-foreground italic">No other collections</Text>
                 </View>
               )}
-            </View>
+            </CollectionGroupList>
           </>
         )}
       </ScrollView>

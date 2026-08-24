@@ -34,6 +34,12 @@ export function useCollaspableHeader(opts?: {
 }) {
   const { disable = false, resetKeys, defaultHeight } = opts ?? {}
   const [headerExpanded, setHeaderExpanded] = useState(false)
+  // Flips true as soon as the header starts collapsing (expandProgress > 0),
+  // rather than only once fully collapsed like `headerExpanded`. Lets JS-side
+  // consumers (e.g. FadeScrollView's `manualStart`) react to the collapse
+  // starting instead of waiting on the ScrollView's own onScroll offset,
+  // which lags/never fires while scroll is being simulated via `scrollTo`.
+  const [headerCollapsing, setHeaderCollapsing] = useState(false)
   const expandProgress = useSharedValue(0)
   const gestureRef = useRef<GestureType>(undefined)
   const scrollViewRef = useAnimatedRef<AnimatedScrollRef>()
@@ -53,6 +59,10 @@ export function useCollaspableHeader(opts?: {
     !disable && setHeaderExpanded(toggle)
   }
 
+  const toggleHeaderCollapsing = (toggle: boolean) => {
+    !disable && setHeaderCollapsing(toggle)
+  }
+
   const updateOffsets = () => {
     'worklet'
     const v = virtualOffset.value
@@ -63,6 +73,7 @@ export function useCollaspableHeader(opts?: {
     expandProgress.value = expand
 
     scheduleOnRN(toggleHeader, expand === 1)
+    scheduleOnRN(toggleHeaderCollapsing, expand > 0)
 
     // Scroll begins after header is fully collapsed
     const scroll = Math.max(0, v - H)
@@ -96,6 +107,7 @@ export function useCollaspableHeader(opts?: {
     expandProgress.value = 0
     scrollOffset.value = 0
     isScrollViewMounted.value = false
+    setHeaderCollapsing(false)
   }, [...(resetKeys ?? [])])
 
   const THRESHOLD = 0.7 // > 0.5 → snap closed, < 0.5 → snap open
@@ -213,6 +225,7 @@ export function useCollaspableHeader(opts?: {
 
   return {
     tabsExpanded: headerExpanded,
+    headerCollapsing,
     composedGestures,
     headerAnimatedStyle,
     onListLayout: React.useCallback(

@@ -73,14 +73,6 @@ export function UserProfilePageStoreProvider({
   children: React.ReactNode
 }) {
   const { data: user, status, error: queryError } = useUserProfile(userId)
-
-  console.log('[UserProfile] provider', {
-    userId,
-    enabled: Boolean(userId),
-    status,
-    hasData: Boolean(user),
-    error: queryError?.message ?? null,
-  })
   const tabs = makeTabs({
     isHobbyist: user?.is_hobbyiest,
     isTrader: user?.is_seller,

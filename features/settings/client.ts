@@ -24,12 +24,6 @@ export const userProfileOptions = (userId?: string | null, queryClient?: QueryCl
         .eq('user_id', userId)
         .single()
 
-      console.log('[UserProfile] query result', {
-        userId,
-        found: Boolean(data),
-        error: queryError?.message ?? null,
-      })
-
       if (queryError) throw queryError
       if (!data) throw new Error(`profile not found for userId=${userId}`)
       return data
