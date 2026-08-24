@@ -1,5 +1,6 @@
 import { useToast } from '@/components/Toast'
 import { getSupabase } from '@/lib/store/client'
+import { qk } from '@/lib/store/functions/helpers'
 import { useQueryClient } from '@tanstack/react-query'
 import { useEffect } from 'react'
 import { AppNotification } from '@/client/notifications/types'
@@ -35,6 +36,10 @@ export function useOfferRealtime() {
             if (notification.category === 'offer') {
               qc.invalidateQueries({ queryKey: ['offers', 'seller'] })
               qc.invalidateQueries({ queryKey: ['offers', 'buyer'] })
+              // ITS-100: covers the "received an offer" activation condition for the
+              // seller, who never runs a client-side mutation of their own for it —
+              // useSubmitOffer's onSuccess covers the buyer/sent side.
+              qc.invalidateQueries({ queryKey: qk.activationStatus(userId) })
             }
 
             if (notification.category === 'transaction') {

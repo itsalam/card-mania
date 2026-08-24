@@ -1,5 +1,6 @@
 import { getSupabase } from '@/lib/store/client'
-import { requireUser } from '@/lib/store/functions/helpers'
+import { qk, requireUser } from '@/lib/store/functions/helpers'
+import { useUserStore } from '@/lib/store/useUserStore'
 import { reportError } from '@/lib/utils/report-error'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useClearCart } from '@/features/cart/hooks'
@@ -45,12 +46,17 @@ async function submitOfferFn(payload: SubmitOfferPayload): Promise<Offer> {
 export function useSubmitOffer() {
   const clearCart = useClearCart()
   const qc = useQueryClient()
+  const userId = useUserStore((s) => s.user?.id)
 
   return useMutation({
     mutationFn: submitOfferFn,
     onSuccess: () => {
       clearCart()
       qc.invalidateQueries({ queryKey: ['offers'] })
+      // ITS-100: sending an offer is one of the three activation conditions — refresh
+      // the cached read rather than waiting out its staleTime. Receiving an offer is
+      // covered separately by useOfferRealtime's notification handler.
+      qc.invalidateQueries({ queryKey: qk.activationStatus(userId) })
     },
     onError: (err, vars) => {
       reportError({ context: 'useSubmitOffer', error: err, metadata: { vars } })
