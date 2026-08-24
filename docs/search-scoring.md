@@ -55,20 +55,20 @@ Worked scale at the default `pop_log_divisor = 3.0`:
 
 All columns on `search_config` (`id = 1`) that affect scoring:
 
-| Column | Default | What it does | Tuning note |
-| --- | --- | --- | --- |
-| `weight_fts` | 0.6 | Top-level weight on the full-text signal | Raise to favor exact/near-exact name or set matches |
-| `weight_trgm` | 0.3 | Top-level weight on the trigram-similarity signal | Raise to be more forgiving of typos/partial queries |
-| `weight_vector` | 0.1 | Top-level weight on the (currently unused) semantic signal | No effect until `s_vector` is wired to a real embedding — leave alone until then |
-| `weight_pop` | 0.05 | Top-level weight on popularity | Raise to surface popular cards higher even on weaker text matches |
-| `pop_wishlist_weight` | 0.7 | Share of `s_pop` driven by wishlist count | Raise to weight "people want this" over "people bought this" |
-| `pop_sale_weight` | 0.3 | Share of `s_pop` driven by completed-sale count | Raise to weight actual transaction volume over wishlist interest |
-| `pop_log_divisor` | 3.0 | Normalization cap for `s_pop` (see scale table above) | Raise to require more wishlist/sale events before `s_pop` saturates at 1.0; lower to make popularity swing the score faster |
-| `trgm_word_similarity_threshold` | 0.2 | Minimum `word_similarity` for a trigram match to count in downstream fuzzy-search helper queries | Raise to cut noisy fuzzy matches; lower to be more permissive |
-| `min_score` | 0.0 | Results with `score` at or below this are excluded entirely | Raise to cut low-relevance results from the result set rather than just ranking them low |
-| `snippet_max_words` | 20 | Max words in the `ts_headline` result snippet | Cosmetic — affects snippet length only, not ranking |
-| `snippet_min_words` | 5 | Min words in the result snippet | Cosmetic — affects snippet length only, not ranking |
-| `snippet_max_fragments` | 1 | Max highlighted fragments in the snippet | Cosmetic — affects snippet length only, not ranking |
+| Column                           | Default | What it does                                                                                     | Tuning note                                                                                                                 |
+| -------------------------------- | ------- | ------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------- |
+| `weight_fts`                     | 0.6     | Top-level weight on the full-text signal                                                         | Raise to favor exact/near-exact name or set matches                                                                         |
+| `weight_trgm`                    | 0.3     | Top-level weight on the trigram-similarity signal                                                | Raise to be more forgiving of typos/partial queries                                                                         |
+| `weight_vector`                  | 0.1     | Top-level weight on the (currently unused) semantic signal                                       | No effect until `s_vector` is wired to a real embedding — leave alone until then                                            |
+| `weight_pop`                     | 0.05    | Top-level weight on popularity                                                                   | Raise to surface popular cards higher even on weaker text matches                                                           |
+| `pop_wishlist_weight`            | 0.7     | Share of `s_pop` driven by wishlist count                                                        | Raise to weight "people want this" over "people bought this"                                                                |
+| `pop_sale_weight`                | 0.3     | Share of `s_pop` driven by completed-sale count                                                  | Raise to weight actual transaction volume over wishlist interest                                                            |
+| `pop_log_divisor`                | 3.0     | Normalization cap for `s_pop` (see scale table above)                                            | Raise to require more wishlist/sale events before `s_pop` saturates at 1.0; lower to make popularity swing the score faster |
+| `trgm_word_similarity_threshold` | 0.2     | Minimum `word_similarity` for a trigram match to count in downstream fuzzy-search helper queries | Raise to cut noisy fuzzy matches; lower to be more permissive                                                               |
+| `min_score`                      | 0.0     | Results with `score` at or below this are excluded entirely                                      | Raise to cut low-relevance results from the result set rather than just ranking them low                                    |
+| `snippet_max_words`              | 20      | Max words in the `ts_headline` result snippet                                                    | Cosmetic — affects snippet length only, not ranking                                                                         |
+| `snippet_min_words`              | 5       | Min words in the result snippet                                                                  | Cosmetic — affects snippet length only, not ranking                                                                         |
+| `snippet_max_fragments`          | 1       | Max highlighted fragments in the snippet                                                         | Cosmetic — affects snippet length only, not ranking                                                                         |
 
 This table is written to double as source copy for admin UI tooltips, per ITS-58's original intent, whenever that UI gets built.
 
