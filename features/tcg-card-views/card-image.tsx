@@ -5,6 +5,7 @@ import { StyleProp, ViewStyle } from 'react-native'
 import { THUMBNAIL_HEIGHT, THUMBNAIL_WIDTH } from '../../components/tcg-card/consts'
 import { LiquidGlassCard, LiquidGlassCardProps } from '../../components/tcg-card/GlassCard'
 import { LoadingImagePlaceholder } from '../../components/tcg-card/placeholders'
+import { buildThumbCacheKey } from './helpers'
 import { DisplayData } from './types'
 
 export function CardImage(props: {
@@ -24,9 +25,12 @@ export function CardImage(props: {
     ...displayData?.imageProxyArgs,
   })
   const thumbnailImg = thumbnailImgResult?.url
-  // Use the resolved W/H ratio from image-proxy; fall back to the standard card ratio while loading.
-  const aspectRatio =
-    thumbnailImgResult?.aspectRatio ?? displayData?.aspectRatio ?? CARD_ASPECT_RATIO
+
+  // Deliberately NOT the resolved image's own pixel ratio — the card slot always keeps a
+  // uniform aspect ratio (falling back to the standard card ratio) and the photo is fit
+  // to it below via `contentFit="cover"`, so a user-uploaded photo with an arbitrary
+  // aspect ratio can't stretch or resize the container.
+  const aspectRatio = displayData?.aspectRatio ?? CARD_ASPECT_RATIO
 
   const finalWidth = width ?? (height !== undefined ? height * aspectRatio : THUMBNAIL_WIDTH)
   const finalHeight = height ?? (width !== undefined ? width / aspectRatio : THUMBNAIL_HEIGHT)
@@ -49,13 +53,13 @@ export function CardImage(props: {
         key={thumbnailImg}
         source={{
           uri: thumbnailImg,
-          cacheKey: `${displayData?.imageProxyArgs.queryHash || displayData?.imageProxyArgs.imageId || displayData?.imageProxyArgs.cardId}-thumb`,
+          cacheKey: displayData ? buildThumbCacheKey(displayData.imageProxyArgs) : undefined,
           width: finalWidth,
           height: finalHeight,
         }}
         width={finalWidth}
         height={finalHeight}
-        contentFit="fill"
+        contentFit="cover"
         isLoading={isLoading || isImageLoading}
       />
     </LiquidGlassCard>

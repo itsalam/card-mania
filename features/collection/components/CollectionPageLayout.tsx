@@ -1,5 +1,10 @@
 import { useViewCollectionForUser } from '@/client/collections/query'
-import { CollectionsAvatar } from '@/components/collections/avatar'
+import {
+  CollectionCard,
+  COMPACT_COLLECTION_CARD_HEIGHT,
+} from '@/components/collections/collection-card'
+import { CollectionGroupLabel, CollectionGroupList } from '@/components/collections/group-label'
+import { TAB_CONTENT_BOTTOM_SPACING } from '@/components/consts'
 import { FolderTabsContainer } from '@/components/tabs/FolderTabs'
 import { TCard } from '@/constants/types'
 import { CollectionItemQueryView, CollectionRow } from '@/lib/store/functions/types'
@@ -10,14 +15,13 @@ import { THUMBNAIL_HEIGHT } from '@/components/tcg-card/consts'
 import { FadeScrollView } from '@/components/ui/fade-scroll'
 import { Tabs } from '@/components/ui/tabs'
 import { Text } from '@/components/ui/text/base-text'
-import { VISIBILITY_OPTIONS } from '@/features/tcg-card-views/DetailCardView/components/ui'
 import { CollectionCardItemEntries } from '@/features/tcg-card-views/DetailCardView/pages/add-to-collections/components'
 import { CardListView } from '@/features/tcg-card-views/ListCard'
 import { useRefresh } from '@/lib/hooks/useRefresh'
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs'
 import { ChevronDown, X } from 'lucide-react-native'
 import React, { useCallback, useMemo, useRef, useState } from 'react'
-import { Pressable, RefreshControl, TouchableOpacity, View } from 'react-native'
+import { Pressable, RefreshControl, View } from 'react-native'
 import { FlatList, GestureDetector } from 'react-native-gesture-handler'
 import Animated, {
   FadeIn,
@@ -37,12 +41,7 @@ import Animated, {
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { BorderRadiuses, Colors } from 'react-native-ui-lib'
 import { shallow } from 'zustand/shallow'
-import {
-  useDefaultCollectionIds,
-  useGetCollection,
-  useGetCollectionCountInfo,
-  useGetCollectionItems,
-} from '../hooks'
+import { useDefaultCollectionIds, useGetCollection, useGetCollectionItems } from '../hooks'
 import { ModifyCollectionView } from '../pages/modify-collection'
 import { defaultPages, getCollectionIdArgs, useCollectionsPageStore } from '../provider'
 import { useCollaspableHeader } from '../ui'
@@ -77,7 +76,6 @@ const AnimatedCollectionItemList = Animated.createAnimatedComponent(FlatList<Lis
 
 export const CollectionsPageLayout = () => {
   const insets = useSafeAreaInsets()
-  const tabBarHeight = useBottomTabBarHeight()
   const { currentPage, setCurrentPage, pinnedCollectionsState, setShowEditView, showEditView } =
     useCollectionsPageStore()
   const { data: defaultIds } = useDefaultCollectionIds()
@@ -136,121 +134,6 @@ export const CollectionsPageLayout = () => {
         )}
       </Tabs>
     </View>
-  )
-}
-
-// ─── Card-style item for the DefaultCollectionView list ─────────────────────
-
-const COMPACT_CARD_WIDTH = 132
-const COMPACT_CARD_HEIGHT = 128
-
-function CollectionCard({
-  collection,
-  onPress,
-  isLoading,
-  compact,
-}: {
-  collection: CollectionRow
-  onPress: () => void
-  isLoading?: boolean
-  compact?: boolean
-}) {
-  const { data: count } = useGetCollectionCountInfo(
-    isLoading || !collection?.id ? {} : { collectionId: collection.id }
-  )
-  const visibilityInfo = VISIBILITY_OPTIONS.find((v) => v.key === collection?.visibility)
-  const VisibilityIcon = visibilityInfo?.icon
-
-  if (isLoading) {
-    return (
-      <View
-        style={
-          compact
-            ? {
-                width: COMPACT_CARD_WIDTH,
-                height: COMPACT_CARD_HEIGHT,
-                borderRadius: BorderRadiuses.br50,
-                borderWidth: 2,
-                borderColor: Colors.$outlineNeutral,
-                backgroundColor: Colors.$backgroundElevatedLight,
-              }
-            : {
-                borderRadius: BorderRadiuses.br50,
-                borderWidth: 2,
-                borderColor: Colors.$outlineNeutral,
-                backgroundColor: Colors.$backgroundElevatedLight,
-                padding: 14,
-                flexDirection: 'row',
-                gap: 12,
-                alignItems: 'flex-start',
-              }
-        }
-      />
-    )
-  }
-
-  if (compact) {
-    return (
-      <TouchableOpacity onPress={onPress} activeOpacity={0.75}>
-        <View
-          style={{
-            width: COMPACT_CARD_WIDTH,
-            borderRadius: BorderRadiuses.br50,
-            borderWidth: 2,
-            borderColor: Colors.$outlineNeutral,
-            backgroundColor: Colors.$backgroundElevatedLight,
-            padding: 12,
-            gap: 8,
-            alignItems: 'center',
-          }}
-        >
-          <CollectionsAvatar iconImageSrc={collection.cover_image_url ?? undefined} />
-          <View style={{ gap: 2, alignItems: 'center', width: '100%' }}>
-            <Text variant="h4" numberOfLines={1} style={{ textAlign: 'center' }}>
-              {collection.name}
-            </Text>
-            <Text style={{ color: Colors.$textNeutral }}>{count ?? 0} items</Text>
-          </View>
-        </View>
-      </TouchableOpacity>
-    )
-  }
-
-  return (
-    <TouchableOpacity onPress={onPress} activeOpacity={0.75}>
-      <View
-        style={{
-          borderRadius: BorderRadiuses.br50,
-          borderWidth: 2,
-          borderColor: Colors.$outlineNeutral,
-          backgroundColor: Colors.$backgroundElevatedLight,
-          padding: 14,
-          flexDirection: 'row',
-          gap: 12,
-          alignItems: 'flex-start',
-        }}
-      >
-        <CollectionsAvatar iconImageSrc={collection.cover_image_url ?? undefined} />
-        <View style={{ flex: 1, gap: 3 }}>
-          <Text variant="h4">{collection.name}</Text>
-          {!!collection.description && (
-            <Text numberOfLines={2} style={{ color: Colors.$textNeutralHeavy }}>
-              {collection.description}
-            </Text>
-          )}
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 }}>
-            <Text style={{ color: Colors.$textNeutral }}>{count ?? 0} items</Text>
-            {visibilityInfo && (
-              <>
-                <Text style={{ color: Colors.$textNeutral }}>•</Text>
-                {VisibilityIcon && <VisibilityIcon size={12} color={Colors.$textNeutral} />}
-                <Text style={{ color: Colors.$textNeutral }}>{visibilityInfo.label}</Text>
-              </>
-            )}
-          </View>
-        </View>
-      </View>
-    </TouchableOpacity>
   )
 }
 
@@ -339,23 +222,14 @@ function CollectionSection({
           },
         ]}
       >
-        <Text
-          variant="stats-header"
-          style={{
-            flex: 1,
-            color: Colors.$textNeutral,
-            letterSpacing: 0.8,
-          }}
-        >
-          {title}
-        </Text>
+        <CollectionGroupLabel style={{ flex: 1 }}>{title}</CollectionGroupLabel>
         <Animated.View style={chevronStyle}>
           <ChevronDown size={14} color={Colors.$textNeutral} />
         </Animated.View>
       </AnimatedPressable>
 
       {expanded ? (
-        <View style={{ gap: 10 }}>
+        <CollectionGroupList>
           {items.map((child, index) => (
             <Animated.View
               key={(child as React.ReactElement).key ?? index}
@@ -368,11 +242,11 @@ function CollectionSection({
                 : child}
             </Animated.View>
           ))}
-        </View>
+        </CollectionGroupList>
       ) : (
         <FadeScrollView
           horizontal
-          style={{ height: COMPACT_CARD_HEIGHT + 6 }}
+          style={{ height: COMPACT_COLLECTION_CARD_HEIGHT + 6 }}
           contentContainerStyle={{
             gap: 10,
             paddingHorizontal: 12,
@@ -399,6 +273,7 @@ function CollectionSection({
 // ─── Default view: grouped, card-style list ──────────────────────────────────
 
 const DefaultCollectionView = ({ direction }: { direction: 'forward' | 'backward' }) => {
+  const tabBarHeight = useBottomTabBarHeight()
   const {
     currentPage,
     setCurrentPage,
@@ -415,6 +290,7 @@ const DefaultCollectionView = ({ direction }: { direction: 'forward' | 'backward
     onContentSizeChange,
     onHeaderLayout,
     virtualOffset,
+    headerCollapsing,
   } = useCollaspableHeader()
 
   const {
@@ -472,8 +348,9 @@ const DefaultCollectionView = ({ direction }: { direction: 'forward' | 'backward
           </View>
         </Animated.View>
 
-        <Animated.ScrollView
-          //@ts-ignore
+        <FadeScrollView
+          animated
+          manualStart={headerCollapsing}
           ref={scrollViewRef}
           onLayout={onListLayout}
           onContentSizeChange={onContentSizeChange}
@@ -484,7 +361,7 @@ const DefaultCollectionView = ({ direction }: { direction: 'forward' | 'backward
             gap: 8,
 
             paddingTop: 18,
-            paddingBottom: 24,
+            paddingBottom: TAB_CONTENT_BOTTOM_SPACING + tabBarHeight,
           }}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         >
@@ -544,7 +421,7 @@ const DefaultCollectionView = ({ direction }: { direction: 'forward' | 'backward
                   <SharedCollectionCard key={id} collectionId={id} onPress={navigateTo} />
                 ))}
           </CollectionSection>
-        </Animated.ScrollView>
+        </FadeScrollView>
       </Animated.View>
     </GestureDetector>
   )
@@ -553,6 +430,7 @@ const DefaultCollectionView = ({ direction }: { direction: 'forward' | 'backward
 const DetailCollectionView = ({ direction }: { direction: 'forward' | 'backward' }) => {
   const { currentPage, setCurrentPage, preferenceState, pinnedCollectionsState } =
     useCollectionsPageStore()
+  const tabBarHeight = useBottomTabBarHeight()
 
   // 'default' is a UI-only page with no backing collection; only wishlist/selling/vault have real IDs
   const isBackedDefaultPage =
@@ -617,6 +495,7 @@ const DetailCollectionView = ({ direction }: { direction: 'forward' | 'backward'
     onContentSizeChange,
     onHeaderLayout,
     expandProgress,
+    headerCollapsing,
   } = useCollaspableHeader({
     disable: collectionItems.length > 0,
     resetKeys: [currentPage, collection?.id],
@@ -678,6 +557,8 @@ const DetailCollectionView = ({ direction }: { direction: 'forward' | 'backward'
           <CardListView
             itemId={card.id}
             card={card}
+            collectionItem={{ ...data, id: data.collection_item_id }}
+            navigateTo="/profile/[shop-item]"
             renderAccessories={({ isLoading }) => (
               <CollectionCardItemEntries
                 key={`${collection?.id}-${cardId}`}
@@ -730,16 +611,17 @@ const DetailCollectionView = ({ direction }: { direction: 'forward' | 'backward'
 
   return (
     <GestureDetector gesture={composedGestures}>
-      <Animated.ScrollView
+      <FadeScrollView
+        animated
+        manualStart={headerCollapsing}
         key={currentPage}
         ref={scrollViewRef}
         onLayout={onListLayout}
         onContentSizeChange={onContentSizeChange}
         entering={direction === 'forward' ? FadeInRight.duration(200) : FadeInLeft.duration(200)}
         exiting={direction === 'forward' ? FadeOutLeft.duration(180) : FadeOutRight.duration(180)}
-        contentContainerStyle={{
-          paddingVertical: 16,
-        }}
+        style={{ flex: 1, paddingVertical: 16 }}
+        contentContainerStyle={{ paddingBottom: tabBarHeight }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
       >
         <View
@@ -788,7 +670,7 @@ const DetailCollectionView = ({ direction }: { direction: 'forward' | 'backward'
             </FolderTabsContainer>
           </Animated.View>
         </View>
-      </Animated.ScrollView>
+      </FadeScrollView>
     </GestureDetector>
   )
 }

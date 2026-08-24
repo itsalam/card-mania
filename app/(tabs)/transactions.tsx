@@ -1,5 +1,6 @@
 import { GradientBackground } from '@/components/Background'
 import { useMyTransactions } from '@/client/transactions'
+import { TAB_CONTENT_BOTTOM_SPACING } from '@/components/consts'
 import { CollapsibleSection } from '@/components/ui/collapsible-section'
 import { Separator } from '@/components/ui/separator'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -7,6 +8,7 @@ import { Text } from '@/components/ui/text/base-text'
 import { TransactionListCard } from '@/features/transactions/ui'
 import { useRefresh } from '@/lib/hooks/useRefresh'
 import { useUserStore } from '@/lib/store/useUserStore'
+import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs'
 import { useRouter } from 'expo-router'
 import { RefreshControl, ScrollView, StyleSheet, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -14,6 +16,7 @@ import { Colors } from 'react-native-ui-lib'
 
 export default function TransactionsRoute() {
   const insets = useSafeAreaInsets()
+  const tabBarHeight = useBottomTabBarHeight()
   const router = useRouter()
   const currentUserId = useUserStore((s) => s.user?.id)
 
@@ -44,7 +47,10 @@ export default function TransactionsRoute() {
         <Separator orientation="horizontal" />
 
         <ScrollView
-          contentContainerStyle={styles.list}
+          contentContainerStyle={[
+            styles.list,
+            { paddingBottom: TAB_CONTENT_BOTTOM_SPACING + tabBarHeight },
+          ]}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         >
           <CollapsibleSection
@@ -143,9 +149,7 @@ const styles = StyleSheet.create({
     fontSize: 32,
     fontWeight: '700',
   },
-  list: {
-    paddingBottom: 24,
-  },
+  list: {},
   count: {
     fontSize: 13,
     color: Colors.$textNeutralLight,

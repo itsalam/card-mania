@@ -14,6 +14,7 @@ import {
   SlidersHorizontal,
   X,
 } from 'lucide-react-native'
+import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs'
 import React, { useMemo, useState } from 'react'
 import {
   Modal,
@@ -457,6 +458,7 @@ function MarketFilterModal({
 
 export default function MarketplaceScreen() {
   const insets = useSafeAreaInsets()
+  const tabBarHeight = useBottomTabBarHeight()
   const [viewMode, setViewMode] = useState<ViewMode>('gallery')
   const [filterOpen, setFilterOpen] = useState(false)
   const [filters, setFilters] = useState<MarketFilters>(DEFAULT_FILTERS)
@@ -572,7 +574,7 @@ export default function MarketplaceScreen() {
       {/* ── Sections ── */}
       <ScrollView
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-        contentContainerStyle={styles.list}
+        contentContainerStyle={[styles.list, { paddingBottom: 32 + tabBarHeight }]}
       >
         {/* Top Sellers */}
         {storefronts.length > 0 && (
@@ -704,7 +706,6 @@ const styles = StyleSheet.create({
 
   list: {
     paddingHorizontal: 16,
-    paddingBottom: 32,
     gap: 12,
   },
 

@@ -6,6 +6,7 @@ import {
   useUnreadCount,
 } from '@/client/notifications'
 import { AppNotification, NotificationCategory } from '@/client/notifications/types'
+import { TAB_CONTENT_BOTTOM_SPACING } from '@/components/consts'
 import { TabRow } from '@/components/tabs/TabRow'
 import { ChipRowContainer, ToggleBadge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -15,6 +16,7 @@ import { Text } from '@/components/ui/text/base-text'
 import { useRouter } from 'expo-router'
 import { ArrowLeftRight, Bell, Inbox, TrendingDown, Users, X } from 'lucide-react-native'
 import { useRefresh } from '@/lib/hooks/useRefresh'
+import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs'
 import React, { useState } from 'react'
 import { FlatList, Pressable, RefreshControl, StyleSheet, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -200,6 +202,7 @@ function buildListItems(notifications: AppNotification[]): ListItem[] {
 
 export function NotificationsPage() {
   const insets = useSafeAreaInsets()
+  const tabBarHeight = useBottomTabBarHeight()
   const [activeCategories, setActiveCategories] = useState<Set<NotificationCategory>>(new Set())
 
   const [readAll, setReadAll] = useState(false)
@@ -313,7 +316,10 @@ export function NotificationsPage() {
           data={listItems}
           keyExtractor={(item) => item.key}
           renderItem={renderItem}
-          contentContainerStyle={styles.listContent}
+          contentContainerStyle={[
+            styles.listContent,
+            { paddingBottom: TAB_CONTENT_BOTTOM_SPACING + tabBarHeight },
+          ]}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
           ListEmptyComponent={
             <View style={styles.emptyState}>
@@ -355,9 +361,7 @@ const styles = StyleSheet.create({
     paddingTop: 12,
     fontWeight: '700',
   },
-  listContent: {
-    paddingBottom: 24,
-  },
+  listContent: {},
   separator: {
     paddingHorizontal: 16,
     paddingVertical: 6,

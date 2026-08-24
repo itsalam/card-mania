@@ -59,6 +59,12 @@ export function measureInWindowAsync(
   })
 }
 
+// Module-level (not per-hook-instance) since navigation is a single global action —
+// this is what stops a quick double-tap across two DIFFERENT list items from pushing
+// two overlapping detail views, not just repeat taps on the same item.
+let navigationLocked = false
+const NAVIGATION_LOCK_MS = 600
+
 export function useNavigateToItem<T = TCard>({
   kind,
   item,
@@ -79,25 +85,39 @@ export function useNavigateToItem<T = TCard>({
 
   const handlePress = () => {
     if (!item) return
+    if (navigationLocked) return
+    navigationLocked = true
+    // For collection-item-based navigations (ItemListView passes the collectionItem as
+    // `item` so item.id lands correctly in the [shop-item] route param), item.id is the
+    // COLLECTION ITEM's id, not the card's — params.cardId (set by ItemListView in that
+    // case) carries the real card id. Recent-views/prefetch must key on the card id, or
+    // RecentlyViewedCard's useCardQuery(item.item_id) looks up a card that doesn't exist.
+    const cardId = params?.cardId ?? item.id
     const positionPromise = measureInWindowAsync(itemElement as unknown as React.RefObject<View>)
-    setPrefetchData(item.id, item)
-    positionPromise.then((position) => {
-      mutation.mutate({
-        type: kind,
-        id: item.id,
-        source: 'app',
+    setPrefetchData(cardId, item)
+    positionPromise
+      .then((position) => {
+        mutation.mutate({
+          type: kind,
+          id: cardId,
+          source: 'app',
+        })
+        router.push({
+          pathname: path,
+          params: {
+            from: JSON.stringify(position),
+            [paramName]: item.id,
+            kind: kind,
+            returnTo: pathname ?? '/',
+            ...params,
+          },
+        } as Href)
       })
-      router.push({
-        pathname: path,
-        params: {
-          from: JSON.stringify(position),
-          [paramName]: item.id,
-          kind: kind,
-          returnTo: pathname ?? '/',
-          ...params,
-        },
-      } as Href)
-    })
+      .finally(() => {
+        setTimeout(() => {
+          navigationLocked = false
+        }, NAVIGATION_LOCK_MS)
+      })
   }
 
   return { cardElement: itemElement, handlePress }

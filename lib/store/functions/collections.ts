@@ -53,12 +53,27 @@ export async function viewCollectionItemsForCard(collectionId: string, cardId: s
 export async function viewSingleCollectionItem(collectionItemId: string) {
   const { data, error } = await getSupabase()
     .from('collection_items')
-    .select('*, grade_condition:grade_condition_id(id, company_id, grade_value, label)')
+    .select(
+      '*, grade_condition:grade_condition_id(id, company_id, grade_value, label), collection_item_images(image_cache_id, storage_path, width, height, is_primary)'
+    )
     .eq('id', collectionItemId)
     .single()
 
   const formattedData = unwrap(data, error)
-  return formattedData
+  // Embeds every photo (there are at most MAX_PHOTOS_PER_ITEM) rather than filtering
+  // server-side to just the primary one — PostgREST's embed-filter syntax turns a plain
+  // `.eq('collection_item_images.is_primary', true)` into an inner join, which would drop
+  // the whole row for items with zero photos. Picking the primary one client-side avoids
+  // that while still giving callers the preferred photo inline — no separate
+  // usePrimaryPhoto(collectionItemId) round trip needed.
+  const primaryImage = formattedData?.collection_item_images?.find((p) => p.is_primary) ?? null
+  return {
+    ...formattedData,
+    primary_image_cache_id: primaryImage?.image_cache_id ?? null,
+    primary_image_storage_path: primaryImage?.storage_path ?? null,
+    primary_image_width: primaryImage?.width ?? null,
+    primary_image_height: primaryImage?.height ?? null,
+  }
 }
 
 export const viewCollectionItemsForUser =

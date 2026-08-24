@@ -30,6 +30,10 @@ export default function TabLayout() {
           presentation: Platform.OS === 'android' ? 'transparentModal' : 'transparentModal',
           headerShown: false,
           animation: 'fade',
+          // Matches the root Stack's screenOptions (app/_layout.tsx) — this route lives in
+          // its own nested Stack here, which doesn't inherit that, so without this it falls
+          // back to native-stack's longer default fade duration and closing feels sluggish.
+          animationDuration: 150,
           contentStyle: { backgroundColor: 'transparent' },
         }}
       />

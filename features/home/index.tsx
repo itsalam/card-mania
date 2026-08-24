@@ -15,9 +15,10 @@ import {
   SettingsIcon,
   Sheet,
 } from 'lucide-react-native'
+import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs'
 import React, { useCallback, useState } from 'react'
 import { RefreshControl, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native'
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
+import { SafeAreaView } from 'react-native-safe-area-context'
 import { Colors } from 'react-native-ui-lib'
 import { ExplorePage } from './ExplorePage'
 import { FeedPage } from './FeedPage'
@@ -138,14 +139,14 @@ function HomeContent({
   currentPage: string
   setCurrentPage: (v: string) => void
 }) {
-  const insets = useSafeAreaInsets()
+  const tabBarHeight = useBottomTabBarHeight()
   const { refreshing, onRefresh } = useHomeRefreshControl()
 
   return (
     <ScrollView
       style={{ flex: 1 }}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-      contentContainerStyle={{ paddingBottom: insets.bottom + 16 }}
+      contentContainerStyle={{ paddingBottom: tabBarHeight + 16 }}
     >
       <OnboardingTarget id="collection-breakdown">
         <PortfolioSummary

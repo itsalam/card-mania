@@ -42,6 +42,7 @@ export function CardPlaceholderImage({
   }
 
   source = placeholderOnly ? defaultPlaceHolder : source
+  const resolvedSource = placeholderOnly || !source ? defaultPlaceHolder : source
   return (
     <ImageBackground
       style={{
@@ -54,7 +55,7 @@ export function CardPlaceholderImage({
         height: finalHeight,
       }}
       placeholder={defaultPlaceHolder}
-      source={placeholderOnly || !source ? defaultPlaceHolder : source}
+      source={resolvedSource}
       cachePolicy="memory-disk"
       transition={200}
       placeholderContentFit="fill"

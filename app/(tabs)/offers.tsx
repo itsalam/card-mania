@@ -1,6 +1,7 @@
 import { GradientBackground } from '@/components/Background'
 import { useMyOffers } from '@/client/offers'
 import { Offer, OfferStatus } from '@/client/offers/types'
+import { TAB_CONTENT_BOTTOM_SPACING } from '@/components/consts'
 import { TabRow } from '@/components/tabs/TabRow'
 import { ChipRowContainer, ToggleBadge } from '@/components/ui/badge'
 import { SearchBar } from '@/components/ui/search'
@@ -11,6 +12,7 @@ import { SkeletonCard } from '@/features/offers/ui'
 import { useProfiles } from '@/features/users/client/load-user'
 import { X } from 'lucide-react-native'
 import { useRefresh } from '@/lib/hooks/useRefresh'
+import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs'
 import { useRef, useState } from 'react'
 import {
   Dimensions,
@@ -78,6 +80,7 @@ export default function OffersRoute() {
   } | null>(null)
   const sortButtonRef = useRef<View>(null)
   const insets = useSafeAreaInsets()
+  const tabBarHeight = useBottomTabBarHeight()
 
   const {
     data: inboxOffers,
@@ -207,7 +210,11 @@ export default function OffersRoute() {
         </ChipRowContainer>
         {/* Offer list */}
         <ScrollView
-          contentContainerStyle={[styles.list, filtered.length === 0 && { flex: 1 }]}
+          contentContainerStyle={[
+            styles.list,
+            { paddingBottom: TAB_CONTENT_BOTTOM_SPACING + tabBarHeight },
+            filtered.length === 0 && { flex: 1 },
+          ]}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         >
           {isLoading ? (
@@ -350,7 +357,6 @@ const styles = StyleSheet.create({
   list: {
     gap: 12,
     paddingHorizontal: 16,
-    paddingBottom: 24,
   },
   empty: {
     flex: 1,

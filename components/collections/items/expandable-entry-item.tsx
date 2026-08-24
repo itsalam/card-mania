@@ -1,13 +1,13 @@
 import { useToggleWishlist } from '@/client/card/wishlist'
 
 import { CollectionLike } from '@/client/collections/types'
+import { CollectionCard } from '@/components/collections/collection-card'
 import { TCard } from '@/constants/types'
 
 import { CollectionCardItemEntries } from '@/features/tcg-card-views/DetailCardView/pages/add-to-collections/components'
 import { Blocks, Heart } from 'lucide-react-native'
 import React, { useState } from 'react'
 import { ExpandableSection, RadioButton } from 'react-native-ui-lib'
-import { CollectionListView } from '../list-item'
 
 export const ExpandableCollectionEntryListItem = ({
   collection,
@@ -21,7 +21,7 @@ export const ExpandableCollectionEntryListItem = ({
   const toggleWishlist = useToggleWishlist('card')
 
   const ItemView = () => (
-    <CollectionListView
+    <CollectionCard
       onPress={
         isWishlist
           ? () =>

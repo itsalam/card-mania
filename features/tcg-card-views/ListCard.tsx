@@ -1,4 +1,5 @@
 import { useIsWishlisted, useToggleWishlist } from '@/client/card/wishlist'
+import { usePrimaryPhoto } from '@/client/collections/photos'
 import { Button } from '@/components/ui/button'
 import { WishlistCard } from '@/components/ui/icon'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -153,9 +154,21 @@ export type CardListViewProps = { card: TCard & Partial<CollectionItemQueryView>
 >
 
 export function CardListView({ card, collectionItem, ...props }: CardListViewProps) {
+  // `collection_item_query` / `viewSingleCollectionItem` embed the item's primary photo
+  // directly on `collectionItem` now (`primary_image_cache_id`, always `string | null`
+  // rather than `undefined` when present) — skip the separate usePrimaryPhoto round trip
+  // entirely when that's already available; getCardDisplayData reads it straight off
+  // `collectionItem`. Only fall back to fetching when `collectionItem` predates the embed
+  // (e.g. still sourced from `collection_items_by_ref`) or isn't passed at all.
+  const hasEmbeddedPrimaryPhoto = collectionItem?.primary_image_cache_id !== undefined
+  const { data: primaryPhoto, isLoading: primaryPhotoLoading } = usePrimaryPhoto(
+    hasEmbeddedPrimaryPhoto ? undefined : collectionItem?.id
+  )
   const displayData = getCardDisplayData({
     card,
     collectionItem,
+    primaryPhoto,
+    primaryPhotoLoading,
     metadata: card?.price_key ? { price_key: card?.price_key } : undefined,
     isLoading: props.isLoading,
   })
@@ -196,6 +209,12 @@ export const ItemListView = forwardRef<View, ItemListViewProps>(function ItemLis
       ? {
           cardId: collectionItem.ref_id,
           collectionId: collectionItem.collection_id,
+          // Already resolved here (this list tile already rendered it) — hand it
+          // off so DetailCardView can show the preferred photo immediately
+          // instead of the vendor card image while its own fetch is in flight.
+          ...(displayData?.imageProxyArgs.imageId
+            ? { image: displayData.imageProxyArgs.imageId }
+            : {}),
         }
       : undefined,
   })
@@ -261,7 +280,7 @@ function HorizontalAccessory(props: ItemListViewProps) {
   const { isLoading, displayData, renderAccessories, hide } = props
   return (
     <View className="flex flex-col h-full w-full items-start pr-0 flex-1">
-      <View className="pl-4">
+      <View className="pl-2">
         {isLoading ? (
           <>
             <Skeleton style={{ height: 18, width: 190, marginBottom: 6 }} />

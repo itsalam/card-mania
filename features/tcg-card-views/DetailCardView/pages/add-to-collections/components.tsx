@@ -6,10 +6,17 @@ import {
   PriceModalPayload,
   VariantsSelect,
 } from '@/components/collections/items/editable-entry-item'
+import { CollectionItemPhotosModal } from '@/components/collections/items/photos-modal'
 import { Spinner } from '@/components/ui/spinner'
 import { TCard } from '@/constants/types'
 import { CollectionItemRow } from '@/lib/store/functions/types'
-import { Plus, TriangleAlert, Undo2 } from 'lucide-react-native'
+import {
+  EllipsisVertical,
+  Image as ImageIcon,
+  Plus,
+  TriangleAlert,
+  Undo2,
+} from 'lucide-react-native'
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { StyleProp, View, ViewStyle } from 'react-native'
 import { Colors, TouchableOpacity } from 'react-native-ui-lib'
@@ -67,6 +74,8 @@ export const CollectionCardItemEntries = ({
 
   const [showModal, setShowModal] = useState(false)
   const [priceChangeEntry, setPriceChangeEntry] = useState<PriceModalPayload | null>(null)
+  const [menuOpen, setMenuOpen] = useState(false)
+  const [photosModalOpen, setPhotosModalOpen] = useState(false)
   const handleDismiss = useCallback(() => {
     setShowModal(false)
   }, [refetch])
@@ -91,6 +100,15 @@ export const CollectionCardItemEntries = ({
     const baseEntries = needsPlaceholder ? [{ quantity: 0 }, ...loadedEntries] : loadedEntries
     return [...baseEntries].sort(sortCollectionItem)
   }, [loadedEntries])
+
+  // Photos attach to a real DB row — pick the first persisted entry (not the client-side
+  // `{ quantity: 0 }` placeholder) as the target for the card-level photo menu, mirroring
+  // how CardListView's own primary-photo lookup targets a single representative entry.
+  const primaryEntry = useMemo(
+    () => sortedEntries.find((e) => (e as any).id && !String((e as any).id).includes('temp')),
+    [sortedEntries]
+  )
+  const canManagePhotos = Boolean(editable && primaryEntry)
 
   useEffect(() => {
     isMountedRef.current = true
@@ -163,35 +181,63 @@ export const CollectionCardItemEntries = ({
         </View>
       )}
 
-      <TouchableOpacity
-        disabled={isLoadingOuter}
+      <View
         style={{
           flexDirection: 'row',
           alignItems: 'center',
-          justifyContent: 'center',
-          alignContent: 'center',
-          flexGrow: 0,
-          alignSelf: 'flex-end',
-          marginTop: 8,
-          width: 94,
-          height: 32,
-          paddingVertical: 2,
+          gap: 8,
+          marginTop: 4,
+          paddingLeft: 12,
           marginRight: 2 + (editable ? 16 : 8),
-          opacity: isLoadingOuter ? 0.5 : 1,
-          borderRadius: 9999,
-          gap: 2,
-          backgroundColor: Colors.$backgroundPrimaryMedium,
-        }}
-        onPress={() => {
-          setShowModal(true)
-          // setNewEntries((prev) => [...prev, {}])
+          justifyContent: 'space-between',
         }}
       >
-        <Plus color={Colors.$iconDefault} size={16} />
-        <Text variant="large" style={{ color: Colors.$iconDefault, lineHeight: 0 }}>
-          Grade
-        </Text>
-      </TouchableOpacity>
+        <TouchableOpacity
+          disabled={isLoadingOuter}
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'center',
+            alignContent: 'center',
+            flexGrow: 0,
+            width: 94,
+            height: 32,
+            paddingVertical: 2,
+            opacity: isLoadingOuter ? 0.5 : 1,
+            borderRadius: 9999,
+            gap: 2,
+            backgroundColor: Colors.$backgroundPrimaryMedium,
+          }}
+          onPress={() => {
+            setShowModal(true)
+            // setNewEntries((prev) => [...prev, {}])
+          }}
+        >
+          <Plus color={Colors.$iconDefault} size={16} />
+          <Text variant="large" style={{ color: Colors.$iconDefault, lineHeight: 0 }}>
+            Grade
+          </Text>
+        </TouchableOpacity>
+        {canManagePhotos && (
+          <TouchableOpacity
+            disabled={isLoadingOuter}
+            onPress={() => setMenuOpen(true)}
+            style={{
+              width: 32,
+              height: 32,
+              alignItems: 'center',
+              justifyContent: 'center',
+              alignSelf: 'flex-end',
+              borderRadius: 999,
+              borderWidth: 1,
+              borderColor: Colors.rgba(Colors.$outlineNeutral, 0.4),
+              opacity: isLoadingOuter ? 0.5 : 1,
+            }}
+          >
+            <EllipsisVertical size={16} color={Colors.$iconDefault} />
+          </TouchableOpacity>
+        )}
+      </View>
       {collection && (
         <AddVariantModal
           entries={sortedEntries}
@@ -199,6 +245,34 @@ export const CollectionCardItemEntries = ({
           item={card}
           visible={showModal}
           onDismiss={handleDismiss}
+        />
+      )}
+      {canManagePhotos && (
+        <Modal visible={menuOpen} onDismiss={() => setMenuOpen(false)}>
+          <View style={{ width: '100%', paddingVertical: 8 }}>
+            <TouchableOpacity
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                paddingVertical: 14,
+                paddingHorizontal: 16,
+              }}
+              onPress={() => {
+                setMenuOpen(false)
+                setPhotosModalOpen(true)
+              }}
+            >
+              <ImageIcon size={18} color={Colors.$iconGeneral} style={{ marginRight: 8 }} />
+              <Text variant="default">Upload Photos</Text>
+            </TouchableOpacity>
+          </View>
+        </Modal>
+      )}
+      {canManagePhotos && primaryEntry && (
+        <CollectionItemPhotosModal
+          visible={photosModalOpen}
+          onDismiss={() => setPhotosModalOpen(false)}
+          collectionItemId={String((primaryEntry as any).id)}
         />
       )}
       <PriceChangeModal

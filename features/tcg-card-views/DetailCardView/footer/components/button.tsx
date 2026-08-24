@@ -1,14 +1,15 @@
+import { Button, ButtonProps } from '@/components/ui/button'
+import { Text } from '@/components/ui/text/base-text'
 import { LucideIcon, LucideProps } from 'lucide-react-native'
 import { JSX } from 'react'
 import { SvgProps } from 'react-native-svg'
-import { Button, ButtonProps, Colors } from 'react-native-ui-lib'
+import { Colors } from 'react-native-ui-lib'
 
 export const FooterButton = ({
   icon: Icon,
   label,
   onPress,
   highLighted = false,
-  iconSource,
   iconProps = {},
   fill = false,
   stroke = true,
@@ -18,7 +19,7 @@ export const FooterButton = ({
   ...buttonProps
 }: ButtonProps & {
   icon?: LucideIcon | ((props: SvgProps) => JSX.Element)
-  label: string
+  label?: string
   onPress: () => void
   highLighted?: boolean
   fill?: boolean
@@ -32,30 +33,27 @@ export const FooterButton = ({
   const color = highLighted ? Colors.$outlineDefault : Colors.$outlinePrimary
   return (
     <Button
-      style={style}
+      style={[{ borderColor: outlineColor, borderWidth: 2 }, style]}
       disabled={disabled}
-      className="flex-1 flex flex-row gap-2 justify-between"
+      // className="flex-1 flex flex-row gap-2 justify-between"
       onPress={onPress}
-      outline={!highLighted}
-      outlineColor={outlineColor}
-      outlineWidth={2}
-      label={label}
-      iconSource={iconSource}
-      iconStyle={{ width: 22, height: 22 }}
+      shape={'rounded'}
+      variant="secondary"
+      size={'lg'}
       {...buttonProps}
     >
       {Icon && (
         <Icon
           height={22}
           width={22}
-          strokeWidth={2.5}
+          strokeWidth={2}
           fill={fill ? color : 'transparent'}
           stroke={stroke ? color : 'transparent'}
           style={{ flex: 0 }}
           {...iconProps}
         />
       )}
-      {children}
+      {label && <Text>{label}</Text>}
     </Button>
   )
 }

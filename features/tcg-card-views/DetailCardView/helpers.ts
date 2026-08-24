@@ -80,28 +80,75 @@ export const useTransitionAnimation = (animateFrom: Coordinates, opts: Transitio
   )
 
   const progress = useDerivedValue(() => animation.value.progress)
-  return { progress, cardStyle, scrimStyle, close }
+  return { progress, animation, cardStyle, scrimStyle, close }
 }
 
-function safeBack(fallback = '/' as Href) {
+/**
+ * The profile tab's own local route this screen lives under (`app/(tabs)/profile/_layout.tsx`).
+ * Used to clean up that stack on close — see the big comment in safeBack below.
+ */
+const PROFILE_STACK_INDEX = '/profile' as Href
+
+function safeBack(fallback?: Href) {
+  // This screen is commonly reached via a cross-navigator push (e.g. a collection list
+  // tile pushing into the profile tab's own nested stack for `/profile/[shop-item]`).
+  // None of the single-call primitives handle closing it correctly:
+  //  - dismissTo/canDismiss are scoped to this screen's *local* stack (the profile tab's
+  //    own `[shop-item]` stack) — canDismiss comes back false here (nothing local beneath
+  //    this screen), so dismissTo falls through to its own documented fallback — "replace
+  //    the current screen with the provided href" — which can't resolve a route living in
+  //    a different tab, so nothing visibly happens. Confirmed via logging: canDismiss:
+  //    false, canGoBack: true. router.replace(fallback) directly is the same no-op for
+  //    the same reason — it's the identical operation dismissTo already fell through to.
+  //  - canGoBack/back() DO unwind (canGoBack is true here), but operate on the stack's
+  //    push/pop history, not "which tab was active" — tab switches aren't push-based in
+  //    React Navigation's bottom-tabs by default, so back() from deep inside the profile
+  //    tab's stack falls all the way back to the tab navigator's initial tab (Home), not
+  //    the tab the user actually came from. Confirmed by testing: landed on Home instead
+  //    of Collection.
+  //  - router.navigate(fallback) alone DOES land on the right destination (it's the one
+  //    primitive built for "get me to this href, switching navigators/tabs as needed"),
+  //    but it doesn't remove [shop-item] from the profile tab's own local stack — that
+  //    screen is left mounted-but-blurred underneath. Confirmed via logging (instanceId
+  //    tagged on mount): re-opening a card later re-focuses that SAME stale instance
+  //    (blurred → focused, no unmount/remount in between) instead of mounting fresh,
+  //    carrying over every Reanimated shared value — stuck scroll/collapse position,
+  //    stale open/close animation state (back button rendering as if mid-transition).
+  //
+  // Fix: explicitly replace THIS screen with the profile tab's own index — a same-
+  // navigator replace, so (unlike the cross-navigator case above) it actually removes
+  // [shop-item] from history — *then* navigate to the real destination, which may be a
+  // different tab entirely. Two dispatches, but each is now doing a job the other can't.
+  if (fallback) {
+    router.replace(PROFILE_STACK_INDEX)
+    router.navigate(fallback)
+    return
+  }
   if (router.canGoBack()) {
     router.back()
   } else {
-    router.replace(fallback)
+    router.replace('/')
   }
 }
 
 function useSafeOnClose(onClose?: () => void, fallback?: Href) {
   const closing = useRef(false)
   return useCallback(() => {
-    if (closing.current) return // prevent double-pop / double-call
+    if (closing.current) return
     closing.current = true
     try {
       onClose?.() // your custom close logic
     } catch (e) {
-      console.error('onClose threw:', e)
+      console.error('[DetailCardView] onClose threw:', e)
     } finally {
-      safeBack(fallback) // or router.dismiss() if this is a modal
+      try {
+        safeBack(fallback) // or router.dismiss() if this is a modal
+      } catch (e) {
+        // Reset the guard so a failed navigation doesn't permanently disable the
+        // button for the rest of this screen's lifetime.
+        console.error('[DetailCardView] safeBack threw, resetting close guard', e)
+        closing.current = false
+      }
       // if you need to re-open later, you can reset closing.current = false somewhere appropriate
     }
   }, [onClose, fallback])

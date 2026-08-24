@@ -48,6 +48,16 @@ export type CollectionItem = Database['public']['Tables']['collection_items']['R
     label?: string
     id?: string
   }
+  /**
+   * The item's primary user-uploaded photo, embedded inline by
+   * `viewSingleCollectionItem` — lets callers holding a `CollectionItem` read
+   * the preferred image_cache_id directly instead of a separate
+   * `usePrimaryPhoto(collectionItem.id)` round trip.
+   */
+  primary_image_cache_id?: string | null
+  primary_image_storage_path?: string | null
+  primary_image_width?: number | null
+  primary_image_height?: number | null
 }
 
 export type EditCollectionArgsItem = Partial<

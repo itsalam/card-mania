@@ -293,6 +293,60 @@ export type Database = {
         }
         Relationships: []
       }
+      collection_item_images: {
+        Row: {
+          collection_item_id: string
+          created_at: string
+          height: number | null
+          id: string
+          image_cache_id: string
+          is_primary: boolean
+          position: number
+          storage_path: string
+          user_id: string
+          width: number | null
+        }
+        Insert: {
+          collection_item_id: string
+          created_at?: string
+          height?: number | null
+          id?: string
+          image_cache_id: string
+          is_primary?: boolean
+          position?: number
+          storage_path: string
+          user_id: string
+          width?: number | null
+        }
+        Update: {
+          collection_item_id?: string
+          created_at?: string
+          height?: number | null
+          id?: string
+          image_cache_id?: string
+          is_primary?: boolean
+          position?: number
+          storage_path?: string
+          user_id?: string
+          width?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'collection_item_images_collection_item_id_fkey'
+            columns: ['collection_item_id']
+            isOneToOne: false
+            referencedRelation: 'collection_items'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'collection_item_images_image_cache_id_fkey'
+            columns: ['image_cache_id']
+            isOneToOne: false
+            referencedRelation: 'image_cache'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       collection_items: {
         Row: {
           collection_id: string
@@ -807,14 +861,14 @@ export type Database = {
           created_at: string | null
           error: string | null
           etag: string | null
-          expires_at: string
+          expires_at: string | null
           height: number | null
           id: string
           is_top_for_query: boolean | null
           last_checked_at: string | null
           mime: string | null
           query_hash: string | null
-          source_url: string
+          source_url: string | null
           status: string | null
           storage_path: string | null
           updated_at: string
@@ -828,14 +882,14 @@ export type Database = {
           created_at?: string | null
           error?: string | null
           etag?: string | null
-          expires_at: string
+          expires_at?: string | null
           height?: number | null
           id?: string
           is_top_for_query?: boolean | null
           last_checked_at?: string | null
           mime?: string | null
           query_hash?: string | null
-          source_url: string
+          source_url?: string | null
           status?: string | null
           storage_path?: string | null
           updated_at?: string
@@ -849,14 +903,14 @@ export type Database = {
           created_at?: string | null
           error?: string | null
           etag?: string | null
-          expires_at?: string
+          expires_at?: string | null
           height?: number | null
           id?: string
           is_top_for_query?: boolean | null
           last_checked_at?: string | null
           mime?: string | null
           query_hash?: string | null
-          source_url?: string
+          source_url?: string | null
           status?: string | null
           storage_path?: string | null
           updated_at?: string
@@ -2249,6 +2303,10 @@ export type Database = {
           name: string
           position: number
           price_key: string
+          primary_image_cache_id: string | null
+          primary_image_height: number | null
+          primary_image_storage_path: string | null
+          primary_image_width: number | null
           quantity: number
           ref_id: string
           set_name: string
@@ -2508,6 +2566,10 @@ export type Database = {
       set_limit: {
         Args: { '': number }
         Returns: number
+      }
+      set_primary_collection_item_photo: {
+        Args: { p_photo_id: string }
+        Returns: undefined
       }
       show_limit: {
         Args: Record<PropertyKey, never>

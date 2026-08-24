@@ -4,6 +4,7 @@ import { AppNavHeader } from '@/components/ui/headers'
 import { useCartCount, useOpenCart } from '@/features/cart/hooks'
 import { useEffectiveColorScheme } from '@/features/settings/hooks/effective-color-scheme'
 import { AuthGate } from '@/features/splash'
+import { useTabBarStore } from '@/lib/store/useTabBarStore'
 import { BottomTabBarProps } from '@react-navigation/bottom-tabs'
 import { PortalHost } from '@rn-primitives/portal'
 import * as Haptics from 'expo-haptics'
@@ -150,6 +151,9 @@ function NotificationTabIcon({ color }: { color: string }) {
 
 function CustomTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
   const insets = useSafeAreaInsets()
+  const hidden = useTabBarStore((s) => s.hideCount > 0)
+
+  if (hidden) return null
 
   const visibleRoutes = state.routes.filter(
     (route) => (descriptors[route.key].options.tabBarItemStyle as any)?.display !== 'none'
