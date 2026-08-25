@@ -2456,6 +2456,15 @@ export type Database = {
         Args: { p_user_id: string }
         Returns: string
       }
+      get_activation_status: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          activated: boolean
+          has_collection_item: boolean
+          has_offer: boolean
+          has_storefront: boolean
+        }[]
+      }
       get_portfolio_history: {
         Args: { p_collection_id: string; p_from?: string; p_to?: string }
         Returns: {

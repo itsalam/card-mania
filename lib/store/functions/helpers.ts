@@ -39,6 +39,8 @@ export const qk = {
     [supabaseUrl, 'collections', 'pinned', userId ?? 'me'] as const,
   wishlist: (kind: string, userId?: string) => [supabaseUrl, WishlistKey.Default, kind, userId],
   userCards: (userId?: string) => [supabaseUrl, 'user', userId ?? 'me', 'cards'] as const,
+  activationStatus: (userId?: string) =>
+    [supabaseUrl, 'activation-status', userId ?? 'me'] as const,
   priceQuery: (cardId?: string, grade?: string | object) => [
     supabaseUrl,
     'price-query',

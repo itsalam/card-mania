@@ -173,6 +173,12 @@ export const useEditCollection = (collectionId?: string) => {
         // just make sure the client's pinned-collections cache reflects it.
         qc.invalidateQueries({ queryKey: qk.pinnedCollections(userId) })
       }
+      if (vars.is_storefront) {
+        // ITS-100: listing a storefront is one of the three activation conditions —
+        // get_activation_status() picks this up via the storefronts table (synced from
+        // is_storefront by a DB trigger), so just refresh the cached read.
+        qc.invalidateQueries({ queryKey: qk.activationStatus(userId) })
+      }
     },
   })
 }
@@ -315,6 +321,10 @@ export const useEditCollectionItem = (collectionId?: string, cardId?: string, it
         const gradesPrices = card?.grades_prices as Record<string, number> | undefined
         const grades = gradesPrices ? Object.keys(gradesPrices) : []
         if (grades.length) prewarmPriceHistory(data.ref_id, grades)
+
+        // ITS-100: adding/updating a card is one of the three activation conditions —
+        // refresh the cached read rather than waiting out its staleTime.
+        qc.invalidateQueries({ queryKey: qk.activationStatus(user?.id) })
       }
     },
     onSettled: () => {
