@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native'
 import { Colors } from 'react-native-ui-lib'
 import { useOnboardingStore } from './OnboardingProvider'
-import { ONBOARDING_STEPS } from './steps'
+import { TOURS } from './steps'
 import { OnboardingStep, TargetMeasurement } from './types'
 
 const PANEL_HEIGHT = 168
@@ -29,20 +29,37 @@ function buildCutoutPath(W: number, H: number, m: TargetMeasurement, radius = 10
   return `${outer} ${inner}`
 }
 
+/** Expands a measured target by `padding` on every side for the spotlight highlight only —
+ *  the target's own layout/component is never touched. */
+function inflateMeasurement(m: TargetMeasurement, padding = 0): TargetMeasurement {
+  if (!padding) return m
+  return {
+    x: m.x - padding,
+    y: m.y - padding,
+    width: m.width + padding * 2,
+    height: m.height + padding * 2,
+  }
+}
+
+// panelHeight defaults to PANEL_HEIGHT (a first-render guess, corrected once the panel measures
+// its own actual height via onLayout — see SpotlightPanel) rather than a fixed constant: content
+// height varies per step, and an undersized guess for an 'above'-positioned panel means its real
+// (taller) bottom edge overlaps the target it's meant to sit above.
 function getPanelTop(
   m: TargetMeasurement | undefined,
   step: OnboardingStep,
-  screenH: number
+  screenH: number,
+  panelHeight: number = PANEL_HEIGHT
 ): number {
-  if (!m) return screenH / 2 - PANEL_HEIGHT / 2
+  if (!m) return screenH / 2 - panelHeight / 2
   const spaceBelow = screenH - m.y - m.height
   const placeBelow =
     step.panelPosition === 'above'
       ? false
       : step.panelPosition === 'below'
         ? true
-        : spaceBelow >= PANEL_HEIGHT + PANEL_MARGIN
-  return placeBelow ? m.y + m.height + PANEL_MARGIN : m.y - PANEL_HEIGHT - PANEL_MARGIN
+        : spaceBelow >= panelHeight + PANEL_MARGIN
+  return placeBelow ? m.y + m.height + PANEL_MARGIN : m.y - panelHeight - PANEL_MARGIN
 }
 
 function StepDots({ total, current }: { total: number; current: number }) {
@@ -66,7 +83,9 @@ function SpotlightPanel({
   step,
   measurement,
   currentIndex,
+  totalSteps,
   screenH,
+  canGoBack,
   onNext,
   onBack,
   onSkip,
@@ -74,17 +93,25 @@ function SpotlightPanel({
   step: OnboardingStep
   measurement: TargetMeasurement | undefined
   currentIndex: number
+  totalSteps: number
   screenH: number
+  canGoBack: boolean
   onNext: () => void
   onBack: () => void
   onSkip: () => void
 }) {
-  const panelTop = getPanelTop(measurement, step, screenH)
-  const isLast = currentIndex === ONBOARDING_STEPS.length - 1
+  const [measuredHeight, setMeasuredHeight] = useState(PANEL_HEIGHT)
+  useEffect(() => {
+    setMeasuredHeight(PANEL_HEIGHT)
+  }, [step.id])
+
+  const panelTop = getPanelTop(measurement, step, screenH, measuredHeight)
+  const isLast = currentIndex === totalSteps - 1
 
   return (
     <View
       key={currentIndex}
+      onLayout={(e) => setMeasuredHeight(e.nativeEvent.layout.height)}
       style={[
         styles.panel,
         {
@@ -101,9 +128,14 @@ function SpotlightPanel({
       <Text style={[styles.panelDescription, { color: Colors.$textNeutral }]}>
         {step.description}
       </Text>
-      <StepDots total={ONBOARDING_STEPS.length} current={currentIndex} />
+      {step.advanceByAction && (
+        <Text style={[styles.panelHint, { color: Colors.$textNeutral }]}>
+          {step.actionHint ?? 'Tap the highlighted button to continue'}
+        </Text>
+      )}
+      <StepDots total={totalSteps} current={currentIndex} />
       <View style={styles.buttonRow}>
-        {currentIndex > 0 && (
+        {canGoBack && (
           <Pressable
             onPress={onBack}
             style={[styles.btnSecondary, { borderColor: Colors.$outlineDefault }]}
@@ -117,26 +149,33 @@ function SpotlightPanel({
         >
           <Text style={[styles.btnSecondaryText, { color: Colors.$textDefault }]}>Skip</Text>
         </Pressable>
-        <Pressable
-          onPress={onNext}
-          style={[styles.btnPrimary, { backgroundColor: Colors.$backgroundPrimaryHeavy }]}
-        >
-          <Text style={[styles.btnPrimaryText, { color: Colors.$textDefault }]}>
-            {isLast ? 'Done' : 'Next'}
-          </Text>
-        </Pressable>
+        {/* advanceByAction steps only move forward via the real action on the highlighted
+            element — see the matching comment in OnboardingOverlay.tsx. */}
+        {!step.advanceByAction && (
+          <Pressable
+            onPress={onNext}
+            style={[styles.btnPrimary, { backgroundColor: Colors.$backgroundPrimaryHeavy }]}
+          >
+            <Text style={[styles.btnPrimaryText, { color: Colors.$textDefault }]}>
+              {isLast ? 'Done' : 'Next'}
+            </Text>
+          </Pressable>
+        )}
       </View>
     </View>
   )
 }
 
-function OnboardingOverlayContent() {
+function OnboardingOverlayContent({ mounted }: { mounted: boolean }) {
   const active = useOnboardingStore((s) => s.active)
+  const tourId = useOnboardingStore((s) => s.tourId)
   const currentIndex = useOnboardingStore((s) => s.currentIndex)
   const measurements = useOnboardingStore((s) => s.measurements)
+  const registry = useOnboardingStore((s) => s._registry)
   const { next, back, skip } = useOnboardingStore()
   const { width: screenW, height: screenH } = useWindowDimensions()
   const [opacity, setOpacity] = useState(0)
+  const steps = TOURS[tourId]
 
   useEffect(() => {
     if (active) {
@@ -154,10 +193,14 @@ function OnboardingOverlayContent() {
     return () => clearTimeout(t)
   }, [currentIndex])
 
-  if (!active) return null
+  if (!mounted) return null
 
-  const step = ONBOARDING_STEPS[currentIndex]
-  const measurement = step ? measurements[step.id] : undefined
+  const step = steps[currentIndex]
+  const rawMeasurement = step ? measurements[step.id] : undefined
+  const measurement = rawMeasurement
+    ? inflateMeasurement(rawMeasurement, step?.spotlightPadding)
+    : undefined
+  const canGoBack = currentIndex > 0 && registry.has(steps[currentIndex - 1].id)
 
   return (
     <View
@@ -228,11 +271,30 @@ function OnboardingOverlayContent() {
           step={step}
           measurement={measurement}
           currentIndex={currentIndex}
+          totalSteps={steps.length}
           screenH={screenH}
+          canGoBack={canGoBack}
           onNext={next}
           onBack={back}
           onSkip={skip}
         />
+      )}
+      {!measurement && (
+        <Pressable
+          onPress={skip}
+          style={[
+            styles.btnSecondary,
+            {
+              position: 'absolute',
+              top: 60,
+              right: SCREEN_PADDING,
+              borderColor: Colors.$outlineDefault,
+              backgroundColor: Colors.$backgroundDefault,
+            } as any,
+          ]}
+        >
+          <Text style={[styles.btnSecondaryText, { color: Colors.$textDefault }]}>Skip</Text>
+        </Pressable>
       )}
     </View>
   )
@@ -252,7 +314,7 @@ export function OnboardingOverlay() {
   }, [active])
 
   if (!mounted) return null
-  return <OnboardingOverlayContent />
+  return <OnboardingOverlayContent mounted={mounted} />
 }
 
 const styles = StyleSheet.create({
@@ -274,6 +336,10 @@ const styles = StyleSheet.create({
   panelDescription: {
     fontSize: 14,
     lineHeight: 20,
+  },
+  panelHint: {
+    fontSize: 12,
+    fontStyle: 'italic',
   },
   dotsRow: {
     flexDirection: 'row',

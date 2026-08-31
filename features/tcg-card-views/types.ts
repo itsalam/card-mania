@@ -42,6 +42,11 @@ export type BaseListingProps<T = TCard> = {
   cardContainerStyle?: StyleProp<ViewStyle>
   navigateOnPress?: boolean
   displayData: DisplayData | null
+  /** Position within the list this item was rendered from, when the caller's list happens to
+   *  know it (e.g. SearchScreen's FlatList) — undefined for views with no ordered list context.
+   *  Purely informational for consumers like add-card.tsx that need to single out "the first
+   *  result" for a one-time coach-mark; not used by the row rendering itself. */
+  index?: number
 }
 
 export type ItemListViewProps = ItemListingProps & {

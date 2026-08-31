@@ -5,6 +5,7 @@ import { Text } from '@/components/ui/text/base-text'
 import { MainSearchBar } from '@/features/mainSearchbar'
 import { OnboardingTarget } from '@/features/onboarding'
 import { useUserStore } from '@/lib/store/useUserStore'
+import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs'
 import { useRouter } from 'expo-router'
 import {
   Bell,
@@ -15,7 +16,6 @@ import {
   SettingsIcon,
   Sheet,
 } from 'lucide-react-native'
-import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs'
 import React, { useCallback, useState } from 'react'
 import { RefreshControl, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
@@ -26,24 +26,57 @@ import { PortfolioSummary } from './PortfolioSummary'
 import { TabValue, tabValues, useHomePageStore } from './provider'
 import { HomeRefreshProvider, useHomeRefreshControl } from './refresh-provider'
 
+// Matches Logo's own size (the tallest item in that row) so alignItems: 'center' has a definite
+// band to center against — MainSearchBar's collapsed state renders an <ExpandableSearchBar>,
+// whose height: '100%' needs a non-ambiguous parent height the same way Collection's header does
+// (see features/collection/components/Header.tsx's HEADER_ROW_HEIGHT for the fuller writeup).
+const HOME_TOP_ROW_HEIGHT = 48
+
 const notifBadgeStyles = StyleSheet.create({
+  // Rescaled alongside the Bell icon's size: 22 -> 19.
   dot: {
     position: 'absolute',
-    top: -4,
-    right: -6,
-    minWidth: 16,
-    height: 16,
-    borderRadius: 8,
+    top: -3,
+    right: -5,
+    minWidth: 14,
+    height: 14,
+    borderRadius: 7,
     backgroundColor: '#ef4444',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 3,
+    paddingHorizontal: 2,
   },
   dotText: {
     color: '#fff',
-    fontSize: 10,
+    fontSize: 9,
     fontWeight: '700',
-    lineHeight: 12,
+    lineHeight: 11,
+  },
+  // "Button group" chrome for Bell + Settings — one shared pill container, secondary to the
+  // search bar so it should draw less attention, not compete with it. Uses the same
+  // bg/border colors as Marketplace's view-mode toggle group (`styles.toggle` in
+  // features/marketplace/index.tsx) — the established segmented-control convention documented
+  // in CLAUDE.md — rather than the opaque backgroundNeutral/outlineNeutral used for primary
+  // action buttons (search, filter).
+  iconButtonGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 999,
+    backgroundColor: Colors.rgba(Colors.$backgroundDefault, 0.92),
+    borderWidth: 1,
+    borderColor: Colors.rgba(Colors.$outlineNeutral, 0.4),
+    overflow: 'hidden',
+  },
+  // Slightly smaller than a primary icon button (Marketplace's filterButton uses padding: 8) to
+  // read as secondary/utility without shrinking so far it's hard to tap.
+  groupButton: {
+    padding: 7,
+  },
+  groupDivider: {
+    width: StyleSheet.hairlineWidth,
+    alignSelf: 'stretch',
+    marginVertical: 6,
+    backgroundColor: Colors.rgba(Colors.$outlineNeutral, 0.2),
   },
 })
 
@@ -80,18 +113,22 @@ export default function HomeScreen() {
 
   return (
     <SafeAreaView className="flex-1 w-full h-full overflow-visible" style={{ paddingTop: 8 }}>
-      {/* Logo row and search bar — fixed outside scroll */}
-      <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, gap: 12 }}>
-        <Logo width={48} height={48} />
-        <Text variant={'large'}>Welcome back, {displayName}</Text>
-        <View style={{ marginLeft: 'auto', flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+      <View
+        style={{
+          flexDirection: 'row',
+          justifyContent: 'flex-end',
+          paddingHorizontal: 20,
+          paddingTop: 8,
+        }}
+      >
+        <View style={notifBadgeStyles.iconButtonGroup}>
           <TouchableOpacity
             onPress={() => router.push('/(tabs)/notifications')}
             accessibilityLabel="Open notifications"
-            style={{ padding: 4 }}
+            style={notifBadgeStyles.groupButton}
           >
             <View>
-              <Bell size={26} color={Colors.$iconDefault} />
+              <Bell size={19} color={Colors.$iconDefault} />
               {unreadCount > 0 && (
                 <View style={notifBadgeStyles.dot}>
                   <Text style={notifBadgeStyles.dotText}>
@@ -101,20 +138,37 @@ export default function HomeScreen() {
               )}
             </View>
           </TouchableOpacity>
+          <View style={notifBadgeStyles.groupDivider} />
           <OnboardingTarget id="settings-icon">
             <TouchableOpacity
               onPress={() => router.push('/(tabs)/profile/settings')}
               accessibilityLabel="Open settings"
-              style={{ padding: 4 }}
+              style={notifBadgeStyles.groupButton}
             >
-              <SettingsIcon size={26} color={Colors.$iconDefault} />
+              <SettingsIcon size={19} color={Colors.$iconDefault} />
             </TouchableOpacity>
           </OnboardingTarget>
         </View>
       </View>
-      <OnboardingTarget id="search-bar">
-        <MainSearchBar />
-      </OnboardingTarget>
+      <View
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          paddingHorizontal: 20,
+          gap: 12,
+          height: HOME_TOP_ROW_HEIGHT,
+        }}
+      >
+        <Logo width={48} height={48} />
+        <Text variant={'large'} numberOfLines={1} style={{ flexShrink: 1 }}>
+          Welcome back, {displayName}
+        </Text>
+        <View style={{ marginLeft: 'auto' }}>
+          <OnboardingTarget id="search-bar">
+            <MainSearchBar collapsed />
+          </OnboardingTarget>
+        </View>
+      </View>
 
       <HomeRefreshProvider>
         <HomeContent

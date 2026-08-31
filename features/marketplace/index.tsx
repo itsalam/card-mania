@@ -1,9 +1,14 @@
 import { useMarketplaceSections, usePublicStorefronts } from '@/client/marketplace'
-import { CARD_ASPECT_RATIO } from '@/components/consts'
+import {
+  CARD_ASPECT_RATIO,
+  PAGE_HEADER_CONTAINER_STYLE,
+  PAGE_HEADER_TITLE_STYLE,
+} from '@/components/consts'
 import { FadeScrollView } from '@/components/ui/fade-scroll'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Text } from '@/components/ui/text/base-text'
 import { useRefresh } from '@/lib/hooks/useRefresh'
+import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs'
 import {
   Columns2,
   Grid2x2,
@@ -14,7 +19,6 @@ import {
   SlidersHorizontal,
   X,
 } from 'lucide-react-native'
-import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs'
 import React, { useMemo, useState } from 'react'
 import {
   Modal,
@@ -641,28 +645,16 @@ export default function MarketplaceScreen() {
 const styles = StyleSheet.create({
   root: { flex: 1 },
 
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingTop: 20,
-    paddingBottom: 12,
-  },
-  headerTitle: {
-    fontSize: 34,
-    fontWeight: '800',
-    letterSpacing: -0.5,
-    textAlign: 'left',
-    color: Colors.$textDefault,
-  },
+  header: PAGE_HEADER_CONTAINER_STYLE,
+  headerTitle: PAGE_HEADER_TITLE_STYLE,
   headerSubtitle: { color: Colors.$textNeutral, fontSize: 13 },
 
   filterButton: {
     padding: 8,
     borderRadius: 999,
-    backgroundColor: Colors.rgba(Colors.$outlineNeutral, 0.08),
+    backgroundColor: Colors.rgba(Colors.$backgroundNeutral, 1),
     borderWidth: 1,
-    borderColor: Colors.rgba(Colors.$outlineNeutral, 0.2),
+    borderColor: Colors.rgba(Colors.$outlineNeutral, 1),
   },
   filterBadge: {
     position: 'absolute',
@@ -782,9 +774,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 999,
-    backgroundColor: Colors.rgba(Colors.$outlineNeutral, 0.08),
+    backgroundColor: Colors.rgba(Colors.$backgroundNeutral, 1),
     borderWidth: 1,
-    borderColor: Colors.rgba(Colors.$outlineNeutral, 0.2),
+    borderColor: Colors.rgba(Colors.$outlineNeutral, 1),
   },
   retryBtnText: {
     fontSize: 12,
@@ -809,9 +801,9 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     paddingHorizontal: 12,
     paddingVertical: 6,
-    backgroundColor: Colors.rgba(Colors.$outlineNeutral, 0.08),
+    backgroundColor: Colors.rgba(Colors.$backgroundNeutral, 1),
     borderWidth: 1,
-    borderColor: Colors.rgba(Colors.$outlineNeutral, 0.25),
+    borderColor: Colors.rgba(Colors.$outlineNeutral, 1),
   },
   filterChipActive: {
     backgroundColor: Colors.rgba(Colors.$backgroundPrimaryHeavy, 0.2),
@@ -899,9 +891,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 5,
     borderRadius: 999,
-    backgroundColor: Colors.rgba(Colors.$outlineNeutral, 0.08),
+    backgroundColor: Colors.rgba(Colors.$backgroundNeutral, 1),
     borderWidth: 1,
-    borderColor: Colors.rgba(Colors.$outlineNeutral, 0.2),
+    borderColor: Colors.rgba(Colors.$outlineNeutral, 1),
   },
   resetBtnText: {
     fontSize: 12,

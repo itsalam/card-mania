@@ -1,6 +1,10 @@
 import { GradientBackground } from '@/components/Background'
 import { useMyTransactions } from '@/client/transactions'
-import { TAB_CONTENT_BOTTOM_SPACING } from '@/components/consts'
+import {
+  PAGE_HEADER_CONTAINER_STYLE,
+  PAGE_HEADER_TITLE_STYLE,
+  TAB_CONTENT_BOTTOM_SPACING,
+} from '@/components/consts'
 import { CollapsibleSection } from '@/components/ui/collapsible-section'
 import { Separator } from '@/components/ui/separator'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -39,9 +43,7 @@ export default function TransactionsRoute() {
     <GradientBackground style={{ flex: 1 }}>
       <View style={[styles.container, { paddingTop: insets.top }]}>
         <View style={styles.header}>
-          <Text variant="h1" style={styles.headerTitle}>
-            Transactions
-          </Text>
+          <Text style={styles.headerTitle}>Transactions</Text>
         </View>
 
         <Separator orientation="horizontal" />
@@ -140,15 +142,8 @@ function LoadingSkeleton() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  header: {
-    paddingHorizontal: 16,
-    paddingTop: 24,
-    paddingBottom: 12,
-  },
-  headerTitle: {
-    fontSize: 32,
-    fontWeight: '700',
-  },
+  header: PAGE_HEADER_CONTAINER_STYLE,
+  headerTitle: PAGE_HEADER_TITLE_STYLE,
   list: {},
   count: {
     fontSize: 13,

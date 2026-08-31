@@ -2,6 +2,7 @@ import { CollectionLike, EditCollectionResult } from '@/client/collections/types
 import { CollectionsAvatar } from '@/components/collections/avatar'
 import { Separator } from '@/components/ui/separator'
 import { Text } from '@/components/ui/text/base-text'
+import { OnboardingTarget } from '@/features/onboarding'
 import { ModifyCollectionProvider } from '@/features/tcg-card-views/DetailCardView/provider'
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs'
 import { ChevronLeft } from 'lucide-react-native'
@@ -80,39 +81,41 @@ export const ModifyCollectionView = ({
         >
           {/* ── Details card: Name · Description · Tags ─── */}
           {/* No overflow:hidden so suggestions can animate height inside the card */}
-          <View
-            style={{
-              borderRadius: BorderRadiuses.br50,
-              borderWidth: 1,
-              borderColor: Colors.rgba(Colors.$outlineNeutral, 0.4),
-              backgroundColor: Colors.$backgroundElevatedLight,
-            }}
-          >
-            {/* Name row */}
+          <OnboardingTarget id="collection-details-input">
             <View
               style={{
-                paddingHorizontal: 16,
-                paddingTop: 14,
-                paddingBottom: 8,
-                flexDirection: 'row',
-                alignItems: 'flex-start',
-                gap: 14,
+                borderRadius: BorderRadiuses.br50,
+                borderWidth: 1,
+                borderColor: Colors.rgba(Colors.$outlineNeutral, 0.4),
+                backgroundColor: Colors.$backgroundElevatedLight,
               }}
             >
-              <CollectionsAvatar iconImageSrc={collection?.cover_image_url ?? undefined} />
-              <View style={{ flex: 1 }}>
-                <CollectionsNameInput />
+              {/* Name row */}
+              <View
+                style={{
+                  paddingHorizontal: 16,
+                  paddingTop: 14,
+                  paddingBottom: 8,
+                  flexDirection: 'row',
+                  alignItems: 'flex-start',
+                  gap: 14,
+                }}
+              >
+                <CollectionsAvatar iconImageSrc={collection?.cover_image_url ?? undefined} />
+                <View style={{ flex: 1 }}>
+                  <CollectionsNameInput />
+                </View>
               </View>
-            </View>
 
-            {/* Description */}
-            <View style={{ paddingHorizontal: 16, paddingVertical: 4 }}>
-              <CollectionsDescriptionInput />
-            </View>
+              {/* Description */}
+              <View style={{ paddingHorizontal: 16, paddingVertical: 4 }}>
+                <CollectionsDescriptionInput />
+              </View>
 
-            {/* Tags — render inside the card; suggestions animate height within it */}
-            <CreateCollectionChipInput />
-          </View>
+              {/* Tags — render inside the card; suggestions animate height within it */}
+              <CreateCollectionChipInput />
+            </View>
+          </OnboardingTarget>
 
           {/* Settings */}
           <SectionCard label="Settings">

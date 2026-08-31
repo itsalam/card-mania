@@ -18,7 +18,7 @@ const AnimTags = Animated.createAnimatedComponent(Tags)
 const ATags = () => {
   const { color } = useInputColors()
   //@ts-ignore
-  return <AnimTags size={28} color={color} />
+  return <AnimTags size={20} color={color} />
 }
 
 type CategoryTag = {

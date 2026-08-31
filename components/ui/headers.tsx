@@ -34,6 +34,7 @@ function ShoulderCutout({
   onPress,
   onSize,
   pillWSv,
+  height = PILL_H,
 }: {
   content: React.ReactNode
   onPress: () => void
@@ -41,13 +42,20 @@ function ShoulderCutout({
   /** Same SharedValue that drives the Skia background void — ensures the SVG path
    *  animates in lock-step with the gradient cutout via the same spring. */
   pillWSv?: SharedValue<number>
+  /** Pill height — defaults to PILL_H (HEADER_ROW_H - PILL_R), which "floats" the pill inside
+   *  the header row via its curved bottom-right corner rather than filling the row edge to
+   *  edge. Pass HEADER_ROW_H for a caller that wants the pill to read as full-row-height instead
+   *  (see add-card.tsx) — whatever value is passed here MUST also be passed as `headerHeight` to
+   *  that caller's own ShoulderCutoutDescriptor (components/Background.tsx), or the background's
+   *  matching void notch will drift out of sync with the pill's actual rendered geometry. */
+  height?: number
 }) {
   const [size, setSize] = useState<{ w: number; h: number } | null>(null)
   // maxCanvasW tracks the max ever-seen pill width; canvasWSv mirrors it for the worklet.
   const maxCanvasW = useRef(0)
   const canvasWSv = useSharedValue(0)
   const CR = PILL_R
-  const hH = PILL_H
+  const hH = height
   const fill = Colors.$backgroundPrimaryHeavy
 
   // useDerivedValue + withSpring: survives re-renders without resetting — same fix as
@@ -177,7 +185,12 @@ function CutoutReveal({
   cutout,
   onCutoutSize,
 }: {
-  cutout?: { content: React.ReactNode; onPress: () => void; pillWSv?: SharedValue<number> }
+  cutout?: {
+    content: React.ReactNode
+    onPress: () => void
+    pillWSv?: SharedValue<number>
+    height?: number
+  }
   onCutoutSize?: (w: number, h: number) => void
 }) {
   const lastCutout = useRef(cutout)
@@ -191,6 +204,7 @@ function CutoutReveal({
         onPress={lastCutout.current.onPress}
         onSize={onCutoutSize}
         pillWSv={lastCutout.current.pillWSv}
+        height={lastCutout.current.height}
       />
     </View>
   )
@@ -222,6 +236,10 @@ export function AppStandaloneHeader({
     /** Pass the same SharedValue used by the Skia background so the pill SVG
      *  spring-animates in lock-step with the gradient void. */
     pillWSv?: SharedValue<number>
+    /** See ShoulderCutout's own `height` prop comment — defaults to PILL_H (the pill "floats"
+     *  inside the row). Keep any override here in sync with the matching background void's
+     *  `headerHeight`. */
+    height?: number
   }
   /** Called once the shoulder cutout pill is measured — use to clip the background behind it. */
   onCutoutSize?: (w: number, h: number) => void

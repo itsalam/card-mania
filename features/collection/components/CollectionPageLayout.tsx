@@ -15,6 +15,7 @@ import { THUMBNAIL_HEIGHT } from '@/components/tcg-card/consts'
 import { FadeScrollView } from '@/components/ui/fade-scroll'
 import { Tabs } from '@/components/ui/tabs'
 import { Text } from '@/components/ui/text/base-text'
+import { useCollectionTourTrigger } from '@/features/onboarding'
 import { CollectionCardItemEntries } from '@/features/tcg-card-views/DetailCardView/pages/add-to-collections/components'
 import { CardListView } from '@/features/tcg-card-views/ListCard'
 import { useRefresh } from '@/lib/hooks/useRefresh'
@@ -78,6 +79,9 @@ export const CollectionsPageLayout = () => {
   const insets = useSafeAreaInsets()
   const { currentPage, setCurrentPage, pinnedCollectionsState, setShowEditView, showEditView } =
     useCollectionsPageStore()
+  // Fires the Collections-tab guided tour (ITS-104) the first time this screen mounts for a
+  // user who hasn't seen it yet — see useCollectionTourTrigger's own comment for gating details.
+  useCollectionTourTrigger()
   const { data: defaultIds } = useDefaultCollectionIds()
 
   const { data: collection } = useGetCollection(getCollectionIdArgs(currentPage))

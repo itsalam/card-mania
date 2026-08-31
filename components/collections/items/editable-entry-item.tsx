@@ -22,6 +22,8 @@ import { SkeletonText, Text } from '@/components/ui/text'
 import { formatPrice } from '@/components/utils'
 import { TCard } from '@/constants/types'
 import { getGradingDisplayString } from '@/features/collection/helpers'
+import { OnboardingTarget, useOnboardingStore } from '@/features/onboarding'
+import type { OnboardingStepId } from '@/features/onboarding'
 import { useEffectiveColorScheme } from '@/features/settings/hooks/effective-color-scheme'
 import { qk } from '@/lib/store/functions/helpers'
 import { CollectionItemRow } from '@/lib/store/functions/types'
@@ -106,6 +108,7 @@ export const CollectionItemEntry = ({
   isLoading,
   onPriceModalOpen,
   showDelete,
+  onboardingTargetId,
 }: {
   showDelete: boolean
   collection?: CollectionLike
@@ -115,6 +118,10 @@ export const CollectionItemEntry = ({
   editable?: boolean
   isLoading?: boolean
   onPriceModalOpen?: (data: PriceModalPayload) => void
+  /** Set only for the one entry row a caller wants coach-marked (see the add-card tour's
+   *  "first result" targeting in add-to-collections/components.tsx) — wraps the quantity ticker
+   *  in an OnboardingTarget when present, otherwise renders it plain. */
+  onboardingTargetId?: OnboardingStepId
 }) => {
   const { data: gradeData, error } = useGradingConditions()
   const [hide, setHide] = useState(false)
@@ -368,15 +375,29 @@ export const CollectionItemEntry = ({
               flexWrap: 'wrap',
             }}
           >
-            <NumberTicker
-              disabled={isLoading}
-              containerStyle={{ opacity: isLoading ? 0.6 : 1 }}
-              stepperProps={{ small: true }}
-              min={0}
-              max={999}
-              initialNumber={isLoading ? undefined : (draft.quantity ?? 0)}
-              onChangeNumber={(n) => updateDraft({ quantity: n })}
-            />
+            {(() => {
+              const ticker = (
+                <NumberTicker
+                  disabled={isLoading}
+                  containerStyle={{ opacity: isLoading ? 0.6 : 1 }}
+                  stepperProps={{ small: true }}
+                  min={0}
+                  max={999}
+                  initialNumber={isLoading ? undefined : (draft.quantity ?? 0)}
+                  onChangeNumber={(n) => {
+                    updateDraft({ quantity: n })
+                    if (onboardingTargetId) {
+                      useOnboardingStore.getState().advanceIfCurrentStep(onboardingTargetId)
+                    }
+                  }}
+                />
+              )
+              return onboardingTargetId ? (
+                <OnboardingTarget id={onboardingTargetId}>{ticker}</OnboardingTarget>
+              ) : (
+                ticker
+              )
+            })()}
             <View
               style={{
                 flex: 1,

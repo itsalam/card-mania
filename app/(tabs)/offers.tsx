@@ -1,7 +1,11 @@
 import { GradientBackground } from '@/components/Background'
 import { useMyOffers } from '@/client/offers'
 import { Offer, OfferStatus } from '@/client/offers/types'
-import { TAB_CONTENT_BOTTOM_SPACING } from '@/components/consts'
+import {
+  PAGE_HEADER_CONTAINER_STYLE,
+  PAGE_HEADER_TITLE_STYLE,
+  TAB_CONTENT_BOTTOM_SPACING,
+} from '@/components/consts'
 import { TabRow } from '@/components/tabs/TabRow'
 import { ChipRowContainer, ToggleBadge } from '@/components/ui/badge'
 import { SearchBar } from '@/components/ui/search'
@@ -136,9 +140,7 @@ export default function OffersRoute() {
       <View style={[styles.container, { paddingTop: insets.top }]}>
         {/* Header row */}
         <View style={styles.header}>
-          <Text variant="h1" style={styles.headerTitle}>
-            Offers
-          </Text>
+          <Text style={styles.headerTitle}>Offers</Text>
         </View>
 
         {/* View filter tabs */}
@@ -316,18 +318,8 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingTop: 24,
-    paddingBottom: 12,
-  },
-  headerTitle: {
-    fontSize: 32,
-    fontWeight: '700',
-  },
+  header: PAGE_HEADER_CONTAINER_STYLE,
+  headerTitle: PAGE_HEADER_TITLE_STYLE,
   sortButton: {
     flexDirection: 'row',
     alignItems: 'center',
