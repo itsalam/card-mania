@@ -1,19 +1,21 @@
 import { CollectionItem, CollectionLike } from '@/client/collections/types'
 import { ShoulderCutoutDescriptor } from '@/components/Background'
-import { AppStandaloneHeader, PILL_H, PILL_R } from '@/components/ui/headers'
+import { AppStandaloneHeader, HEADER_ROW_H, PILL_R } from '@/components/ui/headers'
 import { Text } from '@/components/ui/text/base-text'
 import { TCard } from '@/constants/types'
 import { SearchScreen } from '@/features/mainSearchbar/components/SearchScreen'
+import { useAddCardTourTrigger, useOnboardingStore } from '@/features/onboarding'
 import { CollectionCardItemEntries } from '@/features/tcg-card-views/DetailCardView/pages/add-to-collections/components'
 import { ItemListViewProps } from '@/features/tcg-card-views/types'
+import { useDebugDoubleTap } from '@/lib/hooks/useDebugDoubleTap'
 import { getSupabase } from '@/lib/store/client'
 import { qk } from '@/lib/store/functions/helpers'
 import { useQueryClient } from '@tanstack/react-query'
 import { router } from 'expo-router'
-import { Check, RotateCcw } from 'lucide-react-native'
+import { Check, ChevronLeft, RotateCcw } from 'lucide-react-native'
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { TouchableOpacity, View } from 'react-native'
-import { SharedValue, useSharedValue } from 'react-native-reanimated'
+import { Pressable, TouchableOpacity, View } from 'react-native'
+import Animated, { FadeIn, SharedValue, useSharedValue } from 'react-native-reanimated'
 import { Colors } from 'react-native-ui-lib'
 import { useGetCollection } from '../hooks'
 
@@ -21,6 +23,11 @@ const AddCardToCollectionAccessories = ({
   collection,
   ...props
 }: ItemListViewProps & { collection: CollectionLike | undefined }) => {
+  // Called before the `!collection` early return — Rules of Hooks. The hook itself no-ops for
+  // every row except the actual first one (see its own comment in OnboardingProvider.tsx).
+  const isFirstResult = props.index === 0
+  useAddCardTourTrigger(isFirstResult)
+
   if (!collection) return null
   return (
     <CollectionCardItemEntries
@@ -28,13 +35,31 @@ const AddCardToCollectionAccessories = ({
       collection={collection}
       isShown
       isSearch
+      onboardingTargets={isFirstResult ? ADD_CARD_ONBOARDING_TARGETS : undefined}
     />
   )
 }
 
+const ADD_CARD_ONBOARDING_TARGETS = {
+  numberTicker: 'add-card-number-ticker',
+  gradeButton: 'add-card-grade-button',
+} as const
+
+// Matches features/collection/components/Header.tsx's HEADER_ROW_HEIGHT — this screen sits one
+// tap away from that one (Collections tab → collection → Add), so its header band should read
+// as the same height rather than visually "jumping" shorter partway through the flow.
+const ADD_CARD_HEADER_HEIGHT = 72
+
 export default function AddCardToCollection({ collectionId }: { collectionId: string }) {
   const { data: collection } = useGetCollection({ collectionId })
   const qc = useQueryClient()
+
+  // Debug-only: double-tapping the title re-triggers the add-card guided tour, bypassing the
+  // "already seen it" gate — see Header.tsx's own handleTitlePress for the same pattern on the
+  // Collections tab. resumeOrStart, not start — reopens wherever this tour last left off.
+  const handleTitlePress = useDebugDoubleTap('Add-card tour', () =>
+    useOnboardingStore.getState().resumeOrStart('add-card')
+  )
 
   // --- snapshot: cardId → items at session open ---
   const [initialSnapshot, setInitialSnapshot] = useState<Map<string, CollectionItem[]> | null>(null)
@@ -258,15 +283,35 @@ export default function AddCardToCollection({ collectionId }: { collectionId: st
   const wideWidthRef = useRef(0)
 
   const shoulderCutout = useMemo<ShoulderCutoutDescriptor>(
-    () => ({ pillWSv: pillWSv as SharedValue<number>, headerHeight: PILL_H, cornerR: PILL_R }),
+    // headerHeight must match the `height` passed to AppStandaloneHeader's own cutout prop
+    // below — both feed the same pill geometry to two different renderers (this one draws the
+    // matching notch in the background gradient), and drifting them apart re-introduces the
+    // exact background/pill misalignment fixed earlier.
+    () => ({
+      pillWSv: pillWSv as SharedValue<number>,
+      headerHeight: HEADER_ROW_H,
+      cornerR: PILL_R,
+    }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     []
   )
 
   const cutoutContent = (
-    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+    // paddingRight nudges the checkmark (and, for the rollback state, the whole group) inward
+    // from the pill's own right edge, rather than sitting flush against it — this also widens
+    // the measured pill by the same amount, matching the initial (no-rollback) state better to
+    // the "Add to collection" title/back button now next to it.
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingRight: 6 }}>
       {pendingRollback && (
-        <>
+        // The pill's own width animation starts synchronously in recompute() (see pillWSv.value
+        // above), ahead of this setPendingRollback-driven re-render — without this fade, the
+        // badge content just pops in mid-animation once React catches up, out of step with the
+        // already-moving pill. FadeIn (no delay) softens that seam; entering only, since the
+        // conditional unmount on rollback-to-zero is already covered by the pill shrinking back.
+        <Animated.View
+          entering={FadeIn.duration(180)}
+          style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}
+        >
           <TouchableOpacity
             onPress={() => pendingRollback.execute()}
             style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}
@@ -291,7 +336,7 @@ export default function AddCardToCollection({ collectionId }: { collectionId: st
           <View
             style={{ width: 1, height: 14, backgroundColor: Colors.rgba(Colors.$textDefault, 0.3) }}
           />
-        </>
+        </Animated.View>
       )}
       {/* ✓ owns the back navigation — avoids the outer ShoulderCutout TouchableOpacity
           firing router.back() when the rollback button is pressed instead. */}
@@ -302,19 +347,55 @@ export default function AddCardToCollection({ collectionId }: { collectionId: st
   )
 
   const header = (
-    <AppStandaloneHeader
-      title="Add to collection"
-      onBack={() => router.back()}
-      cutout={{ onPress: () => {}, content: cutoutContent, pillWSv }}
-      onCutoutSize={(w) => {
-        pillWSv.value = w
-        if (!pendingRollback) {
-          narrowWidthRef.current = w
-        } else {
-          wideWidthRef.current = w
-        }
-      }}
-    />
+    // Outer band reserves ADD_CARD_HEADER_HEIGHT total (matching Header.tsx's HEADER_ROW_HEIGHT)
+    // but does NOT center AppStandaloneHeader within it — the extra height is trailing space
+    // below the header row instead, so the row (and the shoulder-cutout pill it draws via
+    // CutoutReveal, position: absolute top:0 relative to that row) stays anchored at the exact
+    // same top-left origin the background's own shoulderCutout mask geometry (computed from the
+    // matching HEADER_ROW_H/PILL_R pairing above) still expects. Centering it here previously
+    // shifted the pill down without the background's mask moving to match, misaligning the two.
+    <View style={{ height: ADD_CARD_HEADER_HEIGHT }}>
+      {/* onBack intentionally omitted — AppStandaloneHeader's own back-button slot is a fixed
+          64px column with the title independently centered in the remaining space. Here the
+          back chevron and title are one flex-start-justified, padded unit instead (children,
+          not title/onBack), vertically centered as a row within the header's own fixed-height
+          middle slot. */}
+      <AppStandaloneHeader
+        // height: HEADER_ROW_H — the pill fills the header's full row height (its content
+        // re-centers for free via ShoulderCutout's own alignItems:'center') instead of PILL_H's
+        // default "floating" pill that only fills part of the row. See shoulderCutout above,
+        // whose headerHeight must stay paired with this value.
+        cutout={{ onPress: () => {}, content: cutoutContent, pillWSv, height: HEADER_ROW_H }}
+        onCutoutSize={(w) => {
+          pillWSv.value = w
+          if (!pendingRollback) {
+            narrowWidthRef.current = w
+          } else {
+            wideWidthRef.current = w
+          }
+        }}
+      >
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'flex-start',
+            width: '100%',
+            paddingHorizontal: 16,
+            gap: 10,
+          }}
+        >
+          <Pressable onPress={() => router.back()} hitSlop={12}>
+            <ChevronLeft size={24} color={Colors.$iconDefault} />
+          </Pressable>
+          <Pressable onPress={handleTitlePress}>
+            <Text variant="h3" style={{}}>
+              Add to collection
+            </Text>
+          </Pressable>
+        </View>
+      </AppStandaloneHeader>
+    </View>
   )
 
   return (
@@ -337,7 +418,7 @@ export default function AddCardToCollection({ collectionId }: { collectionId: st
           }
         }}
       >
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingRight: 6 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
             <View
               style={{

@@ -1,5 +1,5 @@
 import { useEffectiveColorScheme } from '@/features/settings/hooks/effective-color-scheme'
-import { SlidersHorizontal } from 'lucide-react-native'
+import { Search, SlidersHorizontal } from 'lucide-react-native'
 import { MotiView } from 'moti'
 import { cssInterop } from 'nativewind'
 import React, {
@@ -29,13 +29,11 @@ import {
   Button,
   Colors,
   Constants,
-  Icon,
   Spacings,
   TouchableOpacity,
   Typography,
   View,
 } from 'react-native-ui-lib'
-import { ImageSourceType } from 'react-native-ui-lib/src/components/image'
 import { inputStyle, inputStyleSheet, InputVariantProps } from '../input'
 
 const ICON_SIZE = 18
@@ -129,34 +127,105 @@ export const SearchBar = forwardRef<SearchBarRef, SearchBarProps>(
   }
 )
 
+// Must match collapsedSearchIconButtonStyle's height below so the animated width converges on
+// exactly the same value the collapsed button style renders at rest — this is also the exact
+// pixel value SearchBar's `size="sm"` variant (Tailwind `h-9`) compiles to (see
+// components/ui/input/index.tsx). Consumers MUST pass `size="sm"` alongside this style: rather
+// than fight NativeWind's cssInterop over which of the className-derived height vs. this style's
+// explicit height wins, both are set to agree on the same number so it doesn't matter which one
+// "wins" — a mismatch here (e.g. a consumer forgetting size="sm" and getting `size="search"`'s
+// h-16/64px by default) is what previously produced an oversized, off-center-looking button.
+const COLLAPSED_SEARCH_WIDTH = 36
+
+// Shared "collapsed search icon" chrome for any <ExpandableSearchBar> consumer (Collection's
+// header, Home's header) — matches Marketplace's header icon button (`filterButton` in
+// features/marketplace/index.tsx: same 8px padding, pill radius, translucent bg/border) so every
+// header icon button reads as one system. Sized as icon (18px, SearchInput's fixed ICON_SIZE) +
+// 8px padding per side, vs. Marketplace's 16px icon + 8px padding — same padding amount, box
+// scales with the (slightly larger) glyph it contains.
+//
+// Consumers must also pass size="sm" (see COLLAPSED_SEARCH_WIDTH above) and hideSideButton — the
+// latter because SearchBar always renders a second (options/filter) icon via customRightElement
+// unless told not to; left un-hidden, that button was cramming into this same tiny collapsed
+// width alongside the search icon.
+//
+// No width here — pass it via ExpandableSearchBar, whose inner MotiView animates width directly
+// and gives its child `width: '100%'`, so the button tracks that animation continuously instead
+// of jumping to a fixed size the instant this style toggles in/out.
+//
+// paddingLeft/paddingRight/paddingVertical are explicit (rather than justifyContent: 'center')
+// because SearchInput's text-input area always has flex: 1 internally — even while visually
+// collapsed, it still claims all leftover width in this row, so justifyContent has nothing left
+// to center with and the icon just sits flush against the row's own left edge. paddingLeft: 8
+// gives the icon real breathing room on the left; the phantom flex:1 input then fills the
+// remaining space on the right (clipped by overflow: hidden).
+export const collapsedSearchIconButtonStyle = {
+  height: COLLAPSED_SEARCH_WIDTH,
+  paddingLeft: 8,
+  paddingRight: 0,
+  paddingVertical: 0,
+  alignItems: 'center' as const,
+  justifyContent: 'flex-start' as const,
+  borderRadius: 999,
+  backgroundColor: Colors.rgba(Colors.$backgroundNeutral, 1),
+  borderWidth: 1,
+  borderColor: Colors.rgba(Colors.$outlineNeutral, 1),
+  overflow: 'hidden' as const,
+}
+
 export const ExpandableSearchBar = (props: SearchBarProps & { expanded: boolean }) => {
   const { expanded, style, ...rest } = props
+  // Measured, not assumed — the row this sits in also holds the header title, so "full width"
+  // isn't a static value we can compute from screen width alone.
+  const [containerWidth, setContainerWidth] = useState(COLLAPSED_SEARCH_WIDTH)
+
   return (
     <MotiView
+      // box-none: this wrapper is sized width: '100%' of its row (needed so the collapsed
+      // circle can grow into a full-width pill), which spans well beyond its own visible
+      // content — without this, its empty area sits on top of (and swallows touches meant for)
+      // whatever else shares that row, e.g. Collection's header title to its left.
+      pointerEvents="box-none"
       style={{
         position: 'relative',
         width: '100%',
         height: '100%',
         display: 'flex',
         flexDirection: 'row-reverse',
+        // Explicit center: without this, RN's default cross-axis 'stretch' makes the inner
+        // MotiView fill this box's full height, but that inner box's own row-direction children
+        // (icon + text input) never re-center within a stretched ancestor — they just sit
+        // top-aligned inside it. Centering here instead lets the inner content size to its own
+        // intrinsic height and be centered as a block, so collapsed vs. expanded stay aligned.
+        alignItems: 'center',
         marginVertical: 'auto',
-        paddingHorizontal: 12,
         top: 0,
         right: 0,
+      }}
+      onLayout={(e) => {
+        const w = Math.round(e.nativeEvent.layout.width)
+        if (w > 0 && w !== containerWidth) setContainerWidth(w)
       }}
     >
       <MotiView
         style={{
           overflow: 'visible',
         }}
+        // Animate an explicit width (measured containerWidth <-> COLLAPSED_SEARCH_WIDTH) rather
+        // than `flex` — flex only animates this box's *share* of its parent, so the actual pixel
+        // width still had to jump discretely whenever collapsedSearchIconButtonStyle's own fixed
+        // width toggled in/out on the child below, producing a visible snap right as the flex
+        // animation finished. A single animated width value removes that second, uncoordinated
+        // source of truth. Mirrors ExpandableSearchBar's web implementation (index.web.tsx), which
+        // uses the same measured-width technique for the same reason.
         animate={{
-          flex: expanded ? 1 : 0.0,
+          width: expanded ? containerWidth : COLLAPSED_SEARCH_WIDTH,
           borderColor: Colors.rgba(Colors.$iconNeutral, expanded ? 1 : 0),
           borderRadius: expanded ? BorderRadiuses.br100 : BorderRadiuses.br40,
           borderWidth: 1,
         }}
       >
-        <SearchBar style={[{ flexShrink: 0 }, style]} {...rest} />
+        <SearchBar style={[{ width: '100%' }, style]} {...rest} />
       </MotiView>
     </MotiView>
   )
@@ -412,15 +481,18 @@ const SearchInput = forwardRef<ComponentRef<typeof BaseSearchInput>, SearchInput
     const isDismissible = () => {
       return typeof onDismiss !== 'undefined'
     }
-    const renderIcon = (
-      icon: ImageSourceType,
-      left = true,
-      onPress?: () => void,
-      style?: StyleProp<ImageStyle>
-    ) => {
-      const color = {
-        color: invertColors ? INVERTED_ICON_COLOR : Colors.$iconDefaultLight,
-      }
+    // The right-side icon (SlidersHorizontal, in OptionsButton) is a lucide-react-native SVG icon
+    // — rendering the left search icon through react-native-ui-lib's asset-based Icon instead
+    // (a raster/vector asset with its own baked-in canvas padding) made the two sides look
+    // unevenly spaced even with identical numeric layout padding. Using the same lucide icon set
+    // for both keeps their optical weight and internal glyph bounds consistent.
+    const renderIcon = (onPress?: () => void, style?: StyleProp<ImageStyle>) => {
+      // Colors.$iconDefaultLight (used elsewhere in this file as INVERTED_ICON_COLOR) is meant
+      // for dark/inverted surfaces and renders near-white — using it here for the default,
+      // non-inverted case was the source of the icon rendering white regardless of theme.
+      // Colors.$textDefault matches the right-side icon's own color (OptionsButton in SearchBar,
+      // above) so both stay visually consistent and theme-aware.
+      const color = invertColors ? INVERTED_ICON_COLOR : Colors.$textDefault
 
       return (
         <TouchableOpacity
@@ -428,12 +500,7 @@ const SearchInput = forwardRef<ComponentRef<typeof BaseSearchInput>, SearchInput
             onPress?.()
           }}
         >
-          <Icon
-            tintColor={Colors.$textDefault}
-            style={[styles.icon, color, left && styles.leftIcon, style]}
-            source={icon}
-            size={ICON_SIZE}
-          />
+          <Search color={color} size={ICON_SIZE} strokeWidth={2} style={[styles.leftIcon, style]} />
         </TouchableOpacity>
       )
     }
@@ -466,9 +533,7 @@ const SearchInput = forwardRef<ComponentRef<typeof BaseSearchInput>, SearchInput
         ]}
         testID={`${testID}.searchBox`}
       >
-        {showLoader
-          ? renderLoader()
-          : renderIcon(Assets.internal.icons.search, true, onLeftIconPress, leftIconStyle)}
+        {showLoader ? renderLoader() : renderIcon(onLeftIconPress, leftIconStyle)}
         {renderTextInput()}
       </View>
     )

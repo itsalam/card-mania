@@ -4,6 +4,7 @@ import { useToast } from '@/components/Toast'
 import { useInputColors } from '@/components/ui/input/provider'
 import { Switch } from '@/components/ui/switch'
 import { Text } from '@/components/ui/text/base-text'
+import { OnboardingTarget, useOnboardingStore } from '@/features/onboarding'
 import { useCreateNewCollections } from '@/features/tcg-card-views/DetailCardView/provider'
 import { CopyX, LucideIcon, NotebookText, Store } from 'lucide-react-native'
 import React, { ReactNode } from 'react'
@@ -67,7 +68,7 @@ const AnimNotebookText = Animated.createAnimatedComponent(NotebookText)
 const ANotebookText = () => {
   const { color } = useInputColors()
   //@ts-ignore
-  return <AnimNotebookText size={22} color={color} />
+  return <AnimNotebookText size={20} color={color} />
 }
 
 export const CollectionsNameInput = () => {
@@ -124,17 +125,25 @@ export const StorefrontOptions = () => {
 
   return (
     <View style={{ gap: 14 }}>
-      <SettingRow
-        icon={Store}
-        label="Storefront"
-        description="Items are publicly searchable for sale."
-        right={
-          <Switch
-            checked={Boolean(isStoreFront)}
-            onCheckedChange={(val) => setStoreOptions({ isStoreFront: val })}
-          />
-        }
-      />
+      <OnboardingTarget id="collection-storefront-toggle">
+        <SettingRow
+          icon={Store}
+          label="Storefront"
+          description="Items are publicly searchable for sale."
+          right={
+            <Switch
+              checked={Boolean(isStoreFront)}
+              onCheckedChange={(val) => {
+                setStoreOptions({ isStoreFront: val })
+                // Real action on the highlighted target — advances the tour immediately,
+                // mirroring the "+" button's advanceIfCurrentStep call in TabList.tsx. A no-op
+                // once this isn't the current step.
+                useOnboardingStore.getState().advanceIfCurrentStep('collection-storefront-toggle')
+              }}
+            />
+          }
+        />
+      </OnboardingTarget>
       {isStoreFront && (
         <Animated.View
           entering={FadeInUp.withInitialValues({ transform: [{ translateY: -4 }] })}
@@ -187,7 +196,9 @@ export const SubmitCollectionButton = ({
         is_storefront: isStoreFront,
         hide_sold_items: hideSoldItems,
       })
-      .then((res) => onSubmit?.(res))
+      .then((res) => {
+        onSubmit?.(res)
+      })
       .catch(() => {
         showToast({
           title: 'Error',

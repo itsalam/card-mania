@@ -9,6 +9,8 @@ import {
 import { CollectionItemPhotosModal } from '@/components/collections/items/photos-modal'
 import { Spinner } from '@/components/ui/spinner'
 import { TCard } from '@/constants/types'
+import { OnboardingTarget, useOnboardingStore } from '@/features/onboarding'
+import type { OnboardingStepId } from '@/features/onboarding'
 import { CollectionItemRow } from '@/lib/store/functions/types'
 import {
   EllipsisVertical,
@@ -53,6 +55,7 @@ export const CollectionCardItemEntries = ({
   style,
   editable,
   isLoading: isLoadingOuter,
+  onboardingTargets,
 }: {
   collection: CollectionLike
   isShown: boolean
@@ -61,6 +64,10 @@ export const CollectionCardItemEntries = ({
   style?: StyleProp<ViewStyle>
   editable?: boolean
   isLoading?: boolean
+  /** Set only by the one caller instance that should carry the add-card tour's coach-marks
+   *  (see add-card.tsx) — every other consumer of this component (the Add-to-collection footer
+   *  sheet, a collection's own item list) omits this and renders exactly as before. */
+  onboardingTargets?: { numberTicker: OnboardingStepId; gradeButton: OnboardingStepId }
 }) => {
   const {
     data: loadedEntries,
@@ -132,7 +139,7 @@ export const CollectionCardItemEntries = ({
         <Spinner />
       ) : (
         <View style={{ width: '100%' }}>
-          {sortedEntries.map((entry) => {
+          {sortedEntries.map((entry, index) => {
             const stableKey = entryStableKey(entry as any)
             const isNew = isMountedRef.current && !knownEntryKeysRef.current.has(stableKey)
             return (
@@ -148,6 +155,7 @@ export const CollectionCardItemEntries = ({
                   editable={editable}
                   isLoading={isLoadingOuter}
                   showDelete={!isSearch}
+                  onboardingTargetId={index === 0 ? onboardingTargets?.numberTicker : undefined}
                   onPriceModalOpen={(data) => setPriceChangeEntry(data)}
                   onDelete={() => {
                     qc.invalidateQueries({
@@ -192,32 +200,43 @@ export const CollectionCardItemEntries = ({
           justifyContent: 'space-between',
         }}
       >
-        <TouchableOpacity
-          disabled={isLoadingOuter}
-          style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: 'center',
-            alignContent: 'center',
-            flexGrow: 0,
-            width: 94,
-            height: 32,
-            paddingVertical: 2,
-            opacity: isLoadingOuter ? 0.5 : 1,
-            borderRadius: 9999,
-            gap: 2,
-            backgroundColor: Colors.$backgroundPrimaryMedium,
-          }}
-          onPress={() => {
-            setShowModal(true)
-            // setNewEntries((prev) => [...prev, {}])
-          }}
-        >
-          <Plus color={Colors.$iconDefault} size={16} />
-          <Text variant="large" style={{ color: Colors.$iconDefault, lineHeight: 0 }}>
-            Grade
-          </Text>
-        </TouchableOpacity>
+        {(() => {
+          const gradeButton = (
+            <TouchableOpacity
+              disabled={isLoadingOuter}
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'center',
+                alignContent: 'center',
+                flexGrow: 0,
+                width: 94,
+                height: 32,
+                paddingVertical: 2,
+                opacity: isLoadingOuter ? 0.5 : 1,
+                borderRadius: 9999,
+                gap: 2,
+                backgroundColor: Colors.$backgroundPrimaryMedium,
+              }}
+              onPress={() => {
+                setShowModal(true)
+                if (onboardingTargets) {
+                  useOnboardingStore.getState().advanceIfCurrentStep(onboardingTargets.gradeButton)
+                }
+              }}
+            >
+              <Plus color={Colors.$iconDefault} size={16} />
+              <Text variant="large" style={{ color: Colors.$iconDefault, lineHeight: 0 }}>
+                Grade
+              </Text>
+            </TouchableOpacity>
+          )
+          return onboardingTargets ? (
+            <OnboardingTarget id={onboardingTargets.gradeButton}>{gradeButton}</OnboardingTarget>
+          ) : (
+            gradeButton
+          )
+        })()}
         {canManagePhotos && (
           <TouchableOpacity
             disabled={isLoadingOuter}

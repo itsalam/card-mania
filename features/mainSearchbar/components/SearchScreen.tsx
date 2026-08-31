@@ -274,10 +274,11 @@ export function SearchScreen({
                 data={!isCardSearchLoading ? searchItems : []}
                 ListEmptyComponent={Spinner}
                 refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-                renderItem={({ item }) => (
+                renderItem={({ item, index }) => (
                   <SearchPreviewCard
                     key={item.id}
                     searchItem={item}
+                    index={index}
                     renderAccessories={itemAccessories}
                   />
                 )}

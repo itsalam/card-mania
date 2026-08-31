@@ -20,7 +20,7 @@ import { FullWindowOverlay } from 'react-native-screens'
 import { ClipPath, Defs, Path, Rect, Svg } from 'react-native-svg'
 import { Colors } from 'react-native-ui-lib'
 import { useOnboardingStore } from './OnboardingProvider'
-import { ONBOARDING_STEPS } from './steps'
+import { TOURS } from './steps'
 import { OnboardingStep, TargetMeasurement } from './types'
 
 const PANEL_HEIGHT = 160
@@ -46,16 +46,39 @@ function buildCutoutPath(W: number, H: number, m: TargetMeasurement, radius = 8)
   return `${outer} ${inner}`
 }
 
-function getPanelTop(m: TargetMeasurement, step: OnboardingStep, screenH: number): number {
+/** Expands a measured target by `padding` on every side for the spotlight highlight only —
+ *  the target's own layout/component is never touched. */
+function inflateMeasurement(m: TargetMeasurement, padding = 0): TargetMeasurement {
+  if (!padding) return m
+  return {
+    x: m.x - padding,
+    y: m.y - padding,
+    width: m.width + padding * 2,
+    height: m.height + padding * 2,
+  }
+}
+
+// panelHeight defaults to PANEL_HEIGHT (a guess used for the very first render, before the panel
+// has measured its own actual height via onLayout — see SpotlightPanel) rather than a fixed
+// constant throughout: content length varies per step (a step.description this long, or the
+// advanceByAction hint, easily exceeds 160px), and 'above'-positioned panels anchor their *top*
+// to `m.y - panelHeight - margin` — an undersized guess there means the panel's real (taller)
+// bottom edge extends past that budget and overlaps the very target it's supposed to sit above.
+function getPanelTop(
+  m: TargetMeasurement,
+  step: OnboardingStep,
+  screenH: number,
+  panelHeight: number = PANEL_HEIGHT
+): number {
   const spaceBelow = screenH - m.y - m.height
   const placeBelow =
     step.panelPosition === 'above'
       ? false
       : step.panelPosition === 'below'
         ? true
-        : spaceBelow >= PANEL_HEIGHT + PANEL_MARGIN
+        : spaceBelow >= panelHeight + PANEL_MARGIN
 
-  return placeBelow ? m.y + m.height + PANEL_MARGIN : m.y - PANEL_HEIGHT - PANEL_MARGIN
+  return placeBelow ? m.y + m.height + PANEL_MARGIN : m.y - panelHeight - PANEL_MARGIN
 }
 
 function StepDots({ total, current }: { total: number; current: number }) {
@@ -79,7 +102,9 @@ function SpotlightPanel({
   step,
   measurement,
   currentIndex,
+  totalSteps,
   screenH,
+  canGoBack,
   onNext,
   onBack,
   onSkip,
@@ -87,19 +112,31 @@ function SpotlightPanel({
   step: OnboardingStep
   measurement: TargetMeasurement
   currentIndex: number
+  totalSteps: number
   screenH: number
+  canGoBack: boolean
   onNext: () => void
   onBack: () => void
   onSkip: () => void
 }) {
-  const panelTop = getPanelTop(measurement, step, screenH)
-  const isLast = currentIndex === ONBOARDING_STEPS.length - 1
+  // PANEL_HEIGHT is only a first-render guess — content height varies per step (description
+  // length, the advanceByAction hint), and an undersized guess for an 'above'-positioned panel
+  // means its real (taller) bottom edge overlaps the target it's meant to sit above. onLayout
+  // below corrects this to the panel's actual measured height once it's rendered.
+  const [measuredHeight, setMeasuredHeight] = useState(PANEL_HEIGHT)
+  useEffect(() => {
+    setMeasuredHeight(PANEL_HEIGHT)
+  }, [step.id])
+
+  const panelTop = getPanelTop(measurement, step, screenH, measuredHeight)
+  const isLast = currentIndex === totalSteps - 1
 
   return (
     <Animated.View
       key={currentIndex}
       entering={FadeInDown.duration(200)}
       exiting={FadeOutUp.duration(150)}
+      onLayout={(e) => setMeasuredHeight(e.nativeEvent.layout.height)}
       style={[
         styles.panel,
         {
@@ -114,9 +151,14 @@ function SpotlightPanel({
       <Text style={[styles.panelDescription, { color: Colors.$textNeutral }]}>
         {step.description}
       </Text>
-      <StepDots total={ONBOARDING_STEPS.length} current={currentIndex} />
+      {step.advanceByAction && (
+        <Text style={[styles.panelHint, { color: Colors.$textNeutral }]}>
+          {step.actionHint ?? 'Tap the highlighted button to continue'}
+        </Text>
+      )}
+      <StepDots total={totalSteps} current={currentIndex} />
       <View style={styles.buttonRow}>
-        {currentIndex > 0 && (
+        {canGoBack && (
           <Pressable
             onPress={onBack}
             style={[styles.btnSecondary, { borderColor: Colors.$outlineDefault }]}
@@ -130,25 +172,34 @@ function SpotlightPanel({
         >
           <Text style={[styles.btnSecondaryText, { color: Colors.$textDefault }]}>Skip</Text>
         </Pressable>
-        <Pressable
-          onPress={onNext}
-          style={[styles.btnPrimary, { backgroundColor: Colors.$backgroundPrimaryHeavy }]}
-        >
-          <Text style={[styles.btnPrimaryText, { color: Colors.$textDefaultLight }]}>
-            {isLast ? 'Done' : 'Next'}
-          </Text>
-        </Pressable>
+        {/* advanceByAction steps only move forward via the real action on the highlighted
+            element (see advanceIfCurrentStep) — showing a working-looking Next here would let
+            the user skip past that action onto a step whose target was never navigated to,
+            stranding the tour on the "waiting for measurement" dim fallback. */}
+        {!step.advanceByAction && (
+          <Pressable
+            onPress={onNext}
+            style={[styles.btnPrimary, { backgroundColor: Colors.$backgroundPrimaryHeavy }]}
+          >
+            <Text style={[styles.btnPrimaryText, { color: Colors.$textDefaultLight }]}>
+              {isLast ? 'Done' : 'Next'}
+            </Text>
+          </Pressable>
+        )}
       </View>
     </Animated.View>
   )
 }
 
-function OnboardingOverlayContent() {
+function OnboardingOverlayContent({ mounted }: { mounted: boolean }) {
   const active = useOnboardingStore((s) => s.active)
+  const tourId = useOnboardingStore((s) => s.tourId)
   const currentIndex = useOnboardingStore((s) => s.currentIndex)
   const measurements = useOnboardingStore((s) => s.measurements)
+  const registry = useOnboardingStore((s) => s._registry)
   const { next, back, skip } = useOnboardingStore()
   const { width: screenW, height: screenH } = useWindowDimensions()
+  const steps = TOURS[tourId]
 
   const overlayOpacity = useSharedValue(0)
   const overlayStyle = useAnimatedStyle(() => ({ opacity: overlayOpacity.value }))
@@ -169,10 +220,19 @@ function OnboardingOverlayContent() {
     )
   }, [currentIndex])
 
-  if (!active) return null
+  if (!mounted) return null
 
-  const step = ONBOARDING_STEPS[currentIndex]
-  const measurement = step ? measurements[step.id] : undefined
+  const step = steps[currentIndex]
+  const rawMeasurement = step ? measurements[step.id] : undefined
+  const measurement = rawMeasurement
+    ? inflateMeasurement(rawMeasurement, step?.spotlightPadding)
+    : undefined
+  // Only offer Back if the previous step's target is actually mounted right now — for the
+  // Collections guided tour, steps 2-4 are reached via real screen navigation (see
+  // COLLECTION_TOUR_STEPS' comment in steps.ts), so the previous step's screen may no longer be
+  // mounted, and Back would land on the same "waiting for measurement" dead end the orphaned
+  // collection-graphs step used to hit.
+  const canGoBack = currentIndex > 0 && registry.has(steps[currentIndex - 1].id)
 
   return (
     <Animated.View style={[StyleSheet.absoluteFill, overlayStyle]} pointerEvents="box-none">
@@ -219,7 +279,9 @@ function OnboardingOverlayContent() {
               step={step}
               measurement={measurement}
               currentIndex={currentIndex}
+              totalSteps={steps.length}
               screenH={screenH}
+              canGoBack={canGoBack}
               onNext={next}
               onBack={back}
               onSkip={skip}
@@ -227,14 +289,33 @@ function OnboardingOverlayContent() {
           )}
         </>
       ) : (
-        // Waiting for measurement — show full dim
+        // Waiting for measurement — full dim, plus a Skip escape hatch. The Collections guided
+        // tour's steps live behind real navigation (create a collection, open it) — if the user
+        // abandons that flow instead of completing it, this target never mounts and the tour
+        // would otherwise be stuck here with no way out.
         <View
           style={[
             StyleSheet.absoluteFill,
             { backgroundColor: Colors.rgba(Colors.$backgroundDark, 0.75) },
           ]}
-          pointerEvents="none"
-        />
+          pointerEvents="box-none"
+        >
+          <Pressable
+            onPress={skip}
+            style={[
+              styles.btnSecondary,
+              {
+                position: 'absolute',
+                top: 60,
+                right: SCREEN_PADDING,
+                borderColor: Colors.$outlineDefault,
+                backgroundColor: Colors.$backgroundDefault,
+              },
+            ]}
+          >
+            <Text style={[styles.btnSecondaryText, { color: Colors.$textDefault }]}>Skip</Text>
+          </Pressable>
+        </View>
       )}
     </Animated.View>
   )
@@ -256,7 +337,7 @@ export function OnboardingOverlay() {
 
   if (!mounted) return null
 
-  const content = <OnboardingOverlayContent />
+  const content = <OnboardingOverlayContent mounted={mounted} />
 
   if (Platform.OS === 'ios') {
     return <FullWindowOverlay>{content}</FullWindowOverlay>
@@ -264,7 +345,7 @@ export function OnboardingOverlay() {
 
   return (
     <Modal
-      visible={active}
+      visible={mounted}
       transparent
       animationType="none"
       statusBarTranslucent
@@ -294,6 +375,10 @@ const styles = StyleSheet.create({
   panelDescription: {
     fontSize: 14,
     lineHeight: 20,
+  },
+  panelHint: {
+    fontSize: 12,
+    fontStyle: 'italic',
   },
   dotsRow: {
     flexDirection: 'row',

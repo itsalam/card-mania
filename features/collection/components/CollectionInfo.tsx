@@ -1,6 +1,7 @@
 import { ToggleBadge } from '@/components/ui/badge'
 import { SkeletonText } from '@/components/ui/text'
 import { Text } from '@/components/ui/text/base-text'
+import { OnboardingTarget, useOnboardingStore } from '@/features/onboarding'
 import { VISIBILITY_OPTIONS } from '@/features/tcg-card-views/DetailCardView/components/ui'
 import { useUserStore } from '@/lib/store/useUserStore'
 import { useRouter } from 'expo-router'
@@ -166,6 +167,7 @@ function CollectionInfoContent({
           label: 'Add',
           icon: Plus,
           onClick() {
+            useOnboardingStore.getState().advanceIfCurrentStep('collection-add-card')
             router.push({
               pathname: '/collection/add-card',
               params: { collectionId },
@@ -259,7 +261,7 @@ function CollectionInfoContent({
               style={{ overflow: 'visible' }}
               renderItem={({ item }) => {
                 const Icon = item[1].icon
-                return (
+                const badge = (
                   <ToggleBadge
                     onPress={() => {
                       item[1].onClick?.()
@@ -271,6 +273,11 @@ function CollectionInfoContent({
                       : {})}
                     icon={Icon}
                   />
+                )
+                return item[0] === 'add' ? (
+                  <OnboardingTarget id="collection-add-card">{badge}</OnboardingTarget>
+                ) : (
+                  badge
                 )
               }}
             />
