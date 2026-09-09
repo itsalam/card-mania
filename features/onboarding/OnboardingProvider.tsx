@@ -1,4 +1,6 @@
+import { useActivationStatus } from '@/client/onboarding/activation'
 import { patchOnboardingState } from '@/lib/store/onboardingState'
+import { OnboardingStateFlags } from '@/lib/store/types'
 import { useUserStore } from '@/lib/store/useUserStore'
 import React, { useEffect, useRef } from 'react'
 import { View } from 'react-native'
@@ -126,15 +128,20 @@ export const useOnboardingStore = create<OnboardingStore>((set, get) => ({
   },
 }))
 
+// Which onboarding_state flag each tour's completion persists — a lookup rather than a growing
+// ternary now that there are four tours (see OnboardingStateFlags' own comment in
+// lib/store/types.d.ts for what each flag means).
+const TOUR_COMPLETE_FLAG: Record<TourId, keyof OnboardingStateFlags> = {
+  main: 'tour',
+  collection: 'collection_tour',
+  'add-card': 'add_card_tour',
+  offers: 'offer_tour',
+}
+
 async function persistTourComplete(tourId: TourId): Promise<void> {
   const user = useUserStore.getState().user
   if (!user) return
-  const patch =
-    tourId === 'collection'
-      ? { collection_tour: true }
-      : tourId === 'add-card'
-        ? { add_card_tour: true }
-        : { tour: true }
+  const patch: Partial<OnboardingStateFlags> = { [TOUR_COMPLETE_FLAG[tourId]]: true }
   const next = await patchOnboardingState(user.id, patch)
   useUserStore.setState({ onboardingState: next })
 }
@@ -159,6 +166,20 @@ export function OnboardingProvider() {
       }, 1200)
     }
   }, [status, profileSetupComplete, tourComplete])
+
+  // Auto-completes the offers tour the instant has_offer flips true — covers both sending an
+  // offer (useSubmitOffer's onSuccess invalidates qk.activationStatus) and receiving one
+  // (useOfferRealtime's notification handler does the same), without needing whichever screen
+  // the tour is currently showing on (a card detail view, or the cart sheet) to know about
+  // activation status itself. complete() already persists offer_tour: true, matching "sending or
+  // receiving an offer dismisses/ends the guide" from ITS-105's acceptance criteria.
+  const offersTourActive = useOnboardingStore((s) => s.active && s.tourId === 'offers')
+  const { data: activationStatus } = useActivationStatus()
+  useEffect(() => {
+    if (offersTourActive && activationStatus?.has_offer) {
+      useOnboardingStore.getState().complete()
+    }
+  }, [offersTourActive, activationStatus?.has_offer])
 
   return null
 }
@@ -216,4 +237,37 @@ export function useAddCardTourTrigger(isFirstResult: boolean) {
     const store = useOnboardingStore.getState()
     if (!store.active) store.resumeOrStart('add-card')
   }, [isFirstResult, status, profileSetupComplete, addCardTourComplete, otherTourActive])
+}
+
+/**
+ * Fired from CartSheetInner (features/cart/ui.tsx) once the cart itself expands, not from a
+ * card's detail view being shown — a card detail is browsing, not a commitment, and there's
+ * nothing to teach about "Add to Deal" itself; the one real decision worth spotlighting is
+ * submitting the offer, which only exists once the cart is actually open. Mirrors
+ * useCollectionTourTrigger/useAddCardTourTrigger's shape, but gated on both the persisted
+ * offer_tour flag (so Skip stays permanent) AND the live has_offer activation status (per
+ * ITS-105's explicit ask — a user who already satisfies the condition should never see this
+ * guide, and useActivationStatus is the source of truth for that, not a one-time flag).
+ */
+export function useOffersTourTrigger() {
+  const status = useUserStore((s) => s.status)
+  const profileSetupComplete = useUserStore((s) => s.profileSetupComplete)
+  const offerTourComplete = useUserStore((s) => s.onboardingState?.offer_tour === true)
+  const otherTourActive = useOnboardingStore((s) => s.active && s.tourId !== 'offers')
+  const { data: activationStatus } = useActivationStatus()
+  const hasOffer = activationStatus?.has_offer === true
+
+  useEffect(() => {
+    if (status !== 'authenticated') return
+    if (!profileSetupComplete) return
+    if (offerTourComplete) return
+    if (otherTourActive) return
+    if (hasOffer) return
+
+    const t = setTimeout(() => {
+      const store = useOnboardingStore.getState()
+      if (!store.active) store.resumeOrStart('offers')
+    }, 600)
+    return () => clearTimeout(t)
+  }, [status, profileSetupComplete, offerTourComplete, otherTourActive, hasOffer])
 }

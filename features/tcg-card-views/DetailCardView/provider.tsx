@@ -21,6 +21,24 @@ export type CardDetailsStore = {
   setFooterFullView: (value: boolean) => void
   pendingRollback: PendingRollback | null
   setPendingRollback: (r: PendingRollback | null) => void
+  /** True once the hero image's animateFrom→animateTo transition has landed (fires via
+   *  useTransitionAnimation's onOpen in DetailCardView/index.tsx's CardDetailContainer) — shared
+   *  here (rather than kept as that component's own local state) so Footer, a sibling of
+   *  CardDetailContainer rather than a descendant, can also read it. Used to gate things that
+   *  need the image to have actually FINISHED moving (e.g. useCollectionItemPhotos, carousel
+   *  scrollEnabled) — NOT the footer's own entrance, which wants heroImageReady below instead
+   *  (see that field's own doc for why: waiting for this one made the footer's entrance read as
+   *  a sequential "wait, then react" rather than one coordinated motion). */
+  heroImageInPosition: boolean
+  setHeroImageInPosition: (value: boolean) => void
+  /** True once the hero image is ABOUT TO START its animateFrom→animateTo move (mirrors
+   *  CardDetailContainer's own local `entranceReady` — image container measured + hero image
+   *  loaded) — i.e. the moment `useTransitionAnimation`'s underlying `playOpen()` actually kicks
+   *  off, not the ~839ms later moment it finishes (that's heroImageInPosition above). Footer
+   *  reads this one so its own entrance spring runs CONCURRENTLY with the image's own zoom
+   *  instead of sequentially after it. */
+  heroImageReady: boolean
+  setHeroImageReady: (value: boolean) => void
 }
 
 export const createCardDetailsStore = ({
@@ -49,6 +67,10 @@ export const createCardDetailsStore = ({
     setFooterFullView: (value) => set({ footerFullView: value }),
     pendingRollback: null,
     setPendingRollback: (r) => set({ pendingRollback: r }),
+    heroImageInPosition: false,
+    setHeroImageInPosition: (value) => set({ heroImageInPosition: value }),
+    heroImageReady: false,
+    setHeroImageReady: (value) => set({ heroImageReady: value }),
   }))
 
 const CardDetailsContext = createContext<StoreApi<CardDetailsStore> | null>(null)

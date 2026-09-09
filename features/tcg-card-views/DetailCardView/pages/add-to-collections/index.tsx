@@ -1,8 +1,9 @@
 import { useViewCollectionsForCard } from '@/client/collections/query'
 import { CollectionItem, CollectionLike } from '@/client/collections/types'
-import { BlurBackground } from '@/components/Background'
 import { CollectionGroupLabel, CollectionGroupList } from '@/components/collections/group-label'
 import { ExpandableCollectionEntryListItem } from '@/components/collections/items/expandable-entry-item'
+import { AddCollectionButtonIcon } from '@/features/collection/components/TabList'
+import { FadeScrollView } from '@/components/ui/fade-scroll'
 import { SearchBar } from '@/components/ui/search'
 import { Text } from '@/components/ui/text/base-text'
 import { getSupabase } from '@/lib/store/client'
@@ -10,15 +11,15 @@ import { viewCollectionItemsForCard } from '@/lib/store/functions/collections'
 import { qk } from '@/lib/store/functions/helpers'
 import { useRequiredUserId } from '@/lib/store/useUserStore'
 import { useQueryClient } from '@tanstack/react-query'
-import { PanelBottomClose, Plus } from 'lucide-react-native'
 import React, { useEffect, useRef, useState } from 'react'
-import { ScrollView, View } from 'react-native'
-import { Colors, Spacings } from 'react-native-ui-lib'
-import { FooterButton } from '../../footer/components/button'
+import { View } from 'react-native'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { Spacings, TouchableOpacity } from 'react-native-ui-lib'
 import { useCardDetails } from '../../provider'
 
 export const AddToCollectionsView = () => {
-  const { card, setPage, setFooterFullView, setPendingRollback } = useCardDetails()
+  const { card, setPage, setPendingRollback } = useCardDetails()
+  const insets = useSafeAreaInsets()
   const qc = useQueryClient()
   const [query, setQuery] = useState<string>()
   const { data: collection } = useViewCollectionsForCard(card?.id, query)
@@ -225,24 +226,44 @@ export const AddToCollectionsView = () => {
 
   return (
     <>
-      <ScrollView
-        style={{
-          flex: 1,
-          alignSelf: 'stretch',
-          overflow: 'visible',
-          display: 'flex',
-          // gap: Spacings.s2,
-        }}
+      <FadeScrollView
+        // TEMP: re-testing MaskedView's true alpha-mask (the default mode, which fades to the
+        // ACTUAL background behind it rather than `animated` mode's flat fadeColor approximation)
+        // now that FadeScrollView no longer remounts MaskedView on first layout — see that fix's
+        // own comment. Remove `debug` once confirmed.
+        // debug
+        style={{ flex: 1, alignSelf: 'stretch' }}
+        // Now the sole source of bottom clearance for this page's content — the fixed
+        // New Collection/Done button bar that used to reserve this space is gone, so the
+        // scroll view has to pad its own end past the device's home-indicator inset.
+        contentContainerStyle={{ paddingBottom: insets.bottom + Spacings.s6 }}
       >
         <View style={{ width: '100%', paddingHorizontal: Spacings.s4, paddingBottom: Spacings.s2 }}>
-          <SearchBar onChangeText={setQuery} />
+          <SearchBar
+            onChangeText={setQuery}
+            // Replaces the default sliders/filter icon — this page has no filter options, and
+            // starting a new collection is the more useful action to put one tap away here.
+            // Also replaces the old fixed "New Collection" row at the end of the scroll (see the
+            // CollectionGroupList this used to sit in, below) with the same setPage(1) action.
+            onOptionsPress={() => setPage(1)}
+            renderSideButton={({ onPress }) => (
+              // Same shared visual as the pinned collections tab bar's own "+" button — see
+              // AddCollectionButtonIcon's own doc. label="New" here only — this is the one
+              // consumer with room (and reason) for a caption, unlike the tab bar's compact row.
+              <TouchableOpacity hitSlop={12} onPress={onPress}>
+                <AddCollectionButtonIcon label="New" />
+              </TouchableOpacity>
+            )}
+          />
         </View>
         {!!collection?.included.length && (
           <>
             <CollectionGroupLabel style={{ paddingHorizontal: Spacings.s4 }}>
               Saved In
             </CollectionGroupLabel>
-            <CollectionGroupList style={{ paddingVertical: Spacings.s2 }}>
+            <CollectionGroupList
+              style={{ paddingVertical: Spacings.s2, paddingHorizontal: Spacings.s4 }}
+            >
               {collection?.included.map((c) => (
                 <ExpandableCollectionEntryListItem
                   card={card ?? undefined}
@@ -260,7 +281,9 @@ export const AddToCollectionsView = () => {
                 Other Collections
               </CollectionGroupLabel>
             )}
-            <CollectionGroupList style={{ paddingVertical: Spacings.s2 }}>
+            <CollectionGroupList
+              style={{ paddingVertical: Spacings.s2, paddingHorizontal: Spacings.s4 }}
+            >
               {collection?.excluded.length ? (
                 collection?.excluded.map((c) => (
                   <ExpandableCollectionEntryListItem
@@ -277,28 +300,7 @@ export const AddToCollectionsView = () => {
             </CollectionGroupList>
           </>
         )}
-      </ScrollView>
-
-      <BlurBackground className="w-full flex flex-row pt-2 gap-4 px-4">
-        <FooterButton
-          highLighted
-          style={{ flexGrow: 1, flex: 1, width: '100%' }}
-          onPress={() => setPage(1)}
-          label="New Collection"
-          iconSource={(style) => <Plus style={style} color={Colors.$iconDefaultLight} />}
-        />
-        <FooterButton
-          style={{
-            flexShrink: 1,
-            backgroundColor: Colors.$backgroundPrimaryMedium,
-          }}
-          onPress={() => setFooterFullView(false)}
-          label="Done"
-          iconSource={(style) => (
-            <PanelBottomClose color={Colors.$iconDefaultLight} style={style} />
-          )}
-        />
-      </BlurBackground>
+      </FadeScrollView>
     </>
   )
 }

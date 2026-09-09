@@ -221,6 +221,7 @@ export function AppStandaloneHeader({
   children,
   cutout,
   onCutoutSize,
+  hideRightSlot,
 }: {
   children?: React.ReactNode
   title?: React.ReactNode
@@ -243,6 +244,15 @@ export function AppStandaloneHeader({
   }
   /** Called once the shoulder cutout pill is measured — use to clip the background behind it. */
   onCutoutSize?: (w: number, h: number) => void
+  /** Skip the right-side placeholder column (normally reserved at a fixed 64/96px even when
+   *  no `cutout`/`right` is passed) so the middle title/children slot expands to fill the row
+   *  edge-to-edge instead of stopping short by that reserved width. Default false — that
+   *  placeholder exists specifically to keep a centered `title` optically centered when there's
+   *  no right-side content (its width still has to match a symmetric `onBack` column on the
+   *  left), so this must stay opt-in per caller rather than becoming the default; only pass it
+   *  true for a header using `children` with its own flex-start layout (not `title`), where
+   *  there's nothing on the right needing a centering counterweight. */
+  hideRightSlot?: boolean
 }) {
   return (
     <View style={[, style]}>
@@ -276,8 +286,13 @@ export function AppStandaloneHeader({
             {children}
           </View>
           {/* Wider right placeholder when the pill cutout is present so the title
-              doesn't crowd under the animated pill (which can reach ~100 px wide). */}
-          <View style={{ width: cutout ? 96 : 64, alignItems: 'flex-end' }}>{right}</View>
+              doesn't crowd under the animated pill (which can reach ~100 px wide). Omitted
+              entirely when hideRightSlot — see that prop's own doc for why this can't just
+              default to skipping empty reservations everywhere (SearchScreen.tsx's centered
+              `title` header relies on this matching the `onBack` column's width). */}
+          {!hideRightSlot && (
+            <View style={{ width: cutout ? 96 : 64, alignItems: 'flex-end' }}>{right}</View>
+          )}
         </View>
         <CutoutReveal cutout={cutout} onCutoutSize={onCutoutSize} />
       </View>

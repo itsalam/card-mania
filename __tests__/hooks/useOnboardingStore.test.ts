@@ -189,10 +189,11 @@ describe('useOnboardingStore', () => {
       ['main', { tour: true }],
       ['collection', { collection_tour: true }],
       ['add-card', { add_card_tour: true }],
+      ['offers', { offer_tour: true }],
     ] as const)(
       'persists the right flag for the %s tour',
       async (
-        tourId: 'main' | 'collection' | 'add-card',
+        tourId: 'main' | 'collection' | 'add-card' | 'offers',
         expectedPatch: Record<string, boolean>
       ) => {
         useUserStore.setState({ user: { id: 'user-1' } } as any)

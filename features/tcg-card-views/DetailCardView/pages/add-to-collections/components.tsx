@@ -9,8 +9,8 @@ import {
 import { CollectionItemPhotosModal } from '@/components/collections/items/photos-modal'
 import { Spinner } from '@/components/ui/spinner'
 import { TCard } from '@/constants/types'
-import { OnboardingTarget, useOnboardingStore } from '@/features/onboarding'
 import type { OnboardingStepId } from '@/features/onboarding'
+import { OnboardingTarget, useOnboardingStore } from '@/features/onboarding'
 import { CollectionItemRow } from '@/lib/store/functions/types'
 import {
   EllipsisVertical,

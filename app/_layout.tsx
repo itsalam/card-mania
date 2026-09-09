@@ -5,6 +5,7 @@ import '@/components/icons'
 import '@/components/nativewind-svg'
 import '../global.css'
 
+import { CardPlaceholderPrefetch } from '@/components/tcg-card/placeholders'
 import { OnboardingOverlay } from '@/features/onboarding'
 import { PortalHost } from '@rn-primitives/portal'
 import * as Sentry from '@sentry/react-native'
@@ -84,6 +85,13 @@ export default Sentry.wrap(function RootLayout() {
             headerShown: false,
             animation: 'fade',
             contentStyle: { backgroundColor: 'transparent' },
+            // The footer's own DraggableFooter sheet uses a vertical pan (drag down to collapse,
+            // drag up to expand). Without this, that same downward drag was ALSO being claimed by
+            // the native stack's own swipe-to-dismiss gesture on this modal screen — dragging down
+            // on the pinned bar or the sheet's thumb closed the whole screen instead of just
+            // collapsing the footer. Disabling it here leaves dismissal to explicit UI (back
+            // button, etc.) and gives the footer's pan gesture exclusive control of vertical drags.
+            gestureEnabled: false,
           }}
         />
         <Stack.Screen
@@ -108,6 +116,9 @@ export default Sentry.wrap(function RootLayout() {
       </Stack>
       <PortalHost />
       <OnboardingOverlay />
+      {/* Warms the generic card placeholder image into expo-image's cache once, at app load —
+          see that component's own doc for why this beats an Image.prefetch call. */}
+      <CardPlaceholderPrefetch />
     </Providers>
   )
 })

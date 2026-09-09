@@ -11,12 +11,14 @@ export type OnboardingStepId =
   | 'collection-add-card'
   | 'add-card-number-ticker'
   | 'add-card-grade-button'
+  | 'offers-send-offer'
 
 /** Identifies which step array (see steps.ts's TOURS) the onboarding store is currently
  *  running — 'main' is the app-wide first-run tour, 'collection' is the Collections-tab guide,
- *  'add-card' is the Add-to-collection search screen's guide (its own section/page count,
- *  isolated from 'collection' — see COLLECTION_TOUR_STEPS' comment in steps.ts). */
-export type TourId = 'main' | 'collection' | 'add-card'
+ *  'add-card' is the Add-to-collection search screen's guide, 'offers' is the "send your first
+ *  offer" guide (its own section/page count, isolated from the others — see COLLECTION_TOUR_STEPS'
+ *  comment in steps.ts). */
+export type TourId = 'main' | 'collection' | 'add-card' | 'offers'
 
 export type OnboardingStep = {
   id: OnboardingStepId

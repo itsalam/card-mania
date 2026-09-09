@@ -136,8 +136,35 @@ export const ADD_CARD_TOUR_STEPS: OnboardingStep[] = [
   },
 ]
 
+/**
+ * "Send your first offer" guided flow (ITS-105) — its own tour/section, isolated from the others
+ * for the same reason as ADD_CARD_TOUR_STEPS. A single step, deliberately not triggered by a
+ * card's detail view being shown (too early — the user hasn't committed to anything yet, and
+ * "Add to Deal" is self-explanatory) but by the cart itself expanding (useOffersTourTrigger is
+ * called from CartSheetInner in features/cart/ui.tsx), spotlighting the one real decision left:
+ * "Send Offer". Not advanceByAction — it's both the first and last step, so Next/Done stays
+ * visible (no strand risk), while also advancing immediately on a successful submit as a bonus
+ * real-action path — same "either dismissing or the real action" pattern as
+ * collection-storefront-toggle / add-card-*.
+ *
+ * The target lives on the cart's `presentation: 'transparentModal'` screen (see app/_layout.tsx)
+ * — the same class of screen that needed modalPresentation's safe-area correction for
+ * add-card.tsx (a `presentation: 'modal'` screen) — flagged here too pending live verification,
+ * since it's the same underlying window/coordinate-space mismatch mechanism.
+ */
+export const OFFERS_TOUR_STEPS: OnboardingStep[] = [
+  {
+    id: 'offers-send-offer',
+    title: 'Send Your Offer',
+    description: 'Review the total, then tap Send Offer to submit it to the seller.',
+    panelPosition: 'above',
+    modalPresentation: true,
+  },
+]
+
 export const TOURS: Record<TourId, OnboardingStep[]> = {
   main: ONBOARDING_STEPS,
   collection: COLLECTION_TOUR_STEPS,
   'add-card': ADD_CARD_TOUR_STEPS,
+  offers: OFFERS_TOUR_STEPS,
 }
