@@ -59,7 +59,8 @@ export const CollectionInfoCard = (props: { collectionItemId: string; cardId: st
       style={{
         borderWidth: 1,
         borderRadius: BorderRadiuses.br40,
-        borderColor: Colors.$outlineDefault,
+        borderColor: Colors.$outlineNeutral,
+        backgroundColor: Colors.rgba(Colors.$backgroundElevatedLight, 0.9),
         padding: 12,
         marginHorizontal: 16,
         marginVertical: 8,

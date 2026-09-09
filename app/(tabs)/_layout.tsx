@@ -1,6 +1,7 @@
 import { useUnreadCount } from '@/client/notifications'
 import { HapticTab } from '@/components/tabs/HapticTab'
 import { AppNavHeader } from '@/components/ui/headers'
+import { CartButtonContent, cartButtonContentLayout } from '@/features/cart/CartButtonContent'
 import { useCartCount, useOpenCart } from '@/features/cart/hooks'
 import { useEffectiveColorScheme } from '@/features/settings/hooks/effective-color-scheme'
 import { AuthGate } from '@/features/splash'
@@ -17,7 +18,6 @@ import {
   Layers,
   Scan,
   ShoppingBag,
-  ShoppingCart,
   User,
 } from 'lucide-react-native'
 import React from 'react'
@@ -43,6 +43,11 @@ function FloatingCartButton() {
   const openCart = useOpenCart()
   const { width: screenW, height: screenH } = useWindowDimensions()
   const insets = useSafeAreaInsets()
+  // Same hideCount counter DetailCardView pushes/pops to hide the tab bar behind it — reused
+  // here so the floating button doesn't bleed through DetailCardView's transparentModal (it
+  // already has its own Cart icon/badge in the footer's mini-player row, making this redundant
+  // there) or any other screen that hides the tab bar for the same reason.
+  const tabBarHidden = useTabBarStore((s) => s.hideCount > 0)
 
   const defaultX = screenW - PILL_WIDTH - FLOAT_MARGIN
   const defaultY = screenH - TAB_BAR_HEIGHT - insets.bottom - PILL_HEIGHT - FLOAT_MARGIN * 2
@@ -80,7 +85,7 @@ function FloatingCartButton() {
     ],
   }))
 
-  if (count === 0) return null
+  if (count === 0 || tabBarHidden) return null
 
   return (
     <Animated.View
@@ -105,29 +110,9 @@ function FloatingCartButton() {
           }}
           accessibilityRole="button"
           accessibilityLabel="Open cart"
-          style={floatStyles.buttonInner}
+          style={cartButtonContentLayout}
         >
-          <ShoppingCart size={18} color={Colors.$iconDefault} />
-          <Text
-            style={[
-              floatStyles.label,
-              {
-                color: Colors.$textDefault,
-              },
-            ]}
-          >
-            View Cart
-          </Text>
-          <View
-            style={[
-              floatStyles.floatBadge,
-              {
-                backgroundColor: Colors.$outlinePrimary,
-              },
-            ]}
-          >
-            <Text style={floatStyles.floatBadgeText}>{count > 9 ? '9+' : count}</Text>
-          </View>
+          <CartButtonContent count={count} />
         </Pressable>
       </GestureDetector>
     </Animated.View>
@@ -260,6 +245,9 @@ const styles = StyleSheet.create({
 })
 
 const floatStyles = StyleSheet.create({
+  // Content layout/typography (padding, gap, label, badge) lives in cartButtonContentLayout /
+  // CartButtonContent — shared with the DetailCardView footer's Cart button. This is just the
+  // floating-specific outer surface: absolute positioning, shape, and shadow.
   button: {
     position: 'absolute',
     top: 0,
@@ -272,31 +260,6 @@ const floatStyles = StyleSheet.create({
     shadowRadius: 6,
     elevation: 4,
     zIndex: 100,
-  },
-  buttonInner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingVertical: 12,
-    paddingHorizontal: 18,
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  floatBadge: {
-    borderRadius: 99,
-    minWidth: 20,
-    height: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 4,
-  },
-  floatBadgeText: {
-    color: '#fff',
-    fontSize: 10,
-    fontWeight: '700',
-    lineHeight: 12,
   },
 })
 

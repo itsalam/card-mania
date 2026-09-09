@@ -7,8 +7,10 @@ import { gradientColors } from '@/components/graphs/helpers'
 import FullPriceGraph from '@/components/graphs/PriceGraph'
 import { GraphInputKey } from '@/components/graphs/ui/types'
 import { useMeasure } from '@/components/hooks/useMeasure'
+import { CARD_WIDTH_RATIO } from '@/components/tcg-card/consts'
 import { LiquidGlassCard } from '@/components/tcg-card/GlassCard'
 import { useInvalidateOnFocus } from '@/components/tcg-card/helpers'
+import { getDefaultCardPlaceholderSource } from '@/components/tcg-card/placeholders'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Text } from '@/components/ui/text/base-text'
@@ -25,7 +27,7 @@ import { Image } from 'expo-image'
 import { LinearGradient } from 'expo-linear-gradient'
 import { Href } from 'expo-router'
 import { ArrowLeft, Eye, EyeOff, Undo2 } from 'lucide-react-native'
-import React, { ReactNode, useCallback, useMemo, useState } from 'react'
+import React, { ReactNode, useCallback, useEffect, useMemo, useState } from 'react'
 import {
   Dimensions,
   FlatList,
@@ -64,7 +66,7 @@ import { GradeColorsProvider } from './GradeColorsProvider'
 import { Coordinates, useSelectedGrades, useTransitionAnimation } from './helpers'
 import { AddToCollectionsView } from './pages/add-to-collections'
 import { CreateCollectionView } from './pages/create-collection'
-import { CardDetailsProvider } from './provider'
+import { CardDetailsProvider, useCardDetails } from './provider'
 
 function SalesListSkeleton() {
   const rowStyle = {
@@ -93,7 +95,6 @@ function SalesListSkeleton() {
   )
 }
 
-const CARD_WIDTH_RATIO = 0.65
 const { width: W, height: H } = Dimensions.get('window')
 
 const AImage = Animated.createAnimatedComponent(Image)
@@ -223,7 +224,11 @@ export default function FocusCardView({
 
   const footerPages = useMemo(
     () => [
-      { title: 'Add to Collection', page: AddToCollectionsView },
+      // "Save Card To", not "Add to Collection" — that exact phrase already names a different
+      // screen/workflow (features/collection/pages/add-card.tsx, reached from inside a
+      // collection to search for a card to add TO it). This one is the reverse: picking which
+      // collection(s) to save THIS card into.
+      { title: 'Save Card To', page: AddToCollectionsView },
       { title: 'Create Collection', page: CreateCollectionView },
     ],
     []
@@ -465,6 +470,8 @@ export default function FocusCardView({
         card={cardData}
         isOwnCollectionItem={isOwnCollectionItem}
         collectionItemId={collectionIdArgs?.itemId}
+        displayData={displayData}
+        collectionItem={collectionItem}
       />
     </CardDetailsProvider>
   )
@@ -540,11 +547,13 @@ const CardDetailContainer = ({
 
   // Swiping between photos only makes sense once the card has actually reached its
   // resting position — see the `onOpen` callback passed to useTransitionAnimation below.
-  const [introComplete, setIntroComplete] = useState(false)
-  // Gates the entrance animation on the primary photo actually having finished
-  // loading/decoding (not just its URL resolving) — see the AImage's onLoad below.
-  const [heroImageLoaded, setHeroImageLoaded] = useState(false)
-
+  // Lives in the shared CardDetailsStore (not local state) so Footer — a sibling of this
+  // component, not a descendant — can also read it to time its own entrance animation.
+  const {
+    heroImageInPosition: introComplete,
+    setHeroImageInPosition: setIntroComplete,
+    setHeroImageReady,
+  } = useCardDetails()
   // All of this item's own uploaded photos, reordered so whichever one is primary — the
   // one already on display — leads the carousel; swiping reveals the rest in their
   // existing order. Only fetched once the entrance animation has finished so the extra
@@ -570,7 +579,19 @@ const CardDetailContainer = ({
   const headerHeight = (W * CARD_WIDTH_RATIO) / cardAspectRatio + animateTo.y
   const collaspedHeaderHeight = animateTo.y / 1.5 + 52
 
-  const entranceReady = !!imageContainerLayout && heroImageLoaded
+  // Optimistic — gated on the container's own layout measurement only, NOT on the hero image
+  // having actually loaded/decoded. imageContainerLayout is a pure layout event (effectively
+  // immediate, independent of any network/decode work); waiting on the image too meant the
+  // whole entrance (card zoom + footer, see heroImageReady below) blocked on a real fetch. The
+  // image itself still renders whatever's already available and swaps to the sharper one the
+  // moment it lands (expo-image's own placeholder→source mechanism on the AImage below,
+  // unrelated to this gate) — the shape animates in now; the content catches up independently.
+  const entranceReady = !!imageContainerLayout
+  // Mirrored into the shared store so Footer (a sibling, not a descendant) can start its own
+  // entrance the instant this transition starts moving.
+  useEffect(() => {
+    setHeroImageReady(entranceReady)
+  }, [entranceReady, setHeroImageReady])
 
   const {
     progress,
@@ -964,34 +985,27 @@ const CardDetailContainer = ({
                               width: W,
                               height: W / cardAspectRatio,
                             }
-                          : undefined
+                          : // Neither the thumbnail nor the detail image has a URL yet (both are
+                            // still waiting on their own useImageProxy fetch) — the generic card
+                            // placeholder, warmed into cache at app load (CardPlaceholderPrefetch,
+                            // app/_layout.tsx) at this exact width/height, so it's already there
+                            // instead of this being a cold fetch on first open. Whichever of
+                            // thumbnailImage/image resolves first still replaces it immediately,
+                            // same as always — this only fills the gap before either has.
+                            getDefaultCardPlaceholderSource(
+                              W * CARD_WIDTH_RATIO,
+                              (W * CARD_WIDTH_RATIO) / cardAspectRatio
+                            )
                       }
                       placeholderContentFit="cover"
                       cachePolicy="memory-disk"
                       transition={0}
                       contentFit="fill"
-                      onLoad={(event) => {
-                        // Fire on EITHER the low-quality `placeholder` (thumbnailImage,
-                        // 'tiny' variant) OR the full quality=100 `source` — whichever
-                        // resolves first unblocks the zoom-in entrance animation, rather
-                        // than always waiting on the heavier full-resolution fetch/decode.
-                        // The placeholder shares its cacheKey with the list-tile thumbnail
-                        // the user just tapped from (see below), so it's very often already
-                        // warm in cache and ready near-instantly; the AImage's own `source`
-                        // still swaps in the sharp detail image whenever it lands, no
-                        // separate handling needed here. Guard against `event.source.url`
-                        // being undefined — expo-image can fire onLoad/onError for that
-                        // "nothing to load" state before either URL has resolved.
-                        const url = event.source.url
-                        if (url && (url === image || url === thumbnailImage)) {
-                          setHeroImageLoaded(true)
-                        }
-                      }}
-                      // Fail open — a broken/slow fetch of the REAL url shouldn't leave the
-                      // entrance animation permanently stuck waiting on `ready`.
-                      onError={() => {
-                        if (image) setHeroImageLoaded(true)
-                      }}
+                      // No onLoad/onError gating here anymore — the entrance animation no longer
+                      // waits on this image loading at all (see entranceReady above). The
+                      // placeholder (thumbnailImage) and source (image) each swap in on their own
+                      // whenever they individually resolve, entirely via expo-image's own
+                      // lifecycle — nothing here needs to know when that happens.
                     />
                     <PhotoFrameGradient />
                   </>

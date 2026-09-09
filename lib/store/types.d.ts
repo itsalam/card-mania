@@ -12,11 +12,14 @@ export type AuthStatusType = 'idle' | 'loading' | 'authenticated' | 'signed_out'
 //   add_card_tour   -> Add-to-collection search screen's spotlight walkthrough (see
 //                      features/onboarding's ADD_CARD_TOUR_STEPS) completion — its own flag,
 //                      isolated from collection_tour
+//   offer_tour      -> "Send your first offer" spotlight walkthrough (see features/onboarding's
+//                      OFFERS_TOUR_STEPS) completion — its own flag, isolated from the others
 export type OnboardingStateFlags = {
   profile_setup?: boolean
   tour?: boolean
   collection_tour?: boolean
   add_card_tour?: boolean
+  offer_tour?: boolean
 }
 
 export type Profile = Omit<

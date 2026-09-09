@@ -8,6 +8,7 @@ import { Separator } from '@/components/ui/separator'
 import { Text } from '@/components/ui/text'
 import { centsToInputString, formatPrice, inputStringToCents } from '@/components/utils'
 import type { CartItem } from '@/features/cart/types'
+import { OnboardingTarget, useOffersTourTrigger, useOnboardingStore } from '@/features/onboarding'
 import { PriceModifiedBadge, pricesMatch } from '@/features/offers/ui'
 import { useEffectiveColorScheme } from '@/features/settings/hooks/effective-color-scheme'
 import { useProfiles } from '@/features/users/client/load-user'
@@ -51,6 +52,9 @@ import {
 } from './hooks'
 
 export function CartSheetInner() {
+  // The cart itself expanding is the trigger point (not the card detail view that led here) —
+  // see useOffersTourTrigger's own comment in OnboardingProvider.tsx.
+  useOffersTourTrigger()
   const colorScheme = useEffectiveColorScheme()
 
   const insets = useSafeAreaInsets()
@@ -345,70 +349,78 @@ export function CartSheetInner() {
                         </View>
                       )}
                     </View>
-                    <Button
-                      size="lg"
-                      disabled={isPending}
-                      onPress={async () => {
-                        const bySeller = new Map<string, CartItem[]>()
-                        for (const item of items) {
-                          const sellerId = item.data.user_id
-                          if (!sellerId) continue
-                          if (!bySeller.has(sellerId)) bySeller.set(sellerId, [])
-                          bySeller.get(sellerId)!.push(item)
-                        }
+                    <OnboardingTarget id="offers-send-offer">
+                      <Button
+                        size="lg"
+                        disabled={isPending}
+                        onPress={async () => {
+                          const bySeller = new Map<string, CartItem[]>()
+                          for (const item of items) {
+                            const sellerId = item.data.user_id
+                            if (!sellerId) continue
+                            if (!bySeller.has(sellerId)) bySeller.set(sellerId, [])
+                            bySeller.get(sellerId)!.push(item)
+                          }
 
-                        // Total override only applies cleanly to a single-seller cart.
-                        // For multi-seller, each offer gets its own computed total.
-                        const isSingleSeller = bySeller.size === 1
+                          // Total override only applies cleanly to a single-seller cart.
+                          // For multi-seller, each offer gets its own computed total.
+                          const isSingleSeller = bySeller.size === 1
 
-                        try {
-                          await Promise.all(
-                            [...bySeller.entries()].map(([seller_id, sellerItems]) => {
-                              const sellerTotal = sellerItems.reduce(
-                                (s, i) => s + i.cart.price * i.cart.quantity,
-                                0
-                              )
-                              return submitOffer({
-                                seller_id,
-                                total_amount: isSingleSeller ? total : sellerTotal,
-                                items: sellerItems.map((item) => ({
-                                  collection_item_id: item.data.id,
-                                  quantity: item.cart.quantity,
-                                  offered_price_per_unit: item.cart.price,
-                                  card_snapshot: {
-                                    card_id: item.data.ref_id ?? undefined,
-                                    title: item.data.name ?? undefined,
-                                    set_name: item.data.set_name ?? undefined,
-                                    listing_price: item.cart.originalPrice,
-                                  },
-                                })),
+                          try {
+                            await Promise.all(
+                              [...bySeller.entries()].map(([seller_id, sellerItems]) => {
+                                const sellerTotal = sellerItems.reduce(
+                                  (s, i) => s + i.cart.price * i.cart.quantity,
+                                  0
+                                )
+                                return submitOffer({
+                                  seller_id,
+                                  total_amount: isSingleSeller ? total : sellerTotal,
+                                  items: sellerItems.map((item) => ({
+                                    collection_item_id: item.data.id,
+                                    quantity: item.cart.quantity,
+                                    offered_price_per_unit: item.cart.price,
+                                    card_snapshot: {
+                                      card_id: item.data.ref_id ?? undefined,
+                                      title: item.data.name ?? undefined,
+                                      set_name: item.data.set_name ?? undefined,
+                                      listing_price: item.cart.originalPrice,
+                                    },
+                                  })),
+                                })
                               })
+                            )
+                            // Real action — advances (and, being the last step, completes) the
+                            // offers tour on a successful submit. The live has_offer watcher in
+                            // OnboardingProvider.tsx is the primary completion mechanism per
+                            // ITS-105 (also covers a seller receiving an offer), so this is a
+                            // bonus immediate-feedback path, same pattern as offers-add-to-deal.
+                            useOnboardingStore.getState().advanceIfCurrentStep('offers-send-offer')
+                            dismiss()
+                            setTimeout(
+                              () =>
+                                showToast({
+                                  autoDismiss: 5000,
+                                  title: 'Offer sent!',
+                                  message: 'Your offer has been submitted.',
+                                  preset: 'general',
+                                }),
+                              2000
+                            )
+                          } catch (err) {
+                            console.error('[CartSheet] submitOffer error', err)
+                            showToast({
+                              autoDismiss: 5000,
+                              title: 'Error',
+                              message: 'Failed to send offer. Please try again.',
+                              preset: 'failure',
                             })
-                          )
-                          dismiss()
-                          setTimeout(
-                            () =>
-                              showToast({
-                                autoDismiss: 5000,
-                                title: 'Offer sent!',
-                                message: 'Your offer has been submitted.',
-                                preset: 'general',
-                              }),
-                            2000
-                          )
-                        } catch (err) {
-                          console.error('[CartSheet] submitOffer error', err)
-                          showToast({
-                            autoDismiss: 5000,
-                            title: 'Error',
-                            message: 'Failed to send offer. Please try again.',
-                            preset: 'failure',
-                          })
-                        }
-                      }}
-                    >
-                      <Text>{isPending ? 'Sending…' : 'Send Offer'}</Text>
-                    </Button>
+                          }
+                        }}
+                      >
+                        <Text>{isPending ? 'Sending…' : 'Send Offer'}</Text>
+                      </Button>
+                    </OnboardingTarget>
                   </View>
                 </>
               )}

@@ -77,6 +77,7 @@ const AnimatedCollectionItemList = Animated.createAnimatedComponent(FlatList<Lis
 
 export const CollectionsPageLayout = () => {
   const insets = useSafeAreaInsets()
+  const tabBarHeight = useBottomTabBarHeight()
   const { currentPage, setCurrentPage, pinnedCollectionsState, setShowEditView, showEditView } =
     useCollectionsPageStore()
   // Fires the Collections-tab guided tour (ITS-104) the first time this screen mounts for a
@@ -122,9 +123,22 @@ export const CollectionsPageLayout = () => {
         <CollectionTabList />
 
         {currentPage === 'default' ? (
-          <DefaultCollectionView direction={direction} />
+          // flex:1/height:100% — Tabs is a plain flex-column container (TabsPrimitive.Root,
+          // "flex flex-col"), so a direct child claims exactly its own content height by
+          // default, not "whatever's left after ScreenHeader/CollectionTabList". Without this
+          // bound, DefaultCollectionView's own root (no flex:1 of its own) renders at full
+          // content height regardless of actual screen space — the same missing bound
+          // ModifyCollectionView already gets below, just never applied to this branch or
+          // DetailCollectionView's. This is also what lets the FadeScrollView inside actually
+          // claim a real bounded viewport (see that component's own flex:1 comment) instead of
+          // its flex:1 having nothing real to grow into.
+          <Animated.View style={{ flex: 1, height: '100%' }}>
+            <DefaultCollectionView direction={direction} />
+          </Animated.View>
         ) : !showEditView ? (
-          <DetailCollectionView direction={direction} />
+          <Animated.View style={{ flex: 1, height: '100%' }}>
+            <DetailCollectionView direction={direction} />
+          </Animated.View>
         ) : currentPage === 'new' ? (
           <NewCollectionView />
         ) : (
@@ -133,6 +147,8 @@ export const CollectionsPageLayout = () => {
               //@ts-ignore
               collection={collection}
               onSubmit={() => setShowEditView(false)}
+              onBack={() => setShowEditView(false)}
+              bottomInset={tabBarHeight}
             />
           </Animated.View>
         )}
@@ -340,6 +356,10 @@ const DefaultCollectionView = ({ direction }: { direction: 'forward' | 'backward
     <GestureDetector gesture={composedGestures}>
       <Animated.View
         key={currentPage}
+        // flex:1 — claims the bounded height its own new wrapper in CollectionsPageLayout now
+        // provides (see that wrapper's own comment); without it, this root sizes to its own
+        // content regardless of the bound one level up, same issue one level lower.
+        style={{ flex: 1 }}
         entering={direction === 'forward' ? FadeInRight.duration(200) : FadeInLeft.duration(200)}
         exiting={direction === 'forward' ? FadeOutLeft.duration(180) : FadeOutRight.duration(180)}
       >
@@ -354,13 +374,26 @@ const DefaultCollectionView = ({ direction }: { direction: 'forward' | 'backward
 
         <FadeScrollView
           animated
+          // Matches GradientBackground's own default colors (this screen's actual background,
+          // wrapped in app/(tabs)/collection/index.tsx) — the default fadeColor
+          // ($backgroundElevatedLight) doesn't match either end of that gradient.
+          fadeColor={Colors.$backgroundNeutralMedium}
+          // Bounded (flex:1), not sizeToContent — CollectionsPageLayout now wraps this whole
+          // view in flex:1/height:100% (and this view's own root carries flex:1 too, above),
+          // giving this ScrollView a genuine visible-viewport bound to fill instead of an
+          // unbounded ancestor. That's actually required, not just tolerated: onListLayout's
+          // measured height (containerHeight) feeds useCollaspableHeader's own
+          // scrollableContent/decay-clamp math, which needs it to mean "the real visible
+          // viewport" — content-sizing this (the previous fix here) left it unbounded, which is
+          // what made this view render taller than the screen instead of properly clipping and
+          // scrolling within it.
           manualStart={headerCollapsing}
           ref={scrollViewRef}
           onLayout={onListLayout}
           onContentSizeChange={onContentSizeChange}
           scrollEnabled={false}
           bounces={false}
-          style={{ marginBottom: 24 }}
+          style={{ flex: 1, marginBottom: 24 }}
           contentContainerStyle={{
             gap: 8,
 
@@ -617,6 +650,10 @@ const DetailCollectionView = ({ direction }: { direction: 'forward' | 'backward'
     <GestureDetector gesture={composedGestures}>
       <FadeScrollView
         animated
+        // Same GradientBackground-matching reasoning as DefaultCollectionView's instance above —
+        // the fade edges here blend around the rounded card's OWN paddingVertical:16 margin, into
+        // the page's actual background, not the card's own $backgroundElevatedLight.
+        fadeColor={Colors.$backgroundNeutralMedium}
         manualStart={headerCollapsing}
         key={currentPage}
         ref={scrollViewRef}
@@ -680,7 +717,8 @@ const DetailCollectionView = ({ direction }: { direction: 'forward' | 'backward'
 }
 
 const NewCollectionView = () => {
-  const { setNewCollectionInfo, setCurrentPage } = useCollectionsPageStore()
+  const { setNewCollectionInfo, setCurrentPage, setShowEditView } = useCollectionsPageStore()
+  const tabBarHeight = useBottomTabBarHeight()
   const lastRef = useRef<Partial<CollectionLike> | null>(null)
 
   const handleChange = useCallback(
@@ -706,6 +744,11 @@ const NewCollectionView = () => {
         onSubmit={(res) => {
           setCurrentPage(res.collection.id)
         }}
+        onBack={() => {
+          setShowEditView(false)
+          setCurrentPage('default')
+        }}
+        bottomInset={tabBarHeight}
       />
     </Animated.View>
   )

@@ -23,6 +23,41 @@ type CollectionTabProps = {
   onLayout?: (event: LayoutChangeEvent) => void
 }
 
+/** The pinned collections tab bar's own "+" visual — a bordered square, not a bare icon. Shared
+ *  (not just visually matched) with the "Save Card To" search bar's add-collection button
+ *  (features/tcg-card-views/DetailCardView/pages/add-to-collections/index.tsx) so both read as
+ *  the exact same control. Fixed size (not flex:1/aspectRatio:1, which needs a bounded flex
+ *  ancestor to compute against) so it renders identically regardless of context — the tab bar
+ *  wraps it in a flex:1 TouchableOpacity to keep the full row as the tap target; the search bar
+ *  wraps it in a small hitSlop'd one instead. */
+export const AddCollectionButtonIcon = ({ label }: { label?: string } = {}) => (
+  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+    <View
+      style={[
+        {
+          height: 28,
+          borderColor: Colors.$outlinePrimary,
+          borderWidth: 2,
+          borderRadius: BorderRadiuses.br40,
+          alignItems: 'center',
+          justifyContent: 'center',
+          flexDirection: 'row',
+        },
+        !label ? { width: 28 } : {},
+      ]}
+    >
+      <Plus size={16} color={Colors.$outlinePrimary} />
+      {label && (
+        <Text style={{ color: Colors.$outlinePrimary, fontSize: 12, fontWeight: '600' }}>
+          {label}
+        </Text>
+      )}
+    </View>
+    {/* Only the "Save Card To" search bar usage passes this — the tab bar's own button stays
+        icon-only, matching its existing compact row. */}
+  </View>
+)
+
 export const CollectionTabList = () => {
   const { currentPage, pinnedCollectionsState, setCurrentPage, newCollectionInfo } =
     useCollectionsPageStore()
@@ -82,7 +117,7 @@ export const CollectionTabList = () => {
         // main axis (vertical, matching the row's cross-axis height) correctly regardless of
         // the wrapper's direction. Was previously the row's direct child, where alignSelf:
         // 'stretch' was correct — this squished/shifted the icon off-center.
-        style={{ flex: 1, padding: 8 }}
+        style={{ flex: 1, padding: 8, alignItems: 'center', justifyContent: 'center' }}
         onPress={() => {
           // Real user action, not the tour panel's own Next — see COLLECTION_TOUR_STEPS'
           // comment in features/onboarding/steps.ts for why cross-screen steps advance here.
@@ -90,19 +125,7 @@ export const CollectionTabList = () => {
           setCurrentPage('new')
         }}
       >
-        <View
-          style={{
-            borderColor: Colors.$outlineDefault,
-            borderWidth: 2,
-            borderRadius: BorderRadiuses.br40,
-            justifyContent: 'center',
-            alignItems: 'center',
-            aspectRatio: 1,
-            flex: 1,
-          }}
-        >
-          <Plus size={18} color={Colors.$textDefault} />
-        </View>
+        <AddCollectionButtonIcon />
       </TouchableOpacity>
     </OnboardingTarget>
   )

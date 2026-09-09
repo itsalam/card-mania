@@ -24,6 +24,12 @@ import { KeyboardAvoidingView } from 'react-native-keyboard-controller'
 import { EdgeInsets, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { scheduleOnRN } from 'react-native-worklets'
 
+// Top-corner radius shared by the draggable sheet (thumbStyles.sheet/modalContainer below) and
+// anything else that needs to visually read as "the same rounded container" — e.g.
+// DraggableFooter's reverseExpand pinned bar, which grows a matching top border/radius once the
+// sheet opens above it (see its own pinnedBarStyle comment).
+export const SHEET_RADIUS = 24
+
 export const getContentInsets = (insets: EdgeInsets) => ({
   top: insets.top,
   bottom: Platform.select({ ios: insets.bottom, android: insets.bottom + 24 }),
@@ -166,8 +172,8 @@ export const thumbStyles = StyleSheet.create({
     top: '100%',
     left: -1,
     right: 0,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
+    borderTopLeftRadius: SHEET_RADIUS,
+    borderTopRightRadius: SHEET_RADIUS,
     borderWidth: 1,
   },
   absoluteThumbContainer: {
