@@ -22,7 +22,7 @@ import { RefreshControl, StyleSheet, TouchableOpacity, View } from 'react-native
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Colors } from 'react-native-ui-lib'
 import { RecentlyViewed } from './cards/RecentlyViewed'
-import { ExplorePage } from './ExplorePage'
+import { useExploreSections } from './ExplorePage'
 import { useFeedSections } from './FeedPage'
 import { PortfolioSummary } from './PortfolioSummary'
 import { TabValue, tabValues, useHomePageStore } from './provider'
@@ -89,7 +89,9 @@ const tabIcons: Record<TabValue, LucideIcon> = {
 }
 
 // 'feed' and 'sheets' (a placeholder reusing the feed for now) flatten their sections directly
-// into the ScrollView for sticky headers, bypassing TabsContent; 'explore' uses TabsContent.
+// into the ScrollView for sticky headers, bypassing TabsContent; 'explore' does the same via
+// useExploreSections (its sticky element is the layout-toggle toolbar, not a section header).
+// Only 'Recents' still goes through TabsContent.
 const FEED_TAB_VALUES: TabValue[] = ['feed', 'sheets']
 
 export default function HomeScreen() {
@@ -196,11 +198,14 @@ function HomeContent({
   const tabBarHeight = useBottomTabBarHeight()
   const { refreshing, onRefresh } = useHomeRefreshControl()
   const feed = useFeedSections()
+  const explore = useExploreSections()
   const isFeedTab = FEED_TAB_VALUES.includes(currentPage as TabValue)
+  const isExploreTab = currentPage === 'explore'
 
   return (
     // PortfolioSummary and the tab-list row are fixed chrome above the ScrollView, not children
-    // of it — only the feed's own section headers use stickyHeaderIndices.
+    // of it — the feed's section headers and Explore's layout-toggle toolbar are what use
+    // stickyHeaderIndices.
     <Tabs value={currentPage} onValueChange={setCurrentPage} style={{ flex: 1 }}>
       <OnboardingTarget id="collection-breakdown">
         <PortfolioSummary
@@ -258,12 +263,16 @@ function HomeContent({
         style={{ flex: 1 }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         contentContainerStyle={{ paddingBottom: tabBarHeight + 16 }}
-        stickyHeaderIndices={isFeedTab ? feed.stickyHeaderIndices : undefined}
+        stickyHeaderIndices={
+          isFeedTab
+            ? feed.stickyHeaderIndices
+            : isExploreTab
+              ? explore.stickyHeaderIndices
+              : undefined
+        }
       >
         {isFeedTab && feed.children}
-        <TabsContent value="explore">
-          <ExplorePage />
-        </TabsContent>
+        {isExploreTab && explore.children}
         <TabsContent value={'Recents'}>
           <RecentlyViewed />
         </TabsContent>

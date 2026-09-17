@@ -13,6 +13,10 @@ export type ImageProxyResult = {
   shape: CardShape
   /** W/H pixel aspect ratio from stored image dimensions; null when dimensions are unavailable. */
   aspectRatio: number | null
+  /** Resolution status from the edge function: 'READY' once the image is committed to storage,
+   *  'FALLBACK' (or absent) while still pending (e.g. a stub card mid-`image-commit`). Drives the
+   *  staleTime/refetch policy below — a READY result is effectively immutable, a pending one isn't. */
+  status?: string
 }
 
 type CdnOpts = {
@@ -66,9 +70,16 @@ export function useImageProxy(cdnOpts: ImageProxyOpts) {
     ...(xform.bucket ? { bucket: xform.bucket } : {}),
   } as Partial<ImageProxyOpts>
 
-  // pick staleTime based on addressing mode
-  const isStable = Boolean(imageId) // content-addressed → stable
-  const staleTime = isStable ? 10 * 60 * 1000 : 60 * 1000 // 10m vs 1m
+  // imageId lookups are content-addressed (an id never changes what it points to) → always stable.
+  // cardId lookups can start as a 'FALLBACK' (stub card, image-commit still in flight server-side)
+  // and later resolve to 'READY' — so those stay short-lived/refocus-refetched *only* until the
+  // response reports READY, at which point they're just as stable as an imageId lookup. This is
+  // what lets an already-resolved image stop re-hitting the image-proxy edge function on every
+  // remount/refocus instead of only every 60s.
+  const isStable = Boolean(imageId) // content-addressed → always stable
+  const isReady = (data: ImageProxyResult | undefined) => isStable || data?.status === 'READY'
+  const STABLE_STALE_TIME = 10 * 60 * 1000
+  const PENDING_STALE_TIME = 60 * 1000
 
   return useQuery<ImageProxyResult, Error, ImageProxyResult>({
     queryKey: key,
@@ -89,12 +100,16 @@ export function useImageProxy(cdnOpts: ImageProxyOpts) {
         url: proxyRes.data.url,
         shape: proxyRes.data.shape ?? 'unknown',
         aspectRatio: proxyRes.data.aspectRatio ?? null,
+        status: proxyRes.data.status,
       }
     },
     select: (res) => res,
-    staleTime,
+    staleTime: (query) =>
+      isReady(query.state.data as ImageProxyResult | undefined)
+        ? STABLE_STALE_TIME
+        : PENDING_STALE_TIME,
     gcTime: 5 * 60 * 1000,
-    refetchOnWindowFocus: !isStable, // for query_hash mode, let it refresh
+    refetchOnWindowFocus: (query) => !isReady(query.state.data as ImageProxyResult | undefined),
     retry: 1,
   })
 }
