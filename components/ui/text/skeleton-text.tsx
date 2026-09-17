@@ -11,6 +11,7 @@ export const SkeletonText = ({
   onLayout,
   defaultDimensions,
   placeholderTextLength,
+  numberOfLines,
   variant,
   ...props
 }: TextProps & {
@@ -54,7 +55,10 @@ export const SkeletonText = ({
   )
 
   return (
-    <View style={{ minHeight: layout?.height }}>
+    // flexShrink + minWidth: 0 — without these, this View takes its content's natural width
+    // inside any flex-row ancestor instead of shrinking to the space available, so the inner
+    // Text never gets a width to wrap/truncate against and numberOfLines has no effect.
+    <View style={{ minHeight: layout?.height, flexShrink: 1, minWidth: 0 }}>
       <Text
         {...props}
         variant={variant}
@@ -64,6 +68,7 @@ export const SkeletonText = ({
           onLayout?.(e)
         }}
         onTextLayout={onTextLayout}
+        numberOfLines={numberOfLines}
       >
         {children
           ? children

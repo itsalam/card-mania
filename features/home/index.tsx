@@ -1,5 +1,6 @@
 import Logo from '@/assets/images/logo.svg'
 import { useUnreadCount } from '@/client/notifications'
+import { FadeScrollView } from '@/components/ui/fade-scroll'
 import { Tabs, TabsContent, TabsLabel, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Text } from '@/components/ui/text/base-text'
 import { MainSearchBar } from '@/features/mainSearchbar'
@@ -17,11 +18,12 @@ import {
   Sheet,
 } from 'lucide-react-native'
 import React, { useCallback, useState } from 'react'
-import { RefreshControl, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native'
+import { RefreshControl, StyleSheet, TouchableOpacity, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Colors } from 'react-native-ui-lib'
+import { RecentlyViewed } from './cards/RecentlyViewed'
 import { ExplorePage } from './ExplorePage'
-import { FeedPage } from './FeedPage'
+import { useFeedSections } from './FeedPage'
 import { PortfolioSummary } from './PortfolioSummary'
 import { TabValue, tabValues, useHomePageStore } from './provider'
 import { HomeRefreshProvider, useHomeRefreshControl } from './refresh-provider'
@@ -86,11 +88,9 @@ const tabIcons: Record<TabValue, LucideIcon> = {
   sheets: Sheet,
 }
 
-const tabContent: Record<TabValue, React.ReactNode> = {
-  feed: <FeedPage />,
-  explore: <ExplorePage />,
-  sheets: <FeedPage />, // Placeholder for sheets
-}
+// 'feed' and 'sheets' (a placeholder reusing the feed for now) flatten their sections directly
+// into the ScrollView for sticky headers, bypassing TabsContent; 'explore' uses TabsContent.
+const FEED_TAB_VALUES: TabValue[] = ['feed', 'sheets']
 
 export default function HomeScreen() {
   const { currentPage, setCurrentPage } = useHomePageStore()
@@ -195,13 +195,13 @@ function HomeContent({
 }) {
   const tabBarHeight = useBottomTabBarHeight()
   const { refreshing, onRefresh } = useHomeRefreshControl()
+  const feed = useFeedSections()
+  const isFeedTab = FEED_TAB_VALUES.includes(currentPage as TabValue)
 
   return (
-    <ScrollView
-      style={{ flex: 1 }}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-      contentContainerStyle={{ paddingBottom: tabBarHeight + 16 }}
-    >
+    // PortfolioSummary and the tab-list row are fixed chrome above the ScrollView, not children
+    // of it — only the feed's own section headers use stickyHeaderIndices.
+    <Tabs value={currentPage} onValueChange={setCurrentPage} style={{ flex: 1 }}>
       <OnboardingTarget id="collection-breakdown">
         <PortfolioSummary
           style={{ paddingTop: 12, marginBottom: 8, marginHorizontal: 12 }}
@@ -210,56 +210,64 @@ function HomeContent({
         />
       </OnboardingTarget>
 
-      <Tabs value={currentPage} onValueChange={setCurrentPage} style={{ width: '100%' }}>
-        <OnboardingTarget id="tab-list">
-          <View style={{ flexDirection: 'row', paddingHorizontal: 8 }}>
-            <TabsList
-              className="overflow-visible items-start justify-start"
-              style={{ paddingHorizontal: 4 }}
-            >
-              {tabValues.map((tab) => (
-                <TabsTrigger key={tab} value={tab}>
-                  <TabsLabel
-                    label={tab}
-                    value={tab}
-                    leftElement={(isCurrent) =>
-                      React.createElement(tabIcons[tab], {
-                        size: 13,
-                        color: isCurrent ? Colors.$backgroundPrimaryHeavy : Colors.$textNeutral,
-                      })
-                    }
-                    containerStyle={{
-                      padding: 4,
-                    }}
-                    style={{
-                      padding: 1,
-                    }}
-                  />
-                </TabsTrigger>
-              ))}
-            </TabsList>
-
-            <TabsList>
-              <TabsTrigger key={'Recents'} value={'Recents'} style={{ aspectRatio: 1 }}>
+      <OnboardingTarget id="tab-list">
+        <View style={{ flexDirection: 'row', paddingHorizontal: 8 }}>
+          <TabsList
+            className="overflow-visible items-start justify-start"
+            style={{ paddingHorizontal: 4 }}
+          >
+            {tabValues.map((tab) => (
+              <TabsTrigger key={tab} value={tab}>
                 <TabsLabel
-                  value={'Recents'}
+                  label={tab}
+                  value={tab}
                   leftElement={(isCurrent) =>
-                    React.createElement(History, {
+                    React.createElement(tabIcons[tab], {
                       size: 13,
                       color: isCurrent ? Colors.$backgroundPrimaryHeavy : Colors.$textNeutral,
                     })
                   }
+                  containerStyle={{
+                    padding: 4,
+                  }}
+                  style={{
+                    padding: 1,
+                  }}
                 />
               </TabsTrigger>
-            </TabsList>
-          </View>
-        </OnboardingTarget>
-        {tabValues.map((tab) => (
-          <TabsContent key={tab} value={tab}>
-            {tabContent[tab]}
-          </TabsContent>
-        ))}
-      </Tabs>
-    </ScrollView>
+            ))}
+          </TabsList>
+
+          <TabsList>
+            <TabsTrigger key={'Recents'} value={'Recents'} style={{ aspectRatio: 1 }}>
+              <TabsLabel
+                value={'Recents'}
+                leftElement={(isCurrent) =>
+                  React.createElement(History, {
+                    size: 13,
+                    color: isCurrent ? Colors.$backgroundPrimaryHeavy : Colors.$textNeutral,
+                  })
+                }
+              />
+            </TabsTrigger>
+          </TabsList>
+        </View>
+      </OnboardingTarget>
+
+      <FadeScrollView
+        style={{ flex: 1 }}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+        contentContainerStyle={{ paddingBottom: tabBarHeight + 16 }}
+        stickyHeaderIndices={isFeedTab ? feed.stickyHeaderIndices : undefined}
+      >
+        {isFeedTab && feed.children}
+        <TabsContent value="explore">
+          <ExplorePage />
+        </TabsContent>
+        <TabsContent value={'Recents'}>
+          <RecentlyViewed />
+        </TabsContent>
+      </FadeScrollView>
+    </Tabs>
   )
 }

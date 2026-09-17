@@ -82,8 +82,13 @@ const config = {
       },
       sentryDSN:
         'https://6ece37dd94482fb17a990e2a444d190a@o4511347914637312.ingest.us.sentry.io/4511347916668928',
-      supabaseUrl: 'https://zijgqgpwmqrgnzcictcb.supabase.co',
-      supabaseKey: 'sb_publishable_pA4yv9B6SuKYjzKlIvnDDw_3R9J1ATm',
+      // .env.local (EXPO_PUBLIC_SUPABASE_URL/KEY) wins when present — e.g. pointing local
+      // dev at `supabase start`'s local instance — falling back to the shipped prod project
+      // for builds (preview/beta/production) that don't carry a .env.local.
+      supabaseUrl:
+        process.env.EXPO_PUBLIC_SUPABASE_URL ?? 'https://zijgqgpwmqrgnzcictcb.supabase.co',
+      supabaseKey:
+        process.env.EXPO_PUBLIC_SUPABASE_KEY ?? 'sb_publishable_pA4yv9B6SuKYjzKlIvnDDw_3R9J1ATm',
     },
     runtimeVersion: {
       policy: 'appVersion',

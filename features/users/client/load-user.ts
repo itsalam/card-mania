@@ -50,22 +50,22 @@ const getPublicProfiles = async (userIds: string[]): Promise<Record<string, Publ
   return map
 }
 
-const getSellers = async (excludeUserId?: string): Promise<PublicProfile[]> => {
+const getSellers = async (excludeUserId?: string, limit = 10): Promise<PublicProfile[]> => {
   const supabase = getSupabase()
   const { data, error } = await supabase.rpc('get_suggested_sellers', {
     exclude_user_id: excludeUserId ?? null,
-    result_limit: 10,
+    result_limit: limit,
   })
   if (error) throw error
   return (data ?? []) as PublicProfile[]
 }
 
-/** Fetches up to 10 seller profiles who have active storefront listings, excluding the current user. */
-export const useSellers = () => {
+/** Fetches up to `limit` seller profiles who have active storefront listings, excluding the current user. */
+export const useSellers = (limit = 10) => {
   const userId = useUserStore((s) => s.user?.id)
   return useQuery({
-    queryKey: [...qk.profile, 'sellers', userId ?? 'anon'],
-    queryFn: () => getSellers(userId),
+    queryKey: [...qk.profile, 'sellers', userId ?? 'anon', limit],
+    queryFn: () => getSellers(userId, limit),
     staleTime: 30 * 60 * 1000,
     gcTime: 60 * 60 * 1000,
   })

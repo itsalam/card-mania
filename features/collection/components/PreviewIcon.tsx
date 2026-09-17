@@ -103,7 +103,6 @@ export function CollectionsPreviewIcon({
         aspectRatio: ITEM_ASPECT_RATIO,
         position: 'relative',
         overflow: 'hidden',
-        backgroundColor: 'blue',
       }}
     >
       {Array(TOTAL_CARDS)

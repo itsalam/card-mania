@@ -49,6 +49,10 @@ type UserContactProps = {
   fallbackId?: string
   children?: ReactNode
   variant?: UserContactVariant
+  /** Caps name/handle line count. Per-variant default when omitted: 1 for `default` (unchanged
+   *  prior behavior), uncapped for `outline` (unchanged prior behavior) — pass explicitly to
+   *  override either. */
+  numberOfLines?: number
 } & Pick<ComponentProps<typeof Avatar>, 'size'>
 
 export const UserContact = ({
@@ -56,6 +60,7 @@ export const UserContact = ({
   fallbackId,
   size = 'md',
   variant = 'default',
+  numberOfLines,
   children,
 }: UserContactProps) => {
   const displayInfo = toUserDisplayInfo(user, fallbackId)
@@ -92,6 +97,7 @@ export const UserContact = ({
             variant={textVariant}
             style={{ color: Colors.$textDefault, textAlign: 'center' }}
             loading={!Boolean(displayInfo)}
+            numberOfLines={numberOfLines}
           >
             {displayInfo?.name}
           </SkeletonText>
@@ -99,6 +105,7 @@ export const UserContact = ({
             variant="muted"
             style={{ textAlign: 'center' }}
             loading={!Boolean(displayInfo)}
+            numberOfLines={numberOfLines}
           >
             {displayInfo?.handle}
           </SkeletonText>
@@ -117,15 +124,20 @@ export const UserContact = ({
       }}
     >
       <UserAvatar user={user} fallbackId={fallbackId} size={size} />
-      <View style={{ display: 'flex', gap: 0 }}>
+      <View style={{ display: 'flex', gap: 0, flexShrink: 1, minWidth: 0 }}>
         <SkeletonText
           variant={textVariant}
           style={{ color: Colors.$textDefault }}
           loading={!Boolean(displayInfo)}
+          numberOfLines={numberOfLines ?? 1}
         >
           {displayInfo?.name}
         </SkeletonText>
-        <SkeletonText variant={'muted'} loading={!Boolean(displayInfo)}>
+        <SkeletonText
+          variant={'muted'}
+          loading={!Boolean(displayInfo)}
+          numberOfLines={numberOfLines ?? 1}
+        >
           {`${displayInfo?.handle}`}
         </SkeletonText>
         {children}
