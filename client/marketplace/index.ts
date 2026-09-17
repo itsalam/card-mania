@@ -44,11 +44,16 @@ export type PublicStorefront = {
   item_count: number
 }
 
-export function useFeaturedListings(limit = 20) {
+/**
+ * Personalized to the signed-in user (auth.uid() inside the RPC) — genre-affinity-ranked
+ * listings excluding cards already owned. See get_recommended_listings in
+ * supabase/migrations/20260916000000_its108_recommended_listings.sql.
+ */
+export function useRecommendedListings(limit = 20) {
   return useQuery<FeaturedListing[]>({
-    queryKey: [supabaseUrl, 'marketplace', 'featured', limit],
+    queryKey: [supabaseUrl, 'marketplace', 'recommended', limit],
     queryFn: async () => {
-      const { data, error } = await (getSupabase() as any).rpc('get_featured_listings', {
+      const { data, error } = await (getSupabase() as any).rpc('get_recommended_listings', {
         result_limit: limit,
       })
       if (error) throw error
