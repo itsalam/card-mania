@@ -129,12 +129,21 @@ export async function deleteCollection(collectionId: string) {
 
 /** List my collections with item counts */
 export async function listMyCollections() {
-  await requireUser()
+  const user = await requireUser()
   const { data, error } = await getSupabase()
     .from('collections_with_tags')
     .select(
-      'id,name,description,visibility,cover_image_url,created_at,collection_items:collection_items!collection_id(count),tags_cache'
+      // Disambiguated by FK constraint name, not column: collection_items carries two FKs to
+      // collections on the same collection_id column (collection_items_collection_fk and the
+      // legacy collection_items_collection_id_fkey), so PostgREST's column-based embed syntax
+      // (`!collection_id`) is ambiguous and this query silently errors without it — see ITS-107
+      // follow-up, this was returning zero collections for every account.
+      'id,name,description,visibility,cover_image_url,created_at,collection_items:collection_items!collection_items_collection_fk(count),tags_cache'
     )
+    // Explicit filter, not just RLS: collections_with_tags also permissively exposes any
+    // seller's public storefront collections (collections_storefront_public_read), so relying
+    // on RLS alone here would mix other sellers' public listings into "my" collections.
+    .eq('user_id', user.id)
     .order('created_at', { ascending: false })
   return unwrap(
     (data as (CollectionWithTagRow & {
