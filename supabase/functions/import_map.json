@@ -7,6 +7,8 @@
     "@ebay-auth": "./_shared/ebay-auth.ts",
     "@ebay-search": "./_shared/ebay-search.ts",
     "@cardhedge": "./_shared/cardhedge.ts",
+    "@vendor-cardhedge-search": "./_shared/cardhedge-search.ts",
+    "@pricecharting-search": "./_shared/pricecharting-search.ts",
     "@supabase/supabase-js": "npm:@supabase/supabase-js@2.56.0"
   }
 }

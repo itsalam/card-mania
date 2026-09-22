@@ -1,11 +1,18 @@
-import { fetchCardHedgeResults, fetchCardHedgeTopMovers } from '@cardhedge'
+import { fetchCardHedgeTopMovers } from '@cardhedge'
+import {
+  convertCardHedgeItems,
+  fetchCardHedgeProviderCache,
+  fetchFromCardHedge,
+  upsertCardHedgeProviderCache,
+} from '@vendor-cardhedge-search'
 import { fetchEbayProviderCache, fetchFromEbay, upsertEbayProviderCache } from '@ebay-search'
 import {
-  BlendedSearchResultItem,
-  CardHedgeCard,
-  PriceChartingEntry,
-  SearchResultItem,
-} from '@types'
+  fetchFromPriceCharting,
+  fetchPriceChartingProviderCache,
+  PRICECHARTING_PROVIDER,
+  upsertProviderCache,
+} from '@pricecharting-search'
+import { BlendedSearchResultItem, CardHedgeCard, SearchResultItem } from '@types'
 import {
   buildSerpQuery,
   corsHeaders,
@@ -35,35 +42,16 @@ const VENDOR_PRIORITY = {
   ebay: Number(Deno.env.get('EBAY_VENDOR_PRIORITY') ?? '3'),
 } as const
 
-const provider = 'pricecharting'
-
 const json = (v: unknown, init: ResponseInit = {}) =>
   new Response(JSON.stringify(v), {
     ...init,
     headers: { 'content-type': 'application/json', ...(init.headers ?? {}) },
   })
 
-const convertPCEntrytoSearchItem = async (p: PriceChartingEntry): Promise<SearchResultItem> => ({
-  id: p.id,
-  card: {
-    id: await vendorUUID(provider, p.id),
-    name: p.name,
-    set_name: p.set,
-    latest_price: p.latestPrice,
-    grades_prices: p.gradesPrices,
-    genre: p.genre,
-    last_updated: p.lastUpdated,
-    release_date: p.releaseDate ?? null,
-  },
-  score: 0, // provisional; set later
-  snippet: `${p.set} • ${p.name}`,
-  source: 'vendor',
-})
-
 const mapLocalToResult = async (r: BlendedSearchResultItem): Promise<SearchResultItem> => ({
   id: r.id,
   card: {
-    id: await vendorUUID(provider, r.id),
+    id: await vendorUUID(PRICECHARTING_PROVIDER, r.id),
     name: r.name,
     set_name: r.set_name,
     latest_price: r.latest_price ?? null,
@@ -76,26 +64,6 @@ const mapLocalToResult = async (r: BlendedSearchResultItem): Promise<SearchResul
   snippet: r.snippet,
   reason: { ...r.reason, policy: 'local' },
   source: 'local',
-})
-
-const convertToPriceEntry = (data: any): PriceChartingEntry => ({
-  id: String(data.id),
-  name: data['product-name'] ?? 'Unknown',
-  set: data['console-name'] ?? 'other',
-  latestPrice: data.latestPrice ?? null,
-  gradesPrices: {
-    psa10: data['manual-only-price'] ?? null,
-    psa9_5: data['box-only-price'] ?? null,
-    psa9: data['graded-price'] ?? null,
-    psa8: data['new-price'] ?? null,
-    psa7: data['cib-price'] ?? null,
-    cgc10: data['condition-17-price'] ?? null,
-    sgc10: data['condition-18-price'] ?? null,
-    ungraded: data['loose-price'] ?? null,
-  },
-  releaseDate: data['release-date'] ?? null,
-  genre: data.genre ?? 'other',
-  lastUpdated: data.updatedAt ?? new Date().toISOString(),
 })
 
 Deno.serve(async (req) => {
@@ -291,7 +259,7 @@ Deno.serve(async (req) => {
     blendedCacheHit = blendedCache.cacheHit
     blendedResults = blendedCache.vendorResults
     if (!vendorResults.length) {
-      const providerCache = await fetchProviderCache(supa, srole, queryHash)
+      const providerCache = await fetchPriceChartingProviderCache(supa, srole, queryHash)
 
       vendorCacheHit = providerCache.cacheHit
       vendorResults = providerCache.vendorResults
@@ -318,12 +286,15 @@ Deno.serve(async (req) => {
   if (!blendedCacheHit) {
     let providerCachePromise: Promise<void> | undefined
     if (!vendorCacheHit) {
-      providerCachePromise = fetchFromProvider(pcBase, pcKey, id ?? undefined, q, limit).then(
-        (results) => {
-          raw = results.raw
-          vendorResults = results.vendorResults
-        }
-      )
+      providerCachePromise = fetchFromPriceCharting(
+        { apiBase: pcBase, apiKey: pcKey },
+        id ?? undefined,
+        q,
+        limit
+      ).then((results) => {
+        raw = results.raw
+        vendorResults = results.vendorResults
+      })
     }
     let ebayFetchPromise: Promise<void> | undefined
     if (ebayEnabled && !ebayCacheHit && q) {
@@ -345,7 +316,11 @@ Deno.serve(async (req) => {
     }
     let cardhedgeFetchPromise: Promise<void> | undefined
     if (cardhedgeEnabled && !cardhedgeCacheHit && q) {
-      cardhedgeFetchPromise = fetchFromCardHedge(cardhedgeBase, cardhedgeKey, q, Number(limit))
+      cardhedgeFetchPromise = fetchFromCardHedge(
+        { apiBase: cardhedgeBase, apiKey: cardhedgeKey },
+        q,
+        Number(limit)
+      )
         .then((res) => {
           cardhedgeResults = res.results
           cardhedgePreknownHints = res.preknownHints
@@ -470,8 +445,16 @@ Deno.serve(async (req) => {
 
   if (cacheUpsert) {
     if (!vendorCacheHit) {
-      provider_query_key = provider_query_key ?? (await sha256HexStr(`${provider}:${queryHash}`))
-      upsertProviderCache(supa, srole, provider_query_key, raw, vendorResults)
+      provider_query_key =
+        provider_query_key ?? (await sha256HexStr(`${PRICECHARTING_PROVIDER}:${queryHash}`))
+      upsertProviderCache(
+        supa,
+        srole,
+        provider_query_key,
+        raw,
+        vendorResults,
+        PRICECHARTING_CACHE_TTL
+      )
     }
     if (ebayEnabled && !ebayCacheHit && ebayResults.length) {
       ebay_provider_query_key = ebay_provider_query_key ?? (await sha256HexStr(`ebay:${queryHash}`))
@@ -480,7 +463,13 @@ Deno.serve(async (req) => {
     if (cardhedgeEnabled && !cardhedgeCacheHit && cardhedgeResults.length) {
       cardhedge_provider_query_key =
         cardhedge_provider_query_key ?? (await sha256HexStr(`cardhedge:${queryHash}`))
-      upsertCardHedgeProviderCache(supa, srole, cardhedge_provider_query_key, cardhedgeResults)
+      upsertCardHedgeProviderCache(
+        supa,
+        srole,
+        cardhedge_provider_query_key,
+        cardhedgeResults,
+        CARDHEDGE_CACHE_TTL
+      )
     }
     if (!blendedCacheHit) {
       upsertBlendedCache(supa, srole, queryHash, payloadStr, etag)
@@ -720,100 +709,6 @@ const fetchBlendedCache = async (supa: string, srole: string, queryHash: string)
   return { cacheHit, vendorResults }
 }
 
-const fetchProviderCache = async (supa: string, srole: string, queryHash: string) => {
-  let cacheHit = false
-  let vendorResults: SearchResultItem[] = []
-  const provider_query_key = await sha256HexStr(`${provider}:${queryHash}`)
-  const cacheUrl = `${supa}/rest/v1/provider_search_cache?provider_query_key=eq.${encodeURIComponent(
-    provider_query_key
-  )}&select=normalized_items,expires_at`
-  const check = await fetch(cacheUrl, {
-    headers: { apikey: srole, authorization: `Bearer ${srole}` },
-  })
-  const rows = (await check?.json()) as
-    Array<{ normalized_items: string; expires_at: string }> | undefined
-
-  const row = rows?.[0]
-  const fresh = row && new Date(row.expires_at).getTime() > Date.now()
-
-  if (!check.ok) {
-    console.log('Provider cache check error')
-    console.log(check.status, check.statusText)
-  } else if (row && fresh) {
-    cacheHit = true
-    console.log('Provider cache hit')
-    console.log(row.normalized_items.slice(0, 400))
-    vendorResults = JSON.parse(row.normalized_items) as SearchResultItem[] // <-- IMPORTANT: unwrap the data payload
-  }
-
-  return { cacheHit, vendorResults, provider_query_key }
-}
-
-const fetchFromProvider = async (
-  pcBase: string,
-  pcKey: string,
-  id: string | undefined,
-  q: string | null,
-  limit: string
-) => {
-  let vendorResults: SearchResultItem[] = []
-  const pcBaseUrl = new URL(`${pcBase}/api/product${id ? '' : 's'}`)
-  pcBaseUrl.searchParams.set('t', pcKey)
-  if (id) {
-    pcBaseUrl.searchParams.set('id', id)
-  }
-  if (q) {
-    pcBaseUrl.searchParams.set('q', q)
-  }
-  const vendorUrl = pcBaseUrl.toString()
-
-  const vres = await fetch(vendorUrl, {
-    headers: { accept: 'application/json' },
-  })
-  if (!vres.ok) {
-    console.error('Vendor fetch failed', { vendorUrl, status: vres.status })
-    throw new Error(`Vendor ${vres.status}, ${vres.statusText}`)
-  }
-  const raw = await vres.json()
-
-  const priceEntries: PriceChartingEntry[] = id
-    ? [convertToPriceEntry(raw)]
-    : raw.products
-        .slice(0, parseInt(limit ?? '20'))
-        .map((item: PriceChartingEntry) => convertToPriceEntry(item))
-
-  vendorResults = await Promise.all(priceEntries.map(convertPCEntrytoSearchItem))
-
-  return { raw, vendorResults }
-}
-
-const upsertProviderCache = (
-  supa: string,
-  srole: string,
-  provider_query_key: string,
-  raw: string | undefined,
-  vendorResults: SearchResultItem[]
-) => {
-  EdgeRuntime.waitUntil(
-    fetch(`${supa}/rest/v1/provider_search_cache`, {
-      method: 'POST',
-      headers: {
-        'content-type': 'application/json',
-        apikey: srole,
-        authorization: `Bearer ${srole}`,
-      },
-      body: JSON.stringify({
-        provider: provider,
-        provider_query_key: provider_query_key,
-        raw_payload: raw,
-        normalized_items: vendorResults,
-        fetched_at: new Date().toISOString(),
-        expires_at: new Date(Date.now() + PRICECHARTING_CACHE_TTL * 1000).toISOString(),
-      }),
-    })
-  )
-}
-
 const upsertBlendedCache = (
   supa: string,
   srole: string,
@@ -836,155 +731,6 @@ const upsertBlendedCache = (
         expires_at: new Date(Date.now() + PRICECHARTING_CACHE_TTL * 1000).toISOString(),
       }),
     })
-  )
-}
-
-// ─── CardHedge helpers ───────────────────────────────────────────────────────
-
-/** Normalize CardHedge cards into SearchResultItems + build a preknownHints map. */
-async function convertCardHedgeItems(cards: CardHedgeCard[]): Promise<{
-  results: SearchResultItem[]
-  preknownHints: Map<string, { url: string; norm: string }>
-}> {
-  const preknownHints = new Map<string, { url: string; norm: string }>()
-
-  const results = await Promise.all(
-    cards.map(async (card) => {
-      const cardId = await vendorUUID('cardhedge', card.card_id)
-
-      // Build grades_prices map from the prices array
-      const grades_prices: Record<string, number> = {}
-      let latest_price: number | null = null
-      if (card.prices) {
-        for (const { grade, price } of card.prices) {
-          const raw_key = grade.toLowerCase().replace(/\s+/g, '_')
-          const key = raw_key === 'raw' ? 'ungraded' : raw_key
-          const val = parseFloat(price) * 100
-          if (!isNaN(val)) grades_prices[key] = val
-        }
-        // Use the Raw grade price as latest_price, or the lowest available
-        const rawEntry = card.prices.find((p) => p.grade.toLowerCase() === 'raw')
-        if (rawEntry) {
-          latest_price = parseFloat(rawEntry.price) || null
-        } else if (card.prices.length) {
-          const vals = Object.values(grades_prices).filter((v) => v > 0)
-          latest_price = vals.length ? Math.min(...vals) : null
-        }
-      }
-
-      let imageHint: SearchResultItem['card']['image']
-      if (card.image) {
-        // Protocol-relative URLs (//s3.amazonaws.com/...) → prefix with https:
-        const imageUrl = card.image.startsWith('//') ? `https:${card.image}` : card.image
-        const qHash = await sha256HexStr(`cardhedge:${card.card_id}`)
-        preknownHints.set(qHash, {
-          url: imageUrl,
-          norm: `cardhedge:${card.card_id}`,
-        })
-        imageHint = { kind: 'candidate', url: imageUrl, query_hash: qHash }
-      }
-
-      return {
-        id: card.card_id,
-        card: {
-          id: cardId,
-          name: card.description,
-          set_name: card.set,
-          latest_price,
-          grades_prices,
-          genre: card.category ?? 'trading_card',
-          image: imageHint,
-        },
-        score: 0,
-        snippet: `${card.set} • ${card.description}`,
-        source: 'vendor' as const,
-        reason: {
-          sales_7day: card['7 Day Sales'],
-          sales_30day: card['30 Day Sales'],
-          gain: card.gain,
-          rookie: card.rookie,
-          variant: card.variant,
-          player: card.player,
-        },
-      }
-    })
-  )
-
-  return { results, preknownHints }
-}
-
-/** Fetch CardHedge listings and return normalized results + image hints. */
-async function fetchFromCardHedge(
-  apiBase: string,
-  apiKey: string,
-  q: string,
-  limit: number
-): Promise<{
-  results: SearchResultItem[]
-  preknownHints: Map<string, { url: string; norm: string }>
-}> {
-  const cards = await fetchCardHedgeResults(q, apiKey, apiBase, limit)
-  const sportsCards = cards.filter((c) => c.category_group === 'Sports Cards')
-  return convertCardHedgeItems(sportsCards)
-}
-
-/** Check provider_search_cache for a cached CardHedge response. */
-async function fetchCardHedgeProviderCache(supa: string, srole: string, queryHash: string) {
-  let cacheHit = false
-  let results: SearchResultItem[] = []
-  const preknownHints = new Map<string, { url: string; norm: string }>()
-  const provider_query_key = await sha256HexStr(`cardhedge:${queryHash}`)
-  const cacheUrl =
-    `${supa}/rest/v1/provider_search_cache?provider_query_key=eq.${encodeURIComponent(
-      provider_query_key
-    )}` + `&provider=eq.cardhedge&select=normalized_items,expires_at`
-  const check = await fetch(cacheUrl, {
-    headers: { apikey: srole, authorization: `Bearer ${srole}` },
-  })
-  const rows = (await check?.json()) as
-    Array<{ normalized_items: string; expires_at: string }> | undefined
-  const row = rows?.[0]
-  const fresh = row && new Date(row.expires_at).getTime() > Date.now()
-  if (check.ok && row && fresh) {
-    cacheHit = true
-    results = JSON.parse(row.normalized_items) as SearchResultItem[]
-    for (const r of results) {
-      const img = r.card.image
-      if (img?.query_hash && img?.url) {
-        preknownHints.set(img.query_hash, {
-          url: img.url,
-          norm: `cardhedge:${r.id}`,
-        })
-      }
-    }
-  }
-  return { cacheHit, results, preknownHints, provider_query_key }
-}
-
-/** Persist CardHedge results into provider_search_cache (fire-and-forget). */
-function upsertCardHedgeProviderCache(
-  supa: string,
-  srole: string,
-  provider_query_key: string,
-  results: SearchResultItem[]
-) {
-  EdgeRuntime.waitUntil(
-    fetch(`${supa}/rest/v1/provider_search_cache`, {
-      method: 'POST',
-      headers: {
-        'content-type': 'application/json',
-        apikey: srole,
-        authorization: `Bearer ${srole}`,
-        prefer: 'resolution=merge-duplicates',
-      },
-      body: JSON.stringify({
-        provider: 'cardhedge',
-        provider_query_key,
-        normalized_items: JSON.stringify(results),
-        fetched_at: new Date().toISOString(),
-        expires_at: new Date(Date.now() + CARDHEDGE_CACHE_TTL * 1000).toISOString(),
-      }),
-    }).catch((err) => console.error('CardHedge provider cache upsert error', err))
   )
 }
 
