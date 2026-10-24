@@ -15,6 +15,13 @@ github.com/itsalam/card-mania
 - Branch: `vincentthanhlam/its-83-web-card-page-and-search`
 - Milestone: v0.1 — Demo Ready
 
+## Environments & deploys
+
+- **Local** — `supabase start` (API `127.0.0.1:54321`, DB `postgresql://postgres:postgres@127.0.0.1:54322/postgres`, Studio `127.0.0.1:54323`).
+- **Staging** — the only hosted Supabase project (`zijgqgpwmqrgnzcictcb`, defined in `supabase/environments.json`). Used to test against live vendor APIs and services; it is _not_ production, and there is no production project yet. The EAS `preview`/`beta`/`production` env files and `app.config.js`'s fallback all point at it. Call it staging, not prod.
+- **Deploys are manual** — nothing deploys on merge (CI only lints/exports web). Run `scripts/deploy.sh staging` (`npm run deploy:staging`): preflight (auth, git, pgTAP + Deno tests, pending-migration dry run, function change detection, missing secrets) → confirm → `supabase db push` → `supabase functions deploy` per function → `npm run db:types` → `deploy-staging-<timestamp>` git tag. Use `--dry-run` first. Never deploy functions with `--prune` (staging has functions with no local source).
+- **Staging SQL** — Dashboard SQL editor, or `psql` with the connection string from the dashboard's Connect panel. Vendor keys are staging secrets (`supabase secrets list` shows names only; values aren't readable) — for local runs put them in `supabase/functions/.env.local` (gitignored; `supabase/functions/.env` is not) and pass `--env-file`.
+
 ## Stack
 
 | Layer         | Library                                                                 |

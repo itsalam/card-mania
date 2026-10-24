@@ -83,8 +83,9 @@ const config = {
       sentryDSN:
         'https://6ece37dd94482fb17a990e2a444d190a@o4511347914637312.ingest.us.sentry.io/4511347916668928',
       // .env.local (EXPO_PUBLIC_SUPABASE_URL/KEY) wins when present — e.g. pointing local
-      // dev at `supabase start`'s local instance — falling back to the shipped prod project
-      // for builds (preview/beta/production) that don't carry a .env.local.
+      // dev at `supabase start`'s local instance — falling back to the hosted staging project
+      // (supabase/environments.json; there is no production project yet) for builds
+      // (EAS preview/beta/production profiles) that don't carry a .env.local.
       supabaseUrl:
         process.env.EXPO_PUBLIC_SUPABASE_URL ?? 'https://zijgqgpwmqrgnzcictcb.supabase.co',
       supabaseKey:
