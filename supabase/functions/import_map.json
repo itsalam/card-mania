@@ -9,6 +9,7 @@
     "@cardhedge": "./_shared/cardhedge.ts",
     "@vendor-cardhedge-search": "./_shared/cardhedge-search.ts",
     "@pricecharting-search": "./_shared/pricecharting-search.ts",
+    "@enrichment-match": "./_shared/enrichment-match.ts",
     "@supabase/supabase-js": "npm:@supabase/supabase-js@2.56.0"
   }
 }

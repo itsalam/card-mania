@@ -1,11 +1,16 @@
--- ITS-40: scheduled backfill of eBay enrichment + images for cards rows
--- that predate/missed the live lazy-enrichment path.
+-- ITS-40: scheduled backfill of card images (CardHedge, then eBay) for cards
+-- rows that predate/missed the live lazy-enrichment path.
 --
 -- Cadence: every 15 minutes, batch size ENRICHMENT_BATCH_SIZE (default 15,
 -- edge function env var). At worst-case throughput (15 cards * 96 runs/day)
--- this uses ~1440 eBay Browse API calls/day, well under the ~5000/day
--- app-token quota, leaving headroom for live search-triggered eBay fallback
--- calls. Tune ENRICHMENT_BATCH_SIZE / this schedule as needed post-deploy.
+-- this uses at most ~1440 calls/day per vendor — eBay is only called when
+-- CardHedge has no confident image match, so it stays well under eBay's
+-- ~5000/day app-token quota, leaving headroom for live search-triggered eBay
+-- fallback calls. Tune ENRICHMENT_BATCH_SIZE / this schedule as needed.
+--
+-- net.http_post uses pg_net's default 5s timeout, so net._http_response
+-- records a timeout for most runs; the function keeps running to completion
+-- regardless. Check run outcomes in the function's logs, not pg_net.
 --
 -- Uses the service-role key (not anon) because this function writes to
 -- cards/card_images/provider_search_cache beyond anon RLS grants — mirrors
