@@ -1,33 +1,73 @@
 export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[]
 
 export type Database = {
-  graphql_public: {
-    Tables: {
-      [_ in never]: never
-    }
-    Views: {
-      [_ in never]: never
-    }
-    Functions: {
-      graphql: {
-        Args: {
-          extensions?: Json
-          operationName?: string
-          query?: string
-          variables?: Json
-        }
-        Returns: Json
-      }
-    }
-    Enums: {
-      [_ in never]: never
-    }
-    CompositeTypes: {
-      [_ in never]: never
-    }
+  // Allows to automatically instantiate createClient with right options
+  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
+  __InternalSupabase: {
+    PostgrestVersion: '13.0.4'
   }
   public: {
     Tables: {
+      card_enrichment_attempts: {
+        Row: {
+          best_score: number | null
+          card_id: string
+          created_at: string
+          error: string | null
+          id: number
+          image_url: string | null
+          matched_title: string | null
+          outcome: string
+          results: number | null
+          run_id: string
+          vendor: string | null
+          with_image: number | null
+        }
+        Insert: {
+          best_score?: number | null
+          card_id: string
+          created_at?: string
+          error?: string | null
+          id?: never
+          image_url?: string | null
+          matched_title?: string | null
+          outcome: string
+          results?: number | null
+          run_id: string
+          vendor?: string | null
+          with_image?: number | null
+        }
+        Update: {
+          best_score?: number | null
+          card_id?: string
+          created_at?: string
+          error?: string | null
+          id?: never
+          image_url?: string | null
+          matched_title?: string | null
+          outcome?: string
+          results?: number | null
+          run_id?: string
+          vendor?: string | null
+          with_image?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'card_enrichment_attempts_card_id_fkey'
+            columns: ['card_id']
+            isOneToOne: false
+            referencedRelation: 'cards'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'card_enrichment_attempts_run_id_fkey'
+            columns: ['run_id']
+            isOneToOne: false
+            referencedRelation: 'enrichment_runs'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       card_images: {
         Row: {
           bytes: number | null
@@ -174,6 +214,8 @@ export type Database = {
         Row: {
           back_id: string | null
           back_image_id: string | null
+          enriched_at: string | null
+          enrichment_locked_at: string | null
           extra_image_ids: string[] | null
           extras: string[] | null
           front_id: string | null
@@ -185,12 +227,15 @@ export type Database = {
           latest_price: number | null
           name: string
           release_date: string | null
-          search_vector: unknown | null
+          sealed: boolean
+          search_vector: unknown
           set_name: string
         }
         Insert: {
           back_id?: string | null
           back_image_id?: string | null
+          enriched_at?: string | null
+          enrichment_locked_at?: string | null
           extra_image_ids?: string[] | null
           extras?: string[] | null
           front_id?: string | null
@@ -202,12 +247,15 @@ export type Database = {
           latest_price?: number | null
           name: string
           release_date?: string | null
-          search_vector?: unknown | null
+          sealed?: boolean
+          search_vector?: unknown
           set_name: string
         }
         Update: {
           back_id?: string | null
           back_image_id?: string | null
+          enriched_at?: string | null
+          enrichment_locked_at?: string | null
           extra_image_ids?: string[] | null
           extras?: string[] | null
           front_id?: string | null
@@ -219,7 +267,8 @@ export type Database = {
           latest_price?: number | null
           name?: string
           release_date?: string | null
-          search_vector?: unknown | null
+          sealed?: boolean
+          search_vector?: unknown
           set_name?: string
         }
         Relationships: [
@@ -265,6 +314,83 @@ export type Database = {
           user_id?: string | null
         }
         Relationships: []
+      }
+      collection_group: {
+        Row: {
+          created_at: string
+          id: string
+          is_system: boolean
+          name: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_system?: boolean
+          name: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_system?: boolean
+          name?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      collection_group_items: {
+        Row: {
+          added_at: string
+          collection_id: string
+          group_id: string
+          last_viewed_at: string
+        }
+        Insert: {
+          added_at?: string
+          collection_id: string
+          group_id: string
+          last_viewed_at?: string
+        }
+        Update: {
+          added_at?: string
+          collection_id?: string
+          group_id?: string
+          last_viewed_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'collection_group_items_collection_id_fkey'
+            columns: ['collection_id']
+            isOneToOne: false
+            referencedRelation: 'collection_totals_with_flags'
+            referencedColumns: ['collection_id']
+          },
+          {
+            foreignKeyName: 'collection_group_items_collection_id_fkey'
+            columns: ['collection_id']
+            isOneToOne: false
+            referencedRelation: 'collections'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'collection_group_items_collection_id_fkey'
+            columns: ['collection_id']
+            isOneToOne: false
+            referencedRelation: 'collections_with_tags'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'collection_group_items_group_id_fkey'
+            columns: ['group_id']
+            isOneToOne: false
+            referencedRelation: 'collection_group'
+            referencedColumns: ['id']
+          },
+        ]
       }
       collection_item_events: {
         Row: {
@@ -648,69 +774,6 @@ export type Database = {
           },
         ]
       }
-      collection_group: {
-        Row: {
-          created_at: string
-          id: string
-          is_system: boolean
-          name: string
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          is_system?: boolean
-          name: string
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          is_system?: boolean
-          name?: string
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
-      collection_group_items: {
-        Row: {
-          added_at: string
-          collection_id: string
-          group_id: string
-          last_viewed_at: string
-        }
-        Insert: {
-          added_at?: string
-          collection_id: string
-          group_id: string
-          last_viewed_at?: string
-        }
-        Update: {
-          added_at?: string
-          collection_id?: string
-          group_id?: string
-          last_viewed_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: 'collection_group_items_collection_id_fkey'
-            columns: ['collection_id']
-            isOneToOne: false
-            referencedRelation: 'collections'
-            referencedColumns: ['id']
-          },
-          {
-            foreignKeyName: 'collection_group_items_group_id_fkey'
-            columns: ['group_id']
-            isOneToOne: false
-            referencedRelation: 'collection_group'
-            referencedColumns: ['id']
-          },
-        ]
-      }
       collections: {
         Row: {
           cover_image_url: string | null
@@ -771,6 +834,51 @@ export type Database = {
         Update: {
           base_user_id?: string
           demo_user_id?: string
+        }
+        Relationships: []
+      }
+      enrichment_runs: {
+        Row: {
+          claimed: number
+          enriched: number
+          error: string | null
+          failed: number
+          finished_at: string | null
+          hits_by_vendor: Json
+          id: string
+          no_match: number
+          req_id: string
+          started_at: string
+          status: string
+          vendors: string[]
+        }
+        Insert: {
+          claimed?: number
+          enriched?: number
+          error?: string | null
+          failed?: number
+          finished_at?: string | null
+          hits_by_vendor?: Json
+          id?: string
+          no_match?: number
+          req_id: string
+          started_at?: string
+          status?: string
+          vendors?: string[]
+        }
+        Update: {
+          claimed?: number
+          enriched?: number
+          error?: string | null
+          failed?: number
+          finished_at?: string | null
+          hits_by_vendor?: Json
+          id?: string
+          no_match?: number
+          req_id?: string
+          started_at?: string
+          status?: string
+          vendors?: string[]
         }
         Relationships: []
       }
@@ -850,6 +958,39 @@ export type Database = {
           id?: string
           name?: string
           slug?: string
+        }
+        Relationships: []
+      }
+      home_feed_section_meta: {
+        Row: {
+          enabled: boolean
+          icon: string
+          key: string
+          layout: Json
+          result_limit: number
+          sort_order: number
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          enabled?: boolean
+          icon: string
+          key: string
+          layout?: Json
+          result_limit?: number
+          sort_order?: number
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          enabled?: boolean
+          icon?: string
+          key?: string
+          layout?: Json
+          result_limit?: number
+          sort_order?: number
+          title?: string
+          updated_at?: string
         }
         Relationships: []
       }
@@ -1044,6 +1185,74 @@ export type Database = {
           },
         ]
       }
+      marketplace_section_items: {
+        Row: {
+          collection_item_id: string
+          computed_at: string
+          payload: Json
+          rank: number
+          section_key: string
+        }
+        Insert: {
+          collection_item_id: string
+          computed_at?: string
+          payload: Json
+          rank: number
+          section_key: string
+        }
+        Update: {
+          collection_item_id?: string
+          computed_at?: string
+          payload?: Json
+          rank?: number
+          section_key?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'marketplace_section_items_section_key_fkey'
+            columns: ['section_key']
+            isOneToOne: false
+            referencedRelation: 'marketplace_section_meta'
+            referencedColumns: ['key']
+          },
+        ]
+      }
+      marketplace_section_meta: {
+        Row: {
+          enabled: boolean
+          expires_at: string | null
+          key: string
+          refresh_interval: string
+          refreshed_at: string | null
+          result_limit: number
+          sort_order: number
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          enabled?: boolean
+          expires_at?: string | null
+          key: string
+          refresh_interval?: string
+          refreshed_at?: string | null
+          result_limit?: number
+          sort_order?: number
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          enabled?: boolean
+          expires_at?: string | null
+          key?: string
+          refresh_interval?: string
+          refreshed_at?: string | null
+          result_limit?: number
+          sort_order?: number
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       notifications: {
         Row: {
           action_url: string | null
@@ -1111,7 +1320,7 @@ export type Database = {
         }
         Update: {
           card_snapshot?: Json | null
-          collection_item_id?: string
+          collection_item_id?: string | null
           id?: string
           offer_id?: string
           offered_price_per_unit?: number
@@ -1557,7 +1766,21 @@ export type Database = {
             foreignKeyName: 'saved_collections_collection_id_fkey'
             columns: ['collection_id']
             isOneToOne: false
+            referencedRelation: 'collection_totals_with_flags'
+            referencedColumns: ['collection_id']
+          },
+          {
+            foreignKeyName: 'saved_collections_collection_id_fkey'
+            columns: ['collection_id']
+            isOneToOne: false
             referencedRelation: 'collections'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'saved_collections_collection_id_fkey'
+            columns: ['collection_id']
+            isOneToOne: false
+            referencedRelation: 'collections_with_tags'
             referencedColumns: ['id']
           },
         ]
@@ -1593,6 +1816,9 @@ export type Database = {
         Row: {
           id: number
           min_score: number
+          pop_log_divisor: number
+          pop_sale_weight: number
+          pop_wishlist_weight: number
           prefetch_enabled: boolean
           prefetch_threshold_ms: number
           snippet_max_fragments: number
@@ -1610,6 +1836,9 @@ export type Database = {
         Insert: {
           id?: number
           min_score?: number
+          pop_log_divisor?: number
+          pop_sale_weight?: number
+          pop_wishlist_weight?: number
           prefetch_enabled?: boolean
           prefetch_threshold_ms?: number
           snippet_max_fragments?: number
@@ -1627,6 +1856,9 @@ export type Database = {
         Update: {
           id?: number
           min_score?: number
+          pop_log_divisor?: number
+          pop_sale_weight?: number
+          pop_wishlist_weight?: number
           prefetch_enabled?: boolean
           prefetch_threshold_ms?: number
           snippet_max_fragments?: number
@@ -1747,6 +1979,24 @@ export type Database = {
             referencedColumns: ['id']
           },
         ]
+      }
+      seller_follows: {
+        Row: {
+          created_at: string
+          follower_id: string
+          seller_id: string
+        }
+        Insert: {
+          created_at?: string
+          follower_id: string
+          seller_id: string
+        }
+        Update: {
+          created_at?: string
+          follower_id?: string
+          seller_id?: string
+        }
+        Relationships: []
       }
       storefronts: {
         Row: {
@@ -1896,6 +2146,38 @@ export type Database = {
           source?: string
         }
         Relationships: []
+      }
+      transaction_messages: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          sender_id: string
+          transaction_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          sender_id: string
+          transaction_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          sender_id?: string
+          transaction_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'transaction_messages_transaction_id_fkey'
+            columns: ['transaction_id']
+            isOneToOne: false
+            referencedRelation: 'transactions'
+            referencedColumns: ['id']
+          },
+        ]
       }
       transactions: {
         Row: {
@@ -2174,6 +2456,37 @@ export type Database = {
         }
         Relationships: []
       }
+      enrichment_backlog: {
+        Row: {
+          backfill_card_failures_24h: number | null
+          backfill_claimed_24h: number | null
+          backfill_completed_24h: number | null
+          backfill_enriched_24h: number | null
+          backfill_failed_runs_24h: number | null
+          backfill_no_match_24h: number | null
+          backfill_runs_24h: number | null
+          enriched_24h_all_paths: number | null
+          est_days_remaining: number | null
+          last_completed_at: string | null
+          last_run_at: string | null
+          last_run_status: string | null
+          leased_now: number | null
+          stale_leases: number | null
+          unenriched: number | null
+        }
+        Relationships: []
+      }
+      enrichment_vendor_outcomes: {
+        Row: {
+          attempts: number | null
+          avg_score: number | null
+          outcome: string | null
+          p10_score: number | null
+          p50_score: number | null
+          vendor: string | null
+        }
+        Relationships: []
+      }
       my_pinned_collection_items: {
         Row: {
           added_at: string | null
@@ -2186,7 +2499,21 @@ export type Database = {
             foreignKeyName: 'collection_group_items_collection_id_fkey'
             columns: ['collection_id']
             isOneToOne: false
+            referencedRelation: 'collection_totals_with_flags'
+            referencedColumns: ['collection_id']
+          },
+          {
+            foreignKeyName: 'collection_group_items_collection_id_fkey'
+            columns: ['collection_id']
+            isOneToOne: false
             referencedRelation: 'collections'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'collection_group_items_collection_id_fkey'
+            columns: ['collection_id']
+            isOneToOne: false
+            referencedRelation: 'collections_with_tags'
             referencedColumns: ['id']
           },
           {
@@ -2200,10 +2527,7 @@ export type Database = {
       }
     }
     Functions: {
-      _clamp_nonnegative: {
-        Args: { val: number }
-        Returns: number
-      }
+      _clamp_nonnegative: { Args: { val: number }; Returns: number }
       _collection_item_value_cents: {
         Args: {
           p_grade_condition_id: string
@@ -2212,6 +2536,36 @@ export type Database = {
           p_ref_id: string
         }
         Returns: number
+      }
+      _marketplace_base_listings: {
+        Args: never
+        Returns: {
+          back_id: string
+          collection_id: string
+          collection_item_id: string
+          front_id: string
+          genre: string
+          grade_condition_id: string
+          grades_prices: Json
+          grading_company: string
+          item_kind: Database['public']['Enums']['item_kind']
+          latest_price: number
+          listed_at: string
+          market_value: number
+          name: string
+          popularity_score: number
+          price_key: string
+          quantity: number
+          ref_id: string
+          sealed: boolean
+          seller_avatar_url: string
+          seller_display_name: string
+          seller_id: string
+          seller_username: string
+          set_name: string
+          storefront_id: string
+          variants: string[]
+        }[]
       }
       _wishlist_row_cost_cents: {
         Args: { p_kind: string; p_metadata?: Json; p_ref_id: string }
@@ -2251,29 +2605,15 @@ export type Database = {
           last_seen: string
         }[]
       }
-      citext: {
-        Args: { '': boolean } | { '': string } | { '': unknown }
-        Returns: string
-      }
-      citext_hash: {
-        Args: { '': string }
-        Returns: number
-      }
-      citextin: {
-        Args: { '': unknown }
-        Returns: string
-      }
-      citextout: {
-        Args: { '': string }
-        Returns: unknown
-      }
-      citextrecv: {
-        Args: { '': unknown }
-        Returns: string
-      }
-      citextsend: {
-        Args: { '': string }
-        Returns: string
+      canonical_genre: { Args: { p: string }; Returns: string }
+      check_email_registered: { Args: { p_email: string }; Returns: boolean }
+      claim_cards_for_backfill_enrichment: {
+        Args: { p_lease_seconds?: number; p_limit: number }
+        Returns: {
+          id: string
+          name: string
+          set_name: string
+        }[]
       }
       collection_item_query: {
         Args: {
@@ -2303,10 +2643,10 @@ export type Database = {
           name: string
           position: number
           price_key: string
-          primary_image_cache_id: string | null
-          primary_image_height: number | null
-          primary_image_storage_path: string | null
-          primary_image_width: number | null
+          primary_image_cache_id: string
+          primary_image_height: number
+          primary_image_storage_path: string
+          primary_image_width: number
           quantity: number
           ref_id: string
           set_name: string
@@ -2358,6 +2698,12 @@ export type Database = {
           user_id: string
           variants: string[] | null
         }[]
+        SetofOptions: {
+          from: '*'
+          to: 'collection_items'
+          isOneToOne: false
+          isSetofReturn: true
+        }
       }
       collection_totals_for_user: {
         Args: { p_user_id?: string }
@@ -2409,17 +2755,11 @@ export type Database = {
         Args: { p_name: string; p_slug: string; p_weight?: number }
         Returns: string
       }
-      curated_tags_import: {
-        Args: { payload: Json }
-        Returns: Json
-      }
-      effective_user_id: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
-      ensure_card_stub: {
-        Args:
-          | {
+      curated_tags_import: { Args: { payload: Json }; Returns: Json }
+      effective_user_id: { Args: never; Returns: string }
+      ensure_card_stub:
+        | {
+            Args: {
               p_external_id?: string
               p_genre?: string
               p_grades_prices?: Json
@@ -2430,7 +2770,10 @@ export type Database = {
               p_provider?: string
               p_set_name?: string
             }
-          | {
+            Returns: undefined
+          }
+        | {
+            Args: {
               p_external_id?: string
               p_genre?: string
               p_id: string
@@ -2438,12 +2781,9 @@ export type Database = {
               p_provider?: string
               p_set_name?: string
             }
-        Returns: undefined
-      }
-      ensure_default_collections: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
+            Returns: undefined
+          }
+      ensure_default_collections: { Args: never; Returns: undefined }
       ensure_default_collections_for_user: {
         Args: { p_user_id: string }
         Returns: undefined
@@ -2457,12 +2797,68 @@ export type Database = {
         Returns: string
       }
       get_activation_status: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           activated: boolean
           has_collection_item: boolean
           has_offer: boolean
           has_storefront: boolean
+        }[]
+      }
+      get_featured_listings: {
+        Args: { result_limit?: number }
+        Returns: {
+          back_id: string
+          collection_id: string
+          collection_item_id: string
+          front_id: string
+          genre: string
+          grade_condition_id: string
+          grades_prices: Json
+          grading_company: string
+          item_kind: Database['public']['Enums']['item_kind']
+          latest_price: number
+          listed_at: string
+          market_value: number
+          name: string
+          popularity_score: number
+          price_key: string
+          quantity: number
+          ref_id: string
+          seller_avatar_url: string
+          seller_display_name: string
+          seller_id: string
+          seller_username: string
+          set_name: string
+          storefront_id: string
+          variants: string[]
+        }[]
+      }
+      get_followed_sellers: {
+        Args: never
+        Returns: {
+          seller_id: string
+        }[]
+      }
+      get_home_feed_sections: {
+        Args: never
+        Returns: {
+          icon: string
+          key: string
+          layout: Json
+          result_limit: number
+          sort_order: number
+          title: string
+        }[]
+      }
+      get_marketplace_sections: {
+        Args: never
+        Returns: {
+          items: Json
+          refreshed_at: string
+          section_key: string
+          sort_order: number
+          title: string
         }[]
       }
       get_portfolio_history: {
@@ -2495,6 +2891,61 @@ export type Database = {
           username: string
         }[]
       }
+      get_public_storefronts: {
+        Args: { page_param?: string; result_limit?: number }
+        Returns: {
+          description: string
+          item_count: number
+          listed_at: string
+          seller_avatar_url: string
+          seller_display_name: string
+          seller_id: string
+          seller_is_seller: boolean
+          seller_username: string
+          storefront_id: string
+          tags: string[]
+          title: string
+        }[]
+      }
+      get_recommended_listings: {
+        Args: { result_limit?: number }
+        Returns: {
+          back_id: string
+          collection_id: string
+          collection_item_id: string
+          front_id: string
+          genre: string
+          grade_condition_id: string
+          grades_prices: Json
+          grading_company: string
+          item_kind: Database['public']['Enums']['item_kind']
+          latest_price: number
+          listed_at: string
+          market_value: number
+          name: string
+          popularity_score: number
+          price_key: string
+          quantity: number
+          ref_id: string
+          seller_avatar_url: string
+          seller_display_name: string
+          seller_id: string
+          seller_username: string
+          set_name: string
+          storefront_id: string
+          variants: string[]
+        }[]
+      }
+      get_suggested_sellers: {
+        Args: { exclude_user_id?: string; result_limit?: number }
+        Returns: {
+          avatar_url: string
+          display_name: string
+          is_seller: boolean
+          user_id: string
+          username: string
+        }[]
+      }
       get_tag_categories: {
         Args: { tags: string[] }
         Returns: {
@@ -2506,29 +2957,20 @@ export type Database = {
           tag_slug: string
         }[]
       }
-      gtrgm_compress: {
-        Args: { '': unknown }
-        Returns: unknown
+      is_demo_user: { Args: never; Returns: boolean }
+      list_card_genres: {
+        Args: never
+        Returns: {
+          genre: string
+          n: number
+        }[]
       }
-      gtrgm_decompress: {
-        Args: { '': unknown }
-        Returns: unknown
-      }
-      gtrgm_in: {
-        Args: { '': unknown }
-        Returns: unknown
-      }
-      gtrgm_options: {
-        Args: { '': unknown }
-        Returns: undefined
-      }
-      gtrgm_out: {
-        Args: { '': unknown }
-        Returns: unknown
-      }
-      is_demo_user: {
-        Args: Record<PropertyKey, never>
-        Returns: boolean
+      list_card_sets: {
+        Args: { p_genre?: string }
+        Returns: {
+          n: number
+          set_name: string
+        }[]
       }
       most_used_variants: {
         Args: { p_card_id: string; p_limit?: number; p_query?: string }
@@ -2549,6 +2991,7 @@ export type Database = {
         }
         Returns: string
       }
+      refresh_marketplace_sections: { Args: never; Returns: undefined }
       remove_pinned_collection: {
         Args: { p_collection_id: string }
         Returns: undefined
@@ -2561,7 +3004,15 @@ export type Database = {
         }[]
       }
       search_cards_blended: {
-        Args: { p_limit?: number; p_q: string }
+        Args: {
+          p_genre?: string
+          p_limit?: number
+          p_max_price?: number
+          p_min_price?: number
+          p_q: string
+          p_sealed?: boolean
+          p_sets?: string[]
+        }
         Returns: {
           id: string
           latest_price: number
@@ -2572,22 +3023,40 @@ export type Database = {
           snippet: string
         }[]
       }
-      set_limit: {
-        Args: { '': number }
-        Returns: number
+      search_storefront_items: {
+        Args: {
+          p_genre?: string
+          p_grading?: string[]
+          p_limit?: number
+          p_max_price?: number
+          p_min_price?: number
+          p_q?: string
+          p_sealed?: boolean
+          p_sets?: string[]
+        }
+        Returns: {
+          card_id: string
+          genre: string
+          grade_label: string
+          grading_company: string
+          id: string
+          name: string
+          price: number
+          reason: Json
+          score: number
+          sealed: boolean
+          seller_id: string
+          seller_username: string
+          set_name: string
+          snippet: string
+        }[]
       }
       set_primary_collection_item_photo: {
         Args: { p_photo_id: string }
         Returns: undefined
       }
-      show_limit: {
-        Args: Record<PropertyKey, never>
-        Returns: number
-      }
-      show_trgm: {
-        Args: { '': string }
-        Returns: string[]
-      }
+      show_limit: { Args: never; Returns: number }
+      show_trgm: { Args: { '': string }; Returns: string[] }
       suggest_tags: {
         Args: {
           category_ids?: string[]
@@ -2628,6 +3097,12 @@ export type Database = {
           score: number
         }[]
       }
+      toggle_seller_follow: {
+        Args: { p_seller_id: string }
+        Returns: {
+          is_following: boolean
+        }[]
+      }
       touch_collection_group_item: {
         Args: { p_collection_id: string; p_group_id: string }
         Returns: undefined
@@ -2636,22 +3111,25 @@ export type Database = {
         Args: { p_collection_id: string }
         Returns: undefined
       }
-      touch_recent_view: {
-        Args:
-          | {
+      touch_recent_view:
+        | {
+            Args: {
               p_ctx?: Json
               p_source?: string
               p_target_id: string
               p_target_type: Database['public']['Enums']['view_target']
             }
-          | {
+            Returns: undefined
+          }
+        | {
+            Args: {
               p_item_id: string
               p_item_type: string
               p_meta?: Json
               p_user_id: string
             }
-        Returns: undefined
-      }
+            Returns: undefined
+          }
       touch_saved_collection: {
         Args: { p_collection_id: string }
         Returns: undefined
@@ -2664,10 +3142,7 @@ export type Database = {
         Args: { p_h: number; p_mime: string; p_url: string; p_w: number }
         Returns: string
       }
-      wishlist_recompute_total: {
-        Args: Record<PropertyKey, never>
-        Returns: number
-      }
+      wishlist_recompute_total: { Args: never; Returns: number }
       wishlist_set_grades: {
         Args: {
           p_delete_when_empty?: boolean
@@ -2696,10 +3171,7 @@ export type Database = {
           grades: string[]
         }[]
       }
-      wishlist_total: {
-        Args: Record<PropertyKey, never>
-        Returns: number
-      }
+      wishlist_total: { Args: never; Returns: number }
     }
     Enums: {
       item_kind: 'card'
@@ -2823,9 +3295,6 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
-  graphql_public: {
-    Enums: {},
-  },
   public: {
     Enums: {
       item_kind: ['card'],

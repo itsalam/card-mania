@@ -67,10 +67,6 @@ const CARDHEDGE_SEARCH_LIMIT = Number(Deno.env.get('ENRICHMENT_CARDHEDGE_LIMIT')
 const CARDHEDGE_CACHE_TTL = Number(Deno.env.get('CARDHEDGE_CACHE_TTL') ?? '300')
 
 const supabase = createSupabaseServiceClient()
-// The ledger tables aren't in the generated types until `npm run
-// db:types:function` runs against a schema that has them deployed.
-// deno-lint-ignore no-explicit-any
-const ledger = supabase as unknown as { from: (table: string) => any }
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
 
 type ClaimedCard = { id: string; name: string; set_name: string }
@@ -348,7 +344,7 @@ async function startRun(
   vendors: Vendor[],
   status: 'running' | 'skipped'
 ): Promise<string | null> {
-  const { data, error } = await ledger
+  const { data, error } = await supabase
     .from('enrichment_runs')
     .insert({
       req_id: reqId,
@@ -370,7 +366,7 @@ async function startRun(
 
 async function finishRun(reqId: string, runId: string | null, fields: Record<string, unknown>) {
   if (!runId) return
-  const { error } = await ledger
+  const { error } = await supabase
     .from('enrichment_runs')
     .update({ ...fields, finished_at: new Date().toISOString() })
     .eq('id', runId)
@@ -388,7 +384,7 @@ async function recordAttempts(
   attempts: Attempt[]
 ) {
   if (!runId || !attempts.length) return
-  const { error } = await ledger.from('card_enrichment_attempts').insert(
+  const { error } = await supabase.from('card_enrichment_attempts').insert(
     attempts.map((a) => ({
       run_id: runId,
       card_id: cardId,
