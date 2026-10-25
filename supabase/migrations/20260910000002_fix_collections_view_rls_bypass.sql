@@ -12,9 +12,9 @@
 -- lib/store/functions/collections.ts. This migration does not change that ambiguous-embed fix;
 -- it fixes the actual data-exposure bug underneath it.
 --
--- This same migration should be applied to the production project as soon as possible — it
--- was carrying the identical vulnerability before this fix (same view definitions, same
--- Postgres default).
+-- This same migration should be applied to the hosted staging project (`scripts/deploy.sh
+-- staging`) as soon as possible — it was carrying the identical vulnerability before this fix
+-- (same view definitions, same Postgres default).
 
 alter view public.collections_with_tags set (security_invoker = true);
 alter view public.collection_totals_with_flags set (security_invoker = true);

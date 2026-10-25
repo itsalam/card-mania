@@ -1,0 +1,6 @@
+{
+  "staging": {
+    "projectRef": "zijgqgpwmqrgnzcictcb",
+    "description": "Hosted Supabase project used to test against live vendor APIs and services. Not a production environment — there is no production project yet."
+  }
+}

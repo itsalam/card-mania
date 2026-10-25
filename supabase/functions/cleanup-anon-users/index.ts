@@ -1,4 +1,5 @@
 import { createClient } from 'npm:@supabase/supabase-js'
+import { isServiceRequest } from '@service-auth'
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
 
 const supabase = createClient(
@@ -11,8 +12,7 @@ const cutoffMs = INACTIVE_DAYS * 24 * 60 * 60 * 1000
 
 Deno.serve(async (req) => {
   // Only accept internal calls from pg_cron via the edge token
-  const auth = req.headers.get('Authorization') ?? ''
-  if (!auth.startsWith('Bearer ') || auth.slice(7) !== Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')) {
+  if (!isServiceRequest(req)) {
     return new Response('Unauthorized', { status: 401 })
   }
 

@@ -5,7 +5,12 @@
     "@schema": "./_shared/supabase.d.ts",
     "@image-fetch": "./_shared/image-fetch.ts",
     "@ebay-auth": "./_shared/ebay-auth.ts",
+    "@ebay-search": "./_shared/ebay-search.ts",
     "@cardhedge": "./_shared/cardhedge.ts",
+    "@vendor-cardhedge-search": "./_shared/cardhedge-search.ts",
+    "@pricecharting-search": "./_shared/pricecharting-search.ts",
+    "@enrichment-match": "./_shared/enrichment-match.ts",
+    "@service-auth": "./_shared/service-auth.ts",
     "@supabase/supabase-js": "npm:@supabase/supabase-js@2.56.0"
   }
 }

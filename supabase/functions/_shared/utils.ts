@@ -531,6 +531,20 @@ export function logWarn(rid: string, msg: string, extra?: Record<string, unknown
   console.warn(`[${rid}]:${msg}`, JSON.stringify({ ...extra }, null, 2))
 }
 
+/**
+ * Single-line JSON log entry with a stable `event` name, so it can be
+ * filtered/parsed in the Supabase Logs Explorer (event_message) — unlike the
+ * multi-line pretty-printed logInfo/logWarn/logErr output.
+ */
+export function logEvent(
+  level: 'info' | 'warn' | 'error',
+  rid: string,
+  event: string,
+  fields?: Record<string, unknown>
+) {
+  console[level](JSON.stringify({ event, rid, ...fields }))
+}
+
 export function logErr(rid: string, msg: string, extra?: Record<string, unknown>) {
   console.error(`[${rid}]:${msg}`, JSON.stringify({ ...extra }, null, 2))
 }

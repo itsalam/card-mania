@@ -461,6 +461,14 @@ enabled = true
 verify_jwt = false
 entrypoint = "./functions/cleanup-anon-users/index.ts"
 
+[functions.card-enrichment-backfill]
+enabled = true
+# Called only by pg_cron via net.http_post with the service-role key as the
+# bearer token (see 20260921000001_its40_card_enrichment_backfill_cron.sql).
+# Security is enforced inside the function, same pattern as cleanup-anon-users.
+verify_jwt = false
+entrypoint = "./functions/card-enrichment-backfill/index.ts"
+
 [functions.ebay-deletion]
 enabled = true
 verify_jwt = false
