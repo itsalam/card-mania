@@ -31,6 +31,7 @@
 // of how a run went). Ledger writes are best-effort and never affect
 // enrichment. Logs are single-line JSON (logEvent) for the Logs Explorer.
 import { pickBestMatch, scoreMatch } from '@enrichment-match'
+import { isServiceRequest } from '@service-auth'
 import type { CardHedgeConfig } from '@vendor-cardhedge-search'
 import { fetchFromCardHedge, writeCardHedgeProviderCache } from '@vendor-cardhedge-search'
 import {
@@ -102,9 +103,7 @@ type Attempt = {
 
 Deno.serve(async (req) => {
   const reqId = rid()
-  const sroleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
-  const authHeader = req.headers.get('Authorization')
-  if (!sroleKey || authHeader !== `Bearer ${sroleKey}`) {
+  if (!isServiceRequest(req)) {
     return new Response(JSON.stringify({ error: 'Unauthorized' }), {
       status: 401,
       headers: { 'content-type': 'application/json' },

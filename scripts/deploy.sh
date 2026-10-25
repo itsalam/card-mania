@@ -16,7 +16,8 @@
 #   --skip-functions     Don't deploy functions.
 #   --skip-tests         Don't run pgTAP / Deno tests before deploying.
 #   --skip-types         Don't regenerate DB types afterwards.
-#   --no-tag             Don't record the deploy as a git tag.
+#   --no-tag             Don't record the deploy as a git tag. (Partial
+#                        --functions deploys are never tagged.)
 #   --allow-dirty        Allow uncommitted changes.
 #   --allow-unpushed     Allow deploying a commit that isn't on origin.
 #   --yes                Skip the confirmation prompt.
@@ -173,13 +174,20 @@ if [ "$SKIP_FUNCTIONS" = 0 ]; then
     # shellcheck disable=SC2086
     NEEDED="$(grep -rhoE "Deno\.env\.get\('[A-Z0-9_]+'\)[[:space:]]*(\?\?)?" $FILES 2>/dev/null |
       grep -v '??' | sed -E "s/.*'([A-Z0-9_]+)'.*/\1/" | grep -v '^SUPABASE_' | sort -u)"
-    SET="$(supabase secrets list --project-ref "$PROJECT_REF" 2>/dev/null | awk -F'|' 'NR>2 {gsub(/ /,"",$1); print $1}')"
+    SET="$(supabase secrets list --project-ref "$PROJECT_REF" 2>/dev/null | awk -F'|' '{gsub(/ /,"",$1); print $1}' | grep -E '^[A-Za-z0-9_]+$' | grep -v '^NAME$')"
     MISSING="$(comm -23 <(echo "$NEEDED") <(echo "$SET" | sort -u) | grep . || true)"
     if [ -n "$MISSING" ]; then
       yellow "! Env vars read without a fallback that aren't set as $ENV_NAME secrets (check they're optional):"
       echo "$MISSING" | sed 's/^/    /'
     else
       green "✓ All env vars read without a fallback are set as secrets"
+    fi
+    # Lowercase names are almost always a Vault secret (edge_token,
+    # project_url) set in the wrong store — pg_cron never sees these.
+    STRAY="$(echo "$SET" | grep -vE '^[A-Z0-9_]+$' | grep . || true)"
+    if [ -n "$STRAY" ]; then
+      yellow "! Function secrets that look like Vault secrets (pg_cron reads the Vault, not these):"
+      echo "$STRAY" | sed 's/^/    /'
     fi
   fi
 fi
@@ -231,7 +239,11 @@ if [ "$SKIP_TYPES" = 0 ] && [ "$SKIP_DB" = 0 ]; then
   fi
 fi
 
-if [ "$NO_TAG" = 0 ]; then
+if [ "$NO_TAG" = 0 ] && [ -n "$FUNCTIONS_ARG" ]; then
+  # The tag is the baseline for "changed since last deploy"; a partial deploy
+  # would mark the skipped functions' changes as deployed.
+  yellow "! Partial deploy (--functions) — not tagging, so the next deploy still sees all changes"
+elif [ "$NO_TAG" = 0 ]; then
   TAG="${TAG_PREFIX}$(date -u +%Y%m%d-%H%M%S)"
   git tag -a "$TAG" -m "Deployed $BRANCH @ $SHA to $ENV_NAME ($PROJECT_REF)" HEAD
   git push -q origin "$TAG"

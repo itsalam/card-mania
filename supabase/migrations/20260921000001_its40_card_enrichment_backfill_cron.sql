@@ -12,11 +12,15 @@
 -- records a timeout for most runs; the function keeps running to completion
 -- regardless. Check run outcomes in the function's logs, not pg_net.
 --
--- Uses the service-role key (not anon) because this function writes to
+-- Uses the service key (not anon) because this function writes to
 -- cards/card_images/provider_search_cache beyond anon RLS grants — mirrors
--- 20260519000002_cleanup_anon_users_cron.sql's pattern, whose function
--- guard compares the Authorization header against SUPABASE_SERVICE_ROLE_KEY
--- directly, confirming the 'edge_token' vaulted secret holds that key.
+-- 20260519000002_cleanup_anon_users_cron.sql's pattern. The function only
+-- accepts a bearer token that is one of the project's service keys
+-- (_shared/service-auth.ts), so the 'edge_token' *Vault* secret (not an edge
+-- function secret) must hold one: on staging, the sb_secret_… key, which is
+-- what SUPABASE_SERVICE_ROLE_KEY contains after the new-API-keys migration.
+-- Staging's vault originally held the local CLI's demo service key, so every
+-- call 401'd while cron.job_run_details still reported 'succeeded' (ITS-40).
 create extension if not exists pg_cron with schema extensions;
 create extension if not exists pg_net  with schema extensions;
 
