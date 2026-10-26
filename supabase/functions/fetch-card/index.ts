@@ -4,6 +4,7 @@
 
 // Setup type definitions for built-in Supabase Runtime APIs
 import { fetchCardHedgeResults } from '@cardhedge'
+import { canonicalGradeKey, canonicalGradesPrices } from '@grade-key'
 import { CardImageFields } from '@types'
 import {
   buildSerpQuery,
@@ -231,10 +232,8 @@ async function refreshCardPrices(
         const prices: Record<string, number> = {}
         let latestPrice: number | null = null
         for (const { grade, price } of match.prices) {
-          const raw_key = grade.toLowerCase().replace(/\s+/g, '_')
-          const key = raw_key === 'raw' ? 'ungraded' : raw_key
           const val = Math.round(parseFloat(price) * 100)
-          if (!isNaN(val) && val > 0) prices[key] = val
+          if (!isNaN(val) && val > 0) prices[canonicalGradeKey(grade)] = val
         }
         const rawEntry = match.prices.find((p) => p.grade.toLowerCase() === 'raw')
         if (rawEntry) latestPrice = Math.round(parseFloat(rawEntry.price) * 100) || null
@@ -283,14 +282,7 @@ async function refreshCardPrices(
   return { grades_prices: mergedPrices, latest_price: mergedLatestPrice, last_updated }
 }
 
-function normalizeGradesPrices(gp: Record<string, number>): Record<string, number> {
-  const result: Record<string, number> = {}
-  for (const [key, val] of Object.entries(gp)) {
-    const normKey = key.toLowerCase().replace(/\s+/g, '_')
-    result[normKey === 'raw' ? 'ungraded' : normKey] = val
-  }
-  return result
-}
+const normalizeGradesPrices = canonicalGradesPrices
 
 async function commitCard(
   cardLike: Partial<Card> & { image: Image },

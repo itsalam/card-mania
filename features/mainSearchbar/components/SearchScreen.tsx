@@ -25,6 +25,7 @@ import Animated, {
 } from 'react-native-reanimated'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { SearchPreviewCard } from '../PreviewItem'
+import { CARD_LIST_GAP } from '@/components/tcg-card/consts'
 import { GenreFilter } from './filters/GenreFilter'
 import { FiltersProvider, useFiltersStore } from './filters/providers'
 import { SearchFiltersOptions } from './filters/SearchFilters'
@@ -284,7 +285,7 @@ export function SearchScreen({
                 )}
                 contentContainerStyle={{
                   display: 'flex',
-                  gap: 18,
+                  gap: CARD_LIST_GAP,
                   paddingLeft: 12,
                   paddingBottom: bottomFadeH,
                 }}

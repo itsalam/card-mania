@@ -2,6 +2,7 @@ import { Button as AppButton } from '@/components/ui/button'
 import { TextField } from '@/components/ui/input/base-input'
 import { Separator } from '@/components/ui/separator'
 import { Text } from '@/components/ui/text/base-text'
+import { classifyAuthError, isBlockingPhoneError } from '@/features/splash/authErrors'
 import { OtpInput } from '@/features/splash/OtpInput'
 import {
   COUNTRIES,
@@ -20,41 +21,6 @@ import { useEffect, useState } from 'react'
 import { Modal, Pressable, ScrollView, TextInput, TouchableOpacity, View } from 'react-native'
 import { G, Path, Svg } from 'react-native-svg'
 import { Colors } from 'react-native-ui-lib'
-
-function friendlyPhoneError(message: string): string {
-  const msg = message.toLowerCase()
-  if (msg.includes('invalid') && (msg.includes('phone') || msg.includes('number')))
-    return 'Please enter a valid phone number.'
-  if (msg.includes('rate') || msg.includes('too many'))
-    return 'Too many attempts. Please wait before requesting another code.'
-  if (msg.includes('not enabled') || msg.includes('phone provider') || msg.includes('sms'))
-    return 'Phone sign-in is not yet configured. Please use email instead.'
-  if (msg.includes('network') || msg.includes('fetch'))
-    return 'Network error. Please check your connection.'
-  return message
-}
-
-function friendlyOtpError(message: string): string {
-  const msg = message.toLowerCase()
-  if (msg.includes('invalid') || msg.includes('expired') || msg.includes('token'))
-    return 'Incorrect or expired code. Please try again.'
-  if (msg.includes('network') || msg.includes('fetch'))
-    return 'Network error. Please check your connection.'
-  return message
-}
-
-function isBlockingPhoneError(message: string): boolean {
-  const msg = message.toLowerCase()
-  return (
-    msg.includes('rate') ||
-    msg.includes('too many') ||
-    msg.includes('not enabled') ||
-    msg.includes('phone provider') ||
-    msg.includes('sms') ||
-    msg.includes('network') ||
-    msg.includes('fetch')
-  )
-}
 
 // Minimal country prefix picker for web (avoids MaskedView dependency)
 function WebCountryPicker({
@@ -205,6 +171,7 @@ export function AuthModal({ onClose }: Props) {
   // Shared
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const showErrorContent = mainTab === 'email' ? emailFlow.error : error
   const [hasEverSignedIn, setHasEverSignedIn] = useState(false)
   const [isNewUser, setIsNewUser] = useState(false)
 
@@ -242,7 +209,7 @@ export function AuthModal({ onClose }: Props) {
     } catch (firstErr: any) {
       const msg = firstErr?.message ?? ''
       if (isBlockingPhoneError(msg)) {
-        setError(friendlyPhoneError(msg || 'Failed to send code. Please try again.'))
+        setError(classifyAuthError(firstErr, 'AuthModal.sendCode').message)
       } else {
         // No account found — auto-create and still send OTP
         try {
@@ -251,9 +218,7 @@ export function AuthModal({ onClose }: Props) {
           setResendCooldown(60)
           setPhoneOtpSent(true)
         } catch (createErr: any) {
-          setError(
-            friendlyPhoneError(createErr?.message ?? 'Failed to send code. Please try again.')
-          )
+          setError(classifyAuthError(createErr, 'AuthModal.sendCode.create').message)
         }
       }
     } finally {
@@ -269,7 +234,7 @@ export function AuthModal({ onClose }: Props) {
       onClose()
     } catch (err: any) {
       setPhoneCode('')
-      setError(friendlyOtpError(err?.message ?? 'Verification failed.'))
+      setError(classifyAuthError(err, 'AuthModal.verifyOtp').message)
     } finally {
       setLoading(false)
     }
@@ -283,7 +248,7 @@ export function AuthModal({ onClose }: Props) {
       setPhoneCode('')
       setError(null)
     } catch (err: any) {
-      setError(friendlyPhoneError(err?.message ?? 'Could not resend code.'))
+      setError(classifyAuthError(err, 'AuthModal.resendOtp').message)
     }
   }
 

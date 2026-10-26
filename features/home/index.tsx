@@ -25,6 +25,7 @@ import { RecentlyViewed } from './cards/RecentlyViewed'
 import { useExploreSections } from './ExplorePage'
 import { useFeedSections } from './FeedPage'
 import { PortfolioSummary } from './PortfolioSummary'
+import { TickerTape } from './TickerTape'
 import { TabValue, tabValues, useHomePageStore } from './provider'
 import { HomeRefreshProvider, useHomeRefreshControl } from './refresh-provider'
 
@@ -214,6 +215,8 @@ function HomeContent({
           onToggleCollection={onToggleCollection}
         />
       </OnboardingTarget>
+
+      <TickerTape style={{ marginHorizontal: 12, marginBottom: 8 }} />
 
       <OnboardingTarget id="tab-list">
         <View style={{ flexDirection: 'row', paddingHorizontal: 8 }}>

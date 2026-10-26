@@ -10,6 +10,8 @@ import {
   PersonStanding,
   Route,
   ShieldBan,
+  Square,
+  SquareDashed,
   Sun,
   SunMoon,
   UserPen,
@@ -83,6 +85,25 @@ export const SETTINGS_SECTIONS: Record<string, SettingsLayoutSection> = {
       },
     },
   },
+  ...(process.env.NODE_ENV !== 'production'
+    ? {
+        developer: {
+          label: 'Developer',
+          items: {
+            cardBorders: {
+              key: 'cardBorders',
+              label: 'Card borders',
+              type: 'toggle',
+              Icon: Square,
+              values: [
+                { Icon: Square, value: 'on' },
+                { Icon: SquareDashed, value: 'off' },
+              ],
+            },
+          },
+        },
+      }
+    : {}),
   social: {
     label: 'Socials and Interactions',
     items: {

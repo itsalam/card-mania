@@ -1,6 +1,7 @@
 import { fetchCardHedgeResults } from '@cardhedge'
 import { CardHedgeCard, SearchResultItem } from '@types'
 import { sha256HexStr, vendorUUID } from '@utils'
+import { canonicalGradeKey } from '@grade-key'
 
 export type CardHedgeConfig = {
   apiBase: string
@@ -23,10 +24,8 @@ export async function convertCardHedgeItems(cards: CardHedgeCard[]): Promise<{
       let latest_price: number | null = null
       if (card.prices) {
         for (const { grade, price } of card.prices) {
-          const raw_key = grade.toLowerCase().replace(/\s+/g, '_')
-          const key = raw_key === 'raw' ? 'ungraded' : raw_key
           const val = parseFloat(price) * 100
-          if (!isNaN(val)) grades_prices[key] = val
+          if (!isNaN(val)) grades_prices[canonicalGradeKey(grade)] = val
         }
         // Use the Raw grade price as latest_price, or the lowest available
         const rawEntry = card.prices.find((p) => p.grade.toLowerCase() === 'raw')

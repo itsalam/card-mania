@@ -11,7 +11,11 @@ import { CollectionItemQueryView, CollectionRow } from '@/lib/store/functions/ty
 
 import { useIsWishlisted } from '@/client/card/wishlist'
 import { CollectionLike } from '@/client/collections/types'
-import { THUMBNAIL_HEIGHT } from '@/components/tcg-card/consts'
+import {
+  CARD_LIST_GAP,
+  CARD_LIST_ROW_PADDING,
+  LIST_THUMBNAIL_HEIGHT,
+} from '@/components/tcg-card/consts'
 import { FadeScrollView } from '@/components/ui/fade-scroll'
 import { Tabs } from '@/components/ui/tabs'
 import { Text } from '@/components/ui/text/base-text'
@@ -569,7 +573,7 @@ const DetailCollectionView = ({ direction }: { direction: 'forward' | 'backward'
             style={{
               position: 'absolute',
               left: 4,
-              top: THUMBNAIL_HEIGHT,
+              top: LIST_THUMBNAIL_HEIGHT + CARD_LIST_ROW_PADDING,
               bottom: 0,
               width: 3,
               marginTop: 8,
@@ -700,7 +704,7 @@ const DetailCollectionView = ({ direction }: { direction: 'forward' | 'backward'
                 data={listData}
                 contentContainerStyle={{
                   display: 'flex',
-                  gap: 18,
+                  gap: CARD_LIST_GAP,
                   paddingTop: collection?.is_selling ? 0 : 18,
                   paddingBottom: 20,
                 }}

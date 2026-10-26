@@ -17,7 +17,23 @@ import { tva } from '@gluestack-ui/nativewind-utils/tva'
 import * as React from 'react'
 import { View } from 'react-native'
 import Svg, { Defs, FeComposite, FeGaussianBlur, Filter } from 'react-native-svg'
-import { Card } from 'react-native-ui-lib'
+import { Card, Colors } from 'react-native-ui-lib'
+
+/**
+ * The "glass" surface: translucent elevated fill + hairline outline. A plain fill rather than a
+ * BlurView so it stays cheap when repeated down a long list. Call at render time — Colors
+ * tokens resolve against the active theme, so this must not be hoisted into a StyleSheet.
+ * Reference: Klarna dark-mode product list, stacked rounded cards
+ * (https://refero.design/screens/4023c1b3-a2ee-43ae-97f0-ddc61d8b526f).
+ */
+export function glassSurfaceStyle() {
+  return {
+    backgroundColor: Colors.rgba(Colors.$backgroundElevated, 0.45),
+    borderWidth: 1,
+    // Full-strength outline (as PortfolioSummary uses) — at 0.4 alpha it vanished in light mode.
+    borderColor: Colors.$outlineNeutral,
+  }
+}
 
 const cardVariants = tva({
   base: 'relative',
@@ -105,7 +121,17 @@ type CardRef = React.ComponentRef<typeof Card>
 
 const LiquidGlassCard = React.forwardRef<CardRef, LiquidGlassCardProps>(
   (
-    { className, variant, size, hover, asChild = false, glassEffect = true, children, ...props },
+    {
+      className,
+      variant,
+      size,
+      hover,
+      asChild = false,
+      glassEffect = true,
+      style,
+      children,
+      ...props
+    },
     ref
   ) => {
     return (
@@ -115,7 +141,11 @@ const LiquidGlassCard = React.forwardRef<CardRef, LiquidGlassCardProps>(
           cardVariants({ variant, size, hover, className }),
           className
         )}
+        // ui-lib's default shadow shows through a translucent fill, so glass drops it; callers
+        // that want depth (e.g. AvailableNow) still pass their own shadow* style.
+        enableShadow={!glassEffect}
         {...props}
+        style={[glassEffect && glassSurfaceStyle(), style]}
         ref={ref}
       >
         {children}

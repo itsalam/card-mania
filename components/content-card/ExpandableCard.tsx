@@ -79,7 +79,7 @@ export function ItemRail<T>({
         snapToAlignment="start"
         className="overflow-visible"
       >
-        <View className={cn('gap-x-2.5 gap-y-4 p-4 flex flex-row', containerClassNames)}>
+        <View className={cn('gap-x-2 gap-y-2 p-4 flex flex-row', containerClassNames)}>
           {items.map((item, i) => (
             <View
               key={keyExtractor(item, i)}
@@ -184,7 +184,7 @@ export function ExpandableCard<T extends { id: string }>({
           }
         >
           <ScrollView className="overflow-visible">
-            <View className={cn('gap-x-2.5 gap-y-4 p-4 flex flex-col', containerClassNames)}>
+            <View className={cn('gap-x-2 gap-y-2 p-4 flex flex-col', containerClassNames)}>
               {items.map((item, i) => (
                 <View key={`${item.id}-${i}`}>{renderItem({ item, isOpen: true }, i)}</View>
               ))}

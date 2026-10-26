@@ -2,6 +2,7 @@ import { useImageProxy } from '@/client/image-proxy'
 import { CARD_ASPECT_RATIO } from '@/components/consts'
 import React from 'react'
 import { StyleProp, ViewStyle } from 'react-native'
+import { useCardBorderStyle } from '../../components/tcg-card/CardFrame'
 import { THUMBNAIL_HEIGHT, THUMBNAIL_WIDTH } from '../../components/tcg-card/consts'
 import { LiquidGlassCard, LiquidGlassCardProps } from '../../components/tcg-card/GlassCard'
 import { LoadingImagePlaceholder } from '../../components/tcg-card/placeholders'
@@ -25,6 +26,7 @@ export function CardImage(props: {
     ...displayData?.imageProxyArgs,
   })
   const thumbnailImg = thumbnailImgResult?.url
+  const borderStyle = useCardBorderStyle()
 
   // Deliberately NOT the resolved image's own pixel ratio — the card slot always keeps a
   // uniform aspect ratio (falling back to the standard card ratio) and the photo is fit
@@ -46,6 +48,8 @@ export function CardImage(props: {
           aspectRatio,
         },
         cardContainerStyle,
+        // Bare art (glassEffect={false}, e.g. inside CardTile) is framed by its container.
+        imageProps?.glassEffect !== false && borderStyle,
       ]}
       {...imageProps}
     >

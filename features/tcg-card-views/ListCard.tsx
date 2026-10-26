@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button'
 import { WishlistCard } from '@/components/ui/icon'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Text } from '@/components/ui/text/base-text'
-import { formatLabel, formatPrice } from '@/components/utils'
+import { formatPrice } from '@/components/utils'
 import { TCard } from '@/constants/types'
 import { CollectionItemQueryView } from '@/lib/store/functions/types'
 import { cn } from '@/lib/utils/cn'
@@ -13,6 +13,10 @@ import { Layers, Maximize, TrendingDown, TrendingUp } from 'lucide-react-native'
 import { forwardRef, ReactNode } from 'react'
 import { Pressable, StyleSheet, View } from 'react-native'
 import { Colors } from 'react-native-ui-lib'
+import { CardTile } from '../../components/tcg-card/CardTile'
+import { GradeBadge } from '../../components/tcg-card/GradeBadge'
+import { CARD_LIST_ROW_PADDING, LIST_THUMBNAIL_WIDTH } from '../../components/tcg-card/consts'
+import { glassSurfaceStyle } from '../../components/tcg-card/GlassCard'
 import { useNavigateToItem } from '../../components/tcg-card/helpers'
 import { CardImage } from './card-image'
 import { getCardDisplayData } from './helpers'
@@ -53,9 +57,6 @@ function GainBadge({ gain, value }: { gain: number; value: number }) {
 export const MainInfoAccessories = ({ displayData, gain, hide }: ItemListViewProps) => {
   return (
     <View className="flex-1 flex flex-col justify-start">
-      {displayData?.metadata && !hide?.grade && (
-        <Text variant={'stats'}>{formatLabel(displayData?.metadata)}</Text>
-      )}
       {!hide?.price && (
         <View style={[styles.priceContainer]}>
           {displayData?.displayPrice ? (
@@ -219,11 +220,51 @@ export const ItemListView = forwardRef<View, ItemListViewProps>(function ItemLis
       : undefined,
   })
 
+  // Collapsed (e.g. Recently Viewed's carousel): the shared glass tile, with the art bare inside
+  // it so there's one frame rather than CardImage's own glass card nested in the tile's.
+  if (!expanded && !vertical) {
+    const press = onPress ?? handlePress
+    return (
+      <CardTile
+        title={displayData?.title}
+        subtitle={displayData?.subHeading}
+        badge={!props.hide?.grade && <GradeBadge priceKey={displayData?.metadata} />}
+        price={displayData?.displayPrice ? displayData.displayPrice * 100 : null}
+        changePercent={props.gain}
+        isLoading={props.isLoading}
+        onPress={press}
+        renderArt={({ width, height }) => (
+          <CardImage
+            displayData={displayData}
+            width={width}
+            height={height}
+            isLoading={props.isLoading}
+            cardContainerStyle={{ borderRadius: 0 }}
+            imageProps={{
+              glassEffect: false,
+              enableShadow: false,
+              onPress: press,
+              ref: cardElement,
+            }}
+          />
+        )}
+      />
+    )
+  }
+
+  // Expanded horizontal rows (collection, storefront, marketplace, search) sit on the same glass
+  // surface as LiquidGlassCard; vertical tiles and collapsed carousel thumbnails stay bare.
+  const isListRow = !vertical && expanded
+
   return (
     <Pressable
       ref={ref}
       className={cn('items-start flex', vertical ? '' : 'flex-row w-full', className)}
-      style={({ pressed }) => [style, { opacity: pressed ? 0.85 : 1 }]}
+      style={({ pressed }) => [
+        isListRow && [styles.listRow, glassSurfaceStyle()],
+        style,
+        { opacity: pressed ? 0.85 : 1 },
+      ]}
       onPress={onPress ?? handlePress}
     >
       <View
@@ -241,11 +282,17 @@ export const ItemListView = forwardRef<View, ItemListViewProps>(function ItemLis
         <View style={vertical ? { marginHorizontal: 'auto' } : {}}>
           <CardImage
             displayData={displayData}
+            width={isListRow ? LIST_THUMBNAIL_WIDTH : undefined}
             imageProps={{
               onPress: onPress ?? handlePress,
               ref: cardElement,
             }}
           />
+          {!props.hide?.grade && displayData?.metadata && (
+            <View style={{ position: 'absolute', top: 6, left: 6 }}>
+              <GradeBadge priceKey={displayData.metadata} />
+            </View>
+          )}
           {imageAccessory !== undefined
             ? imageAccessory
             : item?.id && (
@@ -319,6 +366,7 @@ function HorizontalAccessory(props: ItemListViewProps) {
 }
 
 const styles = StyleSheet.create({
+  listRow: { borderRadius: 20, padding: CARD_LIST_ROW_PADDING },
   buttonIcon: { width: 28, height: 28 },
   button: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center' },
   priceContainer: {

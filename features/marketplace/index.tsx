@@ -34,7 +34,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Colors } from 'react-native-ui-lib'
 import { FeaturedCard, type FeaturedCardItem } from './FeaturedCard'
-import { GridCard } from './GridCard'
+import { chunkGridRows, GRID_COLUMNS, GRID_GAP, GridCard, gridCellWidth } from './GridCard'
 import { MarketListItem } from './MarketListItem'
 import { SellerCard } from './SellerCard'
 
@@ -169,13 +169,13 @@ function CardRowSkeleton({ mode }: { mode: ViewMode }) {
 
 function GridSkeleton() {
   const { width: windowWidth } = useWindowDimensions()
-  const cellWidth = Math.floor((windowWidth - 32 - 24 - 8) / 2)
+  const cellWidth = gridCellWidth(windowWidth - 32 - 24)
   const cellHeight = Math.round(cellWidth / CARD_ASPECT_RATIO)
   return (
-    <View style={{ padding: 12, gap: 8 }}>
+    <View style={{ padding: 12, gap: GRID_GAP }}>
       {[0, 1].map((row) => (
-        <View key={row} style={{ flexDirection: 'row', gap: 8 }}>
-          {[0, 1].map((col) => (
+        <View key={row} style={{ flexDirection: 'row', gap: GRID_GAP }}>
+          {Array.from({ length: GRID_COLUMNS }, (_, col) => col).map((col) => (
             <Skeleton
               key={col}
               style={{ width: cellWidth, height: cellHeight, borderRadius: 10 }}
@@ -218,14 +218,12 @@ function SectionItems({ items, mode }: { items: FeaturedCardItem[]; mode: ViewMo
   const { width: windowWidth, height: windowHeight } = useWindowDimensions()
 
   if (mode === 'grid') {
-    const cellWidth = Math.floor((windowWidth - 32 - 24 - 8) / 2)
-    const rows: FeaturedCardItem[][] = []
-    for (let i = 0; i < items.length; i += 2) rows.push(items.slice(i, i + 2))
+    const cellWidth = gridCellWidth(windowWidth - 32 - 24)
     return (
       <View style={styles.gridContent}>
-        {rows.map((pair, rowIdx) => (
+        {chunkGridRows(items).map((row, rowIdx) => (
           <View key={rowIdx} style={styles.gridRow}>
-            {pair.map((item) => (
+            {row.map((item) => (
               <GridCard key={item.id} item={item} width={cellWidth} />
             ))}
           </View>
@@ -243,11 +241,8 @@ function SectionItems({ items, mode }: { items: FeaturedCardItem[]; mode: ViewMo
         style={{ maxHeight: cropHeight }}
         contentContainerStyle={styles.listContent}
       >
-        {items.map((item, i) => (
-          <View key={item.id}>
-            {i > 0 && <View style={styles.listDivider} />}
-            <MarketListItem item={item} />
-          </View>
+        {items.map((item) => (
+          <MarketListItem key={item.id} item={item} />
         ))}
       </FadeScrollView>
     )
@@ -721,23 +716,19 @@ const styles = StyleSheet.create({
   // Two-column grid mode
   gridContent: {
     padding: 12,
-    gap: 8,
+    gap: GRID_GAP,
   },
   gridRow: {
     flexDirection: 'row',
-    gap: 8,
+    gap: GRID_GAP,
   },
 
   // List mode
+  // Rows are self-contained glass cards (ItemListView), so they're spaced rather than divided.
   listContent: {
     paddingHorizontal: 16,
     paddingBottom: 16,
-    gap: 0,
-  },
-  listDivider: {
-    height: StyleSheet.hairlineWidth,
-    backgroundColor: Colors.rgba(Colors.$outlineNeutral, 0.25),
-    marginVertical: 10,
+    gap: GRID_GAP,
   },
 
   countBadge: {

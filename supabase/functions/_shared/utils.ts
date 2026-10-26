@@ -486,22 +486,16 @@ export function toCardHedgeGradeLabel(key: string): string | null {
 }
 
 /**
- * Normalize a CardHedge grade label to the internal grade key stored in
- * cards.grades_prices and card_price_history.
- *
- * This is the inverse of toCardHedgeGradeLabel and matches the normalization
- * already applied in fetch-card when processing CardHedge search results.
+ * Normalize a CardHedge grade label to the canonical grade key stored in
+ * cards.grades_prices and card_price_history — the inverse of toCardHedgeGradeLabel.
+ * See _shared/grade-key.ts.
  *
  * Examples:
  *   "Raw"     → "ungraded"
- *   "PSA 9"   → "psa_9"
- *   "PSA 10"  → "psa_10"
- *   "BGS 9.5" → "bgs_9.5"
+ *   "PSA 10"  → "psa10"
+ *   "BGS 9.5" → "bgs9_5"
  */
-export function normalizeGradeKey(chLabel: string): string {
-  const key = chLabel.toLowerCase().replace(/\s+/g, '_')
-  return key === 'raw' ? 'ungraded' : key
-}
+export { canonicalGradeKey as normalizeGradeKey } from './grade-key.ts'
 
 export const DEBUG = (Deno.env.get('DEBUG') ?? 'false').toLowerCase() === 'true'
 

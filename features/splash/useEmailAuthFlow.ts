@@ -1,25 +1,9 @@
 import { useUserStore } from '@/lib/store/useUserStore'
+import { reportError } from '@/lib/utils/report-error'
 import { useState } from 'react'
+import { classifyAuthError } from './authErrors'
 
 export type EmailAuthStep = 'email' | 'password'
-
-function friendlySignInError(message: string): string {
-  const msg = message.toLowerCase()
-  if (msg.includes('email not confirmed')) return 'Please confirm your email before signing in.'
-  if (msg.includes('network') || msg.includes('fetch'))
-    return 'Network error. Please check your connection.'
-  return message
-}
-
-function isCredentialsError(msg: string): boolean {
-  const m = msg.toLowerCase()
-  return (
-    m.includes('invalid login') ||
-    m.includes('invalid credentials') ||
-    m.includes('wrong password') ||
-    m.includes('user not found')
-  )
-}
 
 export type EmailAuthFlow = {
   email: string
@@ -37,7 +21,7 @@ export type EmailAuthFlow = {
   clearSignupEmail: () => void
   /** Email step → check existence → advance to password OR set signupEmail */
   handleContinue: () => Promise<void>
-  /** Password step → attempt sign in → on credentials error, set signupEmail */
+  /** Password step → attempt sign in → on failure, set a friendly inline error */
   handleSignIn: (onSuccess?: () => void) => Promise<void>
   resetToEmailStep: () => void
 }
@@ -67,8 +51,10 @@ export function useEmailAuthFlow(): EmailAuthFlow {
       } else {
         setSignupEmail(email.trim())
       }
-    } catch {
-      // RPC unavailable — fall through to password step so sign-in can still work
+    } catch (err) {
+      // RPC unavailable — fall through to password step so sign-in can still work,
+      // but log it since this lookup should never fail.
+      reportError({ context: 'useEmailAuthFlow.checkEmailRegistered', error: err })
       setEmailStep('password')
     } finally {
       setLoading(false)
@@ -85,13 +71,11 @@ export function useEmailAuthFlow(): EmailAuthFlow {
     try {
       await signIn(email.trim(), password)
       onSuccess?.()
-    } catch (err: any) {
-      const msg = err?.message ?? ''
-      if (isCredentialsError(msg)) {
-        setSignupEmail(email.trim())
-      } else {
-        setError(friendlySignInError(msg || 'Sign in failed.'))
-      }
+    } catch (err) {
+      // The email was already confirmed registered in handleContinue, so a
+      // credentials error here means a wrong password — keep the user on the
+      // password step rather than bouncing them into sign-up.
+      setError(classifyAuthError(err, 'useEmailAuthFlow.signIn').message)
     } finally {
       setLoading(false)
     }

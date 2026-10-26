@@ -1,7 +1,12 @@
 import { useCardQuery } from '@/client/card'
 import { useIsWishlisted } from '@/client/card/wishlist'
 import { ExpandableCard } from '@/components/content-card'
-import { THUMBNAIL_HEIGHT, THUMBNAIL_WIDTH } from '@/components/tcg-card/consts'
+import { DEFAULT_CARD_TILE_WIDTH } from '@/components/tcg-card/CardTile'
+import {
+  CARD_LIST_GAP,
+  CARD_LIST_ROW_PADDING,
+  LIST_THUMBNAIL_HEIGHT,
+} from '@/components/tcg-card/consts'
 import { LiquidGlassCard } from '@/components/tcg-card/GlassCard'
 import { CardListView } from '@/features/tcg-card-views/ListCard'
 import { useRecentViews } from '@/lib/store/functions/hooks'
@@ -9,7 +14,9 @@ import { Database } from '@/lib/store/supabase'
 import { History } from 'lucide-react-native'
 import React, { ComponentProps } from 'react'
 
-const EXPANDED_CARD_HEIGHT = THUMBNAIL_HEIGHT + 24
+// Expanded panel shows ~3 glass list rows before scrolling (+ ExpandableCard's p-4).
+const EXPANDED_ROW_HEIGHT = LIST_THUMBNAIL_HEIGHT + CARD_LIST_ROW_PADDING * 2
+const EXPANDED_HEIGHT = EXPANDED_ROW_HEIGHT * 3 + CARD_LIST_GAP * 2 + 32
 
 export function RecentlyViewedCard({
   isOpen = false,
@@ -41,7 +48,9 @@ export function RecentlyViewed() {
     <ExpandableCard
       icon={History}
       title="Recently Viewed"
-      itemWidth={THUMBNAIL_WIDTH}
+      // Collapsed items render as CardTile (ItemListView) at its default width.
+      itemWidth={DEFAULT_CARD_TILE_WIDTH}
+      getExpandedHeight={() => EXPANDED_HEIGHT}
       items={recentViews ?? []}
       renderItem={({ isOpen, item }, index) => (
         <RecentlyViewedCard

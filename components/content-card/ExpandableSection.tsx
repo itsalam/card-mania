@@ -75,7 +75,7 @@ export function useExpandableSection<T extends { id: string }>({
   )
 
   const body = isOpen ? (
-    <View className={cn('flex flex-col gap-y-4 p-4', containerClassNames)}>
+    <View className={cn('flex flex-col gap-y-2 p-4', containerClassNames)}>
       {items.map((item, i) => (
         <View key={`${item?.id}-${i}`}>{renderItem({ item, isOpen: true }, i)}</View>
       ))}
@@ -102,7 +102,7 @@ export function useExpandableSection<T extends { id: string }>({
         snapToAlignment="start"
         className="overflow-visible"
       >
-        <View className={cn('gap-x-2.5 gap-y-4 p-4 flex flex-row', containerClassNames)}>
+        <View className={cn('gap-x-2 gap-y-2 p-4 flex flex-row', containerClassNames)}>
           {items.map((item, i) => (
             <View
               key={`${item?.id}-${i}`}

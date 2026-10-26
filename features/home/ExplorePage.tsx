@@ -6,7 +6,7 @@ import {
 import { SectionHeader } from '@/components/ui/section-header'
 import { Text } from '@/components/ui/text/base-text'
 import { type FeaturedCardItem } from '@/features/marketplace/FeaturedCard'
-import { GridCard } from '@/features/marketplace/GridCard'
+import { chunkGridRows, GRID_GAP, GridCard, gridCellWidth } from '@/features/marketplace/GridCard'
 import { MarketListItem } from '@/features/marketplace/MarketListItem'
 import {
   Clock,
@@ -115,14 +115,12 @@ function ExploreSectionBody({ items, mode }: { items: FeaturedCardItem[]; mode: 
   const { width: windowWidth } = useWindowDimensions()
 
   if (mode === 'grid') {
-    const cellWidth = Math.floor((windowWidth - 32 - 12) / 2)
-    const rows: FeaturedCardItem[][] = []
-    for (let i = 0; i < items.length; i += 2) rows.push(items.slice(i, i + 2))
+    const cellWidth = gridCellWidth(windowWidth - 32)
     return (
-      <View style={{ paddingHorizontal: 16, paddingBottom: 8, gap: 16 }}>
-        {rows.map((pair, rowIdx) => (
-          <View key={rowIdx} style={{ flexDirection: 'row', gap: 12 }}>
-            {pair.map((item) => (
+      <View style={{ paddingHorizontal: 16, paddingBottom: 8, gap: GRID_GAP }}>
+        {chunkGridRows(items).map((row, rowIdx) => (
+          <View key={rowIdx} style={{ flexDirection: 'row', gap: GRID_GAP }}>
+            {row.map((item) => (
               <GridCard key={item.id} item={item} width={cellWidth} />
             ))}
           </View>
@@ -132,20 +130,10 @@ function ExploreSectionBody({ items, mode }: { items: FeaturedCardItem[]; mode: 
   }
 
   return (
-    <View style={{ paddingHorizontal: 16, paddingBottom: 8 }}>
-      {items.map((item, i) => (
-        <View key={item.id}>
-          {i > 0 && (
-            <View
-              style={{
-                height: 1,
-                backgroundColor: Colors.rgba(Colors.$outlineNeutral, 0.15),
-                marginVertical: 4,
-              }}
-            />
-          )}
-          <MarketListItem item={item} />
-        </View>
+    // Rows are self-contained glass cards (ItemListView), so they're spaced rather than divided.
+    <View style={{ paddingHorizontal: 16, paddingBottom: 8, gap: GRID_GAP }}>
+      {items.map((item) => (
+        <MarketListItem key={item.id} item={item} />
       ))}
     </View>
   )

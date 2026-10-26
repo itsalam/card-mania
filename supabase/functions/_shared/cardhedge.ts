@@ -1,4 +1,5 @@
 import { CardHedgeCard, CardHedgePricePoint, CardMatchResponse } from '@types'
+import { CardHedgeGradePrice, fetchWithBackoff } from './cardhedge-prices.ts'
 
 /**
  * Search CardHedge for card listings.
@@ -10,14 +11,20 @@ export async function fetchCardHedgeResults(
   apiBase: string,
   limit: number
 ): Promise<CardHedgeCard[]> {
-  const resp = await fetch(`${apiBase}/v1/cards/card-search`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-API-Key': apiKey,
-    },
-    body: JSON.stringify({ search: query, page_size: Math.min(limit, 100), raw_images_only: true }),
-  })
+  const resp = await fetchWithBackoff(() =>
+    fetch(`${apiBase}/v1/cards/card-search`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-API-Key': apiKey,
+      },
+      body: JSON.stringify({
+        search: query,
+        page_size: Math.min(limit, 100),
+        raw_images_only: true,
+      }),
+    })
+  )
 
   if (!resp.ok) {
     const body = await resp.text()
@@ -39,19 +46,45 @@ export async function fetchCardHedgeMatch(
   apiBase: string,
   options?: { category?: string; maxCandidates?: number }
 ): Promise<CardMatchResponse> {
-  const resp = await fetch(`${apiBase}/v1/cards/card-match`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'X-API-Key': apiKey },
-    body: JSON.stringify({
-      query,
-      category: options?.category,
-      max_candidates: options?.maxCandidates ?? 10,
-    }),
-  })
+  const resp = await fetchWithBackoff(() =>
+    fetch(`${apiBase}/v1/cards/card-match`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-API-Key': apiKey },
+      body: JSON.stringify({
+        query,
+        category: options?.category,
+        max_candidates: options?.maxCandidates ?? 10,
+      }),
+    })
+  )
   if (!resp.ok) {
     throw new Error(`CardHedge card-match error ${resp.status}: ${await resp.text()}`)
   }
   return (await resp.json()) as CardMatchResponse
+}
+
+/**
+ * Latest price for every grade of one CardHedger card in a single call.
+ * Uses POST /v1/cards/all-prices-by-card; map with mapAllPrices (@cardhedge-prices).
+ * Retries 429/5xx; throws RateLimitedError when CardHedger keeps rate limiting.
+ */
+export async function fetchCardHedgeAllPrices(
+  cardId: string,
+  apiKey: string,
+  apiBase: string
+): Promise<CardHedgeGradePrice[]> {
+  const resp = await fetchWithBackoff(() =>
+    fetch(`${apiBase}/v1/cards/all-prices-by-card`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-API-Key': apiKey },
+      body: JSON.stringify({ card_id: cardId }),
+    })
+  )
+  if (!resp.ok) {
+    throw new Error(`CardHedge all-prices error ${resp.status}: ${await resp.text()}`)
+  }
+  const data = (await resp.json()) as { prices?: CardHedgeGradePrice[] }
+  return data.prices ?? []
 }
 
 /**

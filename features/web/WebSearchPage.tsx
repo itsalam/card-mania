@@ -1,6 +1,7 @@
 import { useCardSearch } from '@/client/price-charting'
 import { useImageProxy } from '@/client/image-proxy'
 import { GradientBackground } from '@/components/Background'
+import { CardFrame } from '@/components/tcg-card/CardFrame'
 import { Skeleton } from '@/components/ui/skeleton'
 import { SearchBar } from '@/components/ui/search'
 import { Text } from '@/components/ui/text/base-text'
@@ -39,11 +40,10 @@ function CardResultItem({ item }: { item: TCardSearchItem }) {
 
   return (
     <Pressable onPress={handlePress}>
-      <View
+      <CardFrame
         style={{
           backgroundColor: Colors.$backgroundElevated,
           borderRadius: 12,
-          overflow: 'hidden',
           width: '100%',
         }}
       >
@@ -72,7 +72,7 @@ function CardResultItem({ item }: { item: TCardSearchItem }) {
             </Text>
           )}
         </View>
-      </View>
+      </CardFrame>
     </Pressable>
   )
 }
