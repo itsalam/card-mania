@@ -1,0 +1,96 @@
+name: Deploy staging
+
+# Merging into `staging` deploys it: migrations + changed edge functions to the hosted staging
+# Supabase project (supabase/environments.json), via scripts/deploy.sh — the same script used
+# for manual deploys. Feature branches merge into `staging`; `staging` is promoted to `main`.
+#
+# Requires repository (or `staging` environment) secrets:
+#   SUPABASE_ACCESS_TOKEN  personal/CI access token (supabase.com/dashboard/account/tokens)
+#   SUPABASE_DB_PASSWORD   staging database password (used by `supabase link` / `db push`)
+# Vault secrets (project_url, edge_token) and function secrets are managed on the project and
+# are not touched here — see CLAUDE.md "Vault vs. function secrets".
+
+on:
+  push:
+    branches: [staging]
+  workflow_dispatch:
+
+# Never run two deploys at once, and never cancel one mid-migration.
+concurrency:
+  group: deploy-staging
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: staging
+    timeout-minutes: 30
+    permissions:
+      contents: write # push the deploy-staging-* tag and regenerated DB types
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # deploy-staging-* tags are the baseline for "functions changed since last deploy".
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      # npm ci (not install) so the lockfile isn't rewritten — deploy.sh refuses a dirty tree.
+      - run: npm ci
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: 2.39.2
+
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
+      - name: Configure git (deploy tag author)
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      # Fresh local Postgres with every migration applied from scratch: also proves the
+      # migrations apply cleanly before they touch staging.
+      - name: Start local database
+        run: supabase db start
+
+      - name: pgTAP tests
+        run: supabase test db
+
+      - name: Deno tests
+        run: deno test --no-lock $(find supabase/functions -name '*.test.ts' -not -path '*/node_modules/*' | sort)
+
+      - name: Deploy to staging
+        # Tests ran above with readable output, so skip deploy.sh's own (silent) test pass.
+        run: scripts/deploy.sh staging --yes --skip-tests
+
+      - name: Commit regenerated DB types
+        run: |
+          TYPES="lib/store/supabase.d.ts supabase/functions/_shared/supabase.ts"
+          if [ -n "$(git status --porcelain $TYPES)" ]; then
+            git add $TYPES
+            git commit -m "chore(types): regenerate DB types after staging deploy [skip ci]"
+            git pull --rebase origin staging
+            git push origin HEAD:staging
+          else
+            echo "DB types unchanged"
+          fi
+
+      - name: Summary
+        if: always()
+        run: |
+          {
+            echo "### Staging deploy (${{ job.status }})"
+            echo "Commit: \`$(git rev-parse --short HEAD)\`"
+            echo "Tag: \`$(git tag -l 'deploy-staging-*' --sort=-creatordate | head -1)\`"
+            echo
+            echo "Check after the next cron tick: \`select * from price_refresh_backlog;\`, \`select * from enrichment_backlog;\`"
+          } >> "$GITHUB_STEP_SUMMARY"

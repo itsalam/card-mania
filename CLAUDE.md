@@ -12,14 +12,15 @@ github.com/itsalam/card-mania
 
 ## Active work
 
-- Branch: `vincentthanhlam/its-83-web-card-page-and-search`
+- Branch: `vincentthanhlam/wishlist-hits-price-refresh` (PR into `staging`)
 - Milestone: v0.1 — Demo Ready
 
 ## Environments & deploys
 
 - **Local** — `supabase start` (API `127.0.0.1:54321`, DB `postgresql://postgres:postgres@127.0.0.1:54322/postgres`, Studio `127.0.0.1:54323`).
 - **Staging** — the only hosted Supabase project (`zijgqgpwmqrgnzcictcb`, defined in `supabase/environments.json`). Used to test against live vendor APIs and services; it is _not_ production, and there is no production project yet. The EAS `preview`/`beta`/`production` env files and `app.config.js`'s fallback all point at it. Call it staging, not prod.
-- **Deploys are manual** — nothing deploys on merge (CI only lints/exports web). Run `scripts/deploy.sh staging` (`npm run deploy:staging`): preflight (auth, git, pgTAP + Deno tests, pending-migration dry run, function change detection, missing secrets) → confirm → `supabase db push` → `supabase functions deploy` per function → `npm run db:types` → `deploy-staging-<timestamp>` git tag. Use `--dry-run` first. Never deploy functions with `--prune` (staging has functions with no local source).
+- **Branch flow** — feature branches open PRs into **`staging`** (not `main`). Merging into `staging` deploys it; `staging` is promoted to `main` once verified.
+- **Staging deploys are automatic on merge** — `.github/workflows/deploy-staging.yml` runs on every push to `staging`: fresh local DB (`supabase db start`, proves migrations apply from scratch) → pgTAP + Deno tests → `scripts/deploy.sh staging --yes` (`supabase db push` → `supabase functions deploy` per changed function → `npm run db:types` → `deploy-staging-<timestamp>` git tag) → commits regenerated DB types back to `staging`. Needs repo/`staging`-environment secrets `SUPABASE_ACCESS_TOKEN` and `SUPABASE_DB_PASSWORD`. Manual deploys still work: `npm run deploy:staging` (preflight → confirm → same steps); use `--dry-run` first. Never deploy functions with `--prune` (staging has functions with no local source). CI (`ci.yml`) lints/exports web on PRs.
 - **Staging SQL** — Dashboard SQL editor, or `psql` with the connection string from the dashboard's Connect panel. Vendor keys are staging secrets (`supabase secrets list` shows names only; values aren't readable) — for local runs put them in `supabase/functions/.env.local` (gitignored; `supabase/functions/.env` is not) and pass `--env-file`.
 - **Vault vs. function secrets** — two separate stores. Edge function env vars are `supabase secrets set/list` (read via `Deno.env.get`). pg_cron jobs read `project_url` and `edge_token` from the **Postgres Vault** (`vault.decrypted_secrets`), managed only via SQL (`vault.create_secret` / `vault.update_secret`) or Dashboard → Integrations → Vault — `supabase secrets set edge_token=…` does _not_ update it. `edge_token` must be one of the project's service keys; staging uses the new API keys, so that's the `sb_secret_…` key, not the legacy `service_role` JWT. Internal cron-only functions check it with `isServiceRequest` (`_shared/service-auth.ts`). `cron.job_run_details` reports `succeeded` even when the call 401s — check `net._http_response` / the function's own ledger instead.
 

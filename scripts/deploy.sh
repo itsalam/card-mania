@@ -106,7 +106,8 @@ if ! git branch -r --contains HEAD 2>/dev/null | grep -q .; then
   yellow "! HEAD ($SHA) isn't pushed"
 fi
 green "✓ Git: $BRANCH @ $SHA"
-[ "$BRANCH" != "main" ] && yellow "! Deploying a non-main branch ($BRANCH)"
+# staging is the deploy branch (merges deploy via .github/workflows/deploy-staging.yml).
+case "$BRANCH" in staging | main) ;; *) yellow "! Deploying $BRANCH, not staging" ;; esac
 
 # ── preflight: tests ────────────────────────────────────────────────────────
 
