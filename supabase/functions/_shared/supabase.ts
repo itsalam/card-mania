@@ -181,6 +181,60 @@ export type Database = {
           },
         ]
       }
+      card_price_refresh_attempts: {
+        Row: {
+          card_id: string
+          cardhedge_id: string | null
+          created_at: string
+          error: string | null
+          grades: number | null
+          id: number
+          match_confidence: number | null
+          matched_description: string | null
+          outcome: string
+          run_id: string
+        }
+        Insert: {
+          card_id: string
+          cardhedge_id?: string | null
+          created_at?: string
+          error?: string | null
+          grades?: number | null
+          id?: never
+          match_confidence?: number | null
+          matched_description?: string | null
+          outcome: string
+          run_id: string
+        }
+        Update: {
+          card_id?: string
+          cardhedge_id?: string | null
+          created_at?: string
+          error?: string | null
+          grades?: number | null
+          id?: never
+          match_confidence?: number | null
+          matched_description?: string | null
+          outcome?: string
+          run_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'card_price_refresh_attempts_card_id_fkey'
+            columns: ['card_id']
+            isOneToOne: false
+            referencedRelation: 'cards'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'card_price_refresh_attempts_run_id_fkey'
+            columns: ['run_id']
+            isOneToOne: false
+            referencedRelation: 'price_refresh_runs'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       card_variants: {
         Row: {
           card_id: string
@@ -226,6 +280,10 @@ export type Database = {
           last_updated: string
           latest_price: number | null
           name: string
+          price_refresh_attempted_at: string | null
+          price_refresh_locked_at: string | null
+          price_refresh_status: string | null
+          prices_refreshed_at: string | null
           release_date: string | null
           sealed: boolean
           search_vector: unknown
@@ -246,6 +304,10 @@ export type Database = {
           last_updated?: string
           latest_price?: number | null
           name: string
+          price_refresh_attempted_at?: string | null
+          price_refresh_locked_at?: string | null
+          price_refresh_status?: string | null
+          prices_refreshed_at?: string | null
           release_date?: string | null
           sealed?: boolean
           search_vector?: unknown
@@ -266,6 +328,10 @@ export type Database = {
           last_updated?: string
           latest_price?: number | null
           name?: string
+          price_refresh_attempted_at?: string | null
+          price_refresh_locked_at?: string | null
+          price_refresh_status?: string | null
+          prices_refreshed_at?: string | null
           release_date?: string | null
           sealed?: boolean
           search_vector?: unknown
@@ -483,6 +549,8 @@ export type Database = {
           id: string
           item_kind: Database['public']['Enums']['item_kind']
           position: number
+          price_snapshot: Json | null
+          price_snapshot_at: string | null
           quantity: number
           ref_id: string
           updated_at: string
@@ -498,6 +566,8 @@ export type Database = {
           id?: string
           item_kind?: Database['public']['Enums']['item_kind']
           position?: number
+          price_snapshot?: Json | null
+          price_snapshot_at?: string | null
           quantity: number
           ref_id: string
           updated_at?: string
@@ -513,6 +583,8 @@ export type Database = {
           id?: string
           item_kind?: Database['public']['Enums']['item_kind']
           position?: number
+          price_snapshot?: Json | null
+          price_snapshot_at?: string | null
           quantity?: number
           ref_id?: string
           updated_at?: string
@@ -1497,6 +1569,51 @@ export type Database = {
         }
         Relationships: []
       }
+      price_refresh_runs: {
+        Row: {
+          claimed: number
+          error: string | null
+          failed: number
+          finished_at: string | null
+          id: string
+          refreshed: number
+          req_id: string
+          resolves_used: number
+          started_at: string
+          status: string
+          unchanged: number
+          unresolved: number
+        }
+        Insert: {
+          claimed?: number
+          error?: string | null
+          failed?: number
+          finished_at?: string | null
+          id?: string
+          refreshed?: number
+          req_id: string
+          resolves_used?: number
+          started_at?: string
+          status?: string
+          unchanged?: number
+          unresolved?: number
+        }
+        Update: {
+          claimed?: number
+          error?: string | null
+          failed?: number
+          finished_at?: string | null
+          id?: string
+          refreshed?: number
+          req_id?: string
+          resolves_used?: number
+          started_at?: string
+          status?: string
+          unchanged?: number
+          unresolved?: number
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -2388,6 +2505,51 @@ export type Database = {
         }
         Relationships: []
       }
+      wishlist_hit_notifications: {
+        Row: {
+          created_at: string
+          listing_item_id: string
+          notification_id: string | null
+          ref_id: string
+          seeded: boolean
+          user_id: string
+          wishlist_item_id: string
+        }
+        Insert: {
+          created_at?: string
+          listing_item_id: string
+          notification_id?: string | null
+          ref_id: string
+          seeded?: boolean
+          user_id: string
+          wishlist_item_id: string
+        }
+        Update: {
+          created_at?: string
+          listing_item_id?: string
+          notification_id?: string | null
+          ref_id?: string
+          seeded?: boolean
+          user_id?: string
+          wishlist_item_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'wishlist_hit_notifications_listing_item_id_fkey'
+            columns: ['listing_item_id']
+            isOneToOne: false
+            referencedRelation: 'collection_items'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'wishlist_hit_notifications_wishlist_item_id_fkey'
+            columns: ['wishlist_item_id']
+            isOneToOne: false
+            referencedRelation: 'collection_items'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       wishlist_kind: {
         Row: {
           name: string
@@ -2525,6 +2687,31 @@ export type Database = {
           },
         ]
       }
+      price_refresh_backlog: {
+        Row: {
+          claimed_24h: number | null
+          completed: number | null
+          last_run_at: string | null
+          last_run_status: string | null
+          leased_now: number | null
+          rate_limited: number | null
+          refreshed_24h: number | null
+          runs: number | null
+          stale: number | null
+          tracked_cards: number | null
+          unresolved: number | null
+        }
+        Relationships: []
+      }
+      price_refresh_outcomes: {
+        Row: {
+          attempts: number | null
+          avg_confidence: number | null
+          outcome: string | null
+          p10_confidence: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       _clamp_nonnegative: { Args: { val: number }; Returns: number }
@@ -2567,6 +2754,33 @@ export type Database = {
           variants: string[]
         }[]
       }
+      _wishlist_hits: {
+        Args: { p_user_id?: string }
+        Returns: {
+          current_price_cents: number
+          grading_company: string
+          listed_at: string
+          listing_collection_id: string
+          listing_item_id: string
+          name: string
+          price_key: string
+          prices_refreshed_at: string
+          ref_id: string
+          savings_pct: number
+          seller_avatar_url: string
+          seller_display_name: string
+          seller_id: string
+          seller_username: string
+          set_name: string
+          snapshot_at: string
+          snapshot_price_cents: number
+          storefront_id: string
+          user_id: string
+          wishlist_grade_condition_id: string
+          wishlist_item_id: string
+          wishlisted_at: string
+        }[]
+      }
       _wishlist_row_cost_cents: {
         Args: { p_kind: string; p_metadata?: Json; p_ref_id: string }
         Returns: number
@@ -2592,6 +2806,14 @@ export type Database = {
         }
         Returns: undefined
       }
+      apply_card_price_refresh: {
+        Args: {
+          p_card_id: string
+          p_latest_price_cents?: number
+          p_prices: Json
+        }
+        Returns: Json
+      }
       bump_search_query: {
         Args: {
           p_query_hash: string
@@ -2610,6 +2832,21 @@ export type Database = {
       claim_cards_for_backfill_enrichment: {
         Args: { p_lease_seconds?: number; p_limit: number }
         Returns: {
+          id: string
+          name: string
+          set_name: string
+        }[]
+      }
+      claim_cards_for_price_refresh: {
+        Args: {
+          p_lease_seconds?: number
+          p_limit: number
+          p_stale_hours?: number
+          p_unresolved_retry_hours?: number
+        }
+        Returns: {
+          cardhedge_id: string
+          genre: string
           id: string
           name: string
           set_name: string
@@ -2692,6 +2929,8 @@ export type Database = {
           id: string
           item_kind: Database['public']['Enums']['item_kind']
           position: number
+          price_snapshot: Json | null
+          price_snapshot_at: string | null
           quantity: number
           ref_id: string
           updated_at: string
@@ -2795,6 +3034,10 @@ export type Database = {
       ensure_pinned_group_for_user: {
         Args: { p_user_id: string }
         Returns: string
+      }
+      generate_wishlist_hit_notifications: {
+        Args: { p_max_per_user?: number }
+        Returns: number
       }
       get_activation_status: {
         Args: never
@@ -2957,6 +3200,50 @@ export type Database = {
           tag_slug: string
         }[]
       }
+      get_ticker_items: {
+        Args: { p_days?: number; p_limit?: number }
+        Returns: {
+          change_pct: number
+          current_cents: number
+          name: string
+          past_cents: number
+          price_key: string
+          ref_id: string
+          set_name: string
+          source: string
+        }[]
+      }
+      get_wishlist_hits: {
+        Args: { p_limit?: number }
+        Returns: {
+          current_price_cents: number
+          grading_company: string
+          listed_at: string
+          listing_collection_id: string
+          listing_item_id: string
+          name: string
+          other_listings_count: number
+          price_key: string
+          prices_refreshed_at: string
+          ref_id: string
+          savings_pct: number
+          seller_avatar_url: string
+          seller_display_name: string
+          seller_id: string
+          seller_username: string
+          set_name: string
+          snapshot_at: string
+          snapshot_price_cents: number
+          storefront_id: string
+          wishlist_item_id: string
+          wishlisted_at: string
+        }[]
+      }
+      grade_condition_price_key: {
+        Args: { p_grade_condition_id: string }
+        Returns: string
+      }
+      grade_key: { Args: { p_slug: string; p_value: number }; Returns: string }
       is_demo_user: { Args: never; Returns: boolean }
       list_card_genres: {
         Args: never
@@ -2972,6 +3259,10 @@ export type Database = {
           set_name: string
         }[]
       }
+      mark_card_price_refresh: {
+        Args: { p_card_id: string; p_status: string }
+        Returns: undefined
+      }
       most_used_variants: {
         Args: { p_card_id: string; p_limit?: number; p_query?: string }
         Returns: {
@@ -2981,6 +3272,8 @@ export type Database = {
           variant_name: string
         }[]
       }
+      normalize_grade_key: { Args: { p_key: string }; Returns: string }
+      normalize_grades_prices: { Args: { p: Json }; Returns: Json }
       publish_snapshot: {
         Args: {
           p_collection_id: string
@@ -2992,6 +3285,10 @@ export type Database = {
         Returns: string
       }
       refresh_marketplace_sections: { Args: never; Returns: undefined }
+      release_card_price_refresh: {
+        Args: { p_card_ids: string[] }
+        Returns: undefined
+      }
       remove_pinned_collection: {
         Args: { p_collection_id: string }
         Returns: undefined
