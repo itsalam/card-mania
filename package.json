@@ -4,8 +4,9 @@
   "version": "1.0.0",
   "scripts": {
     "start": "expo start",
-    "start:local": "ENVFILE=.env.local expo start",
-    "start:test": "ENVFILE=.env.test expo start",
+    "start:local": "expo start",
+    "start:staging": "node --env-file=.env.preview node_modules/expo/bin/cli start",
+    "start:test": "node --env-file=.env.test node_modules/expo/bin/cli start",
     "reset-project": "node ./scripts/reset-project.js",
     "android": "DARK_MODE=media expo start --android",
     "ios": "DARK_MODE=media expo start --ios",

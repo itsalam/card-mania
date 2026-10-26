@@ -6,23 +6,30 @@
   "build": {
     "development": {
       "developmentClient": true,
-      "distribution": "internal"
+      "distribution": "internal",
+      "node": "22.22.1",
+      "env": {
+        "SHARP_IGNORE_GLOBAL_LIBVIPS": "1"
+      }
     },
     "preview": {
       "distribution": "store",
       "env": {
         "SENTRY_AUTH_TOKEN": "$SENTRY_AUTH_TOKEN",
-        "EXPO_PUBLIC_SUPABASE_URL": "https://your-project.supabase.co",
-        "EXPO_PUBLIC_SUPABASE_KEY": "your-anon-key"
+        "SHARP_IGNORE_GLOBAL_LIBVIPS": "1"
       },
       "ios": {
         "buildConfiguration": "Release"
       },
-
-      "autoIncrement": true
+      "autoIncrement": true,
+      "node": "22.22.1"
     },
     "production": {
-      "autoIncrement": true
+      "autoIncrement": true,
+      "node": "22.22.1",
+      "env": {
+        "SHARP_IGNORE_GLOBAL_LIBVIPS": "1"
+      }
     }
   },
   "submit": {

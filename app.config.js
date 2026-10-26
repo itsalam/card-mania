@@ -29,7 +29,6 @@ const config = {
     },
     plugins: [
       'expo-router',
-      '@sentry/react-native',
       // 'expo-image',
       [
         'expo-splash-screen',
@@ -49,7 +48,6 @@ const config = {
           },
           android: {
             newArchEnabled: true,
-            kotlinVersion: '1.6.21',
           },
         },
       ],
