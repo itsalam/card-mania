@@ -469,6 +469,14 @@ enabled = true
 verify_jwt = false
 entrypoint = "./functions/card-enrichment-backfill/index.ts"
 
+[functions.tracked-price-refresh]
+enabled = true
+# Called only by pg_cron via net.http_post with the Vault edge_token as the bearer token
+# (see 20261025000003_tracked_price_refresh_cron.sql). Security is enforced inside the
+# function (isServiceRequest), same pattern as card-enrichment-backfill.
+verify_jwt = false
+entrypoint = "./functions/tracked-price-refresh/index.ts"
+
 [functions.ebay-deletion]
 enabled = true
 verify_jwt = false

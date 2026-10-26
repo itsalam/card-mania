@@ -280,6 +280,9 @@ export function useToggleWishlist(kind: ItemKinds) {
       qc.invalidateQueries({ queryKey: ['wishlist', 'view', kind] })
       // Refresh the wishlist collection page item list
       qc.invalidateQueries({ queryKey: qk.collectionItems('wishlist') })
+      // Home: Wishlist Hits and the ticker tape both read the wishlist
+      qc.invalidateQueries({ queryKey: ['wishlist', 'hits'] })
+      qc.invalidateQueries({ queryKey: ['home', 'ticker'] })
     },
   })
 }

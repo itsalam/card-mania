@@ -97,4 +97,20 @@ describe('useToggleWishlist', () => {
     await waitFor(() => expect(result.current.isSuccess).toBe(true))
     expect(client.getQueryData(key)).toEqual(new Set())
   })
+
+  it('refreshes Wishlist Hits and the ticker tape once the toggle settles', async () => {
+    mockClient.rpc.mockResolvedValue({ data: [{ is_wishlisted: true }], error: null })
+    const { client, wrapper } = createWrapper()
+    client.setQueryData(qk.wishlist('card', USER_ID), new Set<string>())
+    const spy = jest.spyOn(client, 'invalidateQueries')
+
+    const { result } = await renderHook(() => useToggleWishlist('card'), { wrapper })
+    await act(() => {
+      result.current.mutate({ kind: 'card', id: 'card-1' })
+    })
+    await waitFor(() => expect(result.current.isSuccess).toBe(true))
+
+    expect(spy).toHaveBeenCalledWith({ queryKey: ['wishlist', 'hits'] })
+    expect(spy).toHaveBeenCalledWith({ queryKey: ['home', 'ticker'] })
+  })
 })

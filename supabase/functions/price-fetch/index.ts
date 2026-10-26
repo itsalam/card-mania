@@ -1,4 +1,5 @@
 import { corsHeaders, createSupabaseClient } from '@utils'
+import { canonicalGradeKey } from '@grade-key'
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
 
 const json = (v: unknown, init: ResponseInit = {}) =>
@@ -21,7 +22,9 @@ Deno.serve(async (req) => {
       headers: { 'content-type': 'application/json', ...ch, ...(init.headers ?? {}) },
     })
 
-  const { mock_data, grade, card_id } = await req.json()
+  const { mock_data, grade: rawGrade, card_id } = await req.json()
+  // History rows are stored under canonical keys (see _shared/grade-key.ts).
+  const grade = typeof rawGrade === 'string' ? canonicalGradeKey(rawGrade) : rawGrade
   const supabase = createSupabaseClient(req)
 
   // ── Mock mode: only when the caller explicitly opts in ───────────────────────

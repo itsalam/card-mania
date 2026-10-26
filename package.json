@@ -188,7 +188,8 @@
     ],
     "testPathIgnorePatterns": [
       "<rootDir>/node_modules/",
-      "<rootDir>/__tests__/test-utils.tsx"
+      "<rootDir>/__tests__/test-utils.tsx",
+      "<rootDir>/supabase/functions/"
     ],
     "moduleNameMapper": {
       "^react-native-reanimated$": "react-native-reanimated/mock",

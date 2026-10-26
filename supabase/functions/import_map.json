@@ -11,6 +11,9 @@
     "@pricecharting-search": "./_shared/pricecharting-search.ts",
     "@enrichment-match": "./_shared/enrichment-match.ts",
     "@service-auth": "./_shared/service-auth.ts",
+    "@grade-key": "./_shared/grade-key.ts",
+    "@cardhedge-prices": "./_shared/cardhedge-prices.ts",
+    "@cardhedge-resolve": "./_shared/cardhedge-resolve.ts",
     "@supabase/supabase-js": "npm:@supabase/supabase-js@2.56.0"
   }
 }
