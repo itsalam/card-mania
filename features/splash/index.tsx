@@ -8,6 +8,7 @@ import { Text } from '@/components/ui/text/base-text'
 import { ProfileSetupWizard } from '@/features/onboarding'
 import { useUserStore } from '@/lib/store/useUserStore'
 import { cn } from '@/lib/utils'
+import { reportError } from '@/lib/utils/report-error'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { Eye, EyeOff, Lock, RefreshCw, User } from 'lucide-react-native'
 import { MotiView } from 'moti'
@@ -26,44 +27,10 @@ import { Colors } from 'react-native-ui-lib'
 import { CountryPicker } from './CountryPicker'
 import { OtpInput } from './OtpInput'
 import { SignUpForm } from './SignUpForm'
+import { classifyAuthError, isBlockingPhoneError } from './authErrors'
 import { PillToggle } from './components'
 import { COUNTRIES, Country, formatLocalNumber, isValidE164, toE164 } from './phoneUtils'
 import { useEmailAuthFlow } from './useEmailAuthFlow'
-
-function friendlyPhoneError(message: string): string {
-  const msg = message.toLowerCase()
-  if (msg.includes('invalid') && (msg.includes('phone') || msg.includes('number')))
-    return 'Please enter a valid phone number.'
-  if (msg.includes('rate') || msg.includes('too many'))
-    return 'Too many attempts. Please wait before requesting another code.'
-  if (msg.includes('not enabled') || msg.includes('phone provider') || msg.includes('sms'))
-    return 'Phone sign-in is not yet configured. Please use email instead.'
-  if (msg.includes('network') || msg.includes('fetch'))
-    return 'Network error. Please check your connection.'
-  return message
-}
-
-function friendlyOtpError(message: string): string {
-  const msg = message.toLowerCase()
-  if (msg.includes('invalid') || msg.includes('expired') || msg.includes('token'))
-    return 'Incorrect or expired code. Please try again.'
-  if (msg.includes('network') || msg.includes('fetch'))
-    return 'Network error. Please check your connection.'
-  return message
-}
-
-function isBlockingPhoneError(message: string): boolean {
-  const msg = message.toLowerCase()
-  return (
-    msg.includes('rate') ||
-    msg.includes('too many') ||
-    msg.includes('not enabled') ||
-    msg.includes('phone provider') ||
-    msg.includes('sms') ||
-    msg.includes('network') ||
-    msg.includes('fetch')
-  )
-}
 
 // ── Auth gate ─────────────────────────────────────────────────────────────────
 
@@ -190,6 +157,12 @@ export function SplashPage({ initialSignUp }: { initialSignUp?: boolean }) {
     )
   }
 
+  // Shake the email form whenever a new error lands (validation or a failed sign-in).
+  useEffect(() => {
+    if (emailFlow.error) triggerShake()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [emailFlow.error])
+
   useEffect(() => {
     if (resendCooldown <= 0) return
     const id = setInterval(() => setResendCooldown((n) => n - 1), 1000)
@@ -219,7 +192,7 @@ export function SplashPage({ initialSignUp }: { initialSignUp?: boolean }) {
     try {
       isDev && (await signInAnonymously())
     } catch (err) {
-      console.error('Anonymous sign in failed:', err)
+      reportError({ context: 'SplashPage.anonSignIn', error: err })
     }
   }
 
@@ -243,7 +216,7 @@ export function SplashPage({ initialSignUp }: { initialSignUp?: boolean }) {
         isBlocking: isBlockingPhoneError(msg),
       })
       if (isBlockingPhoneError(msg)) {
-        setError(friendlyPhoneError(msg || 'Failed to send code. Please try again.'))
+        setError(classifyAuthError(firstErr, 'SplashPage.sendCode').message)
       } else {
         // No account found — auto-create and still send OTP
         try {
@@ -253,9 +226,7 @@ export function SplashPage({ initialSignUp }: { initialSignUp?: boolean }) {
           setPhoneOtpSent(true)
         } catch (createErr: any) {
           console.error('[handleSendCode] create error', { message: createErr?.message })
-          setError(
-            friendlyPhoneError(createErr?.message ?? 'Failed to send code. Please try again.')
-          )
+          setError(classifyAuthError(createErr, 'SplashPage.sendCode.create').message)
         }
       }
     } finally {
@@ -272,7 +243,7 @@ export function SplashPage({ initialSignUp }: { initialSignUp?: boolean }) {
     } catch (err: any) {
       console.error('[handleVerifyPhoneOtp] error', { message: err?.message })
       setPhoneCode('')
-      setError(friendlyOtpError(err?.message ?? 'Verification failed.'))
+      setError(classifyAuthError(err, 'SplashPage.verifyOtp').message)
     } finally {
       setLoading(false)
     }
@@ -288,7 +259,7 @@ export function SplashPage({ initialSignUp }: { initialSignUp?: boolean }) {
       setError(null)
     } catch (err: any) {
       console.error('[handleResendPhoneOtp] error', { message: err?.message })
-      setError(friendlyPhoneError(err?.message ?? 'Could not resend code. Please try again.'))
+      setError(classifyAuthError(err, 'SplashPage.resendOtp').message)
     }
   }
 
@@ -663,7 +634,6 @@ export function SplashPage({ initialSignUp }: { initialSignUp?: boolean }) {
                 onPress={() => {
                   if (!emailFlow.email.trim()) {
                     emailFlow.setError('Please enter your email.')
-                    triggerShake()
                     return
                   }
                   emailFlow.handleContinue()

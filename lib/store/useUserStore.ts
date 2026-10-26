@@ -1,5 +1,6 @@
 // store/useUserStore.ts
 import { getSupabase } from '@/lib/store/client'
+import { reportError } from '@/lib/utils/report-error'
 import {
   patchOnboardingState,
   resolveOnboardingState,
@@ -245,7 +246,9 @@ export const useUserStore = create<State & Actions>()(
         // waiting with the modal open even though auth already succeeded.
         if (data.session) {
           AsyncStorage.setItem('cardmania:hasEverSignedIn', '1').catch(() => {})
-          get().setAuth(data.session).catch(console.error)
+          get()
+            .setAuth(data.session)
+            .catch((err) => reportError({ context: 'useUserStore.signIn.setAuth', error: err }))
         }
       },
 
