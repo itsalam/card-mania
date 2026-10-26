@@ -1,4 +1,5 @@
 import { useCardQuery } from '@/client/card'
+import { gradePriceKey } from '@/components/tcg-card/GradeBadge'
 import { useViewSingleCollectionItem } from '@/client/collections/query'
 import { Button } from '@/components/ui/button'
 import { NumberTicker } from '@/components/ui/number-ticker'
@@ -35,9 +36,10 @@ export const CollectionInfoCard = (props: { collectionItemId: string; cardId: st
         card: cardData,
         collectionItem: collectionItem,
         metadata: {
-          price_key: collectionItem?.grade_condition
-            ? `${collectionItem?.grading_company}${collectionItem?.grade_condition?.grade_value}`
-            : 'ungraded',
+          price_key: gradePriceKey(
+            collectionItem?.grading_company,
+            collectionItem?.grade_condition?.grade_value
+          ),
         },
       }),
     [cardData, collectionItem]

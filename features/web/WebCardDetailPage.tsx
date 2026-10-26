@@ -3,6 +3,7 @@ import { usePriceChartingDataBatch } from '@/client/chart-data'
 import { useImageProxy } from '@/client/image-proxy'
 import { GradientBackground } from '@/components/Background'
 import FullPriceGraph from '@/components/graphs/PriceGraph'
+import { useCardBorderStyle } from '@/components/tcg-card/CardFrame'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Text } from '@/components/ui/text/base-text'
 import { PriceSummaryBar } from '@/features/tcg-card-views/PriceSummaryBar'
@@ -153,6 +154,7 @@ export default function WebCardDetailPage({ cardId }: { cardId: string }) {
   }, [priceLoading, priceChartingData, gradeKeys])
 
   const imageAspect = imageResult?.aspectRatio ?? 5 / 7
+  const borderStyle = useCardBorderStyle()
 
   if (!loading && !card && !isPopulating) {
     return (
@@ -220,7 +222,10 @@ export default function WebCardDetailPage({ cardId }: { cardId: string }) {
               {imageResult?.url ? (
                 <Image
                   source={{ uri: imageResult.url }}
-                  style={{ width: '100%', aspectRatio: imageAspect, borderRadius: 12 }}
+                  style={[
+                    { width: '100%', aspectRatio: imageAspect, borderRadius: 12 },
+                    borderStyle,
+                  ]}
                   contentFit="cover"
                 />
               ) : (

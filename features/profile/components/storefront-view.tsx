@@ -1,6 +1,10 @@
 import { useIsWishlisted, useToggleWishlist } from '@/client/card/wishlist'
 import { CollectionItem, CollectionLike } from '@/client/collections/types'
-import { THUMBNAIL_HEIGHT } from '@/components/tcg-card/consts'
+import {
+  CARD_LIST_GAP,
+  CARD_LIST_ROW_PADDING,
+  LIST_THUMBNAIL_HEIGHT,
+} from '@/components/tcg-card/consts'
 import { useNavigateToItem } from '@/components/tcg-card/helpers'
 import { Button } from '@/components/ui/button'
 import { Modal } from '@/components/ui/modal'
@@ -55,7 +59,7 @@ function StorefrontPreviewItems({ collection, isOwnProfile }: CollectionPreviewI
   }
 
   return (
-    <View style={{ gap: 18, paddingTop: 18, paddingBottom: 20 }}>
+    <View style={{ gap: CARD_LIST_GAP, paddingTop: 18, paddingBottom: 20 }}>
       {flatData.map((collectionItem, index) => {
         const graded = collectionItem?.price_key !== 'ungraded'
         const isLast = index === flatData.length - 1
@@ -68,7 +72,7 @@ function StorefrontPreviewItems({ collection, isOwnProfile }: CollectionPreviewI
               style={{
                 position: 'absolute',
                 left: 4,
-                top: THUMBNAIL_HEIGHT,
+                top: LIST_THUMBNAIL_HEIGHT + CARD_LIST_ROW_PADDING,
                 bottom: 0,
                 width: 3,
                 marginTop: 8,

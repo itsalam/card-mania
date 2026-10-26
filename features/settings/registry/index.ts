@@ -5,9 +5,11 @@ import { defineSettings } from './helpers'
 
 type ThemeMode = 'system' | 'light' | 'dark'
 type Currency = 'CAD' | 'USD' | 'TWD'
+type OnOff = 'on' | 'off'
 
 const isBool = (v: unknown): v is boolean => typeof v === 'boolean'
 const isCurrency = (v: unknown): v is Currency => v === 'CAD' || v === 'USD' || v === 'TWD'
+const isOnOff = (v: unknown): v is OnOff => v === 'on' || v === 'off'
 
 export type SettingKey = keyof DefaultSettings
 
@@ -71,6 +73,15 @@ const SETTINGS = {
     tiers: ['remote'],
     validate: isBool,
   } satisfies SettingDescriptor<boolean>,
+
+  // dev-only design experiment: outline around collectible card art (see CardFrame).
+  // 'on' | 'off' rather than boolean because the settings toggle row is string-valued.
+  cardBorders: {
+    key: settingKeys.cardBorders,
+    defaultValue: 'on' as OnOff,
+    tiers: ['local'],
+    validate: isOnOff,
+  } satisfies SettingDescriptor<OnOff>,
 }
 
 export const settingsRegistry = defineSettings(SETTINGS)

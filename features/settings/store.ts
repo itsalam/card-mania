@@ -79,6 +79,10 @@ export function createSettingsStore(runtime: SettingsRuntime) {
         return false
       }
 
+      // useSetting().set() writes both tiers; skip the ones this setting doesn't use so a
+      // local-only key never gets patched into the remote profile settings.
+      if (!d.tiers.includes(tier)) return false
+
       if (d.validate && value !== undefined && !d.validate(value)) {
         console.debug(`Invalid value failed for for ${key}`)
         return false

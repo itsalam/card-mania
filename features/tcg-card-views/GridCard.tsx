@@ -1,19 +1,24 @@
 import { Text } from '@/components/ui/text/base-text'
 import { ArrowRight } from 'lucide-react-native'
 import { View } from 'react-native'
+import { useCardBorderStyle } from '../../components/tcg-card/CardFrame'
 import { LiquidGlassCard } from '../../components/tcg-card/GlassCard'
 
 export function GridCard() {
+  const borderStyle = useCardBorderStyle()
   return (
     <View className="flex flex-col items-center justify-center">
       <LiquidGlassCard
         variant="primary"
         className="p-4 justify-center flex items-center"
-        style={{
-          height: 120,
-          aspectRatio: 5 / 7,
-          borderRadius: 12,
-        }}
+        style={[
+          {
+            height: 120,
+            aspectRatio: 5 / 7,
+            borderRadius: 12,
+          },
+          borderStyle,
+        ]}
       />
       <View className="flex flex-row items-center">
         <Text className="text-center mt-2 text-sm">$15.99</Text>

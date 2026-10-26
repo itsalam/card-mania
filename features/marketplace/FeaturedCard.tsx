@@ -5,6 +5,8 @@ import { THUMBNAIL_WIDTH } from '@/components/tcg-card/consts'
 import { Avatar, AvatarFallback, AvatarFallbackText, AvatarImage } from '@/components/ui/avatar'
 import { Text } from '@/components/ui/text/base-text'
 import { formatPrice } from '@/components/utils'
+import { LiquidGlassCard } from '@/components/tcg-card/GlassCard'
+import { GradeBadge } from '@/components/tcg-card/GradeBadge'
 import { Image } from 'expo-image'
 import { useRouter } from 'expo-router'
 import React from 'react'
@@ -33,13 +35,12 @@ function CardThumbnail({
   const sellerInitial = sellerHandle.charAt(0).toUpperCase()
 
   return (
-    <View
+    <LiquidGlassCard
       style={{
         width,
         height,
         borderRadius: 8,
         overflow: 'hidden',
-        backgroundColor: Colors.$backgroundElevated,
       }}
     >
       {imageData?.url ? (
@@ -62,7 +63,7 @@ function CardThumbnail({
           <AvatarFallbackText>{sellerInitial}</AvatarFallbackText>
         </AvatarFallback>
       </Avatar>
-    </View>
+    </LiquidGlassCard>
   )
 }
 
@@ -100,9 +101,9 @@ export function FeaturedCard({
         )}
 
         {isGraded && (
-          <Text style={{ color: Colors.$textNeutral, fontSize: 11 }}>
-            {item.grading_company} {item.price_key}
-          </Text>
+          <View style={{ alignSelf: 'flex-start' }}>
+            <GradeBadge priceKey={item.price_key} />
+          </View>
         )}
 
         <Text style={styles.priceDetail}>{formatPrice(item.market_value)}</Text>

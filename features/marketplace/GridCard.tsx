@@ -1,18 +1,29 @@
 import { useImageProxy } from '@/client/image-proxy'
-import { CARD_ASPECT_RATIO } from '@/components/consts'
-import { Text } from '@/components/ui/text/base-text'
-import { formatPrice } from '@/components/utils'
-import { useRouter } from 'expo-router'
+import { CardTile } from '@/components/tcg-card/CardTile'
+import { CARD_LIST_GAP } from '@/components/tcg-card/consts'
+import { GradeBadge } from '@/components/tcg-card/GradeBadge'
 import { Image } from 'expo-image'
+import { useRouter } from 'expo-router'
 import React from 'react'
-import { StyleSheet, TouchableOpacity, View } from 'react-native'
-import { Colors } from 'react-native-ui-lib'
 import { type FeaturedCardItem } from './FeaturedCard'
+
+/** Card grid layout shared by Marketplace and Home → Explore. */
+export const GRID_COLUMNS = 3
+export const GRID_GAP = CARD_LIST_GAP
+
+/** Cell width for GRID_COLUMNS cells separated by GRID_GAP across `containerWidth`. */
+export const gridCellWidth = (containerWidth: number) =>
+  Math.floor((containerWidth - GRID_GAP * (GRID_COLUMNS - 1)) / GRID_COLUMNS)
+
+export function chunkGridRows<T>(items: T[]): T[][] {
+  const rows: T[][] = []
+  for (let i = 0; i < items.length; i += GRID_COLUMNS) rows.push(items.slice(i, i + GRID_COLUMNS))
+  return rows
+}
 
 export function GridCard({ item, width }: { item: FeaturedCardItem; width: number }) {
   const router = useRouter()
   const isGraded = Boolean(item.grading_company) && item.price_key !== 'ungraded'
-  const imageHeight = Math.round(width / CARD_ASPECT_RATIO)
 
   const { data: imageData } = useImageProxy({
     variant: 'tiny',
@@ -22,94 +33,24 @@ export function GridCard({ item, width }: { item: FeaturedCardItem; width: numbe
   })
 
   return (
-    <TouchableOpacity
-      style={{ width }}
-      activeOpacity={0.82}
+    <CardTile
+      width={width}
+      title={item.name ?? undefined}
+      subtitle={item.set_name ?? undefined}
+      price={item.market_value}
+      badge={<GradeBadge priceKey={isGraded ? item.price_key : 'ungraded'} />}
       onPress={() =>
-        router.push({ pathname: '/cards/[cardId]', params: { cardId: item.ref_id } } as any)
+        router.push({ pathname: '/cards/[card]', params: { card: item.ref_id } } as any)
       }
-    >
-      {/* Card image — explicit dimensions, no external component with default sizing */}
-      <View style={[styles.imageContainer, { width, height: imageHeight }]}>
-        {imageData?.url ? (
+      renderArt={({ width: artWidth, height: artHeight }) =>
+        imageData?.url ? (
           <Image
             source={{ uri: imageData.url }}
-            style={StyleSheet.absoluteFill}
+            style={{ width: artWidth, height: artHeight }}
             contentFit="cover"
           />
-        ) : null}
-      </View>
-
-      <View style={styles.info}>
-        {isGraded && (
-          <View style={styles.chipRow}>
-            <View style={styles.chip}>
-              <Text style={styles.chipText}>{item.grading_company}</Text>
-            </View>
-            <View style={[styles.chip, styles.chipAccent]}>
-              <Text style={[styles.chipText, styles.chipAccentText]}>{item.price_key}</Text>
-            </View>
-          </View>
-        )}
-
-        <Text style={styles.price}>{formatPrice(item.market_value)}</Text>
-
-        <Text style={styles.title} numberOfLines={2}>
-          {item.name}
-        </Text>
-      </View>
-    </TouchableOpacity>
+        ) : null
+      }
+    />
   )
 }
-
-const styles = StyleSheet.create({
-  imageContainer: {
-    borderRadius: 10,
-    overflow: 'hidden',
-    backgroundColor: Colors.$backgroundElevated,
-  },
-
-  info: {
-    paddingTop: 8,
-    gap: 4,
-  },
-
-  chipRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 4,
-  },
-  chip: {
-    borderRadius: 6,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    backgroundColor: Colors.rgba(Colors.$outlineNeutral, 0.1),
-    borderWidth: 1,
-    borderColor: Colors.rgba(Colors.$outlineNeutral, 0.25),
-  },
-  chipAccent: {
-    backgroundColor: Colors.rgba(Colors.$backgroundPrimaryHeavy, 0.15),
-    borderColor: Colors.rgba(Colors.$backgroundPrimaryHeavy, 0.4),
-  },
-  chipText: {
-    fontSize: 10,
-    fontWeight: '600',
-    letterSpacing: 0.3,
-    textTransform: 'uppercase',
-    color: Colors.$textNeutral,
-  },
-  chipAccentText: {
-    color: Colors.$backgroundPrimaryHeavy,
-  },
-
-  price: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: Colors.$textDefault,
-  },
-  title: {
-    fontSize: 12,
-    color: Colors.$textNeutral,
-    lineHeight: 16,
-  },
-})

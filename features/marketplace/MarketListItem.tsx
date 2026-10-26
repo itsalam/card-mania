@@ -24,6 +24,8 @@ export function MarketListItem({ item }: { item: MarketListItemData }) {
       imageId: item.ref_id,
       title: item.name ?? 'Unknown Card',
       subHeading: item.set_name ?? undefined,
+      // Drives the GradeBadge ItemListView draws on the art.
+      metadata: isGraded ? item.price_key : 'ungraded',
       displayPrice: item.market_value ? item.market_value / 100 : null,
       imageProxyArgs: {
         variant: 'tiny',
@@ -32,7 +34,7 @@ export function MarketListItem({ item }: { item: MarketListItemData }) {
         imageType: 'front',
       },
     }),
-    [item]
+    [item, isGraded]
   )
 
   return (
@@ -43,20 +45,6 @@ export function MarketListItem({ item }: { item: MarketListItemData }) {
       renderAccessories={() => (
         <View className="self-stretch flex-1 flex flex-col items-stretch justify-between px-4 relative">
           <View className="flex-1 flex flex-col justify-start gap-2">
-            {/* Grade chips */}
-            {isGraded && (
-              <View style={styles.gradeRow}>
-                <View style={styles.gradeChip}>
-                  <Text style={styles.gradeChipText}>{item.grading_company}</Text>
-                </View>
-                <View style={[styles.gradeChip, styles.gradeChipAccent]}>
-                  <Text style={[styles.gradeChipText, styles.gradeChipAccentText]}>
-                    {item.price_key}
-                  </Text>
-                </View>
-              </View>
-            )}
-
             {/* Price */}
             <Text className="text-4xl font-bold" style={{ color: Colors.$textDefault }}>
               {formatPrice(item.market_value)}
@@ -90,35 +78,6 @@ export function MarketListItem({ item }: { item: MarketListItemData }) {
 }
 
 const styles = StyleSheet.create({
-  // Grade chips
-  gradeRow: {
-    flexDirection: 'row',
-    gap: 5,
-    flexWrap: 'wrap',
-  },
-  gradeChip: {
-    borderRadius: 6,
-    paddingHorizontal: 7,
-    paddingVertical: 3,
-    backgroundColor: Colors.rgba(Colors.$outlineNeutral, 0.1),
-    borderWidth: 1,
-    borderColor: Colors.rgba(Colors.$outlineNeutral, 0.25),
-  },
-  gradeChipAccent: {
-    backgroundColor: Colors.rgba(Colors.$backgroundPrimaryHeavy, 0.15),
-    borderColor: Colors.rgba(Colors.$backgroundPrimaryHeavy, 0.4),
-  },
-  gradeChipText: {
-    fontSize: 11,
-    fontWeight: '600',
-    letterSpacing: 0.3,
-    color: Colors.$textNeutral,
-    textTransform: 'uppercase',
-  },
-  gradeChipAccentText: {
-    color: Colors.$backgroundPrimaryHeavy,
-  },
-
   // Seller pill
   sellerPill: {
     flexDirection: 'row',

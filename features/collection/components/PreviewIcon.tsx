@@ -1,3 +1,4 @@
+import { useCardBorderStyle } from '@/components/tcg-card/CardFrame'
 import { LiquidGlassCard } from '@/components/tcg-card/GlassCard'
 import { CardPlaceholderImage } from '@/components/tcg-card/placeholders'
 import { cn } from '@/lib/utils/cn'
@@ -18,6 +19,7 @@ export function CollectionsPreviewIcon({
   const CONDENSED_HEIGHT = width / ITEM_ASPECT_RATIO
   const HEIGHT = CONDENSED_HEIGHT + 24
   const TOTAL_CARDS = 4
+  const borderStyle = useCardBorderStyle()
 
   const Constants = {
     translateXPerCard: 0.01,
@@ -72,6 +74,7 @@ export function CollectionsPreviewIcon({
             zIndex: TOTAL_CARDS - index,
             overflow: 'hidden',
           },
+          borderStyle,
           style,
         ]}
         {...props}
