@@ -1,8 +1,15 @@
 import { HomeFeedSectionConfig } from '@/client/home/sections'
 import { getSavings, useWishlistHits, WishlistHit } from '@/client/wishlist/hits'
 import { useExpandableSection } from '@/components/content-card'
-import { CardTile, CardTileBadge, DEFAULT_CARD_TILE_WIDTH } from '@/components/tcg-card/CardTile'
-import { CARD_LIST_ROW_PADDING, LIST_THUMBNAIL_WIDTH } from '@/components/tcg-card/consts'
+import {
+  CARD_TILE_ART_RADIUS,
+  CARD_TILE_ART_WIDTH,
+  CARD_TILE_PADDING,
+  CARD_TILE_RADIUS,
+  CardTile,
+  CardTileBadge,
+  DEFAULT_CARD_TILE_WIDTH,
+} from '@/components/tcg-card/CardTile'
 import { GradeBadge } from '@/components/tcg-card/GradeBadge'
 import { LiquidGlassCard } from '@/components/tcg-card/GlassCard'
 import { useNavigateToItem } from '@/components/tcg-card/helpers'
@@ -27,7 +34,8 @@ import { HOME_FEED_SECTION_ICONS } from '../sectionIcons'
 // and strike through the "was" price. Collapsed items use the shared glass CardTile (see its
 // refs); expanded rows use the same glass surface as list rows.
 const ITEM_WIDTH = DEFAULT_CARD_TILE_WIDTH
-const IMAGE_WIDTH = LIST_THUMBNAIL_WIDTH
+// Expanded rows reuse the collapsed tile's art size so opening the section doesn't shrink cards.
+const IMAGE_WIDTH = CARD_TILE_ART_WIDTH
 
 type HitRow = { id: string; hit?: WishlistHit }
 
@@ -96,15 +104,17 @@ function WishlistHitItem({ hit, isOpen }: { hit: WishlistHit; isOpen: boolean })
         alignItems: 'center',
         gap: 16,
         width: '100%',
-        borderRadius: 20,
-        padding: CARD_LIST_ROW_PADDING,
+        borderRadius: CARD_TILE_RADIUS,
+        padding: CARD_TILE_PADDING,
       }}
     >
       <View ref={cardElement} collapsable={false} style={{ position: 'relative' }}>
         <CardImage
           displayData={displayData}
           width={IMAGE_WIDTH}
-          imageProps={{ onPress: handlePress }}
+          cardContainerStyle={{ borderRadius: CARD_TILE_ART_RADIUS }}
+          imageStyle={{ borderRadius: CARD_TILE_ART_RADIUS }}
+          imageProps={{ glassEffect: false, enableShadow: false, onPress: handlePress }}
         />
         <View style={{ position: 'absolute', top: 6, left: 6, gap: 4, alignItems: 'flex-start' }}>
           {gradeBadge}

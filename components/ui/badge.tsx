@@ -1,16 +1,9 @@
 import { Text } from '@/components/ui/text/base-text'
+import { FadeScrollView } from '@/components/ui/fade-scroll'
 import * as Haptics from 'expo-haptics'
 import { LucideIcon } from 'lucide-react-native'
-import { ReactNode } from 'react'
-import {
-  Pressable,
-  ScrollView,
-  StyleProp,
-  StyleSheet,
-  TextStyle,
-  View,
-  ViewStyle,
-} from 'react-native'
+import { ReactNode, useState } from 'react'
+import { Pressable, StyleProp, StyleSheet, TextStyle, View, ViewStyle } from 'react-native'
 import { Gesture, GestureDetector } from 'react-native-gesture-handler'
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated'
 import { BorderRadiuses, Colors as ThemeColors } from 'react-native-ui-lib'
@@ -24,6 +17,7 @@ export const BASE_BADGE_HEIGHT = 36
 export const BASE_ICON_SIZE = 16
 export const SQUARE_BADGE_HEIGHT = 32
 export const SQUARE_ICON_SIZE = 40
+const CHIP_ROW_PADDING_BOTTOM = 12
 
 // ── Chip ──────────────────────────────────────────────────────────────────────
 
@@ -217,6 +211,10 @@ export function ToggleBadge({
 // ── ChipRowContainer ──────────────────────────────────────────────────────────
 
 export const ChipRowContainer = ({ label, children }: { label?: string; children: ReactNode }) => {
+  // FadeScrollView fills its container (flex: 1) rather than sizing to its content, so in this
+  // auto-height column it would collapse to 0. Pin it to the chips' measured height instead,
+  // starting from a default-badge estimate so the first frame isn't empty.
+  const [rowHeight, setRowHeight] = useState(BASE_BADGE_HEIGHT + CHIP_ROW_PADDING_BOTTOM)
   return (
     <View>
       {label && (
@@ -224,14 +222,16 @@ export const ChipRowContainer = ({ label, children }: { label?: string; children
           {label}
         </Text>
       )}
-      <ScrollView
+      {/* Fades chips at whichever edge has more to scroll to. */}
+      <FadeScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.chipRowContainer}
-        style={styles.chipRow}
+        style={{ ...styles.chipRow, height: rowHeight }}
+        onContentSizeChange={(_, h) => h > 0 && h !== rowHeight && setRowHeight(h)}
       >
         {children}
-      </ScrollView>
+      </FadeScrollView>
     </View>
   )
 }
@@ -252,13 +252,14 @@ const styles = StyleSheet.create({
   chipRow: {
     flexGrow: 0,
     flexShrink: 0,
-    overflow: 'visible',
-    paddingHorizontal: 16,
   },
+  // Side padding lives on the content (not the scroll view) so chips scroll through the fade
+  // zones right to the screen edge.
   chipRowContainer: {
     flexDirection: 'row',
     gap: 6,
-    paddingBottom: 12,
+    paddingHorizontal: 16,
+    paddingBottom: CHIP_ROW_PADDING_BOTTOM,
   },
   chipRowLabel: {
     paddingHorizontal: 16,

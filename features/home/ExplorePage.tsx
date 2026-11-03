@@ -3,6 +3,11 @@ import {
   useMarketplaceSections,
   useRecommendedListings,
 } from '@/client/marketplace'
+import {
+  SECTION_FRAME_INSET,
+  SectionFrameBottom,
+  SectionFrameTop,
+} from '@/components/content-card/SectionFrame'
 import { SectionHeader } from '@/components/ui/section-header'
 import { Text } from '@/components/ui/text/base-text'
 import { type FeaturedCardItem } from '@/features/marketplace/FeaturedCard'
@@ -115,7 +120,8 @@ function ExploreSectionBody({ items, mode }: { items: FeaturedCardItem[]; mode: 
   const { width: windowWidth } = useWindowDimensions()
 
   if (mode === 'grid') {
-    const cellWidth = gridCellWidth(windowWidth - 32)
+    // Window minus the section frame's inset and 16px padding per side.
+    const cellWidth = gridCellWidth(windowWidth - 2 * SECTION_FRAME_INSET - 32)
     return (
       <View style={{ paddingHorizontal: 16, paddingBottom: 8, gap: GRID_GAP }}>
         {chunkGridRows(items).map((row, rowIdx) => (
@@ -239,17 +245,19 @@ export function useExploreSections() {
     stickyHeaderIndices.push(children.length)
     children.push(
       <View key={`${section.key}-header`}>
-        <SectionHeader
-          icon={section.icon}
-          title={section.title}
-          isOpen={isOpen}
-          onToggle={() => toggleSection(section.key)}
-          expandable
-        />
+        <SectionFrameTop>
+          <SectionHeader
+            icon={section.icon}
+            title={section.title}
+            isOpen={isOpen}
+            onToggle={() => toggleSection(section.key)}
+            expandable
+          />
+        </SectionFrameTop>
       </View>
     )
     children.push(
-      <View key={`${section.key}-body`}>
+      <SectionFrameBottom key={`${section.key}-body`}>
         {isOpen &&
           (section.isLoading ? (
             <ExploreSectionEmpty message="Loading…" />
@@ -258,7 +266,7 @@ export function useExploreSections() {
           ) : (
             <ExploreSectionBody items={section.items} mode={exploreLayout} />
           ))}
-      </View>
+      </SectionFrameBottom>
     )
   }
 

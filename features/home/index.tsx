@@ -216,7 +216,7 @@ function HomeContent({
         />
       </OnboardingTarget>
 
-      <TickerTape style={{ marginHorizontal: 12, marginBottom: 8 }} />
+      <TickerTape style={{ marginBottom: 8 }} />
 
       <OnboardingTarget id="tab-list">
         <View style={{ flexDirection: 'row', paddingHorizontal: 8 }}>

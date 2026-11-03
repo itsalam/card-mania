@@ -4,6 +4,7 @@ import { suggestedVariantsOptions, Variant } from '@/client/collections/items'
 
 import { useEditCollectionItem } from '@/client/collections/mutate'
 import { CollectionItem, CollectionLike, EditCollectionArgsItem } from '@/client/collections/types'
+import { gradePriceKey, parseGrade } from '@/components/tcg-card/GradeBadge'
 import { getGradedPrice } from '@/components/tcg-card/helpers'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -21,23 +22,14 @@ import { Separator } from '@/components/ui/separator'
 import { SkeletonText, Text } from '@/components/ui/text'
 import { formatPrice } from '@/components/utils'
 import { TCard } from '@/constants/types'
-import { getGradingDisplayString } from '@/features/collection/helpers'
-import { OnboardingTarget, useOnboardingStore } from '@/features/onboarding'
 import type { OnboardingStepId } from '@/features/onboarding'
+import { OnboardingTarget, useOnboardingStore } from '@/features/onboarding'
 import { useEffectiveColorScheme } from '@/features/settings/hooks/effective-color-scheme'
 import { qk } from '@/lib/store/functions/helpers'
 import { CollectionItemRow } from '@/lib/store/functions/types'
 import { useQueryClient } from '@tanstack/react-query'
 import { debounce } from 'lodash'
-import {
-  Check,
-  DollarSign,
-  EllipsisVertical,
-  GripVertical,
-  Tag,
-  Trash2,
-  X,
-} from 'lucide-react-native'
+import { Check, DollarSign, GripVertical, Pencil, Tag, Trash2, X } from 'lucide-react-native'
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { View } from 'react-native'
 import ReanimatedSwipeable, {
@@ -97,6 +89,48 @@ export type PriceModalPayload = {
   price: number | null
   currentGrade: { grade_value: number; label: string; id: string } | undefined
   currentGrader: Graders | undefined
+}
+
+// Bare stepper (no floating box/border) so the entry band is its only frame.
+const ENTRY_STEPPER_STYLE = {
+  borderWidth: 0,
+  backgroundColor: 'transparent',
+  paddingVertical: 0,
+  paddingHorizontal: 0,
+}
+
+// Hairline vertical rule between an entry's grade / price / quantity segments.
+function EntryDivider() {
+  return (
+    <View
+      style={{
+        width: 1,
+        alignSelf: 'stretch',
+        marginVertical: 4,
+        marginHorizontal: 8,
+        backgroundColor: Colors.rgba(Colors.$outlineNeutral, 0.6),
+      }}
+    />
+  )
+}
+
+function GradeLabel({ priceKey }: { priceKey: string }) {
+  const parsed = parseGrade(priceKey)
+  if (!parsed) return null
+  const isRaw = parsed === 'raw'
+  return (
+    <Text variant="stats" numberOfLines={1} style={{ fontSize: 12, color: Colors.$textNeutral }}>
+      {isRaw ? 'RAW' : parsed.company}
+      {!isRaw && parsed.grade !== '' && (
+        <Text
+          variant="stats"
+          style={{ fontSize: 12, fontWeight: '700', color: Colors.$textDefault }}
+        >
+          {` ${parsed.grade}`}
+        </Text>
+      )}
+    </Text>
+  )
 }
 
 export const CollectionItemEntry = ({
@@ -316,11 +350,14 @@ export const CollectionItemEntry = ({
               backgroundColor: Colors.$backgroundNeutralLight,
               justifyContent: 'center',
               alignItems: 'center',
-              width: 32,
+              width: 56,
+              gap: 2,
               opacity: isLoading ? 0.4 : 1,
             }}
+            accessibilityRole="button"
+            accessibilityLabel="Edit entry"
           >
-            <EllipsisVertical size={20} color={Colors.$iconDefault} />
+            <Pencil size={20} color={Colors.$iconDefault} />
           </TouchableOpacity>
         )}
       </View>
@@ -342,7 +379,7 @@ export const CollectionItemEntry = ({
     <Animated.View
       exiting={FadeOutRight}
       key={scheme + (!hide ? 'show' : '')}
-      style={{ position: 'relative' }}
+      style={{ position: 'relative', marginBottom: 4 }}
     >
       <ReanimatedSwipeable
         ref={swipeableRef}
@@ -350,20 +387,26 @@ export const CollectionItemEntry = ({
         renderRightActions={showDelete ? renderRightActions : undefined}
         rightThreshold={40}
         overshootRight={false}
+        // Each entry is a full-width band, edge to edge from the card art to the item's right
+        // edge, so only its top and bottom are bordered (the art and the item's own border close
+        // the sides). Stays opaque: it covers the swipe actions behind it.
         childrenContainerStyle={{
           zIndex: 1,
-          backgroundColor: Colors.$backgroundElevatedLight,
+          backgroundColor: Colors.$backgroundElevated,
+          borderTopWidth: 1,
+          borderBottomWidth: 1,
+          borderColor: Colors.rgba(Colors.$outlineNeutral, 0.5),
         }}
       >
         <View
           style={{
             position: 'relative',
             width: '100%',
-            paddingVertical: 6,
+            paddingVertical: 8,
             paddingLeft: 12,
             display: 'flex',
             flexDirection: 'column',
-            paddingRight: editable ? 0 : 8,
+            paddingRight: editable ? 0 : 6,
           }}
         >
           <View
@@ -375,12 +418,67 @@ export const CollectionItemEntry = ({
               flexWrap: 'wrap',
             }}
           >
+            {/* Grade as plain text right before the stepper ("PSA 10", "RAW") — no pill. */}
+            <GradeLabel priceKey={gradePriceKey(currentGrader?.slug, currentGrade?.grade_value)} />
+            <EntryDivider />
+            <View
+              style={{
+                flex: 1,
+                alignItems: 'center',
+                display: 'flex',
+                flexDirection: 'row',
+                flexWrap: 'wrap',
+                alignSelf: 'stretch',
+                alignContent: 'center',
+              }}
+            >
+              <View
+                style={{
+                  alignItems: 'center',
+                  display: 'flex',
+                  flexDirection: 'row',
+                  flex: 1,
+                  justifyContent: 'flex-end',
+                  paddingHorizontal: 8,
+                }}
+              >
+                <SkeletonText
+                  numberOfLines={1}
+                  adjustsFontSizeToFit
+                  minimumFontScale={0.8}
+                  className="text-base uppercase font-spaceMono"
+                  defaultDimensions={{ height: 15, width: 66 }}
+                  style={
+                    price
+                      ? null
+                      : {
+                          color: Colors.$textNeutralLight,
+                        }
+                  }
+                  loading={isLoading ?? false}
+                >
+                  {price ? formatPrice(price) : '--.--'}
+                </SkeletonText>
+              </View>
+            </View>
+            {/* Quantity sits on the right, just left of the grip: "$price × [− n +]". */}
+            <View
+              style={{
+                flex: 1,
+                maxWidth: 20,
+                minWidth: 15,
+                alignItems: 'center',
+              }}
+            >
+              <X size={8} color={Colors.$iconDefault} />
+            </View>
+            <EntryDivider />
             {(() => {
               const ticker = (
                 <NumberTicker
                   disabled={isLoading}
                   containerStyle={{ opacity: isLoading ? 0.6 : 1 }}
-                  stepperProps={{ small: true }}
+                  stepperProps={{ small: true, style: ENTRY_STEPPER_STYLE }}
                   min={0}
                   max={999}
                   initialNumber={isLoading ? undefined : (draft.quantity ?? 0)}
@@ -398,107 +496,16 @@ export const CollectionItemEntry = ({
                 ticker
               )
             })()}
-            <View
-              style={{
-                flex: 1,
-                maxWidth: 20,
-                minWidth: 15,
-                alignItems: 'center',
-              }}
-            >
-              <X size={8} color={Colors.$iconDefault} />
-            </View>
-            <View
-              style={{
-                flex: 1,
-                alignItems: 'center',
-                display: 'flex',
-                flexDirection: 'row',
-                flexWrap: 'wrap',
-                alignSelf: 'stretch',
-                alignContent: 'center',
-              }}
-            >
-              <SkeletonText
-                className="text-base uppercase font-spaceMono"
-                defaultDimensions={{ height: 12, width: 50 }}
-                style={{
-                  color: Colors.$textNeutral,
-                  fontSize: 12,
-                  flexWrap: 'nowrap',
-                }}
-                numberOfLines={1}
-                loading={isLoading ?? false}
-              >
-                {
-                  // @ts-ignore
-                  getGradingDisplayString(collectionItem as CollectionItemRow)
-                    .slice(0, 2)
-                    .join(' ')
-                }
-              </SkeletonText>
-              <View
-                style={{
-                  alignItems: 'center',
-                  display: 'flex',
-                  flexDirection: 'row',
-                  flex: 1,
-                  justifyContent: 'flex-end',
-                  paddingHorizontal: 8,
-                }}
-              >
-                <SkeletonText
-                  className="text-base uppercase font-spaceMono"
-                  defaultDimensions={{ height: 15, width: 66 }}
-                  style={
-                    price
-                      ? null
-                      : {
-                          color: Colors.$textNeutralLight,
-                        }
-                  }
-                  loading={isLoading ?? false}
-                >
-                  {price ? formatPrice(price) : '--.--'}
-                </SkeletonText>
-              </View>
-              <View
-                pointerEvents="none"
-                style={{
-                  position: 'absolute',
-                  left: 6,
-                  right: 6,
-                  bottom: 4,
-                  height: 1,
-                  backgroundColor: Colors.$outlineDefault,
-                }}
-              />
-            </View>
-            <View style={{ flexShrink: 0, justifyContent: 'flex-end' }}></View>
+            {showDelete && <EntryDivider />}
             {showDelete && (
-              <TouchableOpacity
-                onPress={
-                  editable
-                    ? () =>
-                        onPriceModalOpen?.({
-                          draft,
-                          updateDraft,
-                          onDelete: () => deleteEntry(draft),
-                          price,
-                          currentGrade,
-                          currentGrader,
-                        })
-                    : undefined
-                }
-                disabled={isLoading}
-                style={{ opacity: isLoading ? 0.4 : 1 }}
-              >
+              // Swipe affordance only — the row's actions live behind the swipe.
+              <View style={{ opacity: isLoading ? 0.4 : 1 }} pointerEvents="none">
                 <GripVertical
                   size={16}
                   color={Colors.$iconNeutral ?? Colors.$iconDefault}
                   strokeWidth={1.5}
                 />
-              </TouchableOpacity>
+              </View>
             )}
           </View>
           {collectionItem?.variants?.length ? (

@@ -6,6 +6,7 @@ import React, { useCallback, useState } from 'react'
 import { LayoutChangeEvent, ScrollView, View } from 'react-native'
 import { CARD_ASPECT_RATIO } from '../consts'
 import { SectionHeader } from '../ui/section-header'
+import { SectionFrameBottom, SectionFrameTop } from './SectionFrame'
 
 // The collapsed rail's content View (below) carries this padding — a measured item's height
 // needs it added back to get the container height that actually fits the item.
@@ -119,5 +120,11 @@ export function useExpandableSection<T extends { id: string }>({
     </MaskedView>
   )
 
-  return { header, body, isOpen }
+  // Header and body stay separate nodes (the header is sticky), so the section's border is drawn
+  // as two halves that meet — see SectionFrame.
+  return {
+    header: <SectionFrameTop>{header}</SectionFrameTop>,
+    body: <SectionFrameBottom>{body}</SectionFrameBottom>,
+    isOpen,
+  }
 }

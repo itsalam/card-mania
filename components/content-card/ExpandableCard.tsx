@@ -6,6 +6,7 @@ import React, { ComponentProps, useCallback, useState } from 'react'
 import { LayoutChangeEvent, ScrollView, View } from 'react-native'
 import { CARD_ASPECT_RATIO } from '../consts'
 import { SectionHeader } from '../ui/section-header'
+import { SectionFrameBottom, SectionFrameTop } from './SectionFrame'
 import { Text } from '../ui/text/base-text'
 
 export function PlaceholderBox({
@@ -145,53 +146,57 @@ export function ExpandableCard<T extends { id: string }>({
 
   return (
     <View className={cn('overflow-hidden px-0', className)} {...cardProps}>
-      <SectionHeader
-        icon={icon}
-        title={title}
-        isOpen={isOpen}
-        onToggle={() => setIsOpen(!isOpen)}
-        expandable={expandable}
-      />
-      {!isOpen ? (
-        <ItemRail
-          items={items}
-          itemWidth={itemWidth}
-          height={minItemHeight}
-          containerClassNames={containerClassNames}
-          keyExtractor={(item, i) => `${item.id}-${i}`}
-          onItemLayout={handleItemLayout}
-          renderItem={(item, i) => renderItem({ item, isOpen: false }, i)}
+      <SectionFrameTop>
+        <SectionHeader
+          icon={icon}
+          title={title}
+          isOpen={isOpen}
+          onToggle={() => setIsOpen(!isOpen)}
+          expandable={expandable}
         />
-      ) : (
-        <MaskedView
-          className={cn('z-0 overflow-visible min-w-max')}
-          style={{ height: expandedItemHeight, maxWidth: '100%', overflow: 'visible' }}
-          maskElement={
-            <LinearGradient
-              // MaskedView uses the alpha channel: solid shows content, transparent hides it.
-              colors={['transparent', 'black', 'black', 'transparent']}
-              start={{ x: 0.5, y: 0.0 }}
-              end={{ x: 0.5, y: 1 }}
-              locations={[0, 0.025, 0.9, 1]}
-              style={{
-                position: 'relative',
-                height: '100%',
-                width: '100%',
-                top: '-2.5%',
-                left: '-0%',
-              }}
-            />
-          }
-        >
-          <ScrollView className="overflow-visible">
-            <View className={cn('gap-x-2 gap-y-2 p-4 flex flex-col', containerClassNames)}>
-              {items.map((item, i) => (
-                <View key={`${item.id}-${i}`}>{renderItem({ item, isOpen: true }, i)}</View>
-              ))}
-            </View>
-          </ScrollView>
-        </MaskedView>
-      )}
+      </SectionFrameTop>
+      <SectionFrameBottom>
+        {!isOpen ? (
+          <ItemRail
+            items={items}
+            itemWidth={itemWidth}
+            height={minItemHeight}
+            containerClassNames={containerClassNames}
+            keyExtractor={(item, i) => `${item.id}-${i}`}
+            onItemLayout={handleItemLayout}
+            renderItem={(item, i) => renderItem({ item, isOpen: false }, i)}
+          />
+        ) : (
+          <MaskedView
+            className={cn('z-0 overflow-visible min-w-max')}
+            style={{ height: expandedItemHeight, maxWidth: '100%', overflow: 'visible' }}
+            maskElement={
+              <LinearGradient
+                // MaskedView uses the alpha channel: solid shows content, transparent hides it.
+                colors={['transparent', 'black', 'black', 'transparent']}
+                start={{ x: 0.5, y: 0.0 }}
+                end={{ x: 0.5, y: 1 }}
+                locations={[0, 0.025, 0.9, 1]}
+                style={{
+                  position: 'relative',
+                  height: '100%',
+                  width: '100%',
+                  top: '-2.5%',
+                  left: '-0%',
+                }}
+              />
+            }
+          >
+            <ScrollView className="overflow-visible">
+              <View className={cn('gap-x-2 gap-y-2 p-4 flex flex-col', containerClassNames)}>
+                {items.map((item, i) => (
+                  <View key={`${item.id}-${i}`}>{renderItem({ item, isOpen: true }, i)}</View>
+                ))}
+              </View>
+            </ScrollView>
+          </MaskedView>
+        )}
+      </SectionFrameBottom>
     </View>
   )
 }
