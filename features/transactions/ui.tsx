@@ -13,6 +13,7 @@ import { SkeletonText } from '@/components/ui/text'
 import { Text } from '@/components/ui/text/base-text'
 import { PublicProfile, useProfiles } from '@/features/users/client/load-user'
 import { UserContact } from '@/features/users/components/UserAvatars'
+import { getTransactionActions } from './actions'
 import {
   AlertTriangle,
   Check,
@@ -254,15 +255,12 @@ export function TransactionActionButtons({
   onConfirmReceipt: () => void
   onDispute: () => void
 }) {
-  const isTerminal = status === 'completed' || status === 'disputed'
-  const showMarkedShipped = isSeller && status === 'pending'
-  const showConfirmReceipt = !isSeller && status === 'shipped'
-  const isEmpty = !(showConfirmReceipt || showConfirmReceipt || showDispute)
-  if (isTerminal || isEmpty) return null
+  const actions = getTransactionActions({ isSeller, status, disputesEnabled: showDispute })
+  if (!actions) return null
 
   return (
     <View style={actionStyles.container}>
-      {showMarkedShipped && (
+      {actions.markShipped && (
         <Button
           size="lg"
           variant="primary"
@@ -273,7 +271,7 @@ export function TransactionActionButtons({
           <Text>Mark as Shipped</Text>
         </Button>
       )}
-      {showConfirmReceipt && (
+      {actions.confirmReceipt && (
         <Button
           size="lg"
           variant="primary"
@@ -284,7 +282,7 @@ export function TransactionActionButtons({
           <Text>Confirm Receipt</Text>
         </Button>
       )}
-      {showDispute && (
+      {actions.dispute && (
         <Button
           size="sm"
           variant="outline"
