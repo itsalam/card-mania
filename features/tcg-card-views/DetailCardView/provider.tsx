@@ -137,6 +137,8 @@ export type CreateNewCollectionsState = CollectionState &
   Partial<OptionalState> &
   AppearanceState & {
     requestedTags: TagDraft[]
+    /** Server-maintained default background (read-only here); shown when no upload is set. */
+    defaultBackgroundCardId: string | null
     isValid: Record<keyof CollectionState, boolean> | boolean
 
     // actions (pure)
@@ -168,6 +170,7 @@ export function modifyCollectionStore(collection?: CollectionLike) {
     iconKey: collection?.icon_key ?? null,
     accentColor: collection?.accent_color ?? null,
     backgroundImageId: collection?.background_image_id ?? null,
+    defaultBackgroundCardId: collection?.default_background_card_id ?? null,
     isValid: false,
     setName: (name) => set({ name }),
     setDescription: (description) => set({ description }),

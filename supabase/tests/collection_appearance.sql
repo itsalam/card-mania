@@ -7,7 +7,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(8);
+select plan(14);
 
 insert into auth.users (id, instance_id, aud, role, email, encrypted_password, email_confirmed_at, raw_app_meta_data, raw_user_meta_data, is_sso_user, is_anonymous, created_at, updated_at)
 values
@@ -43,6 +43,51 @@ select is((select count(*)
 
 select is((select array_to_string(reloptions, ',') from pg_class where relname = 'collections_with_tags'),
           'security_invoker=true', 'the recreated view keeps security_invoker');
+
+-- Default background: the most valuable card, maintained through the queue + refresh job.
+insert into public.cards (id, name, set_name, genre, grades_prices)
+values
+  ('2b000000-0000-0000-0000-0000000000d1', 'Zzyx Cheap', 'Zzyx Set', 'pokemon', '{"ungraded": 500}'),
+  ('2b000000-0000-0000-0000-0000000000d2', 'Zzyx Pricey', 'Zzyx Set', 'pokemon', '{"ungraded": 90000}');
+
+delete from public.collection_background_queue;
+insert into public.collection_items (collection_id, user_id, ref_id, quantity)
+values
+  ('2b000000-0000-0000-0000-0000000000c1', '2b000000-0000-0000-0000-0000000000a1', '2b000000-0000-0000-0000-0000000000d1', 10),
+  ('2b000000-0000-0000-0000-0000000000c1', '2b000000-0000-0000-0000-0000000000a1', '2b000000-0000-0000-0000-0000000000d2', 1);
+
+select is((select count(*) from public.collection_background_queue
+            where collection_id = '2b000000-0000-0000-0000-0000000000c1'),
+          1::bigint, 'adding items enqueues the collection once');
+
+select public.refresh_collection_backgrounds();
+select is((select default_background_card_id from public.collections
+            where id = '2b000000-0000-0000-0000-0000000000c1'),
+          '2b000000-0000-0000-0000-0000000000d2'::uuid,
+          'default background is the highest-value card, not the largest stack');
+select is((select count(*) from public.collection_background_queue), 0::bigint,
+          'the refresh drains the queue');
+
+update public.cards set grades_prices = '{"ungraded": 200000}'
+ where id = '2b000000-0000-0000-0000-0000000000d1';
+select public.refresh_collection_backgrounds();
+select is((select default_background_card_id from public.collections
+            where id = '2b000000-0000-0000-0000-0000000000c1'),
+          '2b000000-0000-0000-0000-0000000000d1'::uuid,
+          'a price change re-ranks the default');
+
+delete from public.collection_items
+ where collection_id = '2b000000-0000-0000-0000-0000000000c1'
+   and ref_id = '2b000000-0000-0000-0000-0000000000d1';
+select public.refresh_collection_backgrounds();
+select is((select default_background_card_id
+             from public.collections_with_membership('2b000000-0000-0000-0000-0000000000a1', gen_random_uuid())
+            where id = '2b000000-0000-0000-0000-0000000000c1'),
+          '2b000000-0000-0000-0000-0000000000d2'::uuid,
+          'removing the top card falls back to the next one, exposed by the membership RPC');
+
+select is((select count(*) from cron.job where jobname = 'collection-backgrounds-refresh'),
+          1::bigint, 'the refresh job is scheduled');
 
 -- As user 2, user 1's private collection must not be visible through the view.
 set local role authenticated;

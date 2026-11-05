@@ -90,4 +90,5 @@ export type CollectionAppearance = {
   icon_key?: string | null
   accent_color?: string | null
   background_image_id?: string | null
+  default_background_card_id?: string | null
 }

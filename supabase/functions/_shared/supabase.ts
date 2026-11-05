@@ -850,6 +850,7 @@ export type Database = {
         Row: {
           accent_color: string | null
           background_image_id: string | null
+          default_background_card_id: string | null
           cover_image_url: string | null
           created_at: string
           description: string | null
@@ -868,6 +869,7 @@ export type Database = {
         Insert: {
           accent_color?: string | null
           background_image_id?: string | null
+          default_background_card_id?: string | null
           cover_image_url?: string | null
           created_at?: string
           description?: string | null
@@ -886,6 +888,7 @@ export type Database = {
         Update: {
           accent_color?: string | null
           background_image_id?: string | null
+          default_background_card_id?: string | null
           cover_image_url?: string | null
           created_at?: string
           description?: string | null
@@ -2625,6 +2628,7 @@ export type Database = {
         Row: {
           accent_color: string | null
           background_image_id: string | null
+          default_background_card_id: string | null
           cover_image_url: string | null
           created_at: string | null
           description: string | null
@@ -2994,6 +2998,7 @@ export type Database = {
         Returns: {
           accent_color: string
           background_image_id: string
+          default_background_card_id: string
           cover_image_url: string
           created_at: string
           description: string
@@ -3012,6 +3017,7 @@ export type Database = {
         Returns: {
           accent_color: string
           background_image_id: string
+          default_background_card_id: string
           cover_image_url: string
           created_at: string
           description: string

@@ -23,6 +23,7 @@ type CollectionCardData = {
   icon_key?: string | null
   accent_color?: string | null
   background_image_id?: string | null
+  default_background_card_id?: string | null
 }
 
 export function CollectionCard({
@@ -65,6 +66,7 @@ export function CollectionCard({
   const backdrop = (
     <CollectionBackground
       imageId={collection.background_image_id}
+      defaultCardId={collection.default_background_card_id}
       accentColor={collection.accent_color}
       variant="thumb"
     />

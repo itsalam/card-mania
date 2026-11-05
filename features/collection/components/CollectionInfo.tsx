@@ -220,6 +220,7 @@ function CollectionInfoContent({
         {/* ITS-98: background image / accent wash behind the header. */}
         <CollectionBackground
           imageId={collection?.background_image_id}
+          defaultCardId={collection?.default_background_card_id}
           accentColor={collection?.accent_color}
         />
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>

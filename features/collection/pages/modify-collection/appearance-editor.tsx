@@ -48,6 +48,7 @@ export function AppearanceEditor() {
   const iconKey = useCreateNewCollections((s) => s.iconKey)
   const accentColor = useCreateNewCollections((s) => s.accentColor)
   const backgroundImageId = useCreateNewCollections((s) => s.backgroundImageId)
+  const defaultCardId = useCreateNewCollections((s) => s.defaultBackgroundCardId)
   const setAppearance = useCreateNewCollections((s) => s.setAppearance)
 
   return (
@@ -61,6 +62,7 @@ export function AppearanceEditor() {
             icon_key: iconKey,
             accent_color: accentColor,
             background_image_id: backgroundImageId,
+            default_background_card_id: defaultCardId,
           }}
           onPress={() => {}}
         />
@@ -113,6 +115,7 @@ export function AppearanceEditor() {
       <Group label="Background">
         <BackgroundPicker
           imageId={backgroundImageId}
+          defaultCardId={defaultCardId}
           accentColor={accentColor}
           onChange={(id) => setAppearance({ backgroundImageId: id })}
         />
@@ -175,10 +178,13 @@ function Swatch({
 
 function BackgroundPicker({
   imageId,
+  defaultCardId,
   accentColor,
   onChange,
 }: {
   imageId: string | null
+  /** The collection's most valuable card — the background whenever no photo is uploaded. */
+  defaultCardId: string | null
   accentColor: string | null
   onChange: (id: string | null) => void
 }) {
@@ -200,6 +206,31 @@ function BackgroundPicker({
       <View style={[pickerBox(), { alignItems: 'center', justifyContent: 'center' }]}>
         <ActivityIndicator color={Colors.$iconNeutral} />
         <Text style={{ fontSize: 12, color: Colors.$textNeutral, marginTop: 6 }}>Uploading…</Text>
+      </View>
+    )
+  }
+
+  if (!imageId && defaultCardId) {
+    return (
+      <View style={{ gap: 8 }}>
+        <View style={[pickerBox(), { overflow: 'hidden', borderStyle: 'solid' }]}>
+          <CollectionBackground
+            defaultCardId={defaultCardId}
+            accentColor={accentColor}
+            variant="thumb"
+          />
+          <Text style={{ margin: 10, fontSize: 12, color: Colors.$textNeutral }}>
+            Default: your most valuable card
+          </Text>
+        </View>
+        <View style={{ flexDirection: 'row', gap: 8 }}>
+          <PillButton icon={ImagePlus} label="Upload photo" onPress={pick} />
+        </View>
+        {upload.isError && (
+          <Text style={{ fontSize: 12, color: Colors.$textDanger }}>
+            Upload failed — try again.
+          </Text>
+        )}
       </View>
     )
   }
@@ -229,7 +260,12 @@ function BackgroundPicker({
       </View>
       <View style={{ flexDirection: 'row', gap: 8 }}>
         <PillButton icon={RefreshCw} label="Change" onPress={pick} />
-        <PillButton icon={Trash2} label="Remove" onPress={() => onChange(null)} danger />
+        <PillButton
+          icon={Trash2}
+          label={defaultCardId ? 'Use default' : 'Remove'}
+          onPress={() => onChange(null)}
+          danger
+        />
       </View>
     </View>
   )
