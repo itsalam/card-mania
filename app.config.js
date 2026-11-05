@@ -67,6 +67,13 @@ const config = {
         'expo-notifications',
         {
           color: '#0C0C0C',
+          // aps-environment: store-distributed builds (EAS preview / production → TestFlight /
+          // App Store) talk to the production APNs gateway; dev-client and local builds to the
+          // sandbox. The plugin defaults to 'development' for everything.
+          mode:
+            process.env.EAS_BUILD_PROFILE && process.env.EAS_BUILD_PROFILE !== 'development'
+              ? 'production'
+              : 'development',
         },
       ],
       [
