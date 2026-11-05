@@ -381,6 +381,43 @@ export type Database = {
         }
         Relationships: []
       }
+      collection_background_queue: {
+        Row: {
+          collection_id: string
+          queued_at: string
+        }
+        Insert: {
+          collection_id: string
+          queued_at?: string
+        }
+        Update: {
+          collection_id?: string
+          queued_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'collection_background_queue_collection_id_fkey'
+            columns: ['collection_id']
+            isOneToOne: true
+            referencedRelation: 'collection_totals_with_flags'
+            referencedColumns: ['collection_id']
+          },
+          {
+            foreignKeyName: 'collection_background_queue_collection_id_fkey'
+            columns: ['collection_id']
+            isOneToOne: true
+            referencedRelation: 'collections'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'collection_background_queue_collection_id_fkey'
+            columns: ['collection_id']
+            isOneToOne: true
+            referencedRelation: 'collections_with_tags'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       collection_group: {
         Row: {
           created_at: string
@@ -850,9 +887,9 @@ export type Database = {
         Row: {
           accent_color: string | null
           background_image_id: string | null
-          default_background_card_id: string | null
           cover_image_url: string | null
           created_at: string
+          default_background_card_id: string | null
           description: string | null
           hide_sold_items: boolean | null
           icon_key: string | null
@@ -869,9 +906,9 @@ export type Database = {
         Insert: {
           accent_color?: string | null
           background_image_id?: string | null
-          default_background_card_id?: string | null
           cover_image_url?: string | null
           created_at?: string
+          default_background_card_id?: string | null
           description?: string | null
           hide_sold_items?: boolean | null
           icon_key?: string | null
@@ -888,9 +925,9 @@ export type Database = {
         Update: {
           accent_color?: string | null
           background_image_id?: string | null
-          default_background_card_id?: string | null
           cover_image_url?: string | null
           created_at?: string
+          default_background_card_id?: string | null
           description?: string | null
           hide_sold_items?: boolean | null
           icon_key?: string | null
@@ -910,6 +947,13 @@ export type Database = {
             columns: ['background_image_id']
             isOneToOne: false
             referencedRelation: 'image_cache'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'collections_default_background_card_id_fkey'
+            columns: ['default_background_card_id']
+            isOneToOne: false
+            referencedRelation: 'cards'
             referencedColumns: ['id']
           },
         ]
@@ -2637,9 +2681,9 @@ export type Database = {
         Row: {
           accent_color: string | null
           background_image_id: string | null
-          default_background_card_id: string | null
           cover_image_url: string | null
           created_at: string | null
+          default_background_card_id: string | null
           description: string | null
           hide_sold_items: boolean | null
           icon_key: string | null
@@ -2660,6 +2704,13 @@ export type Database = {
             columns: ['background_image_id']
             isOneToOne: false
             referencedRelation: 'image_cache'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'collections_default_background_card_id_fkey'
+            columns: ['default_background_card_id']
+            isOneToOne: false
+            referencedRelation: 'cards'
             referencedColumns: ['id']
           },
         ]
@@ -2769,6 +2820,10 @@ export type Database = {
           p_ref_id: string
         }
         Returns: number
+      }
+      _collection_top_card_id: {
+        Args: { p_collection_id: string }
+        Returns: string
       }
       _marketplace_base_listings: {
         Args: never
@@ -3007,9 +3062,9 @@ export type Database = {
         Returns: {
           accent_color: string
           background_image_id: string
-          default_background_card_id: string
           cover_image_url: string
           created_at: string
+          default_background_card_id: string
           description: string
           has_item: boolean
           icon_key: string
@@ -3026,9 +3081,9 @@ export type Database = {
         Returns: {
           accent_color: string
           background_image_id: string
-          default_background_card_id: string
           cover_image_url: string
           created_at: string
+          default_background_card_id: string
           description: string
           has_item: boolean
           icon_key: string
@@ -3358,6 +3413,10 @@ export type Database = {
           p_title: string
         }
         Returns: string
+      }
+      refresh_collection_backgrounds: {
+        Args: { p_limit?: number }
+        Returns: number
       }
       refresh_marketplace_sections: { Args: never; Returns: undefined }
       release_card_price_refresh: {
