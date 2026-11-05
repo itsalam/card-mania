@@ -45,6 +45,14 @@ export default function TabLayout() {
           headerShown: false,
         }}
       />
+      <Stack.Screen
+        name="notification-settings"
+        options={{
+          presentation: 'modal',
+          animation: 'slide_from_right',
+          headerShown: false,
+        }}
+      />
       <Stack.Screen name="+not-found" />
     </Stack>
   )

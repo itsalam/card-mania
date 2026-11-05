@@ -5,6 +5,7 @@ import {
   useNotifications,
   useUnreadCount,
 } from '@/client/notifications'
+import { hasPromptedForPush, registerForPush } from '@/client/notifications/push'
 import { AppNotification, NotificationCategory } from '@/client/notifications/types'
 import { TAB_CONTENT_BOTTOM_SPACING } from '@/components/consts'
 import { TabRow } from '@/components/tabs/TabRow'
@@ -17,7 +18,9 @@ import { useRouter } from 'expo-router'
 import { ArrowLeftRight, Bell, Inbox, TrendingDown, Users, X } from 'lucide-react-native'
 import { useRefresh } from '@/lib/hooks/useRefresh'
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs'
-import React, { useState } from 'react'
+import { useUserStore } from '@/lib/store/useUserStore'
+import { reportError } from '@/lib/utils/report-error'
+import React, { useEffect, useState } from 'react'
 import { FlatList, Pressable, RefreshControl, StyleSheet, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Colors } from 'react-native-ui-lib'
@@ -200,12 +203,29 @@ function buildListItems(notifications: AppNotification[]): ListItem[] {
 
 // ── main component ────────────────────────────────────────────────────────────
 
+// The OS push prompt is asked once, here — the first time a signed-in user opens the inbox,
+// where the value of push is obvious — rather than at launch. Notification settings has the
+// manual path after that.
+function usePushPermissionPrompt() {
+  const isRealUser = useUserStore((s) => Boolean(s.user && !s.user.is_anonymous))
+  useEffect(() => {
+    if (!isRealUser) return
+    hasPromptedForPush().then((prompted) => {
+      if (prompted) return
+      registerForPush({ prompt: true }).catch((error) =>
+        reportError({ context: 'usePushPermissionPrompt', error })
+      )
+    })
+  }, [isRealUser])
+}
+
 export function NotificationsPage() {
   const insets = useSafeAreaInsets()
   const tabBarHeight = useBottomTabBarHeight()
   const [activeCategories, setActiveCategories] = useState<Set<NotificationCategory>>(new Set())
 
   const [readAll, setReadAll] = useState(false)
+  usePushPermissionPrompt()
   const { data: rawNotifications, isLoading, refetch } = useNotifications({ unread: !readAll })
   const { refreshing, onRefresh } = useRefresh([refetch])
 

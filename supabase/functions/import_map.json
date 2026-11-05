@@ -14,6 +14,7 @@
     "@grade-key": "./_shared/grade-key.ts",
     "@cardhedge-prices": "./_shared/cardhedge-prices.ts",
     "@cardhedge-resolve": "./_shared/cardhedge-resolve.ts",
+    "@expo-push": "./_shared/expo-push.ts",
     "@supabase/supabase-js": "npm:@supabase/supabase-js@2.56.0"
   }
 }

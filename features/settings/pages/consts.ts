@@ -122,8 +122,9 @@ export const SETTINGS_SECTIONS: Record<string, SettingsLayoutSection> = {
         label: 'Notifications',
         type: 'page',
         Icon: Bell,
+        route: '/(tabs)/profile/notification-settings',
         page: {
-          label: 'Account Settings',
+          label: 'Notifications',
           items: {},
         },
       },
