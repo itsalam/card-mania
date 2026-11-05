@@ -1293,7 +1293,10 @@ export type Database = {
         Row: {
           enabled: boolean
           expires_at: string | null
+          filter: Json
           key: string
+          kind: string
+          order_by: string
           refresh_interval: string
           refreshed_at: string | null
           result_limit: number
@@ -1304,7 +1307,10 @@ export type Database = {
         Insert: {
           enabled?: boolean
           expires_at?: string | null
+          filter?: Json
           key: string
+          kind?: string
+          order_by?: string
           refresh_interval?: string
           refreshed_at?: string | null
           result_limit?: number
@@ -1315,7 +1321,10 @@ export type Database = {
         Update: {
           enabled?: boolean
           expires_at?: string | null
+          filter?: Json
           key?: string
+          kind?: string
+          order_by?: string
           refresh_interval?: string
           refreshed_at?: string | null
           result_limit?: number
@@ -2995,6 +3004,15 @@ export type Database = {
         Returns: string
       }
       curated_tags_import: { Args: { payload: Json }; Returns: Json }
+      due_marketplace_feeds: {
+        Args: { p_force?: boolean; p_keys?: string[] }
+        Returns: {
+          filter: Json
+          key: string
+          order_by: string
+          result_limit: number
+        }[]
+      }
       effective_user_id: { Args: never; Returns: string }
       ensure_card_stub:
         | {
@@ -3263,6 +3281,18 @@ export type Database = {
         Args: { p_card_id: string; p_status: string }
         Returns: undefined
       }
+      marketplace_feed_filter_errors: {
+        Args: { p_filter: Json }
+        Returns: string[]
+      }
+      marketplace_feed_listings: {
+        Args: { p_filter: Json; p_limit?: number; p_order_by?: string }
+        Returns: {
+          collection_item_id: string
+          payload: Json
+          rank: number
+        }[]
+      }
       most_used_variants: {
         Args: { p_card_id: string; p_limit?: number; p_query?: string }
         Returns: {
@@ -3469,6 +3499,10 @@ export type Database = {
         }[]
       }
       wishlist_total: { Args: never; Returns: number }
+      write_marketplace_section: {
+        Args: { p_key: string; p_rows: Json }
+        Returns: number
+      }
     }
     Enums: {
       item_kind: 'card'
