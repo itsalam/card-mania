@@ -1,3 +1,5 @@
+import { CollectionsAvatar } from '@/components/collections/avatar'
+import { CollectionBackground } from '@/components/collections/background'
 import { ToggleBadge } from '@/components/ui/badge'
 import { SkeletonText } from '@/components/ui/text'
 import { Text } from '@/components/ui/text/base-text'
@@ -98,6 +100,9 @@ function CollectionInfoContent({
   const { data: collection } = useGetCollection({ collectionId })
   const { data: count } = useGetCollectionCountInfo({ collectionId })
   const isOwned = collection ? collection.user_id === authUserId : undefined
+  // Only collections that picked an icon/color get the avatar, so default collections keep
+  // their existing text-only header.
+  const hasAppearance = Boolean(collection?.icon_key || collection?.accent_color)
 
   const visiblityInfo = VISIBILITY_OPTIONS.find((v) => v.key === collection?.visibility)
   const VisibilityIcon = visiblityInfo?.icon
@@ -209,19 +214,36 @@ function CollectionInfoContent({
           paddingTop: 12,
           display: 'flex',
           gap: 4,
+          overflow: 'hidden',
         }}
       >
-        <SkeletonText loading={!collection?.name} variant={'h3'} placeholderTextLength={24}>
-          {collection?.name}
-        </SkeletonText>
-        <SkeletonText
-          loading={!collection?.description}
-          variant={'small'}
-          placeholderTextLength={104}
-          numberOfLines={2}
-        >
-          {collection?.description}
-        </SkeletonText>
+        {/* ITS-98: background image / accent wash behind the header. */}
+        <CollectionBackground
+          imageId={collection?.background_image_id}
+          accentColor={collection?.accent_color}
+        />
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+          {hasAppearance && (
+            <CollectionsAvatar
+              size={44}
+              iconKey={collection?.icon_key}
+              accentColor={collection?.accent_color}
+            />
+          )}
+          <View style={{ flex: 1, gap: 4 }}>
+            <SkeletonText loading={!collection?.name} variant={'h3'} placeholderTextLength={24}>
+              {collection?.name}
+            </SkeletonText>
+            <SkeletonText
+              loading={!collection?.description}
+              variant={'small'}
+              placeholderTextLength={104}
+              numberOfLines={2}
+            >
+              {collection?.description}
+            </SkeletonText>
+          </View>
+        </View>
 
         <View style={{ display: 'flex', gap: 12 }}>
           <FlatList

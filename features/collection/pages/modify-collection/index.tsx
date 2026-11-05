@@ -1,5 +1,4 @@
 import { CollectionLike, EditCollectionResult } from '@/client/collections/types'
-import { CollectionsAvatar } from '@/components/collections/avatar'
 import { Separator } from '@/components/ui/separator'
 import { Text } from '@/components/ui/text/base-text'
 import { OnboardingTarget } from '@/features/onboarding'
@@ -14,6 +13,7 @@ import {
   StorefrontOptions,
   SubmitCollectionButton,
 } from './components'
+import { AppearanceEditor, DraftCollectionAvatar } from './appearance-editor'
 import { CreateCollectionChipInput } from './tags-input'
 import { VisibilitySelector } from './visibility-selector'
 
@@ -120,7 +120,7 @@ export function ModifyCollectionBody({
                 gap: 14,
               }}
             >
-              <CollectionsAvatar iconImageSrc={collection?.cover_image_url ?? undefined} />
+              <DraftCollectionAvatar coverImageUrl={collection?.cover_image_url} />
               <View style={{ flex: 1 }}>
                 <CollectionsNameInput />
               </View>
@@ -135,6 +135,11 @@ export function ModifyCollectionBody({
             <CreateCollectionChipInput />
           </View>
         </OnboardingTarget>
+
+        {/* Appearance (ITS-98) */}
+        <SectionCard label="Appearance">
+          <AppearanceEditor />
+        </SectionCard>
 
         {/* Settings */}
         <SectionCard label="Settings">

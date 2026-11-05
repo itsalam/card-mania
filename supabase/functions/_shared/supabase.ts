@@ -848,10 +848,13 @@ export type Database = {
       }
       collections: {
         Row: {
+          accent_color: string | null
+          background_image_id: string | null
           cover_image_url: string | null
           created_at: string
           description: string | null
           hide_sold_items: boolean | null
+          icon_key: string | null
           id: string
           is_selling: boolean | null
           is_storefront: boolean | null
@@ -863,10 +866,13 @@ export type Database = {
           visibility: string
         }
         Insert: {
+          accent_color?: string | null
+          background_image_id?: string | null
           cover_image_url?: string | null
           created_at?: string
           description?: string | null
           hide_sold_items?: boolean | null
+          icon_key?: string | null
           id?: string
           is_selling?: boolean | null
           is_storefront?: boolean | null
@@ -878,10 +884,13 @@ export type Database = {
           visibility?: string
         }
         Update: {
+          accent_color?: string | null
+          background_image_id?: string | null
           cover_image_url?: string | null
           created_at?: string
           description?: string | null
           hide_sold_items?: boolean | null
+          icon_key?: string | null
           id?: string
           is_selling?: boolean | null
           is_storefront?: boolean | null
@@ -892,7 +901,15 @@ export type Database = {
           user_id?: string
           visibility?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: 'collections_background_image_id_fkey'
+            columns: ['background_image_id']
+            isOneToOne: false
+            referencedRelation: 'image_cache'
+            referencedColumns: ['id']
+          },
+        ]
       }
       demo_user_map: {
         Row: {
@@ -2606,17 +2623,33 @@ export type Database = {
       }
       collections_with_tags: {
         Row: {
+          accent_color: string | null
+          background_image_id: string | null
           cover_image_url: string | null
           created_at: string | null
           description: string | null
+          hide_sold_items: boolean | null
+          icon_key: string | null
           id: string | null
+          is_selling: boolean | null
+          is_storefront: boolean | null
+          is_vault: boolean | null
+          is_wishlist: boolean | null
           name: string | null
           tags_cache: string[] | null
           updated_at: string | null
           user_id: string | null
           visibility: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: 'collections_background_image_id_fkey'
+            columns: ['background_image_id']
+            isOneToOne: false
+            referencedRelation: 'image_cache'
+            referencedColumns: ['id']
+          },
+        ]
       }
       enrichment_backlog: {
         Row: {
@@ -2959,10 +2992,13 @@ export type Database = {
       collections_with_membership: {
         Args: { p_card: string; p_user: string }
         Returns: {
+          accent_color: string
+          background_image_id: string
           cover_image_url: string
           created_at: string
           description: string
           has_item: boolean
+          icon_key: string
           id: string
           name: string
           tags_cache: string[]
@@ -2974,10 +3010,13 @@ export type Database = {
       collections_with_membership_query: {
         Args: { p_card: string; p_query?: string; p_user: string }
         Returns: {
+          accent_color: string
+          background_image_id: string
           cover_image_url: string
           created_at: string
           description: string
           has_item: boolean
+          icon_key: string
           id: string
           name: string
           tags_cache: string[]

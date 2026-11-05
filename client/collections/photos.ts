@@ -279,3 +279,45 @@ export function useSetPrimaryCollectionItemPhoto(collectionItemId: string) {
     },
   })
 }
+
+/**
+ * Uploads a collection background image (ITS-98) and returns its image_cache id, which the
+ * caller stores on the collection draft — the collection row itself is only written on Save.
+ * Same storage path family and image_cache contract as item photos:
+ * user-uploads/{user_id}/collections/{uuid}.jpg.
+ */
+export function useUploadCollectionBackground() {
+  return useMutation({
+    mutationFn: async (asset: ImagePickerAsset) => {
+      const user = await requireUser()
+      const supabase = getSupabase()
+
+      const prepared = await prepareImageForUpload(asset)
+      if (!prepared.base64) throw new Error('Failed to encode uploaded image')
+
+      const storagePath = `user-uploads/${user.id}/collections/${crypto.randomUUID()}.jpg`
+      const { error: uploadError } = await supabase.storage
+        .from('images')
+        .upload(storagePath, decodeBase64(prepared.base64), { contentType: 'image/jpeg' })
+      if (uploadError) throw uploadError
+
+      const { data: cacheRow, error: cacheError } = await supabase
+        .from('image_cache')
+        .insert({
+          source_url: null,
+          storage_path: storagePath,
+          status: 'READY',
+          mime: 'image/jpeg',
+          width: prepared.width,
+          height: prepared.height,
+        })
+        .select('id')
+        .single()
+      if (cacheError || !cacheRow) throw cacheError ?? new Error('Failed to cache uploaded image')
+      return cacheRow.id as string
+    },
+    onError: (error) => {
+      reportError({ context: 'useUploadCollectionBackground', error })
+    },
+  })
+}
