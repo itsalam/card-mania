@@ -7,7 +7,7 @@ import { gradientColors } from '@/components/graphs/helpers'
 import FullPriceGraph from '@/components/graphs/PriceGraph'
 import { GraphInputKey } from '@/components/graphs/ui/types'
 import { useMeasure } from '@/components/hooks/useMeasure'
-import { CARD_WIDTH_RATIO } from '@/components/tcg-card/consts'
+import { cardArtRadius, CARD_WIDTH_RATIO } from '@/components/tcg-card/consts'
 import { LiquidGlassCard } from '@/components/tcg-card/GlassCard'
 import { useInvalidateOnFocus } from '@/components/tcg-card/helpers'
 import { getDefaultCardPlaceholderSource } from '@/components/tcg-card/placeholders'
@@ -683,6 +683,7 @@ const CardDetailContainer = ({
     backgroundColor: interpolateColor(progress.value, [0, 0.25], transitionBackgroundColors.value),
   }))
 
+  const heroRadius = cardArtRadius(W * CARD_WIDTH_RATIO)
   const cardImageAnimStyle = useAnimatedStyle(() => ({
     width: interpolate(
       expandProgress.value,
@@ -714,7 +715,7 @@ const CardDetailContainer = ({
       Extrapolation.CLAMP
     ),
     opacity: interpolate(expandProgress.value, [0, 0.1], [1, 0.4], Extrapolation.CLAMP),
-    borderRadius: interpolate(expandProgress.value, [0, 0.1], [10, 0], Extrapolation.CLAMP),
+    borderRadius: interpolate(expandProgress.value, [0, 0.1], [heroRadius, 0], Extrapolation.CLAMP),
   }))
 
   // Vertical padding tracks the same [0, 1] range as the width/top/left growth above

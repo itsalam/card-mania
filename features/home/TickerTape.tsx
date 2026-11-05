@@ -1,4 +1,5 @@
 import { TICKER_DAYS, TickerItem, tickerName, useTickerItems } from '@/client/home/ticker'
+import { CARD_ASPECT_RATIO } from '@/components/tcg-card/consts'
 import { glassSurfaceStyle } from '@/components/tcg-card/GlassCard'
 import { GradeBadge } from '@/components/tcg-card/GradeBadge'
 import { useNavigateToItem } from '@/components/tcg-card/helpers'
@@ -7,7 +8,10 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Text } from '@/components/ui/text/base-text'
 import { formatPrice } from '@/components/utils'
 import { useSetting } from '@/features/settings'
-import { useCallback, useEffect, useState } from 'react'
+import { CardImage } from '@/features/tcg-card-views/card-image'
+import { DisplayData } from '@/features/tcg-card-views/types'
+import { TrendingDown, TrendingUp } from 'lucide-react-native'
+import { Fragment, useCallback, useEffect, useMemo, useState } from 'react'
 import { LayoutChangeEvent, Pressable, StyleProp, View, ViewStyle } from 'react-native'
 import Animated, {
   cancelAnimation,
@@ -20,8 +24,8 @@ import Animated, {
 } from 'react-native-reanimated'
 import { Colors } from 'react-native-ui-lib'
 
-// Home ticker tape: 7-day price moves for cards the user owns (●) or watches (○), scrolling
-// under Portfolio Summary. Static and swipeable under the OS reduce-motion setting; touching the
+// Home ticker tape: 7-day price moves for cards the user owns or watches, each with a small
+// card thumbnail and separated by hairline dividers, scrolling under Portfolio Summary. Static and swipeable under the OS reduce-motion setting; touching the
 // tape pauses it; tapping an entry opens the card.
 //
 // Design refs: TradingView watchlist (https://mobbin.com/screens/7927fcd8-c7d7-4763-a0e8-bf25f38a1a5c)
@@ -29,35 +33,55 @@ import { Colors } from 'react-native-ui-lib'
 // (https://mobbin.com/screens/dc93b9c6-e354-4acb-a00c-540e78f8d921) for the compact horizontal
 // quote row.
 
-const BAND_HEIGHT = 36
-/** Marquee speed in px/s — slow enough to read a price while it moves. */
-const SPEED = 32
-const ENTRY_GAP = 20
+const BAND_HEIGHT = 64
+/** Marquee speed in px/s — slow enough to read a name and price while it moves. */
+const SPEED = 20
+const ENTRY_GAP = 28
+/** Card thumbnail in each entry, sized to sit inside the band with ~11px above and below. */
+const THUMB_HEIGHT = 42
+const THUMB_WIDTH = Math.round(THUMB_HEIGHT * CARD_ASPECT_RATIO)
+/** Prices and changes use the monospace stats face (as card detail prices do) so digits align. */
+const NUMBER_FONT = 'SpaceMono'
 
 function ChangeLabel({ pct }: { pct: number | null }) {
   if (pct == null || pct === 0) {
     return (
-      <Text style={{ fontSize: 12, lineHeight: 15, color: Colors.$textNeutral }}>
+      <Text
+        style={{
+          fontFamily: NUMBER_FONT,
+          fontSize: 10,
+          lineHeight: 13,
+          color: Colors.$textNeutral,
+        }}
+      >
         {pct === 0 ? '0.0%' : '—'}
       </Text>
     )
   }
+  // Same TrendingUp / TrendingDown icons as Portfolio Summary, CardTile and list rows.
   const up = pct > 0
+  const color = up ? Colors.$textSuccess : Colors.$textDanger
+  const Icon = up ? TrendingUp : TrendingDown
   return (
-    <Text
-      style={{
-        fontSize: 12,
-        lineHeight: 15,
-        fontWeight: '700',
-        color: up ? Colors.$textSuccess : Colors.$textDanger,
-      }}
-    >
-      {`${up ? '▲' : '▼'}${Math.abs(pct).toFixed(1)}%`}
-    </Text>
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 2 }}>
+      <Icon size={10} color={color} />
+      <Text style={{ fontFamily: NUMBER_FONT, fontSize: 10, lineHeight: 13, color }}>
+        {`${Math.abs(pct).toFixed(1)}%`}
+      </Text>
+    </View>
   )
 }
 
 function TickerEntry({ item }: { item: TickerItem }) {
+  const displayData = useMemo<DisplayData>(
+    () => ({
+      id: item.ref_id,
+      imageId: item.ref_id,
+      title: item.name ?? 'Card',
+      imageProxyArgs: { variant: 'tiny', shape: 'card', cardId: item.ref_id, imageType: 'front' },
+    }),
+    [item.ref_id, item.name]
+  )
   const { cardElement, handlePress } = useNavigateToItem({
     kind: 'card',
     item: { id: item.ref_id, name: item.name, set_name: item.set_name },
@@ -71,25 +95,48 @@ function TickerEntry({ item }: { item: TickerItem }) {
       accessibilityLabel={`${tickerName(item.name)}, ${formatPrice(item.current_cents)}, ${
         item.change_pct == null ? 'no change data' : `${item.change_pct}% over ${TICKER_DAYS} days`
       }`}
-      style={({ pressed }) => ({
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 6,
-        opacity: pressed ? 0.6 : 1,
-      })}
+      style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
     >
-      <Text style={{ fontSize: 9, lineHeight: 12, color: Colors.$textNeutral }}>
-        {item.source === 'owned' ? '●' : '○'}
-      </Text>
-      <Text
-        numberOfLines={1}
-        style={{ fontSize: 13, lineHeight: 16, fontWeight: '600', maxWidth: 160 }}
-      >
-        {tickerName(item.name)}
-      </Text>
-      {item.price_key !== 'ungraded' && <GradeBadge priceKey={item.price_key} />}
-      <Text style={{ fontSize: 13, lineHeight: 16 }}>{formatPrice(item.current_cents)}</Text>
-      <ChangeLabel pct={item.change_pct} />
+      {/* Row layout lives on a plain View: Pressable's function-style isn't reliably applied
+          through NativeWind's interop, which left the entry stacked vertically. */}
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+        <CardImage
+          displayData={displayData}
+          width={THUMB_WIDTH}
+          height={THUMB_HEIGHT}
+          // Square corners: both the Card wrapper and the image round themselves by default.
+          cardContainerStyle={{ borderRadius: 0 }}
+          imageStyle={{ borderRadius: 0 }}
+          imageProps={{ glassEffect: false, enableShadow: false, onPress: handlePress }}
+        />
+        <View>
+          <Text numberOfLines={1} style={{ fontSize: 13, lineHeight: 15, maxWidth: 200 }}>
+            {tickerName(item.name)}
+          </Text>
+
+          {item.price_key !== 'ungraded' && (
+            // Hug its own width — as a column child it would otherwise stretch across the entry.
+            <View style={{ alignSelf: 'flex-start' }}>
+              <GradeBadge priceKey={item.price_key} />
+            </View>
+          )}
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            <Text
+              numberOfLines={1}
+              style={{ fontSize: 10, lineHeight: 12, maxWidth: 200, color: Colors.$textNeutral }}
+            >
+              {tickerName(item.set_name)}
+            </Text>
+
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <Text style={{ fontFamily: NUMBER_FONT, fontSize: 15, lineHeight: 17 }}>
+                {formatPrice(item.current_cents)}
+              </Text>
+              <ChangeLabel pct={item.change_pct} />
+            </View>
+          </View>
+        </View>
+      </View>
     </Pressable>
   )
 }
@@ -104,15 +151,26 @@ function Entries({
   return (
     <View
       onLayout={onLayout}
+      // Each entry is followed by a divider (the last one too), so entry · | · entry spacing
+      // stays even across the seam where the marquee's second copy begins.
       style={{
         flexDirection: 'row',
         alignItems: 'center',
-        gap: ENTRY_GAP,
-        paddingRight: ENTRY_GAP,
+        gap: ENTRY_GAP / 2,
+        paddingRight: ENTRY_GAP / 2,
       }}
     >
       {items.map((item) => (
-        <TickerEntry key={`${item.ref_id}-${item.price_key}`} item={item} />
+        <Fragment key={`${item.ref_id}-${item.price_key}`}>
+          <TickerEntry item={item} />
+          <View
+            style={{
+              width: 1,
+              height: THUMB_HEIGHT,
+              backgroundColor: Colors.rgba(Colors.$outlineNeutral, 0.6),
+            }}
+          />
+        </Fragment>
       ))}
     </View>
   )
@@ -148,12 +206,12 @@ function Marquee({ items }: { items: TickerItem[] }) {
 
   return (
     <View
-      style={{ flex: 1, overflow: 'hidden' }}
+      style={{ flex: 1, overflow: 'hidden', justifyContent: 'center' }}
       onTouchStart={() => cancelAnimation(offset)}
       onTouchEnd={() => loop(offset.value)}
       onTouchCancel={() => loop(offset.value)}
     >
-      <Animated.View style={[{ flexDirection: 'row', paddingLeft: 14 }, animatedStyle]}>
+      <Animated.View style={[{ flexDirection: 'row', paddingLeft: 16 }, animatedStyle]}>
         <Entries items={items} onLayout={(e) => setCopyWidth(e.nativeEvent.layout.width)} />
         {/* Second copy fills the gap as the first scrolls out, so the tape never empties. */}
         <Entries items={items} />
@@ -166,18 +224,20 @@ export function TickerTape({ style }: { style?: StyleProp<ViewStyle> }) {
   const { data: items = [], isLoading } = useTickerItems()
   const reduceMotion = useSetting('reduceMotion').value
 
+  // Full-bleed band: glass fill with hairlines top and bottom only, edge to edge.
   const band: ViewStyle = {
     height: BAND_HEIGHT,
-    borderRadius: 999,
     overflow: 'hidden',
     justifyContent: 'center',
     ...glassSurfaceStyle(),
+    borderLeftWidth: 0,
+    borderRightWidth: 0,
   }
 
   if (isLoading) {
     return (
-      <View style={[band, { paddingHorizontal: 14 }, style]}>
-        <Skeleton style={{ height: 14, width: '70%', borderRadius: 999 }} />
+      <View style={[band, { paddingHorizontal: 16 }, style]}>
+        <Skeleton style={{ height: 16, width: '70%', borderRadius: 999 }} />
       </View>
     )
   }
@@ -192,7 +252,7 @@ export function TickerTape({ style }: { style?: StyleProp<ViewStyle> }) {
         <FadeScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
-          contentContainerStyle={{ paddingLeft: 14 }}
+          contentContainerStyle={{ paddingLeft: 16, alignItems: 'center' }}
         >
           <Entries items={items} />
         </FadeScrollView>

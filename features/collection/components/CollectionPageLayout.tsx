@@ -11,11 +11,7 @@ import { CollectionItemQueryView, CollectionRow } from '@/lib/store/functions/ty
 
 import { useIsWishlisted } from '@/client/card/wishlist'
 import { CollectionLike } from '@/client/collections/types'
-import {
-  CARD_LIST_GAP,
-  CARD_LIST_ROW_PADDING,
-  LIST_THUMBNAIL_HEIGHT,
-} from '@/components/tcg-card/consts'
+import { CARD_LIST_GAP, LIST_THUMBNAIL_HEIGHT } from '@/components/tcg-card/consts'
 import { FadeScrollView } from '@/components/ui/fade-scroll'
 import { Tabs } from '@/components/ui/tabs'
 import { Text } from '@/components/ui/text/base-text'
@@ -573,7 +569,8 @@ const DetailCollectionView = ({ direction }: { direction: 'forward' | 'backward'
             style={{
               position: 'absolute',
               left: 4,
-              top: LIST_THUMBNAIL_HEIGHT + CARD_LIST_ROW_PADDING,
+              // Rows have no inset now — the art starts at the row's top edge.
+              top: LIST_THUMBNAIL_HEIGHT,
               bottom: 0,
               width: 3,
               marginTop: 8,

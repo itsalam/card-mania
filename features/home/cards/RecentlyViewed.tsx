@@ -1,12 +1,12 @@
 import { useCardQuery } from '@/client/card'
 import { useIsWishlisted } from '@/client/card/wishlist'
 import { ExpandableCard } from '@/components/content-card'
-import { DEFAULT_CARD_TILE_WIDTH } from '@/components/tcg-card/CardTile'
 import {
-  CARD_LIST_GAP,
-  CARD_LIST_ROW_PADDING,
-  LIST_THUMBNAIL_HEIGHT,
-} from '@/components/tcg-card/consts'
+  CARD_TILE_ART_WIDTH,
+  CARD_TILE_PADDING,
+  DEFAULT_CARD_TILE_WIDTH,
+} from '@/components/tcg-card/CardTile'
+import { CARD_ASPECT_RATIO, CARD_LIST_GAP } from '@/components/tcg-card/consts'
 import { LiquidGlassCard } from '@/components/tcg-card/GlassCard'
 import { CardListView } from '@/features/tcg-card-views/ListCard'
 import { useRecentViews } from '@/lib/store/functions/hooks'
@@ -14,8 +14,9 @@ import { Database } from '@/lib/store/supabase'
 import { History } from 'lucide-react-native'
 import React, { ComponentProps } from 'react'
 
-// Expanded panel shows ~3 glass list rows before scrolling (+ ExpandableCard's p-4).
-const EXPANDED_ROW_HEIGHT = LIST_THUMBNAIL_HEIGHT + CARD_LIST_ROW_PADDING * 2
+// Expanded panel shows ~3 tile-sized rows before scrolling (+ ExpandableCard's p-4).
+const EXPANDED_ROW_HEIGHT =
+  Math.round(CARD_TILE_ART_WIDTH / CARD_ASPECT_RATIO) + CARD_TILE_PADDING * 2
 const EXPANDED_HEIGHT = EXPANDED_ROW_HEIGHT * 3 + CARD_LIST_GAP * 2 + 32
 
 export function RecentlyViewedCard({

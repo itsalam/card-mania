@@ -286,7 +286,7 @@ export function SearchScreen({
                 contentContainerStyle={{
                   display: 'flex',
                   gap: CARD_LIST_GAP,
-                  paddingLeft: 12,
+                  paddingHorizontal: 12,
                   paddingBottom: bottomFadeH,
                 }}
                 onScroll={(e) => {

@@ -7,8 +7,10 @@ import {
   VariantsSelect,
 } from '@/components/collections/items/editable-entry-item'
 import { CollectionItemPhotosModal } from '@/components/collections/items/photos-modal'
+import { CORNER_TAB_RADIUS, CornerTab } from '@/components/tcg-card/CornerTab'
 import { Spinner } from '@/components/ui/spinner'
 import { TCard } from '@/constants/types'
+import { LIST_ROW_INNER_RADIUS, ROW_CONTENT_PADDING } from '@/features/tcg-card-views/ListCard'
 import type { OnboardingStepId } from '@/features/onboarding'
 import { OnboardingTarget, useOnboardingStore } from '@/features/onboarding'
 import { CollectionItemRow } from '@/lib/store/functions/types'
@@ -132,6 +134,9 @@ export const CollectionCardItemEntries = ({
           display: 'flex',
           flexDirection: 'column',
           alignSelf: 'stretch',
+          // Fill the row's accessory column so the options tab (pinned to this view's bottom)
+          // reaches the row's bottom edge even when the art is taller than the entries.
+          flexGrow: 1,
         },
       ]}
     >
@@ -214,7 +219,8 @@ export const CollectionCardItemEntries = ({
                 height: 32,
                 paddingVertical: 2,
                 opacity: isLoadingOuter ? 0.5 : 1,
-                borderRadius: 9999,
+                // Matches the corner tabs' rounding rather than a pill.
+                borderRadius: CORNER_TAB_RADIUS,
                 gap: 2,
                 backgroundColor: Colors.$backgroundPrimaryMedium,
               }}
@@ -237,26 +243,33 @@ export const CollectionCardItemEntries = ({
             gradeButton
           )
         })()}
-        {canManagePhotos && (
-          <TouchableOpacity
-            disabled={isLoadingOuter}
-            onPress={() => setMenuOpen(true)}
-            style={{
-              width: 32,
-              height: 32,
-              alignItems: 'center',
-              justifyContent: 'center',
-              alignSelf: 'flex-end',
-              borderRadius: 999,
-              borderWidth: 1,
-              borderColor: Colors.rgba(Colors.$outlineNeutral, 0.4),
-              opacity: isLoadingOuter ? 0.5 : 1,
-            }}
-          >
-            <EllipsisVertical size={16} color={Colors.$iconDefault} />
-          </TouchableOpacity>
-        )}
       </View>
+      {canManagePhotos && (
+        // Options as a shoulder-cutout tab fixed to the list item's bottom-right corner (the
+        // twin of its top-right expand tab). Offset past the row's bottom content padding so it
+        // sits flush with the item's edges.
+        <TouchableOpacity
+          disabled={isLoadingOuter}
+          onPress={() => setMenuOpen(true)}
+          accessibilityRole="button"
+          accessibilityLabel="Item options"
+          hitSlop={8}
+          style={{
+            position: 'absolute',
+            right: 0,
+            bottom: -ROW_CONTENT_PADDING,
+            opacity: isLoadingOuter ? 0.5 : 1,
+          }}
+        >
+          <CornerTab
+            icon={EllipsisVertical}
+            label="Options"
+            corner="bottom-right"
+            tone="neutral"
+            outerRadius={LIST_ROW_INNER_RADIUS}
+          />
+        </TouchableOpacity>
+      )}
       {collection && (
         <AddVariantModal
           entries={sortedEntries}

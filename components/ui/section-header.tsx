@@ -1,9 +1,6 @@
-import MaskedView from '@react-native-masked-view/masked-view'
 import { BlurView } from 'expo-blur'
-import { LinearGradient } from 'expo-linear-gradient'
 import { ChevronDown, LucideIcon } from 'lucide-react-native'
-import { useState } from 'react'
-import { LayoutChangeEvent, Pressable, View } from 'react-native'
+import { Pressable, StyleSheet, View } from 'react-native'
 import { Colors } from 'react-native-ui-lib'
 import { Text } from './text/base-text'
 
@@ -12,12 +9,10 @@ import { Text } from './text/base-text'
  * "See all" / "Show less" affordance when expandable. Sticky via the page ScrollView's
  * `stickyHeaderIndices`, so it needs its own backing or scrolled content would show through.
  *
- * Backed by a blur (not a solid color) since the Home screen's background is a gradient, not a
- * flat color — a solid fill would mismatch it. The blur is measured via onLayout rather than
- * `position:absolute` insets (MaskedView doesn't size reliably off insets alone — see
- * fade-scroll.tsx), and kept to exactly the header's own height with no overshoot, since RN
- * gives every sticky index `zIndex: 10` permanently and an overshoot would blur the section's
- * own content at rest. A MaskedView + gradient tapers the blur to transparent by the bottom.
+ * Rendered as its own bordered box inside the section's frame (SectionFrameTop/Bottom): a blur
+ * of whatever scrolls beneath (the Home background is a gradient, so a solid fill would
+ * mismatch it), a translucent primary tint over the blur, and a hairline border. The box clips
+ * the blur to its rounded shape, so unlike the old borderless header it needs no fade mask.
  */
 export function SectionHeader({
   icon: Icon,
@@ -34,34 +29,39 @@ export function SectionHeader({
    *  "See all"/chevron affordance and don't respond to taps. */
   expandable?: boolean
 }) {
-  const [height, setHeight] = useState<number | null>(null)
-  const handleLayout = (e: LayoutChangeEvent) => setHeight(e.nativeEvent.layout.height)
-
   return (
-    <View style={{ position: 'relative' }}>
-      {height != null && (
-        <MaskedView
-          pointerEvents="none"
-          style={{ position: 'absolute', top: 0, left: 0, right: 0, height }}
-          maskElement={
-            <LinearGradient
-              colors={['black', 'black', 'transparent']}
-              locations={[0, 0.6, 1]}
-              style={{ flex: 1 }}
-            />
-          }
-        >
-          <BlurView intensity={30} tint="default" style={{ flex: 1 }} />
-        </MaskedView>
-      )}
+    <View
+      style={{
+        position: 'relative',
+        // Rounded top, flat bottom edge — the bottom border reads as the line between header and
+        // section content.
+        borderTopLeftRadius: 16,
+        borderTopRightRadius: 16,
+        overflow: 'hidden',
+        borderWidth: 1,
+        borderColor: Colors.rgba(Colors.$outlineNeutral, 0.6),
+      }}
+    >
+      <BlurView
+        intensity={30}
+        tint="default"
+        pointerEvents="none"
+        style={StyleSheet.absoluteFill}
+      />
+      <View
+        pointerEvents="none"
+        style={[
+          StyleSheet.absoluteFill,
+          { backgroundColor: Colors.rgba(Colors.$backgroundDefault, 0.3) },
+        ]}
+      />
       <Pressable
         onPress={expandable ? onToggle : undefined}
-        onLayout={handleLayout}
         style={{
           flexDirection: 'row',
           alignItems: 'center',
-          paddingHorizontal: 20,
-          paddingVertical: 18,
+          paddingHorizontal: 16,
+          paddingVertical: 14,
           gap: 10,
         }}
       >

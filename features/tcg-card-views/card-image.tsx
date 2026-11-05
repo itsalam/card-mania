@@ -3,7 +3,7 @@ import { CARD_ASPECT_RATIO } from '@/components/consts'
 import React from 'react'
 import { StyleProp, ViewStyle } from 'react-native'
 import { useCardBorderStyle } from '../../components/tcg-card/CardFrame'
-import { THUMBNAIL_HEIGHT, THUMBNAIL_WIDTH } from '../../components/tcg-card/consts'
+import { cardArtRadius, THUMBNAIL_HEIGHT, THUMBNAIL_WIDTH } from '../../components/tcg-card/consts'
 import { LiquidGlassCard, LiquidGlassCardProps } from '../../components/tcg-card/GlassCard'
 import { LoadingImagePlaceholder } from '../../components/tcg-card/placeholders'
 import { buildThumbCacheKey } from './helpers'
@@ -18,8 +18,18 @@ export function CardImage(props: {
   width?: number
   height?: number
   cardContainerStyle?: StyleProp<ViewStyle>
+  /** Style for the image itself (e.g. borderRadius: 0 — the image rounds its own corners). */
+  imageStyle?: StyleProp<ViewStyle>
 }) {
-  const { isLoading = false, cardContainerStyle, displayData, imageProps, height, width } = props
+  const {
+    isLoading = false,
+    cardContainerStyle,
+    imageStyle,
+    displayData,
+    imageProps,
+    height,
+    width,
+  } = props
 
   const { data: thumbnailImgResult, isLoading: isImageLoading } = useImageProxy({
     variant: 'tiny',
@@ -36,6 +46,8 @@ export function CardImage(props: {
 
   const finalWidth = width ?? (height !== undefined ? height * aspectRatio : THUMBNAIL_WIDTH)
   const finalHeight = height ?? (width !== undefined ? width / aspectRatio : THUMBNAIL_HEIGHT)
+  // Proportional to the rendered size; callers' container/image styles still override it.
+  const borderRadius = cardArtRadius(finalWidth)
 
   return (
     <LiquidGlassCard
@@ -46,6 +58,7 @@ export function CardImage(props: {
           width: finalWidth,
           height: finalHeight,
           aspectRatio,
+          borderRadius,
         },
         cardContainerStyle,
         // Bare art (glassEffect={false}, e.g. inside CardTile) is framed by its container.
@@ -65,6 +78,7 @@ export function CardImage(props: {
         height={finalHeight}
         contentFit="cover"
         isLoading={isLoading || isImageLoading}
+        style={[{ borderRadius }, imageStyle]}
       />
     </LiquidGlassCard>
   )

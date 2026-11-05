@@ -6,16 +6,29 @@ import { TrendingDown, TrendingUp } from 'lucide-react-native'
 import { ReactNode } from 'react'
 import { View } from 'react-native'
 import { Colors } from 'react-native-ui-lib'
+import {
+  CARD_LIST_ROW_PADDING,
+  cardArtRadius,
+  CARD_LIST_ROW_RADIUS,
+  LIST_THUMBNAIL_RADIUS,
+  LIST_THUMBNAIL_WIDTH,
+} from './consts'
 import { LiquidGlassCard } from './GlassCard'
 
 /** Inset between the glass container edge and the card art. */
-export const CARD_TILE_PADDING = 6
+export const CARD_TILE_PADDING = CARD_LIST_ROW_PADDING
 
 /** Tile width for a given art width — for carousels that snap to the tile's outer width. */
 export const cardTileWidth = (artWidth: number) => artWidth + CARD_TILE_PADDING * 2
 
+/** Default art width in collapsed-carousel tiles — the app-wide default card size (consts.ts). */
+export const CARD_TILE_ART_WIDTH = LIST_THUMBNAIL_WIDTH
+/** Corner radii of the tile and of the art inset inside it. */
+export const CARD_TILE_RADIUS = CARD_LIST_ROW_RADIUS
+export const CARD_TILE_ART_RADIUS = LIST_THUMBNAIL_RADIUS
+
 /** Default collapsed-carousel tile (Wishlist Hits, Recently Viewed): 120px art → 132px tile. */
-export const DEFAULT_CARD_TILE_WIDTH = cardTileWidth(120)
+export const DEFAULT_CARD_TILE_WIDTH = cardTileWidth(CARD_TILE_ART_WIDTH)
 
 export type CardTileProps = {
   /** Outer tile width; the art fills it minus CARD_TILE_PADDING on each side. */
@@ -62,17 +75,19 @@ export function CardTile({
 }: CardTileProps) {
   const artWidth = width - CARD_TILE_PADDING * 2
   const artHeight = Math.round(artWidth / CARD_ASPECT_RATIO)
+  // Radii scale with the art (grid cells and carousels pass different widths).
+  const artRadius = cardArtRadius(artWidth)
 
   return (
     <LiquidGlassCard
       onPress={onPress}
-      style={{ width, borderRadius: 16, padding: CARD_TILE_PADDING }}
+      style={{ width, borderRadius: artRadius + CARD_TILE_PADDING, padding: CARD_TILE_PADDING }}
     >
       <View
         style={{
           width: artWidth,
           height: artHeight,
-          borderRadius: 10,
+          borderRadius: artRadius,
           overflow: 'hidden',
           backgroundColor: Colors.rgba(Colors.$backgroundNeutral, 0.6),
         }}

@@ -5,7 +5,13 @@ import { ComponentProps } from 'react'
 import { Dimensions } from 'react-native'
 import { Colors } from 'react-native-ui-lib'
 import { Spinner } from '../ui/spinner'
-import { CARD_ASPECT_RATIO, CARD_WIDTH_RATIO, THUMBNAIL_HEIGHT, THUMBNAIL_WIDTH } from './consts'
+import {
+  CARD_ASPECT_RATIO,
+  CARD_WIDTH_RATIO,
+  cardArtRadius,
+  THUMBNAIL_HEIGHT,
+  THUMBNAIL_WIDTH,
+} from './consts'
 
 /** The app's one generic card placeholder (Supabase storage's `placeholder/default.png`),
  *  resized per target dimensions — shared by CardPlaceholderImage below and by whatever prefetch
@@ -55,15 +61,20 @@ export function CardPlaceholderImage({
   const resolvedSource = placeholderOnly || !source ? defaultPlaceHolder : source
   return (
     <ImageBackground
-      style={{
-        aspectRatio: 5 / 7,
-        opacity: isLoading ? 0.5 : 1,
-        borderRadius: 8,
-        overflow: 'hidden',
-        backgroundColor: Colors.$backgroundNeutralLight,
-        width: finalWidth,
-        height: finalHeight,
-      }}
+      // Caller `style` goes last so it can override the defaults (e.g. borderRadius: 0); it was
+      // previously destructured and dropped.
+      style={[
+        {
+          aspectRatio: 5 / 7,
+          opacity: isLoading ? 0.5 : 1,
+          borderRadius: cardArtRadius(finalWidth),
+          overflow: 'hidden',
+          backgroundColor: Colors.$backgroundNeutralLight,
+          width: finalWidth,
+          height: finalHeight,
+        },
+        style,
+      ]}
       placeholder={defaultPlaceHolder}
       source={resolvedSource}
       cachePolicy="memory-disk"
