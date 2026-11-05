@@ -181,6 +181,9 @@ export const SubmitCollectionButton = ({
   const isStoreFront = useCreateNewCollections((s) => s.isStoreFront)
   const tags = useCreateNewCollections((s) => s.tags)
   const visibility = useCreateNewCollections((s) => s.visibility)
+  const iconKey = useCreateNewCollections((s) => s.iconKey)
+  const accentColor = useCreateNewCollections((s) => s.accentColor)
+  const backgroundImageId = useCreateNewCollections((s) => s.backgroundImageId)
   const validate = useCreateNewCollections((s) => s.validate)
   const submit = useEditCollection(collectionId)
   const { showToast } = useToast()
@@ -195,6 +198,9 @@ export const SubmitCollectionButton = ({
         tags: tags.map((t) => t.id).filter(Boolean) as string[],
         is_storefront: isStoreFront,
         hide_sold_items: hideSoldItems,
+        icon_key: iconKey,
+        accent_color: accentColor,
+        background_image_id: backgroundImageId,
       })
       .then((res) => {
         onSubmit?.(res)

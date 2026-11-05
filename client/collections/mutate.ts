@@ -31,6 +31,9 @@ const mutateCollectionFn =
         description: args.description ?? null,
         visibility: args.visibility,
         cover_image_url: args.cover_image_url ?? null,
+        icon_key: args.icon_key ?? null,
+        accent_color: args.accent_color ?? null,
+        background_image_id: args.background_image_id ?? null,
         is_storefront: args.is_storefront,
         hide_sold_items: args.hide_sold_items,
       }
@@ -51,6 +54,9 @@ const mutateCollectionFn =
         description: args.description ?? null,
         visibility: args.visibility,
         cover_image_url: args.cover_image_url ?? null,
+        icon_key: args.icon_key ?? null,
+        accent_color: args.accent_color ?? null,
+        background_image_id: args.background_image_id ?? null,
         is_storefront: args.is_storefront,
         hide_sold_items: args.hide_sold_items,
       }

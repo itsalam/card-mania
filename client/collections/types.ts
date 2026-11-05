@@ -16,6 +16,9 @@ export type EditCollectionArgs = {
   description?: string | null
   visibility: TCollection['visibility']
   cover_image_url?: string | null
+  icon_key?: string | null
+  accent_color?: string | null
+  background_image_id?: string | null
   tags?: string[] // desired tag ids
   hide_sold_items?: boolean
   is_storefront?: boolean
