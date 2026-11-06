@@ -480,10 +480,18 @@ entrypoint = "./functions/tracked-price-refresh/index.ts"
 [functions.push-dispatch]
 enabled = true
 # Called only by pg_cron / the push_outbox statement trigger via net.http_post with the Vault
-# edge_token as the bearer token (see 20261104000000_push_notifications.sql). Security is
+# edge_token as the bearer token (see 20261106000000_push_notifications.sql). Security is
 # enforced inside the function (isServiceRequest), same pattern as tracked-price-refresh.
 verify_jwt = false
 entrypoint = "./functions/push-dispatch/index.ts"
+
+[functions.marketplace-feed-refresh]
+enabled = true
+# Called by pg_cron via net.http_post with the Vault edge_token as the bearer token (see
+# 20261104000001_its97_custom_marketplace_feeds.sql), or on demand with the service key.
+# Security is enforced inside the function (isServiceRequest).
+verify_jwt = false
+entrypoint = "./functions/marketplace-feed-refresh/index.ts"
 
 [functions.ebay-deletion]
 enabled = true

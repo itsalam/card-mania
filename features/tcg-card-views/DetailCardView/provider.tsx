@@ -126,9 +126,19 @@ type OptionalState = {
   hideSoldItems: boolean
 }
 
+/** ITS-98 — see components/collections/appearance.ts. */
+export type AppearanceState = {
+  iconKey: string | null
+  accentColor: string | null
+  backgroundImageId: string | null
+}
+
 export type CreateNewCollectionsState = CollectionState &
-  Partial<OptionalState> & {
+  Partial<OptionalState> &
+  AppearanceState & {
     requestedTags: TagDraft[]
+    /** Server-maintained default background (read-only here); shown when no upload is set. */
+    defaultBackgroundCardId: string | null
     isValid: Record<keyof CollectionState, boolean> | boolean
 
     // actions (pure)
@@ -139,6 +149,7 @@ export type CreateNewCollectionsState = CollectionState &
     setRequestedTags(tags: TagDraft[]): void
     setValid(isValid: Record<keyof CollectionState, boolean> | boolean): void
     setStoreOptions({ isStoreFront, hideSoldItems }: Partial<OptionalState>): void
+    setAppearance(appearance: Partial<AppearanceState>): void
     validate(): boolean
 
     // helper to merge/normalize requested tags after categorization
@@ -156,6 +167,10 @@ export function modifyCollectionStore(collection?: CollectionLike) {
     requestedTags: [],
     isStoreFront: collection?.is_storefront ?? false,
     hideSoldItems: collection?.hide_sold_items ?? false,
+    iconKey: collection?.icon_key ?? null,
+    accentColor: collection?.accent_color ?? null,
+    backgroundImageId: collection?.background_image_id ?? null,
+    defaultBackgroundCardId: collection?.default_background_card_id ?? null,
     isValid: false,
     setName: (name) => set({ name }),
     setDescription: (description) => set({ description }),
@@ -168,6 +183,7 @@ export function modifyCollectionStore(collection?: CollectionLike) {
         isStoreFront: isStoreFront ?? state.isStoreFront,
         hideSoldItems: hideSoldItems ?? state.hideSoldItems,
       })),
+    setAppearance: (appearance) => set(appearance),
     validate: () => {
       const { name, description, visibility, tags } = get()
       const isValid = {

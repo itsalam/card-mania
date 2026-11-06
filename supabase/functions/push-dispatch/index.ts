@@ -1,7 +1,7 @@
 // push-dispatch — delivers queued push notifications through the Expo Push API (ITS-61).
 //
 // Invoked by pg_cron every minute and by a statement trigger on push_outbox right after new
-// rows land (20261104000000_push_notifications.sql), both with the Vault edge_token. Each run:
+// rows land (20261106000000_push_notifications.sql), both with the Vault edge_token. Each run:
 //   1. claim_push_outbox → rows + their users' device tokens (users with no device are closed
 //      out as 'no_tokens' inside the claim);
 //   2. send in chunks of 100; fold tickets back per row (sent if any device accepted);

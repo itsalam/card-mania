@@ -1,4 +1,4 @@
--- pgTAP suite for push notifications (20261104000000).
+-- pgTAP suite for push notifications (20261106000000).
 --
 -- Covers the preference gate (enabled / category / quiet hours incl. a window wrapping
 -- midnight / urgent bypass), the notifications → push_outbox trigger, token registration

@@ -1,5 +1,5 @@
 // Expo push registration + preferences (ITS-60 / ITS-62). The server side is
-// supabase/migrations/20261104000000_push_notifications.sql + the push-dispatch function.
+// supabase/migrations/20261106000000_push_notifications.sql + the push-dispatch function.
 //
 // Native only: on web every entry point is a no-op. Push doesn't work on simulators, so
 // registration quietly reports 'unsupported' there.
