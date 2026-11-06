@@ -2932,6 +2932,16 @@ export type Database = {
           variants: string[]
         }[]
       }
+      _push_preferences: { Args: { p_user_id: string }; Returns: Json }
+      _push_suppression_reason: {
+        Args: {
+          p_at?: string
+          p_category: string
+          p_priority: string
+          p_user_id: string
+        }
+        Returns: string
+      }
       _wishlist_hits: {
         Args: { p_user_id?: string }
         Returns: {
@@ -3371,10 +3381,7 @@ export type Database = {
           title: string
         }[]
       }
-      get_push_preferences: {
-        Args: Record<PropertyKey, never>
-        Returns: Json
-      }
+      get_push_preferences: { Args: never; Returns: Json }
       get_recommended_listings: {
         Args: { result_limit?: number }
         Returns: {
@@ -3597,10 +3604,7 @@ export type Database = {
         Args: { p_photo_id: string }
         Returns: undefined
       }
-      set_push_preferences: {
-        Args: { p_patch: Json }
-        Returns: Json
-      }
+      set_push_preferences: { Args: { p_patch: Json }; Returns: Json }
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { '': string }; Returns: string[] }
       suggest_tags: {
@@ -3680,10 +3684,7 @@ export type Database = {
         Args: { p_collection_id: string }
         Returns: undefined
       }
-      unregister_push_token: {
-        Args: { p_token: string }
-        Returns: undefined
-      }
+      unregister_push_token: { Args: { p_token: string }; Returns: undefined }
       upsert_collection_items: {
         Args: { p_collection_id: string; p_items: Json; p_owner: string }
         Returns: undefined
