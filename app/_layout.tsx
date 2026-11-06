@@ -6,6 +6,7 @@ import '@/components/nativewind-svg'
 import '../global.css'
 
 import { CardPlaceholderPrefetch } from '@/components/tcg-card/placeholders'
+import { usePushResponseObserver } from '@/features/notifications/use-push-notifications'
 import { OnboardingOverlay } from '@/features/onboarding'
 import { PortalHost } from '@rn-primitives/portal'
 import * as Sentry from '@sentry/react-native'
@@ -114,6 +115,7 @@ export default Sentry.wrap(function RootLayout() {
         />
         <Stack.Screen name="+not-found" />
       </Stack>
+      <PushResponseObserver />
       <PortalHost />
       <OnboardingOverlay />
       {/* Warms the generic card placeholder image into expo-image's cache once, at app load —
@@ -122,3 +124,10 @@ export default Sentry.wrap(function RootLayout() {
     </Providers>
   )
 })
+
+// Inside Providers (needs the QueryClient) and after the Stack so a cold-start push tap is
+// replayed once the navigator is mounted.
+function PushResponseObserver() {
+  usePushResponseObserver()
+  return null
+}

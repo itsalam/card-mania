@@ -1858,6 +1858,56 @@ export type Database = {
           },
         ]
       }
+      push_outbox: {
+        Row: {
+          attempts: number
+          claimed_at: string | null
+          created_at: string
+          id: number
+          notification_id: string
+          reason: string | null
+          receipts_checked_at: string | null
+          sent_at: string | null
+          status: string
+          tickets: Json
+          user_id: string
+        }
+        Insert: {
+          attempts?: number
+          claimed_at?: string | null
+          created_at?: string
+          id?: never
+          notification_id: string
+          reason?: string | null
+          receipts_checked_at?: string | null
+          sent_at?: string | null
+          status?: string
+          tickets?: Json
+          user_id: string
+        }
+        Update: {
+          attempts?: number
+          claimed_at?: string | null
+          created_at?: string
+          id?: never
+          notification_id?: string
+          reason?: string | null
+          receipts_checked_at?: string | null
+          sent_at?: string | null
+          status?: string
+          tickets?: Json
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'push_outbox_notification_id_fkey'
+            columns: ['notification_id']
+            isOneToOne: false
+            referencedRelation: 'notifications'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       recent_views: {
         Row: {
           item_id: string
@@ -2458,6 +2508,33 @@ export type Database = {
         }
         Relationships: []
       }
+      user_push_tokens: {
+        Row: {
+          created_at: string
+          device_name: string | null
+          last_seen_at: string
+          platform: string
+          token: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          device_name?: string | null
+          last_seen_at?: string
+          platform: string
+          token: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          device_name?: string | null
+          last_seen_at?: string
+          platform?: string
+          token?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_settings: {
         Row: {
           created_at: string | null
@@ -2953,6 +3030,28 @@ export type Database = {
           set_name: string
         }[]
       }
+      claim_push_outbox: {
+        Args: { p_limit?: number }
+        Returns: {
+          action_url: string
+          badge: number
+          body: string
+          category: string
+          notification_id: string
+          outbox_id: number
+          priority: string
+          title: string
+          tokens: string[]
+          user_id: string
+        }[]
+      }
+      claim_push_receipts: {
+        Args: { p_limit?: number }
+        Returns: {
+          outbox_id: number
+          tickets: Json
+        }[]
+      }
       collection_item_query: {
         Args: {
           p_collection_id: string
@@ -3094,6 +3193,10 @@ export type Database = {
           user_id: string
           visibility: string
         }[]
+      }
+      complete_push_outbox: {
+        Args: { p_dead_tokens?: string[]; p_results: Json }
+        Returns: undefined
       }
       create_collection: {
         Args: { p_desc?: string; p_is_public?: boolean; p_name: string }
@@ -3268,6 +3371,10 @@ export type Database = {
           title: string
         }[]
       }
+      get_push_preferences: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
+      }
       get_recommended_listings: {
         Args: { result_limit?: number }
         Returns: {
@@ -3419,6 +3526,10 @@ export type Database = {
         Returns: number
       }
       refresh_marketplace_sections: { Args: never; Returns: undefined }
+      register_push_token: {
+        Args: { p_device_name?: string; p_platform: string; p_token: string }
+        Returns: undefined
+      }
       release_card_price_refresh: {
         Args: { p_card_ids: string[] }
         Returns: undefined
@@ -3485,6 +3596,10 @@ export type Database = {
       set_primary_collection_item_photo: {
         Args: { p_photo_id: string }
         Returns: undefined
+      }
+      set_push_preferences: {
+        Args: { p_patch: Json }
+        Returns: Json
       }
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { '': string }; Returns: string[] }
@@ -3563,6 +3678,10 @@ export type Database = {
           }
       touch_saved_collection: {
         Args: { p_collection_id: string }
+        Returns: undefined
+      }
+      unregister_push_token: {
+        Args: { p_token: string }
         Returns: undefined
       }
       upsert_collection_items: {

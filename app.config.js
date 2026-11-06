@@ -1,3 +1,12 @@
+const fs = require('fs')
+
+// Android push needs a Firebase config (FCM v1). Keep it out of git: EAS builds get it from a
+// file env var (GOOGLE_SERVICES_JSON); local builds read ./google-services.json if present.
+// Without one the app still builds — Android just can't obtain a push token.
+const googleServicesFile =
+  process.env.GOOGLE_SERVICES_JSON ??
+  (fs.existsSync('google-services.json') ? './google-services.json' : undefined)
+
 const config = {
   expo: {
     name: 'card-mania',
@@ -22,6 +31,7 @@ const config = {
       },
       edgeToEdgeEnabled: true,
       package: 'com.smoodee.cardmania',
+      ...(googleServicesFile ? { googleServicesFile } : {}),
     },
     web: {
       bundler: 'metro',
@@ -53,6 +63,19 @@ const config = {
       ],
       'expo-font',
       'expo-web-browser',
+      [
+        'expo-notifications',
+        {
+          color: '#0C0C0C',
+          // aps-environment: store-distributed builds (EAS preview / production → TestFlight /
+          // App Store) talk to the production APNs gateway; dev-client and local builds to the
+          // sandbox. The plugin defaults to 'development' for everything.
+          mode:
+            process.env.EAS_BUILD_PROFILE && process.env.EAS_BUILD_PROFILE !== 'development'
+              ? 'production'
+              : 'development',
+        },
+      ],
       [
         'expo-image-picker',
         {

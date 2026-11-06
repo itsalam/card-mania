@@ -1,6 +1,7 @@
 import { getCachedPrefetchEnabled, prefetchSuggestions } from '@/client/price-charting'
 import { ToastProvider } from '@/components/Toast'
 import ThemeProvider from '@/components/ui/theme'
+import { usePushRegistration } from '@/features/notifications/use-push-notifications'
 import { useOfferRealtime } from '@/features/offers/use-offer-realtime'
 import { OnboardingProvider } from '@/features/onboarding'
 import { SettingsProvider } from '@/features/settings'
@@ -112,6 +113,7 @@ export default function Providers({ children }: { children: React.ReactNode }) {
                 <ToastProvider>
                   <OnboardingProvider />
                   <OfferRealtimeProvider />
+                  <PushRegistrationProvider />
                   <SearchPrefetchProvider />
                   {children}
                 </ToastProvider>
@@ -127,6 +129,11 @@ export default function Providers({ children }: { children: React.ReactNode }) {
 
 function OfferRealtimeProvider() {
   useOfferRealtime()
+  return null
+}
+
+function PushRegistrationProvider() {
+  usePushRegistration()
   return null
 }
 

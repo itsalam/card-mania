@@ -1,4 +1,5 @@
 // store/useUserStore.ts
+import { unregisterPush } from '@/client/notifications/push'
 import { getSupabase } from '@/lib/store/client'
 import { reportError } from '@/lib/utils/report-error'
 import {
@@ -304,6 +305,13 @@ export const useUserStore = create<State & Actions>()(
           if (channel.topic.startsWith(profileChannelPrefix)) {
             getSupabase().removeChannel(channel)
           }
+        }
+        // Detach this device's push token while the outgoing session is still valid, so the
+        // next account on this device doesn't get the previous one's pushes.
+        try {
+          await unregisterPush()
+        } catch (error) {
+          console.warn('[signOut] push unregister failed:', error)
         }
         // scope: 'local' clears the session in storage without a server roundtrip.
         // The access token expires server-side on its own TTL.
