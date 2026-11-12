@@ -14,8 +14,8 @@ export const opsPath = (...parts) => path.join(OPS_DIR, ...parts)
 
 export const DEFAULT_CONFIG = {
   authorEmails: ['vincentthanhlam@gmail.com'],
-  // Initial commercial scope (Jan 30 meeting notes, ITS-65)
-  scope: { start: '2026-01-30', starterFee: 600, budget: 1600, minHours: 60, maxHours: 80 },
+  // Hours before this date are ignored
+  trackingStart: '2026-11-01',
   sessions: {
     // A gap longer than this between activity events starts a new work session
     idleGapMin: 30,

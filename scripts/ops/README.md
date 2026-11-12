@@ -1,6 +1,6 @@
 # Ops: hours tracking + weekly status (ITS-63)
 
-Internal tooling only. All data — activity log, manual entries, payments, drafts — lives in
+Internal tooling only. All data — activity log, manual entries, drafts — lives in
 `~/.card-mania-ops/` (override with `CARD_MANIA_OPS_DIR`), never in the repo.
 
 ## Setup (once per machine)
@@ -10,7 +10,7 @@ npm run ops:install          # config, Claude Code Stop hook, Monday launchd job
 npm run ops:install -- --uninstall
 ```
 
-Edit `~/.card-mania-ops/config.json` to change author emails, scope figures, session tuning,
+Edit `~/.card-mania-ops/config.json` to change the tracking start date (`trackingStart`), author emails, session tuning,
 excluded Linear issues, or the schedule (re-run `ops:install` after changing the schedule).
 
 ## Hours (ITS-65)
@@ -27,15 +27,15 @@ Tracked time = work sessions reconstructed from activity in this repo, unioned w
 Work that leaves no trace (device testing, calls, editor-only time) needs a manual entry:
 
 ```sh
-npm run hours                                   # weekly report + scope/payments summary
+npm run hours                                   # weekly totals since trackingStart
 npm run hours -- report --since 2026-10-01 --daily
 npm run hours -- start "device QA" / stop / status
 npm run hours -- add today 1.5 "call with Tony"     # added on top of tracked time
 npm run hours -- set 2026-11-03 4 "offline work"    # replaces tracked time for that day
-npm run hours -- paid 2026-05-05 1600 "e-transfer"
 ```
 
-History before the hook was installed is estimated from commits alone, so treat it as a floor.
+Tracking starts at `trackingStart` (2026-11-01); earlier activity is ignored. Days before the hook was
+installed (Nov 12) come only from commits and surviving Claude transcripts, so treat them as a floor.
 
 ## Weekly status (ITS-66)
 

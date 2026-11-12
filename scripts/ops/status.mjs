@@ -234,8 +234,8 @@ function draft(flags, config) {
     const { days } = computeHours(config)
     hours = {
       week: sumHours(days, start, endExclusive),
-      total: sumHours(days, config.scope.start, endExclusive),
-      since: config.scope.start,
+      total: sumHours(days, config.trackingStart, endExclusive),
+      since: config.trackingStart,
     }
   }
 

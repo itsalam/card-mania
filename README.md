@@ -24,8 +24,7 @@ Architecture, conventions and the design system are documented in [`CLAUDE.md`](
 ### Recurring
 
 - [ ] **Biweekly** — client call with Tony + Pelle (ITS-67). Agenda and recap go in Basecamp.
-- [ ] **When invoicing** — `npm run hours -- report --since <last invoice date> --daily` for the period, then record the payment once received: `npm run hours -- paid <date> <amount> "e-transfer"`.
-- [ ] **Monthly** — check scope usage at the bottom of `npm run hours`. Once past the initial scope, new commercial terms need defining (ITS-65).
+- [ ] **When invoicing** — `npm run hours -- report --since <last invoice date> --daily` for the period.
 - [ ] **After each merge into `staging`** — check the _Deploy staging_ Action run summary; it commits regenerated DB types back to `staging`, so `git pull` before the next branch.
 - [ ] **Promote** `staging` → `main` once a batch is verified on staging.
 
@@ -109,12 +108,11 @@ Never deploy functions with `--prune` — staging has functions with no local so
 | Command                                          | What it does                                           |
 | ------------------------------------------------ | ------------------------------------------------------ |
 | `npm run ops:install`                            | One-time: config, Claude Code hook, Monday launchd job |
-| `npm run hours`                                  | Weekly hours report + scope/payments summary           |
+| `npm run hours`                                  | Weekly hours report                                    |
 | `npm run hours -- report --since <date> --daily` | Daily breakdown for an invoice period                  |
 | `npm run hours -- start "<note>"` / `stop`       | Manual timer                                           |
 | `npm run hours -- add today 1.5 "<note>"`        | Add untracked time to a day                            |
 | `npm run hours -- set <date> 4 "<note>"`         | Replace a day's tracked time                           |
-| `npm run hours -- paid <date> <amount>`          | Record a payment                                       |
 | `npm run status:draft [-- --ai --force]`         | Build the weekly status draft                          |
 | `npm run status:edit` · `status:send`            | Edit, then preview + post to Basecamp                  |
 
@@ -181,13 +179,12 @@ Keep `SENTRY_DISABLE_AUTO_UPLOAD=true` in `.env.local`, then `npx expo run:ios`.
 
 1. `npm run hours -- report --since <last invoice date> --daily` — sanity-check each day; fix gaps with `add`/`set`.
 2. Send the invoice for that period.
-3. When the e-transfer arrives: `npm run hours -- paid <date> <amount> "invoice #N"`.
 
 ### New machine
 
 1. Clone, `npm install`, install the Supabase CLI, Deno, `gh`, the Linear CLI (`linear auth login`), and EAS CLI.
 2. Create `.env.local` (above) and `supabase/functions/.env.local` with vendor keys.
-3. Copy `~/.card-mania-ops/` from the old machine (hours log, payments, drafts), then `npm run ops:install`.
+3. Copy `~/.card-mania-ops/` from the old machine (hours log, drafts), then `npm run ops:install`.
 4. Connect the Basecamp MCP in Claude Code for this repo (`status:send` posts through it).
 
 ---

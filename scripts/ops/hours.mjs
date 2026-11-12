@@ -6,12 +6,11 @@
 // Manual `add` / `set` entries adjust or override a day. See scripts/ops/README.md.
 //
 // Usage:
-//   npm run hours                      weekly report since scope start
+//   npm run hours                      weekly report since trackingStart
 //   npm run hours -- report --since 2026-10-01 --daily
 //   npm run hours -- start "client call" / stop / status
 //   npm run hours -- add today 1.5 "call with Tony"
 //   npm run hours -- set 2026-11-03 4 "auto missed offline work"
-//   npm run hours -- paid 2026-05-05 1600 "e-transfer"
 //   npm run hours -- sync [--quiet]    (run by the Claude Code Stop hook)
 
 import fs from 'node:fs'
@@ -19,7 +18,6 @@ import os from 'node:os'
 import path from 'node:path'
 import { pathToFileURL } from 'node:url'
 import {
-  addDays,
   appendJsonl,
   loadConfig,
   mondayOf,
@@ -127,7 +125,7 @@ function syncGit(state, config) {
       'log',
       '--all',
       '--no-merges',
-      `--since=${config.scope.start}`,
+      `--since=${config.trackingStart}`,
       '--format=%H%x09%aI%x09%ae',
     ])
   } catch {
@@ -172,7 +170,7 @@ export function computeHours(config = loadConfig(), now = Date.now()) {
     ...(timer ? [{ start: Date.parse(timer.start), end: now }] : []),
   ]
   const days = applyLedger(minutesByDay(mergeIntervals(intervals)), ledger)
-  for (const key of days.keys()) if (key < config.scope.start) days.delete(key)
+  for (const key of days.keys()) if (key < config.trackingStart) days.delete(key)
   return { days, ledger }
 }
 
@@ -185,12 +183,11 @@ export function sumHours(days, from, toExclusive) {
 // --- CLI
 
 const h = (n) => `${n.toFixed(1)}h`
-const money = (n) => `$${n.toLocaleString('en-US', { maximumFractionDigits: 2 })}`
 const signed = (n) => (n === 0 ? '' : `${n > 0 ? '+' : ''}${n.toFixed(1)}h`)
 
 function report(flags, config) {
-  const { days, ledger } = computeHours(config)
-  const since = flags.since ? resolveDay(flags.since) : config.scope.start
+  const { days } = computeHours(config)
+  const since = flags.since ? resolveDay(flags.since) : config.trackingStart
   const until = flags.until ? resolveDay(flags.until) : today()
   const inRange = [...days.entries()]
     .filter(([key]) => key >= since && key <= until)
@@ -230,31 +227,7 @@ function report(flags, config) {
 
   const timer = readJson(TIMER, null)
   if (timer) console.log(`\n⏱  Timer running since ${new Date(timer.start).toLocaleString()}`)
-
-  const { scope } = config
-  const scopeHours = sumHours(days, scope.start, addDays(today(), 1))
-  const payments = ledger.filter((e) => e.type === 'payment')
-  const paid = payments.reduce((s, p) => s + p.amount, 0)
-  const lastPayment = payments.at(-1)
-  console.log(
-    `\nInitial scope (since ${scope.start}): ${money(scope.starterFee)} starter + ${money(scope.budget)} for ${scope.minHours}–${scope.maxHours}h`
-  )
-  console.log(`  Hours logged       ${h(scopeHours)}`)
-  if (scopeHours <= scope.maxHours) {
-    console.log(
-      `  Remaining          ${h(Math.max(0, scope.minHours - scopeHours))} to ${scope.minHours}h, ${h(scope.maxHours - scopeHours)} to ${scope.maxHours}h`
-    )
-  } else {
-    console.log(
-      `  Over budget        ${h(scopeHours - scope.maxHours)} past ${scope.maxHours}h — define new terms (ITS-65)`
-    )
-  }
-  console.log(
-    `  Payments received  ${money(paid)}${lastPayment ? ` (last ${lastPayment.date}: ${money(lastPayment.amount)})` : ''}`
-  )
-  console.log(
-    `  Scope outstanding  ${money(Math.max(0, scope.starterFee + scope.budget - paid))}\n`
-  )
+  console.log()
 }
 
 function timerStart(note) {
@@ -322,15 +295,6 @@ function main() {
         { type: command, date, hours, note: note(2), at: new Date().toISOString() },
       ])
       console.log(`${command === 'add' ? 'Added' : 'Set'} ${h(hours)} on ${date}`)
-      break
-    }
-    case 'paid': {
-      const date = resolveDay(positional[0])
-      const amount = parseNumber(positional[1], 'amount')
-      appendJsonl(LEDGER, [
-        { type: 'payment', date, amount, note: note(2), at: new Date().toISOString() },
-      ])
-      console.log(`Recorded payment of ${money(amount)} on ${date}`)
       break
     }
     default:
