@@ -32,7 +32,13 @@
     "prepare": "husky",
     "eslint": "eslint .",
     "format": "prettier --write .",
-    "test": "jest --passWithNoTests"
+    "test": "jest --passWithNoTests",
+    "test:ops": "node --test 'scripts/ops/*.test.mjs'",
+    "ops:install": "node scripts/ops/install.mjs",
+    "hours": "node scripts/ops/hours.mjs",
+    "status:draft": "node scripts/ops/status.mjs draft",
+    "status:edit": "node scripts/ops/status.mjs edit",
+    "status:send": "node scripts/ops/status.mjs send"
   },
   "dependencies": {
     "@expo-google-fonts/montserrat": "^0.4.2",
