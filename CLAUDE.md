@@ -24,6 +24,10 @@ github.com/itsalam/card-mania
 - **Staging SQL** — Dashboard SQL editor, or `psql` with the connection string from the dashboard's Connect panel. Vendor keys are staging secrets (`supabase secrets list` shows names only; values aren't readable) — for local runs put them in `supabase/functions/.env.local` (gitignored; `supabase/functions/.env` is not) and pass `--env-file`.
 - **Vault vs. function secrets** — two separate stores. Edge function env vars are `supabase secrets set/list` (read via `Deno.env.get`). pg_cron jobs read `project_url` and `edge_token` from the **Postgres Vault** (`vault.decrypted_secrets`), managed only via SQL (`vault.create_secret` / `vault.update_secret`) or Dashboard → Integrations → Vault — `supabase secrets set edge_token=…` does _not_ update it. `edge_token` must be one of the project's service keys; staging uses the new API keys, so that's the `sb_secret_…` key, not the legacy `service_role` JWT. Internal cron-only functions check it with `isServiceRequest` (`_shared/service-auth.ts`). `cron.job_run_details` reports `succeeded` even when the call 401s — check `net._http_response` / the function's own ledger instead.
 
+## Admin console
+
+Retool Cloud on top of the `admin` Postgres schema (ITS-114/116). All logic is in `admin.*` security-definer RPCs that check `admin.members` via `auth.uid()`; Retool calls them over PostgREST with each admin's own session token (`Content-Profile: admin`) and holds no DB credential or service key. The `admin` schema must be in the API's exposed schemas — `supabase/config.toml` locally, Dashboard → Data API on staging (not changed by `db push`). Setup, roles and the checklist for new admin RPCs: `docs/admin-console.md`.
+
 ## Ops tooling
 
 Internal hours tracking and the weekly client status post live in `scripts/ops/` (see its README). Data is in `~/.card-mania-ops/`, never the repo. Client posts go to the ShabowBX Basecamp project; ITS-63 and its sub-issues are internal-only and must never appear in them.
