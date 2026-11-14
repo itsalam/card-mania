@@ -56,7 +56,15 @@ curl -s -X POST "$SUPABASE_URL/rest/v1/rpc/whoami" \
 
 ### 2. Seed the first owner (once per environment)
 
-In the SQL editor, or `psql` as `postgres`. The person must have signed up in the app first.
+The person needs a Supabase Auth account first. They don't need to use the app:
+
+- **Dashboard** → Authentication → Users → **Add user**. Either *Create new user* (email + password, tick **Auto Confirm User**) or *Send invitation* (they set their own password; use this for anyone other than yourself).
+- **Auth admin API**, from your terminal only (it needs the secret key): `POST /auth/v1/admin/users` with `{"email", "password", "email_confirm": true}`, or `POST /auth/v1/invite` with `{"email"}`.
+- Don't insert into `auth.users` with SQL. That skips password hashing and the linked identity record, so the account can't sign in.
+
+Any new account also gets a `user_profile` row from the signup trigger (`20260429000000_provision_user_profile_on_signup.sql`), so it could sign in to the app as an ordinary user. That's harmless. `cleanup-anon-users` only removes anonymous accounts.
+
+Then, in the SQL editor (or `psql` as `postgres`), paste the **whole** query with the email in single quotes:
 
 ```sql
 insert into admin.members (user_id, role)
@@ -64,16 +72,121 @@ select id, 'owner' from auth.users where email = '<owner email>'
 on conflict (user_id) do update set role = 'owner';
 ```
 
+Check it worked:
+
+```sql
+select m.role, u.email from admin.members m join auth.users u on u.id = m.user_id;
+```
+
+`INSERT 0 0` means no account with that email exists in this environment yet.
+
 After that, manage members through `set_member_role` / `remove_member`, so changes are audited.
 
 ### 3. Retool workspace
 
-1. **Resource:** a REST API named `supabase-admin`.
-   - Base URL: `https://<project-ref>.supabase.co`
-   - Headers: `apikey: <anon key>`, `Content-Type: application/json`, `Content-Profile: admin`, `Authorization: Bearer {{ admin_session.value.access_token }}`
-2. **Sign-in:** an app-level login form plus a query `POST /auth/v1/token?grant_type=password` with `{email, password}` and only the `apikey` header (no `Authorization`). Store the response in a state variable `admin_session`. Refresh it on a timer, or when a call returns 401, with `grant_type=refresh_token`.
-3. **Landing:** after sign-in, call `POST /rest/v1/rpc/whoami`. A `42501` response shows a "Not authorized" screen.
-4. **Backups:** the Free plan has no Git sync, so export each app's JSON after significant changes.
+Sign up at retool.com on the Free plan. The console lives at `https://<subdomain>.retool.com`.
+
+Retool offers two ways to build an app. The **classic** drag-and-drop editor (*Classic app*) needs no prompts and is the most predictable for forms and tables. The newer **AI builder** generates a React app from a chat prompt (3b). Both use the same data connection and the same requests.
+
+#### 3a. Data connection (once)
+
+**Resources → Create new → REST API**:
+
+| Field | Value |
+| --- | --- |
+| Name | `card-mania-staging` |
+| Base URL | `https://zijgqgpwmqrgnzcictcb.supabase.co` (staging) |
+| Headers | `apikey`: the **publishable/anon** key (`EXPO_PUBLIC_SUPABASE_KEY` in `.env.preview`, or Dashboard → API Keys). `Content-Type`: `application/json`. |
+| Authentication | None |
+
+**Never put the secret/service key in Retool.** The signed-in admin's token is added per query.
+
+Every call to an `admin` function needs two extra headers:
+
+```
+Authorization: Bearer {{ session.value.access_token }}
+Content-Profile: admin
+```
+
+Without `Content-Profile`, PostgREST looks in `public`. You then get "Could not find the function public.whoami".
+
+#### 3b. Option A: classic app
+
+Create an app called **Admin Console**.
+
+**Sign-in**
+
+1. Add a variable `session`, with no default value.
+2. Add a Form with a text input `email`, a password input `password`, and a **Sign in** button.
+3. Add a query `signIn` on `card-mania-staging`:
+   - `POST auth/v1/token?grant_type=password`
+   - body `{ "email": {{ email.value }}, "password": {{ password.value }} }`
+   - no `Authorization` header
+   - on success: set `session` to `{{ signIn.data }}`, then trigger `whoami`
+   - wire the button's click to `signIn`
+
+**Identity check**
+
+4. Add a query `whoami`: `POST rest/v1/rpc/whoami`, with the two headers above and body `{}`.
+5. Add a text label: `{{ whoami.data.email }} · {{ whoami.data.role }}`.
+6. Add a "Not authorized" container, hidden when `{{ !whoami.error }}`. Hide the main content when `{{ !whoami.data }}`.
+
+**Token refresh** (access tokens expire after about 1 hour)
+
+7. Add a query `refresh`:
+   - `POST auth/v1/token?grant_type=refresh_token`
+   - body `{ "refresh_token": {{ session.value.refresh_token }} }`
+   - on success: set `session` to `{{ refresh.data }}`
+   - under Advanced, run periodically every `3000000` ms (50 minutes)
+
+**Members page** (owner)
+
+8. Add a query `listMembers`: `POST rest/v1/rpc/list_members`, body `{}`. Bind a Table to `{{ listMembers.data }}`.
+9. Add a query `setMemberRole`: `POST rest/v1/rpc/set_member_role`, body `{ "p_email": {{ newEmail.value }}, "p_role": {{ newRole.value }} }`.
+   - inputs: a text input `newEmail` and a Select `newRole` with options `owner` / `editor` / `ops`
+   - on success: trigger `listMembers`
+10. Add a query `removeMember`: `POST rest/v1/rpc/remove_member`, body `{ "p_user_id": {{ table1.selectedRow.user_id }} }`.
+    - wire it to a Remove button with a confirmation dialog
+    - on success: trigger `listMembers`
+
+**Audit log** (owner or ops)
+
+11. Add a query `auditLog`: `POST rest/v1/rpc/list_audit_log`, body `{ "p_limit": 100 }`. Bind a Table to it. To page back, pass `p_before_id` = the smallest `id` shown.
+
+**Optional:** to survive page reloads, also save the session to Retool `localStorage` in the success handlers, and use it as `session`'s default value.
+
+#### 3c. Option B: AI builder
+
+Paste this into the builder's chat:
+
+> Build an internal admin console using the existing **@card-mania-staging** REST resource. All data calls are POST requests to Supabase.
+> 1. Sign-in screen: email and password, calling `auth/v1/token?grant_type=password` with JSON `{email, password}`. Store the response (`access_token`, `refresh_token`) in app state. Refresh it every 50 minutes with `auth/v1/token?grant_type=refresh_token` and `{refresh_token}`.
+> 2. Every other call goes to `rest/v1/rpc/<name>` with headers `Authorization: Bearer <access_token>` and `Content-Profile: admin`, and a JSON body of named parameters.
+> 3. After sign-in, call `whoami` (body `{}`) and show the email and role. If it fails, show only a "Not authorized" screen.
+> 4. Members page: a table from `list_members`. A form calling `set_member_role` with `{p_email, p_role}`, where the role is one of owner, editor or ops. A remove button calling `remove_member` with `{p_user_id}`, with a confirmation step. Refresh the table after changes.
+> 5. Audit log page: a table from `list_audit_log` with `{p_limit: 100}`.
+> Show the API's `message` field when a call fails. Never use any key other than the resource's configured `apikey` header.
+
+Without an OpenAPI spec, the builder uses `rawRequest` and asks to run probe requests first. It's safe to approve these:
+
+- a sign-in with dummy credentials (expect 400 "Invalid login credentials")
+- `rpc/whoami` without a token (expect 401 "permission denied for schema admin")
+
+While reviewing what it generates:
+
+- **Never type real passwords into the AI chat.** Enter them only in the generated app's sign-in form.
+- **Reject any step that adds another key** or changes the resource's `apikey` header.
+- **Check every `admin` call** carries both headers above, and that the 50-minute token refresh exists.
+
+#### 3d. Verify
+
+1. Sign in as the seeded owner. You should see your email and `owner`.
+2. Sign in as an account with no membership. You should see "Not authorized".
+3. Add a second account as `editor`. It should appear in the Audit log with your email as the actor.
+
+#### 3e. Backups
+
+The Free plan has no Git sync, so export each app's JSON after significant changes.
 
 ### 4. Lock down the connection
 
