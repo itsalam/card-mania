@@ -51,9 +51,9 @@ import type { Badge, CardRef, CtaKind, Filter, MatchPreview as Matches, OrderBy,
 
 const NONE = '__none'
 
-type ApiError = { message: string; code?: string }
+type ApiError = { message: string; code?: string | undefined }
 
-function Section({ title, description, children }: { title: string; description?: string; children: ReactNode }) {
+function Section({ title, description, children }: { title: string; description?: string | undefined; children: ReactNode }) {
   return (
     <Card>
       <CardHeader className="pb-3">
@@ -65,7 +65,7 @@ function Section({ title, description, children }: { title: string; description?
   )
 }
 
-function Field({ label, htmlFor, hint, children }: { label: string; htmlFor?: string; hint?: string; children: ReactNode }) {
+function Field({ label, htmlFor, hint, children }: { label: string; htmlFor?: string; hint?: string | undefined; children: ReactNode }) {
   return (
     <div className="space-y-1.5">
       <Label htmlFor={htmlFor}>{label}</Label>

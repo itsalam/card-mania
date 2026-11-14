@@ -9,16 +9,16 @@ export type Status = 'draft' | 'published' | 'archived'
 export type Phase = 'draft' | 'scheduled' | 'live' | 'ended' | 'archived'
 export type CtaKind = 'see_all' | 'route' | 'url'
 
-export type Cta = { label: string; kind: CtaKind; target?: string }
+export type Cta = { label: string; kind: CtaKind; target?: string | undefined }
 
 /** The ITS-97 feed filter keys the editor exposes. */
 export type Filter = {
-  sets?: string[]
-  name_query?: string
-  sealed?: boolean
-  graded?: boolean
-  release_year_min?: number
-  release_year_max?: number
+  sets?: string[] | undefined
+  name_query?: string | undefined
+  sealed?: boolean | undefined
+  graded?: boolean | undefined
+  release_year_min?: number | undefined
+  release_year_max?: number | undefined
 }
 
 export type Revision = { id: number; revision: number; created_at: string; created_by_email: string | null }
@@ -188,8 +188,8 @@ export function cleanFilter(filter: Filter): Filter {
   if (filter.name_query && filter.name_query.trim()) out.name_query = filter.name_query.trim()
   if (typeof filter.sealed === 'boolean') out.sealed = filter.sealed
   if (typeof filter.graded === 'boolean') out.graded = filter.graded
-  if (Number.isInteger(filter.release_year_min)) out.release_year_min = filter.release_year_min
-  if (Number.isInteger(filter.release_year_max)) out.release_year_max = filter.release_year_max
+  if (Number.isInteger(filter.release_year_min)) out.release_year_min = filter.release_year_min as number
+  if (Number.isInteger(filter.release_year_max)) out.release_year_max = filter.release_year_max as number
   return out
 }
 
@@ -217,10 +217,10 @@ export function toPayload(p: Promo, showCards: boolean): Record<string, unknown>
     starts_at: p.starts_at,
     ends_at: p.ends_at,
   }
-  if (p.slug && p.slug.trim()) payload.slug = p.slug.trim()
+  if (p.slug && p.slug.trim()) payload['slug'] = p.slug.trim()
   if (p.id) {
-    payload.id = p.id
-    payload.revision = p.revision
+    payload['id'] = p.id
+    payload['revision'] = p.revision
   }
   return payload
 }
