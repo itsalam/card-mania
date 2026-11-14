@@ -38,7 +38,41 @@ Each person has one role, stored in `admin.members`. Every write RPC adds a row 
 | `remove_member(user_id)` | owner | Remove a member. The last owner can't be removed or demoted. |
 | `list_audit_log(limit, before_id, target_type)` | ops | Newest first, max 500 per page |
 
-Errors: `42501` = not authorized, `22023` = bad input, `P0002` = not found.
+Errors: `42501` = not authorized, `22023` = bad input, `P0002` = not found, `40001` = someone else saved first (reload and retry).
+
+## Promo boxes (ITS-191)
+
+Admin-authored cards on the home feed, built from a template. Templates in the first release are `product_release` and `announcement`. Player spotlights wait for a players catalog.
+
+**Which cards a promo covers** uses the ITS-97 feed vocabulary (`filter` + `order_by`), plus `pinned_ref_ids`, which are always included and shown first, and `excluded_ref_ids`. A published promo with card criteria gets a hidden `marketplace_section_meta` row, `promo_<id>` with `kind='custom'` and `show_in_marketplace=false`. The existing `marketplace-feed-refresh` job fills it within 5 minutes, and that cached feed is both the rail and "See all".
+
+**Status** is what the editor chose: `draft`, `published` or `archived`. The **phase** shown in lists is worked out from the schedule: `scheduled` before `starts_at`, `live`, and `ended` after `ends_at`.
+
+**Mode** is what the app renders:
+
+| Mode | When |
+| --- | --- |
+| `announcement` | The promo covers no cards (an announcement without card criteria) |
+| `coming_soon` | `release_date` is still in the future, or fewer than `min_cards` (default 4) matching listings |
+| `cards` | Otherwise. `items` holds the section's listings. |
+
+| Function | Role | Purpose |
+| --- | --- | --- |
+| `upsert_promo(payload)` | editor | Create (no `id`) or update (`id`). Send `revision` from the loaded promo to catch conflicting saves. A product release needs a set (`filter.sets`) and a `release_date`. Every save stores a revision. |
+| `preview_promo_matches(filter, order_by, pinned, excluded, limit)` | editor | `{count, count_capped, sample}`: the listings the criteria match right now, in rail order |
+| `set_promo_status(id, status)` | editor | `draft` (unpublish), `published` (scheduled if `starts_at` is in the future), `archived` |
+| `list_promos(include_archived)` | editor | One row per promo, with phase |
+| `get_promo(id)` | editor | Full promo plus its revision history |
+| `restore_promo_revision(revision_id)` | editor | Saves an old revision's content as a new revision. Status is unchanged. |
+| `issue_preview_token(promo_id, ttl_minutes)` | editor | `{token, expires_at}` for the app's draft preview (default 24 h, max 7 days). Only a hash is stored. |
+| `public.get_active_promos(placement)` | anyone | Live promos for `home_hero` / `home_rail` (or all), with `mode` and `items` |
+| `public.get_promo_preview(token)` | anyone with a token | The same shape for any status, with cards computed live |
+
+Field rules:
+- `accent` is a palette key: violet, purple, blue, cyan, green, yellow, orange, red or grey, never hex.
+- `badge` is `new`, `coming_soon` or `hot`.
+- `cta` is `{label, kind, target}`, where `kind` is `see_all` (no target), `route` (an app path starting with `/`) or `url` (`https://` only).
+- `hero_image_path` is an object path in the public **`promo-assets`** Storage bucket. Editors can upload with their own session; nobody else can write to the bucket.
 
 ## Setup
 
