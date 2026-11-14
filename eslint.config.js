@@ -23,6 +23,9 @@ module.exports = defineConfig([
       '.design-sync/**',
       '.ds-sync/**',
       'ds-bundle/**',
+      // Retool admin console exports (ITS-116): Retool's own React/JSON, imports Retool-only
+      // modules — kept verbatim so it re-imports cleanly. See retool/README.md.
+      'retool/**',
     ],
   },
 ])
