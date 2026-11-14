@@ -1364,6 +1364,7 @@ export type Database = {
           refresh_interval: string
           refreshed_at: string | null
           result_limit: number
+          show_in_marketplace: boolean
           sort_order: number
           title: string
           updated_at: string
@@ -1378,6 +1379,7 @@ export type Database = {
           refresh_interval?: string
           refreshed_at?: string | null
           result_limit?: number
+          show_in_marketplace?: boolean
           sort_order?: number
           title: string
           updated_at?: string
@@ -1392,6 +1394,7 @@ export type Database = {
           refresh_interval?: string
           refreshed_at?: string | null
           result_limit?: number
+          show_in_marketplace?: boolean
           sort_order?: number
           title?: string
           updated_at?: string
@@ -3279,6 +3282,29 @@ export type Database = {
           has_storefront: boolean
         }[]
       }
+      get_active_promos: {
+        Args: { p_placement?: string }
+        Returns: {
+          accent: string
+          badge: string
+          body: string
+          cta: Json
+          ends_at: string
+          hero_image_path: string
+          id: string
+          item_count: number
+          items: Json
+          mode: string
+          placement: string
+          priority: number
+          release_date: string
+          section_key: string
+          slug: string
+          subtitle: string
+          template: string
+          title: string
+        }[]
+      }
       get_featured_listings: {
         Args: { result_limit?: number }
         Returns: {
@@ -3341,6 +3367,31 @@ export type Database = {
           quantity_total: number
           snapshotted_at: string
           total_cents: number
+        }[]
+      }
+      get_promo_preview: {
+        Args: { p_token: string }
+        Returns: {
+          accent: string
+          badge: string
+          body: string
+          cta: Json
+          ends_at: string
+          hero_image_path: string
+          id: string
+          item_count: number
+          items: Json
+          mode: string
+          phase: string
+          placement: string
+          priority: number
+          release_date: string
+          section_key: string
+          slug: string
+          status: string
+          subtitle: string
+          template: string
+          title: string
         }[]
       }
       get_public_profile: {
