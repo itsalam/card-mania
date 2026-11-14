@@ -77,7 +77,7 @@ jobs:
           TYPES="lib/store/supabase.d.ts supabase/functions/_shared/supabase.ts"
           if [ -n "$(git status --porcelain $TYPES)" ]; then
             git add $TYPES
-            git commit -m "chore(types): regenerate DB types after staging deploy [skip ci]"
+            git commit --no-verify -m "chore(types): regenerate DB types after staging deploy [skip ci]"
             git pull --rebase origin staging
             git push origin HEAD:staging
           else

@@ -15,6 +15,7 @@
     "@cardhedge-prices": "./_shared/cardhedge-prices.ts",
     "@cardhedge-resolve": "./_shared/cardhedge-resolve.ts",
     "@expo-push": "./_shared/expo-push.ts",
+    "@promo-asset": "./_shared/promo-asset.ts",
     "@supabase/supabase-js": "npm:@supabase/supabase-js@2.56.0"
   }
 }
