@@ -1,0 +1,71 @@
+{
+  "private": true,
+  "devDependencies": {
+    "vitest": "4.1.9"
+  },
+  "retool": {
+    "app": {
+      "uuid": "93de96ba-dfe6-11f1-9de7-5bba9be80374",
+      "name": null,
+      "resourceReferencesByFile": {
+        "/backend/admin/listAuditLog.ts": [
+          {
+            "name": "35ed4c7d-efcb-41e5-bc15-9e27f301636a",
+            "displayName": "card-mania-staging",
+            "type": "restapi"
+          }
+        ],
+        "/backend/admin/listMembers.ts": [
+          {
+            "name": "35ed4c7d-efcb-41e5-bc15-9e27f301636a",
+            "displayName": "card-mania-staging",
+            "type": "restapi"
+          }
+        ],
+        "/backend/admin/removeMember.ts": [
+          {
+            "name": "35ed4c7d-efcb-41e5-bc15-9e27f301636a",
+            "displayName": "card-mania-staging",
+            "type": "restapi"
+          }
+        ],
+        "/backend/admin/rpc.ts": [
+          {
+            "name": "35ed4c7d-efcb-41e5-bc15-9e27f301636a",
+            "displayName": "card-mania-staging",
+            "type": "restapi"
+          }
+        ],
+        "/backend/admin/setMemberRole.ts": [
+          {
+            "name": "35ed4c7d-efcb-41e5-bc15-9e27f301636a",
+            "displayName": "card-mania-staging",
+            "type": "restapi"
+          }
+        ],
+        "/backend/admin/whoami.ts": [
+          {
+            "name": "35ed4c7d-efcb-41e5-bc15-9e27f301636a",
+            "displayName": "card-mania-staging",
+            "type": "restapi"
+          }
+        ],
+        "/backend/auth/refreshToken.ts": [
+          {
+            "name": "35ed4c7d-efcb-41e5-bc15-9e27f301636a",
+            "displayName": "card-mania-staging",
+            "type": "restapi"
+          }
+        ],
+        "/backend/auth/signIn.ts": [
+          {
+            "name": "35ed4c7d-efcb-41e5-bc15-9e27f301636a",
+            "displayName": "card-mania-staging",
+            "type": "restapi"
+          }
+        ],
+        "/backend/user.d.ts": []
+      }
+    }
+  }
+}
