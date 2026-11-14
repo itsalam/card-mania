@@ -1,13 +1,13 @@
 import { Card, CardDescription, CardHeader, CardTitle } from '../lib/shadcn/card'
 
-/** Landing page for roles with no pages yet (editor, until the content tools ship in ITS-193/110). */
+/** Landing page for a role with no pages (shouldn't happen for owner/editor/ops). */
 export default function ComingSoon() {
   return (
     <Card className="mx-auto max-w-md text-center">
       <CardHeader>
-        <CardTitle>Content tools are coming soon</CardTitle>
+        <CardTitle>Nothing here for your role yet</CardTitle>
         <CardDescription>
-          Promo boxes and home feed sections will appear here. You're signed in and your role is set.
+          You're signed in, but no pages are available for your role. Ask an owner if that's unexpected.
         </CardDescription>
       </CardHeader>
     </Card>

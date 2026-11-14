@@ -212,12 +212,14 @@ export function useAuth(): AuthContextValue {
 }
 
 /** Which pages each role can open, in nav order. Owner passes every check in the database too. */
-export const PAGES_BY_ROLE: Record<string, readonly ('members' | 'audit-log')[]> = {
-  owner: ['members', 'audit-log'],
+export type PageKey = 'promos' | 'members' | 'audit-log'
+
+export const PAGES_BY_ROLE: Record<string, readonly PageKey[]> = {
+  owner: ['promos', 'members', 'audit-log'],
+  editor: ['promos'],
   ops: ['audit-log'],
-  editor: [],
 }
 
-export function allowedPages(role: string | undefined): readonly ('members' | 'audit-log')[] {
+export function allowedPages(role: string | undefined): readonly PageKey[] {
   return (role && PAGES_BY_ROLE[role]) || []
 }

@@ -422,6 +422,12 @@ entrypoint = "./functions/publish-collection/index.ts"
 # For example, if you want to serve static HTML pages in your function:
 # static_files = [ "./functions/publish-collection/*.html" ]
 
+[functions.promo-asset-upload]
+enabled = true
+# The caller's own session is required; storage policies decide who may write (ITS-193).
+verify_jwt = true
+entrypoint = "./functions/promo-asset-upload/index.ts"
+
 [functions.spoof_price]
 enabled = true
 verify_jwt = true

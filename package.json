@@ -177,8 +177,10 @@
     "*.{js,ts,tsx}": [
       "npm run lint",
       "npm run eslint",
-      "npm run format",
-      "git add"
+      "prettier --write"
+    ],
+    "*.{md,json,css}": [
+      "prettier --write"
     ]
   },
   "overrides": {
