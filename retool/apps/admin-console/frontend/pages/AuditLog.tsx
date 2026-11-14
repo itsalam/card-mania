@@ -9,13 +9,15 @@ import { Alert, AlertDescription } from '../lib/shadcn/alert'
 import { Loader2, RefreshCw } from 'lucide-react'
 
 export default function AuditLog() {
-  const { accessToken } = useAuth()
+  const { accessToken, callAdmin } = useAuth()
+  // Depend on "signed in", not the token itself, so a token refresh doesn't refetch the page.
+  const signedIn = accessToken !== null
   const { trigger, data, loading, error: hookError } = useListAuditLog()
 
   const refreshList = useCallback(() => {
-    if (!accessToken) return
-    trigger({ accessToken })
-  }, [accessToken, trigger])
+    if (!signedIn) return
+    void callAdmin((token) => trigger({ accessToken: token }))
+  }, [signedIn, callAdmin, trigger])
 
   useEffect(() => {
     refreshList()
@@ -31,7 +33,7 @@ export default function AuditLog() {
           <CardTitle>Audit log</CardTitle>
           <CardDescription>Latest 100 entries from list_audit_log.</CardDescription>
         </div>
-        <Button variant="outline" size="sm" onClick={refreshList} disabled={loading || !accessToken}>
+        <Button variant="outline" size="sm" onClick={refreshList} disabled={loading || !signedIn}>
           {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
           Refresh
         </Button>

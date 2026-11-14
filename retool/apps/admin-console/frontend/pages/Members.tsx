@@ -30,10 +30,10 @@ import { Loader2, RefreshCw, Trash2, UserPlus } from 'lucide-react'
 const ROLES = ['owner', 'editor', 'ops'] as const
 type Role = (typeof ROLES)[number]
 
-type FnResult = { ok: boolean; data?: unknown; message?: string }
-
 export default function Members() {
-  const { accessToken } = useAuth()
+  const { accessToken, callAdmin } = useAuth()
+  // Depend on "signed in", not the token itself, so a token refresh doesn't refetch the page.
+  const signedIn = accessToken !== null
   const { trigger: triggerList, data, loading, error: listError } = useListMembers()
   const { trigger: triggerSetRole } = useSetMemberRole()
   const { trigger: triggerRemove } = useRemoveMember()
@@ -47,9 +47,9 @@ export default function Members() {
   const [busyRole, setBusyRole] = useState(false)
 
   const refreshList = useCallback(() => {
-    if (!accessToken) return
-    triggerList({ accessToken })
-  }, [accessToken, triggerList])
+    if (!signedIn) return
+    void callAdmin((token) => triggerList({ accessToken: token }))
+  }, [signedIn, callAdmin, triggerList])
 
   useEffect(() => {
     refreshList()
@@ -64,11 +64,9 @@ export default function Members() {
     setBusyRole(true)
     setActionError(null)
     setActionNotice(null)
-    const res = (await triggerSetRole({
-      accessToken,
-      p_email: newEmail,
-      p_role: newRole,
-    }).result) as FnResult | undefined
+    const res = await callAdmin((token) =>
+      triggerSetRole({ accessToken: token, p_email: newEmail, p_role: newRole }),
+    )
     setBusyRole(false)
     if (!res?.ok) {
       setActionError(res?.message ?? 'set_member_role failed.')
@@ -86,9 +84,7 @@ export default function Members() {
     setBusyRemovalId(userId)
     setActionError(null)
     setActionNotice(null)
-    const res = (await triggerRemove({ accessToken, p_user_id: userId }).result) as
-      | FnResult
-      | undefined
+    const res = await callAdmin((token) => triggerRemove({ accessToken: token, p_user_id: userId }))
     setBusyRemovalId(null)
     setPendingRemoval(null)
     if (!res?.ok) {
@@ -160,7 +156,7 @@ export default function Members() {
             <CardTitle>Members</CardTitle>
             <CardDescription>Loaded from list_members.</CardDescription>
           </div>
-          <Button variant="outline" size="sm" onClick={refreshList} disabled={loading || !accessToken}>
+          <Button variant="outline" size="sm" onClick={refreshList} disabled={loading || !signedIn}>
             {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
             Refresh
           </Button>

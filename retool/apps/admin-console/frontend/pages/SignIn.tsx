@@ -8,7 +8,7 @@ import { useAuth } from '../context/AuthContext'
 import { Loader2, LogIn } from 'lucide-react'
 
 export default function SignIn() {
-  const { signIn, status } = useAuth()
+  const { signIn, status, notice } = useAuth()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
@@ -53,6 +53,11 @@ export default function SignIn() {
                 required
               />
             </div>
+            {notice && !error ? (
+              <Alert>
+                <AlertDescription>{notice}</AlertDescription>
+              </Alert>
+            ) : null}
             {error ? (
               <Alert variant="destructive">
                 <AlertDescription>{error}</AlertDescription>

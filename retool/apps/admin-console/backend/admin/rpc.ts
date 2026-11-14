@@ -5,7 +5,7 @@
  * token and the admin content profile.
  */
 
-export type RpcResult<T> = { ok: true; data: T } | { ok: false; message: string }
+export type RpcResult<T> = { ok: true; data: T } | { ok: false; code?: string; message: string }
 
 export async function callRpc<T = unknown>(
   name: string,
@@ -25,11 +25,13 @@ export async function callRpc<T = unknown>(
     })
     const data = res.data
     if (isApiError(data)) {
-      return { ok: false, message: extractMessage(data) }
+      return { ok: false, code: extractCode(data), message: extractMessage(data) }
     }
     return { ok: true, data }
   } catch (err) {
-    return { ok: false, message: errorMessage(err) }
+    const message = errorMessage(err)
+    // If rawRequest throws on a 401 instead of resolving, keep the expiry detectable.
+    return { ok: false, code: /jwt expired/i.test(message) ? 'PGRST303' : undefined, message }
   }
 }
 
@@ -41,6 +43,12 @@ function isApiError(data: unknown): boolean {
     (typeof obj['code'] === 'string' || typeof obj['code'] === 'number') &&
     typeof obj['message'] === 'string'
   )
+}
+
+/** PostgREST / Postgres error code, e.g. '42501' (not authorized), 'PGRST303' (JWT expired). */
+function extractCode(data: unknown): string | undefined {
+  const code = (data as Record<string, unknown>)['code']
+  return code === undefined || code === null ? undefined : String(code)
 }
 
 function extractMessage(data: unknown): string {
