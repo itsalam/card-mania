@@ -186,7 +186,7 @@ While reviewing what it generates:
 
 #### 3e. Backups
 
-The Free plan has no Git sync, so export each app's JSON after significant changes.
+The Free plan has no Git sync. After significant changes, export the app (download the code, or for a classic app **Export to JSON**), then run `scripts/retool-import.sh <export>` and commit. The script copies the export into `retool/apps/<name>/` and refuses anything containing credentials. Details and restore steps: [`retool/README.md`](../retool/README.md).
 
 ### 4. Lock down the connection
 
