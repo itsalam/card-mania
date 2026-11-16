@@ -3,11 +3,12 @@ import React from 'react'
 import { View } from 'react-native'
 import { useAvailableNowSection } from './cards/AvailableNow'
 import { useCollectionsPreviewSection } from './cards/CollectionsPreview'
+import { usePromosSection } from './cards/Promos'
 import { useSuggestedSellersSection } from './cards/SuggestedSellers'
 
 // Used before the config query resolves (or if it errors) so the feed isn't empty —
 // matches the section set/order this table was seeded with.
-const DEFAULT_SECTION_ORDER = ['wishlist_hits', 'collections', 'suggested_sellers']
+const DEFAULT_SECTION_ORDER = ['promos', 'wishlist_hits', 'collections', 'suggested_sellers']
 
 /**
  * Returns each section's header/body as individual nodes (see ExpandableSection) so HomeContent
@@ -25,8 +26,13 @@ export function useFeedSections() {
   const wishlistHits = useAvailableNowSection(configByKey.get('wishlist_hits'))
   const collections = useCollectionsPreviewSection(configByKey.get('collections'))
   const suggestedSellers = useSuggestedSellersSection(configByKey.get('suggested_sellers'))
+  const promos = usePromosSection(configByKey.get('promos'))
 
-  const sectionsByKey: Record<string, { header: React.ReactNode; body: React.ReactNode }> = {
+  const sectionsByKey: Record<
+    string,
+    { header: React.ReactNode; body: React.ReactNode; headerless?: boolean }
+  > = {
+    promos,
     wishlist_hits: wishlistHits,
     collections,
     suggested_sellers: suggestedSellers,
@@ -37,6 +43,11 @@ export function useFeedSections() {
 
   for (const key of keys) {
     const section = sectionsByKey[key]
+    // Header-less slots (promos) are plain children: nothing to pin, nothing when empty.
+    if (section?.headerless) {
+      if (section.body) children.push(<View key={`${key}-body`}>{section.body}</View>)
+      continue
+    }
     if (!section || !section.header) continue
     stickyHeaderIndices.push(children.length)
     children.push(<View key={`${key}-header`}>{section.header}</View>)
