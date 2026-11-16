@@ -1,6 +1,6 @@
 import { Button } from '../../lib/shadcn/button'
 import { Alert, AlertDescription } from '../../lib/shadcn/alert'
-import { EyeOff, Loader2, Pin, PinOff, Undo2 } from 'lucide-react'
+import { AlertTriangle, EyeOff, Loader2, Pin, PinOff, Undo2 } from 'lucide-react'
 import { cn } from '../../lib/shadcn/utils'
 import { CardThumb } from './CardThumb'
 import { formatCents } from '../../utils/promo'
@@ -11,6 +11,8 @@ type Props = {
   loading: boolean
   error: string | null
   minCards: number
+  /** The promo's release date; decides whether being short of listings is expected yet. */
+  releaseDate: string | null
   pinned: string[]
   excluded: string[]
   /** Names/thumbnails for pinned and excluded cards (from lookup_cards). */
@@ -22,9 +24,10 @@ type Props = {
 }
 
 /** "Matches N listings" plus the cards in the order the app will show them, with pin/exclude. */
-export function MatchPreview({ matches, loading, error, minCards, pinned, excluded, refs, onPin, onUnpin, onExclude, onRestore }: Props) {
+export function MatchPreview({ matches, loading, error, minCards, releaseDate, pinned, excluded, refs, onPin, onUnpin, onExclude, onRestore }: Props) {
   const count = matches?.count ?? 0
-  const short = matches !== null && count < minCards
+  const short = matches !== null && !loading && count < minCards
+  const released = !releaseDate || new Date(releaseDate).getTime() <= Date.now()
 
   return (
     <div className="space-y-3">
@@ -33,12 +36,9 @@ export function MatchPreview({ matches, loading, error, minCards, pinned, exclud
           {matches === null ? 'Matching listings' : `Matches ${count}${matches.count_capped ? '+' : ''} listing${count === 1 ? '' : 's'}`}
         </span>
         {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin text-muted-foreground" /> : null}
-        {short ? (
-          <span className="text-xs text-amber-700 dark:text-amber-400">
-            Needs {minCards} to show cards. Until then the app shows “Coming soon”.
-          </span>
-        ) : null}
       </div>
+
+      {short ? <ShortWarning count={count} minCards={minCards} released={released} /> : null}
 
       {error ? (
         <Alert variant="destructive">
@@ -91,7 +91,7 @@ export function MatchPreview({ matches, loading, error, minCards, pinned, exclud
         </div>
       ) : matches && !loading ? (
         <p className="rounded-md border border-dashed border-border py-6 text-center text-sm text-muted-foreground">
-          Nothing is listed for these criteria yet. That's normal before a release.
+          Nothing matching these criteria is for sale right now.
         </p>
       ) : null}
 
@@ -102,6 +102,33 @@ export function MatchPreview({ matches, loading, error, minCards, pinned, exclud
         <RefList title="Excluded" ids={excluded} refs={refs} action="Restore" icon={<Undo2 className="w-3.5 h-3.5" />} onAction={onRestore} />
       ) : null}
     </div>
+  )
+}
+
+/**
+ * The box only shows cards once at least `minCards` matching listings are for sale. The pickers
+ * search the whole card catalogue, so it's easy to pick a set nobody is selling yet: say so plainly,
+ * and say what will happen in the app.
+ */
+function ShortWarning({ count, minCards, released }: { count: number; minCards: number; released: boolean }) {
+  const have = count === 0 ? 'No listings for sale match' : `Only ${count} listing${count === 1 ? '' : 's'} for sale match${count === 1 ? 'es' : ''}`
+  return (
+    <Alert className="border-amber-500/40 bg-amber-500/10 text-amber-900 dark:text-amber-200">
+      <AlertTriangle className="h-4 w-4 !text-amber-600 dark:!text-amber-400" />
+      <AlertDescription className="space-y-1">
+        <p className="font-medium">
+          {have} these criteria, and the box needs {minCards} to show cards.
+        </p>
+        <p>
+          {released
+            ? 'The app shows “Coming soon” instead of cards. To fix it, pick a set with cards for sale, add more sets, or lower “Cards needed to go live”.'
+            : 'Until the release that’s expected, and the app shows “Coming soon”. If listings don’t arrive, it keeps showing “Coming soon” after the release too.'}
+        </p>
+        <p className="text-xs opacity-80">
+          The set and card pickers search every card, not just ones for sale. After saving, the app picks up new matches within about 5 minutes.
+        </p>
+      </AlertDescription>
+    </Alert>
   )
 }
 
