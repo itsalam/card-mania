@@ -580,6 +580,7 @@ export default function PromoEditor() {
                   loading={matchesLoading}
                   error={matchesError}
                   minCards={promo.min_cards}
+                  releaseDate={promo.release_date}
                   pinned={promo.pinned_ref_ids}
                   excluded={promo.excluded_ref_ids}
                   refs={refs}
