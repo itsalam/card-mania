@@ -1,6 +1,7 @@
 import type { FeaturedListing } from '@/client/marketplace'
 import { getSupabase } from '@/lib/store/client'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import Constants from 'expo-constants'
 import { useEffect } from 'react'
 
 const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL
@@ -38,11 +39,18 @@ export type Promo = {
 
 export type PromoPreview = Promo & { status: string; phase: string }
 
-/** Public URL of a hero image in the promo-assets bucket. */
+/**
+ * Public URL of a hero image in the promo-assets bucket. The project URL comes from the same
+ * place the Supabase client gets it (app.config.js `extra.supabaseUrl`): EAS builds don't set
+ * EXPO_PUBLIC_SUPABASE_URL, so reading only the env var left these builds without an image.
+ */
 export function promoAssetUrl(path: string | null): string | null {
-  if (!path || !supabaseUrl) return null
+  const base =
+    (Constants.expoConfig?.extra?.supabaseUrl as string | undefined) ??
+    process.env.EXPO_PUBLIC_SUPABASE_URL
+  if (!path || !base) return null
   const encoded = path.split('/').map(encodeURIComponent).join('/')
-  return `${supabaseUrl}/storage/v1/object/public/promo-assets/${encoded}`
+  return `${base.replace(/\/+$/, '')}/storage/v1/object/public/promo-assets/${encoded}`
 }
 
 const promosKey = (placement?: PromoPlacement) =>
