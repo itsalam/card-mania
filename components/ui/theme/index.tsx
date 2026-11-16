@@ -35,6 +35,16 @@ Colors.loadSchemes({
     $iconPrimary: Colors.blue30,
     $iconPrimaryLight: Colors.blue30,
     $outlinePrimary: Colors.blue30,
+    // Promo box accents (admin.promos.accent → `$accent<Hue>`, see features/promos/accent.ts).
+    $accentViolet: Colors.violet30,
+    $accentPurple: Colors.purple30,
+    $accentBlue: Colors.blue30,
+    $accentCyan: Colors.cyan30,
+    $accentGreen: Colors.green30,
+    $accentYellow: Colors.yellow30,
+    $accentOrange: Colors.orange30,
+    $accentRed: Colors.red30,
+    $accentGrey: Colors.grey30,
   },
   dark: {
     $backgroundPrimaryHeavy: Colors.blue30,
@@ -44,6 +54,15 @@ Colors.loadSchemes({
     $iconPrimary: Colors.blue50,
     $iconPrimaryLight: Colors.blue30,
     $outlinePrimary: Colors.blue50,
+    $accentViolet: Colors.violet50,
+    $accentPurple: Colors.purple50,
+    $accentBlue: Colors.blue50,
+    $accentCyan: Colors.cyan50,
+    $accentGreen: Colors.green50,
+    $accentYellow: Colors.yellow50,
+    $accentOrange: Colors.orange50,
+    $accentRed: Colors.red50,
+    $accentGrey: Colors.grey50,
   },
 })
 

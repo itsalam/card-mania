@@ -88,6 +88,15 @@ Field rules:
 
 **The Retool editor (ITS-193)** is in `retool/apps/admin-console`: the Promo boxes tab, `pages/Promos.tsx` and `pages/PromoEditor.tsx`. Its phone frame is a mock-up until the app's `/preview/promo/[id]` route ships (ITS-192). After that, set `APP_PREVIEW_BASE_URL` in `frontend/config.ts` to show the real app in the frame.
 
+### In the app (ITS-192)
+
+- **Home:** the `promos` row in `home_feed_section_meta` places the boxes in the Home feed; it's above the other sections (`sort_order` −10) and shows up to `result_limit` (5) boxes, hero placements first. Disable the row to hide every promo without unpublishing.
+- **Component:** `features/promos/ProductBox.tsx`, with a hero and a rail variant and the three modes. The accent maps to the `$accent<Hue>` theme tokens in `components/ui/theme`, so dark mode works.
+- **"See all"** opens `/promo/[id]`, a grid of every card in the promo's feed (up to 50).
+- **Preview:** `/preview/promo/[id]?token=…` renders any promo, draft included, when the token from `admin.issue_preview_token` is valid. `vercel.json` lets only Retool frame `/preview/*` (`frame-ancestors`); every other path stays `SAMEORIGIN`.
+- **Tracking:** `public.record_promo_event(promo_id, 'impression' | 'tap', session_id, placement)`. Each is counted once per promo per app session (a random id per launch); drafts and ended promos are never counted. Events go to `admin.promo_events`, and an hourly cron job (`promo-events-rollup`) writes `admin.promo_event_daily` (sessions and signed-in users per promo, kind and UTC day) and deletes raw events after 90 days.
+- **Notify me** (coming-soon boxes): `public.set_promo_interest(promo_id, on)` and `public.get_my_promo_interests()` store interest in `admin.promo_interest`, one row per user. Sending the release push is a later ticket (ITS-60/61/62); `notified_at` is there so it's sent once.
+
 ## Setup
 
 ### 1. Expose the `admin` schema to the API
