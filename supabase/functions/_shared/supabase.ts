@@ -3361,6 +3361,7 @@ export type Database = {
           title: string
         }[]
       }
+      get_my_promo_interests: { Args: never; Returns: string[] }
       get_portfolio_history: {
         Args: { p_collection_id: string; p_from?: string; p_to?: string }
         Returns: {
@@ -3579,6 +3580,15 @@ export type Database = {
         }
         Returns: string
       }
+      record_promo_event: {
+        Args: {
+          p_kind: string
+          p_placement?: string
+          p_promo_id: string
+          p_session_id: string
+        }
+        Returns: boolean
+      }
       refresh_collection_backgrounds: {
         Args: { p_limit?: number }
         Returns: number
@@ -3654,6 +3664,10 @@ export type Database = {
       set_primary_collection_item_photo: {
         Args: { p_photo_id: string }
         Returns: undefined
+      }
+      set_promo_interest: {
+        Args: { p_on: boolean; p_promo_id: string }
+        Returns: boolean
       }
       set_push_preferences: { Args: { p_patch: Json }; Returns: Json }
       show_limit: { Args: never; Returns: number }
