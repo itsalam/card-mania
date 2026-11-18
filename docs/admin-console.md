@@ -113,6 +113,21 @@ Both default to the last 30 days and allow up to a year.
 - **A conversion** is something a signed-in user did within 7 days of their first tap in the range, on a card the promo covers (its section's current listings plus its pinned cards): a wishlist add, a card or listing view, or an offer. A user counts once in `converted_users` however many they did.
 - **Limits:** "covered" is the promo's section as it is now, not as it was when the user tapped. Views are a lower bound, since `recent_views` keeps only each user's latest view of an item.
 
+## Home sections (ITS-110)
+
+The **Home sections** tab (`pages/HomeSections.tsx`) edits `public.home_feed_section_meta`, the sections of the app's Home feed: their order, title, icon, on/off state, item count and rail layout. Editors and owners can use it. The app reads the table through `get_home_feed_sections()` with a one-minute cache, so changes show up on the next Home refresh.
+
+| RPC                               | Role   | Does                                                                                                                                                                 |
+| --------------------------------- | ------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `list_home_sections()`            | editor | Every section, on or off, in display order                                                                                                                           |
+| `update_home_section(key, patch)` | editor | Any of `title`, `icon`, `enabled`, `result_limit`, `layout` (replaced whole). Send `expected_updated_at` from the loaded row to refuse a conflicting save (`40001`). |
+| `reorder_home_sections(keys)`     | editor | New display order; `keys` must name every section once                                                                                                               |
+
+- **Sections can't be added or removed here.** Each key maps to a reviewed query in the app (`features/home/FeedPage.tsx`), so a new section needs an app release.
+- **Icons** are limited to the names the app can draw (`features/home/sectionIcons.ts`). Add a new icon to both that file and `admin._home_section_icons()`.
+- **Layout** keys: `itemWidth`, `collapsedWidth` (40–400), `expandedHeight` (60–800), `expandable` (boolean). Leave one out to use the app's default. `collapsedHeight` is legacy: the app ignores it, but it's still accepted so older rows save.
+- Every edit and reorder writes an `audit_log` row (`home_section.update` / `home_section.reorder`) with the before and after.
+
 ## Setup
 
 ### 1. Expose the `admin` schema to the API
