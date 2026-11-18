@@ -4,10 +4,11 @@ import { formatCompactPrice } from '@/components/utils'
 import { useCollectionHistory } from '@/features/collection/hooks'
 import { ChevronDown, ChevronUp, TrendingDown, TrendingUp } from 'lucide-react-native'
 import { MotiView } from 'moti'
-import { useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Pressable, StyleProp, View, ViewStyle } from 'react-native'
 import { Colors } from 'react-native-ui-lib'
 import CollectionBreakdown from '../collection/components/CollectionBreakdown'
+import { useCollapsibleHeaderEvent, useCollapsibleHeaderEvents } from '../collection/ui'
 import { Graphs } from './Breakdowns'
 
 const BORDER_COLOR_COLLAPSED = Colors.$outlineNeutral
@@ -16,7 +17,10 @@ const BORDER_WIDTH = 2
 const CHIP_HEIGHT = 24
 const GRAPH_HEIGHT = 284
 // CollectionBreakdown ~70px + Graphs ~284px + padding
-const BREAKDOWN_MAX_HEIGHT = 400
+// Open height until the breakdown has been measured (CollectionBreakdown ~70px + Graphs ~284px
+// + padding); after that it opens to exactly its measured height, so nothing is cut off.
+const BREAKDOWN_FALLBACK_HEIGHT = 400
+const BREAKDOWN_TOGGLE_MS = 280
 
 function StatCard({
   label,
@@ -70,6 +74,57 @@ export function PortfolioSummary({
   style?: StyleProp<ViewStyle>
 }) {
   const [expanded, setExpanded] = useState(false)
+  // Closes with no animation after a dismiss-all, since the card is already off screen.
+  const [instant, setInstant] = useState(false)
+  // The breakdown's natural height (its content lays out fully even while clipped to 0), so
+  // the collapsing header can be told how much the card is about to grow or shrink.
+  const breakdownHeight = useRef(0)
+  const [breakdownOpenHeight, setBreakdownOpenHeight] = useState(BREAKDOWN_FALLBACK_HEIGHT)
+  const events = useCollapsibleHeaderEvents()
+
+  const settleTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  useEffect(() => () => clearTimeout(settleTimer.current ?? undefined), [])
+
+  // Source of truth for open/closed, updated on the tap itself. `expanded` state lags until the
+  // next render, so rapid taps compared against it could report a change that never happened.
+  const expandedRef = useRef(false)
+
+  // Brackets a size change with 'resize' (the breakdown's absolute extra height, sent before the
+  // layout moves) and 'resized' (once the maxHeight animation has finished), so the collapsing
+  // header never measures the card mid-animation. The animation runs on the UI thread and fires
+  // no layouts of its own, so the end is timed from its known duration; rapid toggles keep
+  // pushing it back, so 'resized' only goes out once things are still.
+  const reportSize = useCallback(
+    (settleMs: number) => {
+      const h = breakdownHeight.current
+      events?.emit({ type: 'resize', extra: h > 0 ? (expandedRef.current ? h : 0) : undefined })
+      if (settleTimer.current) clearTimeout(settleTimer.current)
+      settleTimer.current = setTimeout(() => events?.emit({ type: 'resized' }), settleMs + 50)
+    },
+    [events]
+  )
+
+  const setOpen = useCallback(
+    (next: boolean, opts?: { instant?: boolean }) => {
+      if (next === expandedRef.current) return
+      expandedRef.current = next
+      const instantNext = Boolean(opts?.instant)
+      setInstant(instantNext)
+      setExpanded(next)
+      reportSize(instantNext ? 0 : BREAKDOWN_TOGGLE_MS)
+    },
+    [reportSize]
+  )
+
+  // Open breakdown: one scroll dismisses the whole card. Once it's gone, close the breakdown so
+  // the card comes back compact.
+  useEffect(() => {
+    events?.emit({ type: 'dismissible', value: expanded })
+  }, [events, expanded])
+  useEffect(() => () => events?.emit({ type: 'dismissible', value: false }), [events])
+  useCollapsibleHeaderEvent((event) => {
+    if (event.type === 'dismissed') setOpen(false, { instant: true })
+  })
 
   const { data: wishlistTotal = 0 } = useWishlistTotal()
   const { data: sellingTotal = 0 } = useCollectionTotal({ collectionType: 'selling' })
@@ -119,7 +174,7 @@ export function PortfolioSummary({
       {/* Single bordered card containing all content */}
       <MotiView
         animate={{ borderColor: expanded ? BORDER_COLOR_EXPANDED : BORDER_COLOR_COLLAPSED }}
-        transition={{ type: 'timing', duration: 280 }}
+        transition={{ type: 'timing', duration: instant ? 0 : BREAKDOWN_TOGGLE_MS }}
         style={{
           borderWidth: BORDER_WIDTH,
           borderRadius: 20,
@@ -136,25 +191,37 @@ export function PortfolioSummary({
 
         {/* Accordion — expands inside the card; outer page ScrollView handles scrolling */}
         <MotiView
-          animate={{ maxHeight: expanded ? BREAKDOWN_MAX_HEIGHT : 0, opacity: expanded ? 1 : 0 }}
-          transition={{ type: 'timing', duration: 280 }}
+          animate={{ maxHeight: expanded ? breakdownOpenHeight : 0, opacity: expanded ? 1 : 0 }}
+          transition={{ type: 'timing', duration: instant ? 0 : BREAKDOWN_TOGGLE_MS }}
           style={{ overflow: 'hidden' }}
         >
-          <CollectionBreakdown
-            selectedCollections={selectedCollections}
-            onToggleCollection={onToggleCollection}
-            style={{ paddingTop: 12, paddingBottom: 8, paddingHorizontal: 4 }}
-          />
           <View
-            style={{
-              borderTopWidth: 1,
-              borderTopColor: BORDER_COLOR_COLLAPSED,
-              marginTop: 4,
-              overflow: 'hidden',
-              borderRadius: 12,
+            onLayout={(e) => {
+              const h = Math.ceil(e.nativeEvent.layout.height)
+              if (h === breakdownHeight.current) return
+              breakdownHeight.current = h
+              if (h > 0) setBreakdownOpenHeight(h)
+              // Content grew or shrank while open (e.g. the charts loaded): the header's
+              // height changes with it.
+              if (expandedRef.current) reportSize(BREAKDOWN_TOGGLE_MS)
             }}
           >
-            <Graphs height={GRAPH_HEIGHT} selectedCollections={selectedCollections} />
+            <CollectionBreakdown
+              selectedCollections={selectedCollections}
+              onToggleCollection={onToggleCollection}
+              style={{ paddingTop: 12, paddingBottom: 8, paddingHorizontal: 4 }}
+            />
+            <View
+              style={{
+                borderTopWidth: 1,
+                borderTopColor: BORDER_COLOR_COLLAPSED,
+                marginTop: 4,
+                overflow: 'hidden',
+                borderRadius: 12,
+              }}
+            >
+              <Graphs height={GRAPH_HEIGHT} selectedCollections={selectedCollections} />
+            </View>
           </View>
         </MotiView>
       </MotiView>
@@ -162,7 +229,7 @@ export function PortfolioSummary({
       {/* Chip straddling the bottom border of the card */}
       <View style={{ alignItems: 'center', marginTop: -(CHIP_HEIGHT / 2 + BORDER_WIDTH) }}>
         <Pressable
-          onPress={() => setExpanded((v) => !v)}
+          onPress={() => setOpen(!expandedRef.current)}
           style={{
             height: CHIP_HEIGHT,
             borderRadius: 99,

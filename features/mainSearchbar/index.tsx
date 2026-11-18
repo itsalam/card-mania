@@ -5,7 +5,7 @@ import {
   SearchBar,
 } from '@/components/ui/search'
 import { Portal } from '@rn-primitives/portal'
-import React, { RefObject, useRef, useState } from 'react'
+import React, { ReactNode, RefObject, useRef, useState } from 'react'
 import { Keyboard, View } from 'react-native'
 import Animated from 'react-native-reanimated'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -15,8 +15,12 @@ import { SearchScreen } from './components/SearchScreen'
 export function MainSearchBar({
   placeholder,
   collapsed = false,
+  renderTrigger,
 }: {
   placeholder?: string
+  /** Draws the button that opens search instead of the built-in bar/icon (e.g. Home's larger
+   *  raised button). Opening still goes to the same full-screen SearchScreen. */
+  renderTrigger?: (open: () => void) => ReactNode
   /** Renders as a collapsed icon-only button (matching Collection's header search) instead of a
    *  full-width bar — for layouts where the search bar shares a row with other content (e.g.
    *  Home's logo/welcome row) rather than owning a full row of its own. Tapping it opens the same
@@ -46,7 +50,9 @@ export function MainSearchBar({
 
   return (
     <Animated.View className={collapsed ? 'flex flex-col' : 'w-full flex flex-col'}>
-      {collapsed ? (
+      {renderTrigger ? (
+        renderTrigger(() => show(inputRef as unknown as RefObject<View>))
+      ) : collapsed ? (
         <ExpandableSearchBar
           expanded={false}
           variant={'ghost'}
