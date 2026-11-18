@@ -10,13 +10,14 @@ import AuditLog from './pages/AuditLog'
 import ComingSoon from './pages/ComingSoon'
 import Promos from './pages/Promos'
 import PromoEditor from './pages/PromoEditor'
+import PromoResults from './pages/PromoResults'
 import { Badge } from './lib/shadcn/badge'
 import { Button } from './lib/shadcn/button'
 import { Spinner } from './lib/shadcn/spinner'
 import { LogOut } from 'lucide-react'
 import { cn } from './lib/shadcn/utils'
 
-const PAGE_LABELS = { promos: 'Promo boxes', members: 'Members', 'audit-log': 'Audit log' } as const
+const PAGE_LABELS = { promos: 'Promo boxes', results: 'Promo results', members: 'Members', 'audit-log': 'Audit log' } as const
 
 function Header() {
   const { identity, signOut } = useAuth()
@@ -90,6 +91,7 @@ function Shell() {
           {pages.includes('promos') ? <Route path="/promos" element={<Promos />} /> : null}
           {pages.includes('promos') ? <Route path="/promos/new" element={<PromoEditor />} /> : null}
           {pages.includes('promos') ? <Route path="/promos/:id" element={<PromoEditor />} /> : null}
+          {pages.includes('results') ? <Route path="/results" element={<PromoResults />} /> : null}
           {pages.includes('members') ? <Route path="/members" element={<Members />} /> : null}
           {pages.includes('audit-log') ? <Route path="/audit-log" element={<AuditLog />} /> : null}
           {pages.length === 0 ? <Route path="/coming-soon" element={<ComingSoon />} /> : null}

@@ -19,11 +19,11 @@ Retool therefore stores **no Postgres credential and no service key**, only the 
 
 ## Roles
 
-| Role     | Can                                                              |
-| -------- | ---------------------------------------------------------------- |
-| `owner`  | Everything, including managing members                           |
-| `editor` | Content: promo boxes, home feed sections (ITS-191/193/110)       |
-| `ops`    | Dashboards, ops actions, audit log, `search_config` (ITS-117/57) |
+| Role     | Can                                                                                       |
+| -------- | ----------------------------------------------------------------------------------------- |
+| `owner`  | Everything, including managing members                                                    |
+| `editor` | Content: promo boxes and their results, home feed sections (ITS-191/193/194/110)          |
+| `ops`    | Dashboards (promo results, ITS-194/117), ops actions, audit log, `search_config` (ITS-57) |
 
 Each person has one role, stored in `admin.members`. Every write RPC adds a row to `admin.audit_log`, which is append-only.
 
@@ -96,6 +96,22 @@ Field rules:
 - **Preview:** `/preview/promo/[id]?token=…` renders any promo, draft included, when the token from `admin.issue_preview_token` is valid. `vercel.json` lets only Retool frame `/preview/*` (`frame-ancestors`); every other path stays `SAMEORIGIN`.
 - **Tracking:** `public.record_promo_event(promo_id, 'impression' | 'tap', session_id, placement)`. Each is counted once per promo per app session (a random id per launch); drafts and ended promos are never counted. Events go to `admin.promo_events`, and an hourly cron job (`promo-events-rollup`) writes `admin.promo_event_daily` (sessions and signed-in users per promo, kind and UTC day) and deletes raw events after 90 days.
 - **Notify me** (coming-soon boxes): `public.set_promo_interest(promo_id, on)` and `public.get_my_promo_interests()` store interest in `admin.promo_interest`, one row per user. Sending the release push is a later ticket (ITS-60/61/62); `notified_at` is there so it's sent once.
+
+### Promo results (ITS-194)
+
+The **Promo results** tab (`pages/PromoResults.tsx`) is for editors, ops and owners. It has a date range (7, 30 or 90 days, or custom), a KPI row, a daily impressions/taps chart for the selected promo and a sortable table per promo. Days are UTC.
+
+| RPC                                       | Role         | Does                                                                                       |
+| ----------------------------------------- | ------------ | ------------------------------------------------------------------------------------------ |
+| `promo_results(from, to)`                 | editor / ops | One row per promo: impressions, taps, tap rate, signed-in viewers/tappers, and conversions |
+| `promo_results_daily(promo_id, from, to)` | editor / ops | Impressions and taps per day, zero-filled                                                  |
+
+Both default to the last 30 days and allow up to a year.
+
+- **Impressions and taps** are app sessions, read from the hourly rollup `admin.promo_event_daily`. Today can be up to an hour behind.
+- **Viewers, tappers and conversions** need user ids, so they read the raw `admin.promo_events`, which are kept 90 days. Anonymous sessions count as impressions and taps but can't convert.
+- **A conversion** is something a signed-in user did within 7 days of their first tap in the range, on a card the promo covers (its section's current listings plus its pinned cards): a wishlist add, a card or listing view, or an offer. A user counts once in `converted_users` however many they did.
+- **Limits:** "covered" is the promo's section as it is now, not as it was when the user tapped. Views are a lower bound, since `recent_views` keeps only each user's latest view of an item.
 
 ## Setup
 
