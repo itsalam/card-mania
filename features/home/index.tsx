@@ -5,19 +5,27 @@ import { Tabs, TabsContent, TabsLabel, TabsList, TabsTrigger } from '@/component
 import { Text } from '@/components/ui/text/base-text'
 import { MainSearchBar } from '@/features/mainSearchbar'
 import { OnboardingTarget } from '@/features/onboarding'
-import { useUserStore } from '@/lib/store/useUserStore'
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs'
 import { useRouter } from 'expo-router'
+import { GestureDetector } from 'react-native-gesture-handler'
+import Animated, {
+  interpolate,
+  useAnimatedReaction,
+  useAnimatedStyle,
+} from 'react-native-reanimated'
+import { scheduleOnRN } from 'react-native-worklets'
+import { CollapsibleHeaderEventsProvider, useCollaspableHeader } from '@/features/collection/ui'
 import {
   Bell,
   Compass,
   History,
   LucideIcon,
   Newspaper,
+  Search,
   SettingsIcon,
   Sheet,
 } from 'lucide-react-native'
-import React, { useCallback, useState } from 'react'
+import React, { useCallback, useEffect, useState } from 'react'
 import { RefreshControl, StyleSheet, TouchableOpacity, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Colors } from 'react-native-ui-lib'
@@ -29,11 +37,13 @@ import { TickerTape } from './TickerTape'
 import { TabValue, tabValues, useHomePageStore } from './provider'
 import { HomeRefreshProvider, useHomeRefreshControl } from './refresh-provider'
 
-// Matches Logo's own size (the tallest item in that row) so alignItems: 'center' has a definite
-// band to center against — MainSearchBar's collapsed state renders an <ExpandableSearchBar>,
-// whose height: '100%' needs a non-ambiguous parent height the same way Collection's header does
-// (see features/collection/components/Header.tsx's HEADER_ROW_HEIGHT for the fuller writeup).
-const HOME_TOP_ROW_HEIGHT = 48
+// Header row: fits the logo (the tallest item) with a little room, so alignItems: 'center' has a
+// definite band to center against. The logo stays larger than the round buttons, and search, the
+// primary action, is a step larger than notifications/settings.
+const HOME_TOP_ROW_HEIGHT = 56
+const HOME_LOGO_SIZE = 52
+const HOME_BUTTON_SIZE = 40
+const HOME_SEARCH_SIZE = 50
 
 const notifBadgeStyles = StyleSheet.create({
   // Rescaled alongside the Bell icon's size: 22 -> 19.
@@ -55,33 +65,40 @@ const notifBadgeStyles = StyleSheet.create({
     fontWeight: '700',
     lineHeight: 11,
   },
-  // "Button group" chrome for Bell + Settings — one shared pill container, secondary to the
-  // search bar so it should draw less attention, not compete with it. Uses the same
-  // bg/border colors as Marketplace's view-mode toggle group (`styles.toggle` in
-  // features/marketplace/index.tsx) — the established segmented-control convention documented
-  // in CLAUDE.md — rather than the opaque backgroundNeutral/outlineNeutral used for primary
-  // action buttons (search, filter).
-  iconButtonGroup: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  // Round header buttons (notifications, settings): the outlined, translucent pill convention
+  // from Marketplace's view-mode toggle (CLAUDE.md segmented-control colours). Colours are
+  // inline at render; this only holds the shape.
+  roundButton: {
+    width: HOME_BUTTON_SIZE,
+    height: HOME_BUTTON_SIZE,
     borderRadius: 999,
-    backgroundColor: Colors.rgba(Colors.$backgroundDefault, 0.92),
     borderWidth: 1,
-    borderColor: Colors.rgba(Colors.$outlineNeutral, 0.4),
-    overflow: 'hidden',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  // Slightly smaller than a primary icon button (Marketplace's filterButton uses padding: 8) to
-  // read as secondary/utility without shrinking so far it's hard to tap.
-  groupButton: {
-    padding: 7,
-  },
-  groupDivider: {
-    width: StyleSheet.hairlineWidth,
-    alignSelf: 'stretch',
-    marginVertical: 6,
-    backgroundColor: Colors.rgba(Colors.$outlineNeutral, 0.2),
+  // Search: the primary action, so a step larger and raised off the background.
+  searchButton: {
+    width: HOME_SEARCH_SIZE,
+    height: HOME_SEARCH_SIZE,
+    borderRadius: 999,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOpacity: 0.18,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 4,
   },
 })
+
+/** Read at render so the round buttons follow light/dark mode. */
+function roundButtonColors() {
+  return {
+    backgroundColor: Colors.rgba(Colors.$backgroundDefault, 0.92),
+    borderColor: Colors.rgba(Colors.$outlineNeutral, 0.4),
+  }
+}
 
 const tabIcons: Record<TabValue, LucideIcon> = {
   feed: Newspaper,
@@ -98,10 +115,7 @@ const FEED_TAB_VALUES: TabValue[] = ['feed', 'sheets']
 export default function HomeScreen() {
   const { currentPage, setCurrentPage } = useHomePageStore()
   const router = useRouter()
-  const { profile, user } = useUserStore()
   const { data: unreadCount = 0 } = useUnreadCount()
-  const displayName =
-    profile?.display_name ?? profile?.username ?? user?.email?.split('@')[0] ?? 'there'
 
   const [selectedCollections, setSelectedCollections] = useState<string[]>([
     'wishlist',
@@ -116,22 +130,33 @@ export default function HomeScreen() {
 
   return (
     <SafeAreaView className="flex-1 w-full h-full overflow-visible" style={{ paddingTop: 8 }}>
+      {/* Logo + app name on the left; notifications, settings and a larger raised search
+          button on the right. */}
       <View
         style={{
           flexDirection: 'row',
-          justifyContent: 'flex-end',
-          paddingHorizontal: 20,
-          paddingTop: 8,
+          alignItems: 'center',
+          paddingHorizontal: 16,
+          gap: 8,
+          height: HOME_TOP_ROW_HEIGHT,
         }}
       >
-        <View style={notifBadgeStyles.iconButtonGroup}>
+        {/* The name sits on the logo's bottom edge, lifted slightly off it. */}
+        <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 2 }}>
+          <Logo width={HOME_LOGO_SIZE} height={HOME_LOGO_SIZE} />
+          <Text variant="h4" numberOfLines={1} style={{ paddingBottom: 6 }}>
+            ShadowBx
+          </Text>
+        </View>
+
+        <View style={{ marginLeft: 'auto', flexDirection: 'row', alignItems: 'center', gap: 8 }}>
           <TouchableOpacity
             onPress={() => router.push('/(tabs)/notifications')}
             accessibilityLabel="Open notifications"
-            style={notifBadgeStyles.groupButton}
+            style={[notifBadgeStyles.roundButton, roundButtonColors()]}
           >
             <View>
-              <Bell size={19} color={Colors.$iconDefault} />
+              <Bell size={17} color={Colors.$iconDefault} />
               {unreadCount > 0 && (
                 <View style={notifBadgeStyles.dot}>
                   <Text style={notifBadgeStyles.dotText}>
@@ -141,34 +166,33 @@ export default function HomeScreen() {
               )}
             </View>
           </TouchableOpacity>
-          <View style={notifBadgeStyles.groupDivider} />
           <OnboardingTarget id="settings-icon">
             <TouchableOpacity
               onPress={() => router.push('/(tabs)/profile/settings')}
               accessibilityLabel="Open settings"
-              style={notifBadgeStyles.groupButton}
+              style={[notifBadgeStyles.roundButton, roundButtonColors()]}
             >
-              <SettingsIcon size={19} color={Colors.$iconDefault} />
+              <SettingsIcon size={17} color={Colors.$iconDefault} />
             </TouchableOpacity>
           </OnboardingTarget>
-        </View>
-      </View>
-      <View
-        style={{
-          flexDirection: 'row',
-          alignItems: 'center',
-          paddingHorizontal: 20,
-          gap: 12,
-          height: HOME_TOP_ROW_HEIGHT,
-        }}
-      >
-        <Logo width={48} height={48} />
-        <Text variant={'large'} numberOfLines={1} style={{ flexShrink: 1 }}>
-          Welcome back, {displayName}
-        </Text>
-        <View style={{ marginLeft: 'auto' }}>
           <OnboardingTarget id="search-bar">
-            <MainSearchBar collapsed />
+            <MainSearchBar
+              renderTrigger={(open) => (
+                <TouchableOpacity
+                  onPress={open}
+                  accessibilityLabel="Search"
+                  style={[
+                    notifBadgeStyles.searchButton,
+                    {
+                      backgroundColor: Colors.$backgroundElevated,
+                      borderColor: Colors.rgba(Colors.$outlineNeutral, 0.4),
+                    },
+                  ]}
+                >
+                  <Search size={21} color={Colors.$iconDefault} />
+                </TouchableOpacity>
+              )}
+            />
           </OnboardingTarget>
         </View>
       </View>
@@ -203,83 +227,159 @@ function HomeContent({
   const isFeedTab = FEED_TAB_VALUES.includes(currentPage as TabValue)
   const isExploreTab = currentPage === 'explore'
 
+  // Same collapsing header as Collection and Profile (features/collection/ui.tsx): one pan
+  // gesture drives a virtual offset that first collapses PortfolioSummary (with its breakdown,
+  // if open) and only then scrolls the feed, via scrollTo on the UI thread. Scrolling back up
+  // reverses it: the feed returns to its top before the summary re-expands.
+  const {
+    composedGestures,
+    scrollViewRef,
+    onListLayout,
+    onContentSizeChange,
+    onHeaderLayout,
+    virtualOffset,
+    expandProgress,
+    measuredHeaderHeight,
+    headerCollapsing,
+    pullRefreshTrigger,
+    headerEvents,
+  } = useCollaspableHeader({ showOnUpscroll: true })
+
+  // The hook's own headerAnimatedStyle pins the header to its measured height even at rest,
+  // which would clip the breakdown while it opens. At rest (progress 0) the height is left to
+  // layout, so opening/closing the breakdown sizes naturally and is re-measured; the measured
+  // height is only used while the header is actually collapsing.
+  const headerStyle = useAnimatedStyle(() => {
+    const p = expandProgress.value
+    // Every key is returned in both branches: Reanimated keeps the last value of a key a style
+    // stops returning, so leaving `height` out at rest kept the last collapse height applied and
+    // clipped the breakdown when it next opened. 'auto' hands the height back to layout.
+    if (p === 0 || measuredHeaderHeight.value <= 0) {
+      return { height: 'auto', opacity: 1, transform: [{ translateY: 0 }] }
+    }
+    return {
+      height: interpolate(p, [0, 1], [measuredHeaderHeight.value, 0]),
+      opacity: 1 - p,
+      transform: [{ translateY: interpolate(p, [0, 1], [0, -12]) }],
+    }
+  })
+
+  // The ScrollView is driven by scrollTo (scrollEnabled={false}), so the native RefreshControl
+  // never sees a pull; the hook's pull gesture counts it instead.
+  useAnimatedReaction(
+    () => pullRefreshTrigger.value,
+    (next, prev) => {
+      if (prev != null && next > prev) scheduleOnRN(onRefresh)
+    },
+    [onRefresh]
+  )
+
+  // A different tab is different content: start it from the top with the summary open.
+  useEffect(() => {
+    virtualOffset.value = 0
+    scrollViewRef.current?.scrollTo({ y: 0, animated: false })
+  }, [currentPage, virtualOffset, scrollViewRef])
+
   return (
-    // PortfolioSummary and the tab-list row are fixed chrome above the ScrollView, not children
-    // of it — the feed's section headers and Explore's layout-toggle toolbar are what use
-    // stickyHeaderIndices.
+    // PortfolioSummary and the ticker are the collapsing header; the tab-list row stays fixed
+    // between it and the ScrollView. The feed's section headers and Explore's layout-toggle toolbar are
+    // what use stickyHeaderIndices.
     <Tabs value={currentPage} onValueChange={setCurrentPage} style={{ flex: 1 }}>
-      <OnboardingTarget id="collection-breakdown">
-        <PortfolioSummary
-          style={{ paddingTop: 12, marginBottom: 8, marginHorizontal: 12 }}
-          selectedCollections={selectedCollections}
-          onToggleCollection={onToggleCollection}
-        />
-      </OnboardingTarget>
+      {/* One gesture surface for the whole screen, as on Collection: a vertical drag anywhere
+          (the summary and its breakdown, the ticker, the tab row or the feed) drives the same
+          virtual offset, so the header collapses and the feed scrolls no matter where the drag
+          starts. Horizontal drags (ticker, rails, chart scrubbing) fail the pan and stay with
+          their own scroll views. */}
+      <GestureDetector gesture={composedGestures}>
+        <Animated.View style={{ flex: 1 }}>
+          <Animated.View style={[{ overflow: 'hidden' }, headerStyle]}>
+            <View onLayout={onHeaderLayout}>
+              <CollapsibleHeaderEventsProvider value={headerEvents}>
+                <OnboardingTarget id="collection-breakdown">
+                  <PortfolioSummary
+                    style={{ paddingTop: 12, paddingBottom: 8, marginHorizontal: 12 }}
+                    selectedCollections={selectedCollections}
+                    onToggleCollection={onToggleCollection}
+                  />
+                </OnboardingTarget>
+              </CollapsibleHeaderEventsProvider>
+              <TickerTape style={{ marginBottom: 8 }} />
+            </View>
+          </Animated.View>
 
-      <TickerTape style={{ marginBottom: 8 }} />
+          <OnboardingTarget id="tab-list">
+            <View style={{ flexDirection: 'row', paddingHorizontal: 8 }}>
+              <TabsList
+                className="overflow-visible items-start justify-start"
+                style={{ paddingHorizontal: 4 }}
+              >
+                {tabValues.map((tab) => (
+                  <TabsTrigger key={tab} value={tab}>
+                    <TabsLabel
+                      label={tab}
+                      value={tab}
+                      leftElement={(isCurrent) =>
+                        React.createElement(tabIcons[tab], {
+                          size: 13,
+                          color: isCurrent ? Colors.$backgroundPrimaryHeavy : Colors.$textNeutral,
+                        })
+                      }
+                      containerStyle={{
+                        padding: 4,
+                      }}
+                      style={{
+                        padding: 1,
+                      }}
+                    />
+                  </TabsTrigger>
+                ))}
+              </TabsList>
 
-      <OnboardingTarget id="tab-list">
-        <View style={{ flexDirection: 'row', paddingHorizontal: 8 }}>
-          <TabsList
-            className="overflow-visible items-start justify-start"
-            style={{ paddingHorizontal: 4 }}
+              <TabsList>
+                <TabsTrigger key={'Recents'} value={'Recents'} style={{ aspectRatio: 1 }}>
+                  <TabsLabel
+                    value={'Recents'}
+                    leftElement={(isCurrent) =>
+                      React.createElement(History, {
+                        size: 13,
+                        color: isCurrent ? Colors.$backgroundPrimaryHeavy : Colors.$textNeutral,
+                      })
+                    }
+                  />
+                </TabsTrigger>
+              </TabsList>
+            </View>
+          </OnboardingTarget>
+
+          <FadeScrollView
+            animated
+            // Matches GradientBackground (app/(tabs)/index.tsx), as on the Collection tab.
+            fadeColor={Colors.$backgroundNeutralMedium}
+            manualStart={headerCollapsing}
+            ref={scrollViewRef}
+            onLayout={onListLayout}
+            onContentSizeChange={onContentSizeChange}
+            scrollEnabled={false}
+            bounces={false}
+            style={{ flex: 1 }}
+            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+            contentContainerStyle={{ paddingTop: 12, paddingBottom: tabBarHeight + 16 }}
+            stickyHeaderIndices={
+              isFeedTab
+                ? feed.stickyHeaderIndices
+                : isExploreTab
+                  ? explore.stickyHeaderIndices
+                  : undefined
+            }
           >
-            {tabValues.map((tab) => (
-              <TabsTrigger key={tab} value={tab}>
-                <TabsLabel
-                  label={tab}
-                  value={tab}
-                  leftElement={(isCurrent) =>
-                    React.createElement(tabIcons[tab], {
-                      size: 13,
-                      color: isCurrent ? Colors.$backgroundPrimaryHeavy : Colors.$textNeutral,
-                    })
-                  }
-                  containerStyle={{
-                    padding: 4,
-                  }}
-                  style={{
-                    padding: 1,
-                  }}
-                />
-              </TabsTrigger>
-            ))}
-          </TabsList>
-
-          <TabsList>
-            <TabsTrigger key={'Recents'} value={'Recents'} style={{ aspectRatio: 1 }}>
-              <TabsLabel
-                value={'Recents'}
-                leftElement={(isCurrent) =>
-                  React.createElement(History, {
-                    size: 13,
-                    color: isCurrent ? Colors.$backgroundPrimaryHeavy : Colors.$textNeutral,
-                  })
-                }
-              />
-            </TabsTrigger>
-          </TabsList>
-        </View>
-      </OnboardingTarget>
-
-      <FadeScrollView
-        style={{ flex: 1 }}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-        contentContainerStyle={{ paddingBottom: tabBarHeight + 16 }}
-        stickyHeaderIndices={
-          isFeedTab
-            ? feed.stickyHeaderIndices
-            : isExploreTab
-              ? explore.stickyHeaderIndices
-              : undefined
-        }
-      >
-        {isFeedTab && feed.children}
-        {isExploreTab && explore.children}
-        <TabsContent value={'Recents'}>
-          <RecentlyViewed />
-        </TabsContent>
-      </FadeScrollView>
+            {isFeedTab && feed.children}
+            {isExploreTab && explore.children}
+            <TabsContent value={'Recents'}>
+              <RecentlyViewed />
+            </TabsContent>
+          </FadeScrollView>
+        </Animated.View>
+      </GestureDetector>
     </Tabs>
   )
 }
