@@ -128,6 +128,35 @@ The **Home sections** tab (`pages/HomeSections.tsx`) edits `public.home_feed_sec
 - **Layout** keys: `itemWidth`, `collapsedWidth` (40–400), `expandedHeight` (60–800), `expandable` (boolean). Leave one out to use the app's default. `collapsedHeight` is legacy: the app ignores it, but it's still accepted so older rows save.
 - Every edit and reorder writes an `audit_log` row (`home_section.update` / `home_section.reorder`) with the before and after.
 
+## Ops dashboards (ITS-117)
+
+For the `ops` role (and owners). Part 1 covers scheduled jobs and client errors. Price refresh, enrichment and notifications follow, and vendor usage waits for ITS-113's CardHedger call log.
+
+### Scheduled jobs
+
+The **Scheduled jobs** tab lists every `cron.job`. Each one is flagged failing, healthy or paused. Click a job for its recent runs and edge-function responses; **Pause** / **Resume** call `cron.alter_job` and are audited (`cron_job.pause` / `cron_job.resume`).
+
+| RPC                                | Role | Does                                                                                                     |
+| ---------------------------------- | ---- | -------------------------------------------------------------------------------------------------------- |
+| `list_cron_jobs()`                 | ops  | Schedule, on/off, last run, runs and failures in 24 h, and for edge-function jobs the latest HTTP status |
+| `cron_job_history(jobname, limit)` | ops  | `{runs, requests}`: recent `cron.job_run_details` rows and tracked edge-function responses               |
+| `set_cron_job_active(jobname, on)` | ops  | Pause or resume                                                                                          |
+
+**Why HTTP status matters:** `cron.job_run_details` says `succeeded` as soon as `net.http_post()` queues the request, even if the edge function then answers 401 (for example a wrong Vault `edge_token`). A job that calls an edge function is only healthy if its latest answered request was a 2xx, so that failure shows up within one run.
+
+**How it's tracked:** pg_net deletes the queued request (and its URL) once it's sent, so nothing links a response back to its job. A trigger on `net.http_request_queue` (`admin_track_http_request`) records each edge-function request's id and function name in `admin.cron_http_requests` (pruned after a day by `cron-http-requests-prune`). A job is matched to its function by the `/functions/v1/<name>` in its command. Responses come from `net._http_response`, which pg_net keeps about 6 hours, so HTTP counts cover that window. Other database code calling the same function would also count toward that job.
+
+If the migration can't create the trigger (it needs `TRIGGER` on the extension's table), it skips it with a notice. The page then says responses aren't tracked, and only cron's own status is shown.
+
+### Client errors
+
+The **Client errors** tab groups `public.client_errors` by `context` over 24 hours, 7 days or 30 days, with error and user counts. Click a group for its latest 100 errors, and an error for its metadata and the user's email.
+
+| RPC                                         | Role | Does                                                                |
+| ------------------------------------------- | ---- | ------------------------------------------------------------------- |
+| `client_error_groups(hours)`                | ops  | One row per context: errors, users, first/last seen, latest message |
+| `list_client_errors(context, hours, limit)` | ops  | The errors themselves, newest first, with the user's email          |
+
 ## Setup
 
 ### 1. Expose the `admin` schema to the API

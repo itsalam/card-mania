@@ -244,6 +244,7 @@ export default function HomeSections() {
     const previous = sections
     const next = [...sections]
     const [row] = next.splice(index, 1)
+    if (!row) return
     next.splice(target, 0, row)
     setSections(next)
     setError(null)

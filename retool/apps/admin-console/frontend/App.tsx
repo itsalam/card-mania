@@ -12,13 +12,15 @@ import Promos from './pages/Promos'
 import PromoEditor from './pages/PromoEditor'
 import PromoResults from './pages/PromoResults'
 import HomeSections from './pages/HomeSections'
+import ScheduledJobs from './pages/ScheduledJobs'
+import ClientErrors from './pages/ClientErrors'
 import { Badge } from './lib/shadcn/badge'
 import { Button } from './lib/shadcn/button'
 import { Spinner } from './lib/shadcn/spinner'
 import { LogOut } from 'lucide-react'
 import { cn } from './lib/shadcn/utils'
 
-const PAGE_LABELS = { promos: 'Promo boxes', results: 'Promo results', 'home-sections': 'Home sections', members: 'Members', 'audit-log': 'Audit log' } as const
+const PAGE_LABELS = { promos: 'Promo boxes', results: 'Promo results', 'home-sections': 'Home sections', jobs: 'Scheduled jobs', 'client-errors': 'Client errors', members: 'Members', 'audit-log': 'Audit log' } as const
 
 function Header() {
   const { identity, signOut } = useAuth()
@@ -94,6 +96,8 @@ function Shell() {
           {pages.includes('promos') ? <Route path="/promos/:id" element={<PromoEditor />} /> : null}
           {pages.includes('results') ? <Route path="/results" element={<PromoResults />} /> : null}
           {pages.includes('home-sections') ? <Route path="/home-sections" element={<HomeSections />} /> : null}
+          {pages.includes('jobs') ? <Route path="/jobs" element={<ScheduledJobs />} /> : null}
+          {pages.includes('client-errors') ? <Route path="/client-errors" element={<ClientErrors />} /> : null}
           {pages.includes('members') ? <Route path="/members" element={<Members />} /> : null}
           {pages.includes('audit-log') ? <Route path="/audit-log" element={<AuditLog />} /> : null}
           {pages.length === 0 ? <Route path="/coming-soon" element={<ComingSoon />} /> : null}
