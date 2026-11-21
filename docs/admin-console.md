@@ -130,7 +130,7 @@ The **Home sections** tab (`pages/HomeSections.tsx`) edits `public.home_feed_sec
 
 ## Ops dashboards (ITS-117)
 
-For the `ops` role (and owners). Part 1 covers scheduled jobs and client errors. Price refresh, enrichment and notifications follow, and vendor usage waits for ITS-113's CardHedger call log.
+For the `ops` role (and owners): scheduled jobs, pipelines (price refresh, enrichment, notifications) and client errors. Vendor usage waits for ITS-113's CardHedger call log.
 
 ### Scheduled jobs
 
@@ -147,6 +147,19 @@ The **Scheduled jobs** tab lists every `cron.job`. Each one is flagged failing, 
 **How it's tracked:** pg_net deletes the queued request (and its URL) once it's sent, so nothing links a response back to its job. A trigger on `net.http_request_queue` (`admin_track_http_request`) records each edge-function request's id and function name in `admin.cron_http_requests` (pruned after a day by `cron-http-requests-prune`). A job is matched to its function by the `/functions/v1/<name>` in its command. Responses come from `net._http_response`, which pg_net keeps about 6 hours, so HTTP counts cover that window. Other database code calling the same function would also count toward that job.
 
 If the migration can't create the trigger (it needs `TRIGGER` on the extension's table), it skips it with a notice. The page then says responses aren't tracked, and only cron's own status is shown.
+
+### Pipelines
+
+The **Pipelines** tab has one view each for the price refresh, the image enrichment backfill and notifications. The price refresh and enrichment views wrap the existing monitoring views (`price_refresh_backlog`, `price_refresh_outcomes`, `enrichment_backlog`, `enrichment_vendor_outcomes`), so their numbers match what those views report.
+
+| RPC                                 | Role | Does                                                                                                                                                                   |
+| ----------------------------------- | ---- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `price_refresh_overview()`          | ops  | `{backlog, outcomes, runs, low_confidence}`: the backlog, outcome mix (7 d), the last 20 runs, and the 25 weakest fuzzy matches                                        |
+| `queue_card_price_refresh(card_id)` | ops  | Makes one tracked card due on the next run. Audited (`card.queue_price_refresh`).                                                                                      |
+| `enrichment_overview()`             | ops  | `{backlog, vendor_outcomes, runs, low_score_hits}`: the 25 lowest-scoring image hits are the likeliest wrong pictures                                                  |
+| `notification_overview(hours)`      | ops  | Volume by type and category with read/dismissed counts, wishlist hits split into individual and summary, and the size of the `wishlist_hit_notifications` dedupe table |
+
+**Queueing a refresh** sets the card's `price_refresh_attempted_at` to `-infinity`, so the next `tracked-price-refresh` run (:07 and :37) can claim it. It doesn't jump the queue: runs still take wishlisted cards first, then the least recently refreshed, so with a large backlog it can take a few runs. Only cards in someone's collection are refreshed at all; the RPC refuses others. `prices_refreshed_at` is left alone because other code reads it as "server prices are authoritative".
 
 ### Client errors
 
