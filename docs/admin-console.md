@@ -130,7 +130,7 @@ The **Home sections** tab (`pages/HomeSections.tsx`) edits `public.home_feed_sec
 
 ## Ops dashboards (ITS-117)
 
-For the `ops` role (and owners): scheduled jobs, pipelines (price refresh, enrichment, notifications) and client errors. Vendor usage waits for ITS-113's CardHedger call log.
+For the `ops` role (and owners): scheduled jobs, pipelines (price refresh, enrichment, notifications, CardHedger usage) and client errors.
 
 ### Scheduled jobs
 
@@ -160,6 +160,15 @@ The **Pipelines** tab has one view each for the price refresh, the image enrichm
 | `notification_overview(hours)`      | ops  | Volume by type and category with read/dismissed counts, wishlist hits split into individual and summary, and the size of the `wishlist_hit_notifications` dedupe table |
 
 **Queueing a refresh** sets the card's `price_refresh_attempted_at` to `-infinity`, so the next `tracked-price-refresh` run (:07 and :37) can claim it. It doesn't jump the queue: runs still take wishlisted cards first, then the least recently refreshed, so with a large backlog it can take a few runs. Only cards in someone's collection are refreshed at all; the RPC refuses others. `prices_refreshed_at` is left alone because other code reads it as "server prices are authoritative".
+
+#### CardHedger usage (ITS-113)
+
+The **CardHedger** view under Pipelines shows today's budget per endpoint class (used / limit, the scheduled share, denials), today's calls by caller, a 30-day trend, failed calls from the last 24 hours, and the ops alerts sent. **Edit limit** changes a class's daily limit straight away, with no deploy. How the budget is enforced, and what each caller does when it runs out: `docs/api-docs/card-hedge/RATE_LIMITS.md`.
+
+| RPC                                                 | Role | Does                                                                                                   |
+| --------------------------------------------------- | ---- | ------------------------------------------------------------------------------------------------------ |
+| `cardhedger_usage_overview()`                       | ops  | `{budget, today, daily, recent_failures, alerts}` from the budget, the call ledger and views           |
+| `set_cardhedger_budget(class, daily_limit, share?)` | ops  | Sets a class's daily limit (and optionally the scheduled share). Audited (`cardhedger_budget.update`). |
 
 ### Client errors
 

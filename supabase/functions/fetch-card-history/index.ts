@@ -18,12 +18,47 @@
 // Idempotency:
 //   The unique index on card_price_history(card_id, grade, day) means re-running
 //   the backfill for an already-backfilled card is a no-op.
+//
+// Budget (ITS-113): all calls go through the CardHedger chokepoint. The per-grade
+// history calls run at most HISTORY_CONCURRENCY at a time, and once the daily
+// budget is spent the remaining grades are skipped (whatever was fetched is kept);
+// over budget before anything is fetched, the function answers 200 with
+// skipped: 'budget_exhausted' so the caller's request carries on.
 
-import { fetchCardHedgeHistory, fetchCardHedgeMatch } from '@cardhedge'
+import { BudgetExhaustedError, createCardHedgeClient } from '@cardhedge'
 import { createSupabaseServiceClient, normalizeGradeKey, toCardHedgeGradeLabel } from '@utils'
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
 
 const DEFAULT_MATCH_THRESHOLD = 0.8
+const HISTORY_CONCURRENCY = 3
+
+const budgetSkipped = () =>
+  new Response(JSON.stringify({ skipped: 'budget_exhausted' }), {
+    status: 200,
+    headers: { 'Content-Type': 'application/json' },
+  })
+
+/** Runs fn over items with at most `limit` in flight; results keep the input order. */
+async function mapLimit<T, R>(
+  items: T[],
+  limit: number,
+  fn: (item: T) => Promise<R>
+): Promise<PromiseSettledResult<R>[]> {
+  const results: PromiseSettledResult<R>[] = new Array(items.length)
+  let next = 0
+  const worker = async () => {
+    while (next < items.length) {
+      const i = next++
+      try {
+        results[i] = { status: 'fulfilled', value: await fn(items[i]) }
+      } catch (reason) {
+        results[i] = { status: 'rejected', reason }
+      }
+    }
+  }
+  await Promise.all(Array.from({ length: Math.min(limit, items.length) }, worker))
+  return results
+}
 
 Deno.serve(async (req) => {
   // ── Internal-only guard ───────────────────────────────────────────────────────
@@ -50,10 +85,10 @@ Deno.serve(async (req) => {
     })
   }
 
-  const chBase = Deno.env.get('CARDHEDGE_API_BASE')
-  const chKey = Deno.env.get('CARDHEDGE_API_KEY')
+  const supabase = createSupabaseServiceClient()
+  const cardhedge = createCardHedgeClient('fetch-card-history', supabase)
 
-  if (!chBase || !chKey) {
+  if (!cardhedge) {
     return new Response(JSON.stringify({ error: 'CardHedge credentials not configured' }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' },
@@ -63,8 +98,6 @@ Deno.serve(async (req) => {
   const matchThreshold = Number(
     Deno.env.get('CARDHEDGE_MATCH_THRESHOLD') ?? DEFAULT_MATCH_THRESHOLD
   )
-
-  const supabase = createSupabaseServiceClient()
 
   // ── Fetch the card so we can build a match query if needed ───────────────────
   const { data: card } = await supabase
@@ -116,8 +149,9 @@ Deno.serve(async (req) => {
 
     let matchResp
     try {
-      matchResp = await fetchCardHedgeMatch(query, chKey, chBase)
+      matchResp = await cardhedge.match(query)
     } catch (err) {
+      if (err instanceof BudgetExhaustedError) return budgetSkipped()
       console.error('[fetch-card-history] card-match failed:', err)
       return new Response(JSON.stringify({ error: 'CardHedge card-match request failed' }), {
         status: 502,
@@ -175,13 +209,23 @@ Deno.serve(async (req) => {
     })
   }
 
-  // ── 2. Fan out history calls per grade ────────────────────────────────────────
-  const results = await Promise.allSettled(
-    gradeMap.map(async ({ internalKey, chLabel }) => {
-      const points = await fetchCardHedgeHistory(chCardId!, chLabel, chKey, chBase, days)
-      return { internalKey, points }
-    })
+  // ── 2. History calls per grade, a few at a time ───────────────────────────────
+  let overBudget = false
+  const results = await mapLimit(
+    gradeMap,
+    HISTORY_CONCURRENCY,
+    async ({ internalKey, chLabel }) => {
+      if (overBudget) throw new BudgetExhaustedError('prices')
+      try {
+        const points = await cardhedge.history(chCardId!, chLabel, days)
+        return { internalKey, points }
+      } catch (err) {
+        if (err instanceof BudgetExhaustedError) overBudget = true
+        throw err
+      }
+    }
   )
+  if (overBudget && results.every((r) => r.status === 'rejected')) return budgetSkipped()
 
   // ── 3. Collect + upsert all price points ──────────────────────────────────────
   const historyRows: Array<{
@@ -193,7 +237,8 @@ Deno.serve(async (req) => {
 
   for (const result of results) {
     if (result.status === 'rejected') {
-      console.error('[fetch-card-history] grade fetch failed:', result.reason)
+      if (!(result.reason instanceof BudgetExhaustedError))
+        console.error('[fetch-card-history] grade fetch failed:', result.reason)
       continue
     }
     const { internalKey, points } = result.value

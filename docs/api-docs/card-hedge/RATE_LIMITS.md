@@ -5,10 +5,59 @@ only a 422 validation error. Until they give us numbers, this is the budget we h
 to. Every CardHedger caller in `supabase/functions/` is listed here; anything new that calls
 CardHedger must add itself to this table and fit inside the totals.
 
-Today these limits are enforced per job (batch sizes, AI-match caps, backoff), not globally,
-and only the scheduled jobs are ledgered. A single enforced daily budget and a per-call usage
-ledger covering live paths too are tracked in
-[ITS-113](https://linear.app/itsalam/issue/ITS-113/cardhedger-rate-limiting-enforce-a-global-budget-and-add-usage).
+## Enforcement (ITS-113)
+
+Every request goes through **one chokepoint**, `cardhedgeClient` / `createCardHedgeClient` in
+`supabase/functions/_shared/cardhedge.ts`. Nothing else may fetch `CARDHEDGE_API_BASE`
+(`grep -rn "/v1/cards/\|CARDHEDGE_API_BASE" supabase/functions` should only find that file). Per
+request it:
+
+1. takes one unit from the **global daily budget** (`public.consume_cardhedger_budget`, UTC
+   days). Denied → `BudgetExhaustedError`, and CardHedger isn't called.
+2. calls through `fetchWithBackoff` (retries below). Retries don't cost extra budget.
+3. writes one row to **`public.cardhedger_calls`** (caller, endpoint, status, duration, retries,
+   rate_limited, budget_denied, error). Best-effort; live paths don't wait for it.
+
+If the budget check itself errors (DB trouble), the call is allowed: per-run caps and backoff
+still apply.
+
+| Endpoint class | Endpoints                              | Daily limit | Scheduled share |
+| -------------- | -------------------------------------- | ----------- | --------------- |
+| `search`       | `card-search`                          | 5,000       | 80 % (4,000)    |
+| `match`        | `card-match` (AI)                      | 375         | 80 % (300)      |
+| `prices`       | `all-prices-by-card`, `prices-by-card` | 2,500       | 80 % (2,000)    |
+| `other`        | `top-movers`                           | 500         | 80 % (400)      |
+
+The limits live in `public.cardhedger_budget` — change them without a deploy from the admin
+console (Pipelines → CardHedger → Edit limit) or SQL:
+
+```sql
+update public.cardhedger_budget set daily_limit = 3000 where endpoint_class = 'search';
+```
+
+When the budget says no:
+
+- **Scheduled jobs** (`tracked-price-refresh`, `card-enrichment-backfill`) stop, hand every
+  remaining lease back, and end the run as **`budget_exhausted`** — just like `rate_limited`.
+  Nothing is counted against the cards. They can only ever use the scheduled share, so live
+  traffic always has the rest.
+- **Live paths** never error: `price-charting` search serves the cache / DB blend without
+  CardHedger, top-movers returns an empty list, `fetch-card` keeps the stored prices, and
+  `fetch-card-history` keeps whatever grades it already fetched (or answers
+  `{ skipped: 'budget_exhausted' }`).
+
+`fetch-card-history` runs at most 3 grade calls at a time (it used to fire every grade at once).
+
+### Alerts
+
+`admin.send_ops_alerts()` runs hourly (`ops-alerts`, `:53`) and sends a `system` notification
+(type `ops_alert`) to every owner and ops member — each alert at most once per UTC day — when:
+
+- a refresh or enrichment run ended `rate_limited` or `budget_exhausted`;
+- a class passed 80 % of today's limit;
+- a cron → function call got a 401 (usually a stale Vault `edge_token`).
+
+Sent alerts are in `admin.ops_alerts` and on the console's CardHedger tab.
 
 Auth for every call: `X-API-Key: $CARDHEDGE_API_KEY` against `$CARDHEDGE_API_BASE`
 (staging secrets; local runs read `supabase/functions/.env.local`).
@@ -76,28 +125,31 @@ the next run, no deploy needed), or pause a job with
 ## Watching usage
 
 ```sql
+-- every caller today vs. its class budget: calls, denials, 429s, errors, retries, p95 latency
+select * from cardhedger_usage_today order by calls desc;
+-- 30-day trend per class (for quota conversations with CardHedger)
+select * from cardhedger_usage_daily order by day desc, endpoint_class;
+-- recent failures
+select called_at, caller, endpoint, status, retries, rate_limited, budget_denied, error
+  from cardhedger_calls
+ where rate_limited or budget_denied or error is not null
+ order by called_at desc limit 50;
+
 -- refresh job: throughput, unresolved backlog, last run status (look for 'rate_limited')
 select * from price_refresh_backlog;
 select started_at, status, claimed, refreshed, unchanged, unresolved, failed, resolves_used
   from price_refresh_runs order by started_at desc limit 20;
 
--- approximate scheduled CardHedger calls in the last 24h
-select
-  (select coalesce(sum(claimed), 0) from price_refresh_runs where started_at > now() - interval '24 hours') as refresh_all_prices,
-  (select coalesce(sum(resolves_used), 0) from price_refresh_runs where started_at > now() - interval '24 hours') as refresh_card_match,
-  (select count(*) from card_enrichment_attempts
-    where vendor = 'cardhedge' and created_at > now() - interval '24 hours') as enrichment_search;
-
 -- enrichment backfill
 select * from enrichment_backlog;
 ```
 
-Live-path calls aren't ledgered; check the function logs (`price_refresh.*`, `backfill.*`
-events are single-line JSON) or CardHedger's own dashboard if they provide one.
+`cardhedger_calls` keeps 30 days and `cardhedger_usage` 90 days (`cardhedger-ledger-prune`,
+daily at 04:35 UTC).
 
 ## When CardHedger gives us real numbers
 
-Replace the **Budget** table with their limits, keep our caps below them with headroom for
-live traffic, and adjust the defaults above. If they offer the `price-updates` change feed
+Set `cardhedger_budget` just under their limits, update the tables above, and keep the
+per-run caps below the scheduled share. If they offer the `price-updates` change feed
 with a subscription filter, it can replace per-card polling in `tracked-price-refresh`
 (see the spec: `/v1/cards/price-updates`, `/v1/cards/subscribe-price-updates`).

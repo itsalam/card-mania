@@ -8,15 +8,16 @@
 // writes card_price_history, releases the lease; totals triggers follow).
 //
 // Misses are terminal for the retry window (unresolved / no_prices / error — see the claim
-// RPC); rate limiting is not: the run stops and releases every remaining lease without
-// counting an attempt. card-match is an AI call, so it's capped per run
+// RPC); rate limiting and the global CardHedger budget (ITS-113) are not: the run stops as
+// 'rate_limited' / 'budget_exhausted' and releases every remaining lease without counting an
+// attempt. card-match is an AI call, so it's capped per run
 // (PRICE_REFRESH_MAX_RESOLVES); cards needing one beyond the cap are released untouched.
 //
 // Observability: price_refresh_runs / card_price_refresh_attempts (pg_net times out before a
 // batch finishes, so the cron's own logs can't say how a run went). Ledger writes are
 // best-effort. POST { "card_ids": [...] } refreshes specific cards (manual checks) instead of
 // claiming.
-import { fetchCardHedgeAllPrices, fetchCardHedgeMatch, fetchCardHedgeResults } from '@cardhedge'
+import { BudgetExhaustedError, createCardHedgeClient } from '@cardhedge'
 import { mapAllPrices, RateLimitedError } from '@cardhedge-prices'
 import { resolveCardHedgeId } from '@cardhedge-resolve'
 import { isServiceRequest } from '@service-auth'
@@ -71,9 +72,8 @@ Deno.serve(async (req) => {
   const reqId = rid()
   if (!isServiceRequest(req)) return json({ error: 'Unauthorized' }, 401)
 
-  const apiBase = Deno.env.get('CARDHEDGE_API_BASE') ?? ''
-  const apiKey = Deno.env.get('CARDHEDGE_API_KEY') ?? ''
-  if (!apiBase || !apiKey) {
+  const cardhedge = createCardHedgeClient('tracked-price-refresh', supabase, { scheduled: true })
+  if (!cardhedge) {
     logEvent('warn', reqId, 'price_refresh.skipped', { reason: 'cardhedge_not_configured' })
     await startRun(reqId, 'skipped')
     return json({ ok: true, claimed: 0, skipped: 'cardhedge_not_configured' })
@@ -99,7 +99,7 @@ Deno.serve(async (req) => {
 
   const started = Date.now()
   const stats = { refreshed: 0, unchanged: 0, unresolved: 0, failed: 0, resolves_used: 0 }
-  let status: 'completed' | 'rate_limited' = 'completed'
+  let status: 'completed' | 'rate_limited' | 'budget_exhausted' = 'completed'
 
   for (let i = 0; i < cards.length; i++) {
     const card = cards[i]
@@ -110,10 +110,10 @@ Deno.serve(async (req) => {
     const attempts: Attempt[] = []
     try {
       const resolved = await resolveCardHedgeId(card, {
-        search: (q) => fetchCardHedgeResults(q, apiKey, apiBase, SEARCH_LIMIT),
+        search: (q) => cardhedge.search(q, SEARCH_LIMIT),
         match: (q) => {
           stats.resolves_used++
-          return fetchCardHedgeMatch(q, apiKey, apiBase, { maxCandidates: 10 })
+          return cardhedge.match(q, { maxCandidates: 10 })
         },
         vendorUUID: (chId) => vendorUUID('cardhedge', chId),
         matchThreshold: MATCH_THRESHOLD,
@@ -148,7 +148,7 @@ Deno.serve(async (req) => {
       }
 
       const { grades_prices, latestPriceCents, unmapped } = mapAllPrices(
-        await fetchCardHedgeAllPrices(resolved.id, apiKey, apiBase)
+        await cardhedge.allPrices(resolved.id)
       )
       if (unmapped.length) {
         logEvent('warn', reqId, 'price_refresh.unmapped_grades', { cardId: card.id, unmapped })
@@ -176,6 +176,18 @@ Deno.serve(async (req) => {
       if (changed) stats.refreshed++
       else stats.unchanged++
     } catch (err) {
+      if (err instanceof BudgetExhaustedError) {
+        // Today's scheduled budget is spent: nothing about this card failed, so record no
+        // attempt and hand every remaining lease back.
+        await release(cards.slice(i).map((c) => c.id))
+        status = 'budget_exhausted'
+        logEvent('warn', reqId, 'price_refresh.budget_exhausted', {
+          cardId: card.id,
+          endpointClass: err.endpointClass,
+          remaining: cards.length - i,
+        })
+        break
+      }
       if (err instanceof RateLimitedError) {
         attempts.push({ outcome: 'rate_limited' })
         await release(cards.slice(i).map((c) => c.id))
@@ -192,7 +204,7 @@ Deno.serve(async (req) => {
       logEvent('error', reqId, 'price_refresh.card_failed', { cardId: card.id, error: String(err) })
       await mark(card.id, 'error').catch(() => {})
     } finally {
-      if (status !== 'rate_limited') await recordAttempts(reqId, runId, card.id, attempts)
+      if (status === 'completed') await recordAttempts(reqId, runId, card.id, attempts)
     }
     if (THROTTLE_MS > 0 && i < cards.length - 1) await sleep(THROTTLE_MS)
   }

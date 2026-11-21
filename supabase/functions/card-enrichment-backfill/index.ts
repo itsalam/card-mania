@@ -17,7 +17,10 @@
 // once the card is terminal, so a low-confidence match is treated as a miss.
 //
 // A vendor's fetch throwing, returning no confident match, or its image
-// failing to commit is a miss for that vendor and the cascade continues.
+// failing to commit is a miss for that vendor and the cascade continues — except
+// CardHedger rate limiting or its global daily budget running out (ITS-113): the
+// run then stops as 'rate_limited' / 'budget_exhausted' and hands the current and
+// remaining leases back untouched, like tracked-price-refresh.
 // Marks enriched_at on a terminal outcome (an image committed, or every
 // configured vendor missed / malformed name); transient DB failures are
 // logged and left unmarked so a later run retries them. The live path marks
@@ -32,7 +35,8 @@
 // enrichment. Logs are single-line JSON (logEvent) for the Logs Explorer.
 import { pickBestMatch, scoreMatch } from '@enrichment-match'
 import { isServiceRequest } from '@service-auth'
-import type { CardHedgeConfig } from '@vendor-cardhedge-search'
+import { BudgetExhaustedError, createCardHedgeClient } from '@cardhedge'
+import { RateLimitedError } from '@cardhedge-prices'
 import { fetchFromCardHedge, writeCardHedgeProviderCache } from '@vendor-cardhedge-search'
 import {
   EbayConfig,
@@ -118,17 +122,16 @@ Deno.serve(async (req) => {
     certId: Deno.env.get('EBAY_CERT_ID') ?? '',
     marketplace: Deno.env.get('EBAY_MARKETPLACE_ID') ?? 'EBAY_US',
   }
-  const cardhedgeCfg: CardHedgeConfig = {
-    apiBase: Deno.env.get('CARDHEDGE_API_BASE') ?? '',
-    apiKey: Deno.env.get('CARDHEDGE_API_KEY') ?? '',
-  }
+  const cardhedge = createCardHedgeClient('card-enrichment-backfill', supabase, {
+    scheduled: true,
+  })
 
   // Live blend priority order (CardHedge 1, eBay 3; PriceCharting has no images).
   const vendorSources: VendorSource[] = [
     {
       name: 'cardhedge',
-      enabled: Boolean(cardhedgeCfg.apiBase && cardhedgeCfg.apiKey),
-      fetch: (q) => fetchFromCardHedge(cardhedgeCfg, q, CARDHEDGE_SEARCH_LIMIT),
+      enabled: Boolean(cardhedge),
+      fetch: (q) => fetchFromCardHedge(cardhedge!, q, CARDHEDGE_SEARCH_LIMIT),
       writeCache: (key, results) =>
         writeCardHedgeProviderCache(supa, srole, key, results, CARDHEDGE_CACHE_TTL),
     },
@@ -173,8 +176,10 @@ Deno.serve(async (req) => {
   logEvent('info', reqId, 'backfill.claimed', { runId, count: cards.length })
   const stats = { processed: 0, enriched: 0, noMatch: 0, failed: 0 }
   const hitsByVendor: Record<string, number> = {}
+  let stopped: 'rate_limited' | 'budget_exhausted' | null = null
 
-  for (const card of cards) {
+  for (let i = 0; i < cards.length; i++) {
+    const card = cards[i]
     const attempts: Attempt[] = []
     try {
       const q = normalize(`${card.name ?? ''} ${card.set_name ?? ''}`.trim())
@@ -198,6 +203,10 @@ Deno.serve(async (req) => {
         try {
           fetched = await v.fetch(q)
         } catch (err) {
+          if (err instanceof BudgetExhaustedError || err instanceof RateLimitedError) {
+            stopped = err instanceof BudgetExhaustedError ? 'budget_exhausted' : 'rate_limited'
+            break
+          }
           attempts.push({ vendor: v.name, outcome: 'error', error: String(err) })
           continue
         }
@@ -270,6 +279,15 @@ Deno.serve(async (req) => {
         break
       }
 
+      if (stopped) {
+        await releaseLeases(cards.slice(i).map((c) => c.id))
+        logEvent('warn', reqId, `backfill.${stopped}`, {
+          id: card.id,
+          remaining: cards.length - i,
+        })
+        break
+      }
+
       await markEnriched(card.id)
       stats.processed++
       if (hit) {
@@ -313,10 +331,11 @@ Deno.serve(async (req) => {
     await sleep(THROTTLE_MS)
   }
 
-  const summary = { ok: true, claimed: cards.length, ...stats, hitsByVendor }
+  const status = stopped ?? 'completed'
+  const summary = { ok: true, status, claimed: cards.length, ...stats, hitsByVendor }
   logEvent('info', reqId, 'backfill.run_complete', { runId, ...summary })
   await finishRun(reqId, runId, {
-    status: 'completed',
+    status,
     claimed: cards.length,
     enriched: stats.enriched,
     no_match: stats.noMatch,
@@ -329,6 +348,16 @@ Deno.serve(async (req) => {
 })
 
 const round = (n: number) => Math.round(n * 100) / 100
+
+async function releaseLeases(cardIds: string[]) {
+  if (!cardIds.length) return
+  const { error } = await supabase
+    .from('cards')
+    .update({ enrichment_locked_at: null })
+    .in('id', cardIds)
+  if (error)
+    logEvent('warn', 'release', 'backfill.lease_release_failed', { error: String(error.message) })
+}
 
 async function markEnriched(cardId: string) {
   const { error } = await supabase

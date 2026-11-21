@@ -1,4 +1,4 @@
-import { fetchCardHedgeTopMovers } from '@cardhedge'
+import { BudgetExhaustedError, createCardHedgeClient } from '@cardhedge'
 import {
   convertCardHedgeItems,
   fetchCardHedgeProviderCache,
@@ -129,9 +129,10 @@ Deno.serve(async (req) => {
   const ebayEnabled = Boolean(ebayBase && ebayAppId && ebayCertId)
 
   // CardHedge is optional — gracefully disabled when keys are absent
-  const cardhedgeBase = Deno.env.get('CARDHEDGE_API_BASE') ?? ''
-  const cardhedgeKey = Deno.env.get('CARDHEDGE_API_KEY') ?? ''
-  const cardhedgeEnabled = Boolean(cardhedgeBase && cardhedgeKey)
+  // Live path: over the CardHedger budget, the client throws BudgetExhaustedError and the
+  // search serves cached / DB results without it (ITS-113).
+  const cardhedge = createCardHedgeClient('price-charting', supabase)
+  const cardhedgeEnabled = Boolean(cardhedge)
 
   if (!pcBase || !pcKey || !supa || !srole) {
     return json({ error: 'Missing environment variables' }, { status: 500 })
@@ -209,7 +210,7 @@ Deno.serve(async (req) => {
       return json({ error: 'Missing id or q' }, { status: 400 })
     }
     try {
-      const topMovers = await fetchCardHedgeTopMovers(cardhedgeKey, cardhedgeBase, Number(limit))
+      const topMovers = await cardhedge!.topMovers(Number(limit))
       const sportsCards = topMovers.filter(
         (c: CardHedgeCard) => c.category_group === 'Sports Cards'
       )
@@ -222,6 +223,14 @@ Deno.serve(async (req) => {
         results: results.slice(0, Number(limit)),
       })
     } catch (err) {
+      if (err instanceof BudgetExhaustedError) {
+        // Over budget: an empty browse rather than an error.
+        return json({
+          query: 'top-movers',
+          query_hash: await sha256HexStr('top-movers'),
+          results: [],
+        })
+      }
       console.error('top-movers fallback failed:', err)
       return json({ error: 'Missing id or q' }, { status: 400 })
     }
@@ -316,16 +325,16 @@ Deno.serve(async (req) => {
     }
     let cardhedgeFetchPromise: Promise<void> | undefined
     if (cardhedgeEnabled && !cardhedgeCacheHit && q) {
-      cardhedgeFetchPromise = fetchFromCardHedge(
-        { apiBase: cardhedgeBase, apiKey: cardhedgeKey },
-        q,
-        Number(limit)
-      )
+      cardhedgeFetchPromise = fetchFromCardHedge(cardhedge!, q, Number(limit))
         .then((res) => {
           cardhedgeResults = res.results
           cardhedgePreknownHints = res.preknownHints
         })
-        .catch((err) => console.error('CardHedge fetch error', err))
+        .catch((err) =>
+          err instanceof BudgetExhaustedError
+            ? console.warn('CardHedge skipped: budget exhausted')
+            : console.error('CardHedge fetch error', err)
+        )
     }
     const qNorm = normalize(q ?? '')
     let localRows: BlendedSearchResultItem[] = []
