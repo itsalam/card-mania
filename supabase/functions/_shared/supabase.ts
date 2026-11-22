@@ -3745,6 +3745,15 @@ export type Database = {
         Args: { p_card_ids: string[] }
         Returns: undefined
       }
+      release_cardhedger_budget: {
+        Args: {
+          p_class: string
+          p_day?: string
+          p_n: number
+          p_scheduled?: boolean
+        }
+        Returns: undefined
+      }
       remove_pinned_collection: {
         Args: { p_collection_id: string }
         Returns: undefined
