@@ -264,6 +264,104 @@ export type Database = {
           },
         ]
       }
+      cardhedger_budget: {
+        Row: {
+          daily_limit: number
+          endpoint_class: string
+          scheduled_share: number
+          updated_at: string
+        }
+        Insert: {
+          daily_limit: number
+          endpoint_class: string
+          scheduled_share?: number
+          updated_at?: string
+        }
+        Update: {
+          daily_limit?: number
+          endpoint_class?: string
+          scheduled_share?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      cardhedger_calls: {
+        Row: {
+          budget_denied: boolean
+          called_at: string
+          caller: string
+          duration_ms: number | null
+          endpoint: string
+          endpoint_class: string
+          error: string | null
+          id: number
+          rate_limited: boolean
+          retries: number
+          scheduled: boolean
+          status: number | null
+        }
+        Insert: {
+          budget_denied?: boolean
+          called_at?: string
+          caller: string
+          duration_ms?: number | null
+          endpoint: string
+          endpoint_class: string
+          error?: string | null
+          id?: never
+          rate_limited?: boolean
+          retries?: number
+          scheduled?: boolean
+          status?: number | null
+        }
+        Update: {
+          budget_denied?: boolean
+          called_at?: string
+          caller?: string
+          duration_ms?: number | null
+          endpoint?: string
+          endpoint_class?: string
+          error?: string | null
+          id?: never
+          rate_limited?: boolean
+          retries?: number
+          scheduled?: boolean
+          status?: number | null
+        }
+        Relationships: []
+      }
+      cardhedger_usage: {
+        Row: {
+          day: string
+          denied: number
+          endpoint_class: string
+          scheduled_used: number
+          used: number
+        }
+        Insert: {
+          day: string
+          denied?: number
+          endpoint_class: string
+          scheduled_used?: number
+          used?: number
+        }
+        Update: {
+          day?: string
+          denied?: number
+          endpoint_class?: string
+          scheduled_used?: number
+          used?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'cardhedger_usage_endpoint_class_fkey'
+            columns: ['endpoint_class']
+            isOneToOne: false
+            referencedRelation: 'cardhedger_budget'
+            referencedColumns: ['endpoint_class']
+          },
+        ]
+      }
       cards: {
         Row: {
           back_id: string | null
@@ -2735,6 +2833,47 @@ export type Database = {
       }
     }
     Views: {
+      cardhedger_usage_daily: {
+        Row: {
+          current_limit: number | null
+          day: string | null
+          denied: number | null
+          endpoint_class: string | null
+          errors: number | null
+          p95_ms: number | null
+          pct_of_current_limit: number | null
+          rate_limited: number | null
+          scheduled_used: number | null
+          used: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'cardhedger_usage_endpoint_class_fkey'
+            columns: ['endpoint_class']
+            isOneToOne: false
+            referencedRelation: 'cardhedger_budget'
+            referencedColumns: ['endpoint_class']
+          },
+        ]
+      }
+      cardhedger_usage_today: {
+        Row: {
+          budget_denied: number | null
+          caller: string | null
+          calls: number | null
+          class_limit: number | null
+          class_pct_used: number | null
+          class_used: number | null
+          endpoint: string | null
+          endpoint_class: string | null
+          errors: number | null
+          p95_ms: number | null
+          rate_limited: number | null
+          retries: number | null
+          scheduled_calls: number | null
+        }
+        Relationships: []
+      }
       collection_item_variant_usage: {
         Row: {
           card_id: string | null
@@ -3210,6 +3349,10 @@ export type Database = {
       complete_push_outbox: {
         Args: { p_dead_tokens?: string[]; p_results: Json }
         Returns: undefined
+      }
+      consume_cardhedger_budget: {
+        Args: { p_class: string; p_n?: number; p_scheduled?: boolean }
+        Returns: boolean
       }
       create_collection: {
         Args: { p_desc?: string; p_is_public?: boolean; p_name: string }
