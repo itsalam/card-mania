@@ -128,6 +128,21 @@ The **Home sections** tab (`pages/HomeSections.tsx`) edits `public.home_feed_sec
 - **Layout** keys: `itemWidth`, `collapsedWidth` (40–400), `expandedHeight` (60–800), `expandable` (boolean). Leave one out to use the app's default. `collapsedHeight` is legacy: the app ignores it, but it's still accepted so older rows save.
 - Every edit and reorder writes an `audit_log` row (`home_section.update` / `home_section.reorder`) with the before and after.
 
+## Search tuning (ITS-57)
+
+The **Search tuning** tab (`pages/SearchTuning.tsx`) edits `public.search_config`, the weights and thresholds behind card search (`search_cards_blended`). Ops and owners can use it. What each field does: `docs/search-scoring.md`.
+
+| RPC                                             | Role | Does                                                                                                                       |
+| ----------------------------------------------- | ---- | -------------------------------------------------------------------------------------------------------------------------- |
+| `search_config_get()`                           | ops  | `{config, fields, history}`: the current row, the editable fields with their bounds, and the last 20 changes               |
+| `update_search_config(changes, reason?)`        | ops  | Saves only the fields in `changes`. Audited (`search_config.update`) with just the fields that changed, plus the reason    |
+| `preview_search_config(query, changes, limit?)` | ops  | `{current, proposed}`: the query ranked with the saved values and with `changes`, each row with its rank in the other list |
+
+- **Preview saves nothing.** It applies the changes inside a subtransaction, runs the search, then rolls back.
+- **Not editable here:** `prefetch_enabled` (set hourly by `search-prefetch-flag-update` from render times) and `suggestion_query_idx` (advanced hourly by `search-cache-warmup`). Editing the suggestion list keeps the rotation index in range.
+- **Bounds** live in `admin._search_config_fields()`. Weights and thresholds are 0–1; `snippet_min_words` must be less than `snippet_max_words`, since `ts_headline` rejects anything else and every search would fail.
+- **When it takes effect:** straight away in the database, but `price-charting` caches each query's results for 5 minutes (`PRICECHARTING_CACHE_TTL`), so the app shows a change once that query's entry expires.
+
 ## Ops dashboards (ITS-117)
 
 For the `ops` role (and owners): scheduled jobs, pipelines (price refresh, enrichment, notifications, CardHedger usage) and client errors.

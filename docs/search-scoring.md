@@ -6,11 +6,7 @@ thresholds that control the blend live in `public.search_config`, a
 singleton table (always exactly one row, `id = 1`) so they can be tuned at
 runtime without redeploying the function.
 
-There's currently no admin UI for editing this (see ITS-57 — deliberately
-not built as a client-app screen; if/when admin tooling exists it'll be a
-separate system with its own tables, not tied to `user_profile`). Until
-then, changes go through SQL directly — see [How to change it
-today](#how-to-change-it-today).
+Tune it from the admin console's **Search tuning** tab (ITS-57, see `docs/admin-console.md`): it previews how a query reranks before you save, and audits every change. SQL still works too — see [Changing it with SQL](#changing-it-with-sql).
 
 ## The formula
 
@@ -70,7 +66,7 @@ All columns on `search_config` (`id = 1`) that affect scoring:
 | `snippet_min_words`              | 5       | Min words in the result snippet                                                                  | Cosmetic — affects snippet length only, not ranking                                                                         |
 | `snippet_max_fragments`          | 1       | Max highlighted fragments in the snippet                                                         | Cosmetic — affects snippet length only, not ranking                                                                         |
 
-This table is written to double as source copy for admin UI tooltips, per ITS-58's original intent, whenever that UI gets built.
+The console's field hints (`retool/apps/admin-console/frontend/pages/SearchTuning.tsx`) are taken from this table; keep them in step.
 
 `search_config` also has `prefetch_enabled` / `prefetch_threshold_ms` (adaptive search prefetch, updated hourly by the `search-warmup` cron based on p75 render latency) and curated-suggestion-rotation columns added in `20260408000002_suggestion_rotation.sql`. Neither affects scoring — out of scope for this doc.
 
@@ -78,9 +74,9 @@ This table is written to double as source copy for admin UI tooltips, per ITS-58
 
 The four top-level weights (`weight_fts`, `weight_trgm`, `weight_vector`, `weight_pop`) are conventionally kept summing to ~1.0, per the comment in the base migration. This isn't enforced by the schema — if they don't sum to 1.0, `score` just shifts scale uniformly and relative ordering between results is unaffected. It's a readability convention (so `score` stays roughly interpretable as "0 to 1"), not a hard constraint.
 
-## How to change it today
+## Changing it with SQL
 
-There's no admin UI yet, so tuning is a direct SQL update against the singleton row. `search_config`'s RLS policy (`20260327000000_search_config.sql`) only allows writes from `service_role` — run this via the Supabase SQL editor or a service-role-authenticated connection:
+Prefer the console, which validates values and writes an audit row. A direct SQL update against the singleton row skips both. `search_config`'s RLS policy (`20260327000000_search_config.sql`) only allows writes from `service_role` — run this via the Supabase SQL editor or a service-role-authenticated connection:
 
 ```sql
 update public.search_config
