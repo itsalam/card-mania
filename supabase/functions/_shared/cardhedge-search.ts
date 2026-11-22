@@ -1,12 +1,7 @@
-import { fetchCardHedgeResults } from '@cardhedge'
+import type { CardHedgeClient } from '@cardhedge'
 import { CardHedgeCard, SearchResultItem } from '@types'
 import { sha256HexStr, vendorUUID } from '@utils'
 import { canonicalGradeKey } from '@grade-key'
-
-export type CardHedgeConfig = {
-  apiBase: string
-  apiKey: string
-}
 
 /** Normalize CardHedge cards into SearchResultItems + build a preknownHints map. */
 export async function convertCardHedgeItems(cards: CardHedgeCard[]): Promise<{
@@ -80,14 +75,14 @@ export async function convertCardHedgeItems(cards: CardHedgeCard[]): Promise<{
 
 /** Fetch CardHedge listings and return normalized results + image hints. */
 export async function fetchFromCardHedge(
-  cfg: CardHedgeConfig,
+  client: CardHedgeClient,
   q: string,
   limit: number
 ): Promise<{
   results: SearchResultItem[]
   preknownHints: Map<string, { url: string; norm: string }>
 }> {
-  const cards = await fetchCardHedgeResults(q, cfg.apiKey, cfg.apiBase, limit)
+  const cards = await client.search(q, limit)
   const sportsCards = cards.filter((c) => c.category_group === 'Sports Cards')
   return convertCardHedgeItems(sportsCards)
 }

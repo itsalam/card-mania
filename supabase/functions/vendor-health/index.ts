@@ -19,6 +19,8 @@
  *   }
  * }
  */
+import { createCardHedgeClient } from '@cardhedge'
+import { createSupabaseServiceClient } from '@utils'
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
 
 const TIMEOUT_MS = 8_000
@@ -160,20 +162,28 @@ async function probeEbay(): Promise<VendorStatus> {
 }
 
 async function probeCardHedge(): Promise<VendorStatus> {
-  const base = env('CARDHEDGE_API_BASE')
-  const key = env('CARDHEDGE_API_KEY')
-  if (!base || !key) {
+  // Through the chokepoint (budget + ledger, ITS-113), with no retries so the probe reports
+  // what CardHedger answers right now.
+  const cardhedge = createCardHedgeClient('vendor-health', createSupabaseServiceClient(), {
+    backoff: { maxRetries: 0 },
+  })
+  if (!cardhedge) {
     return {
       status: 'disabled',
       detail: 'CARDHEDGE_API_BASE or CARDHEDGE_API_KEY not set',
     }
   }
   try {
-    const { ok, status, latencyMs, body } = await timedFetch(`${base}/v1/cards/card-search`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-API-Key': key },
-      body: JSON.stringify({ search: TEST_QUERY, page_size: 3 }),
-    })
+    const start = Date.now()
+    const resp = await Promise.race([
+      cardhedge.request('card-search', { body: { search: TEST_QUERY, page_size: 3 } }),
+      new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error(`request timed out after ${TIMEOUT_MS}ms`)), TIMEOUT_MS)
+      ),
+    ])
+    const latencyMs = Date.now() - start
+    const body = await resp.text().catch(() => '')
+    const { ok, status } = resp
     if (!ok) {
       return {
         status: 'fail',

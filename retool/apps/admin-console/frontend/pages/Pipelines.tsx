@@ -1,37 +1,73 @@
 /**
- * Pipelines (ITS-117 part 2): price refresh, enrichment backfill and notifications, one tab each.
+ * Pipelines (ITS-117 part 2, ITS-113): price refresh, enrichment backfill, notifications and
+ * CardHedger usage, one tab each.
  *
  * Each tab is a KPI row over the backlog, an outcome table, recent runs, and a spot-check list of
  * the weakest results — the stat-row-over-table layout of n8n's insights
  * (eba468af-e216-4772-a50d-9d30f96d12ad) and Fingerprint's overview
  * (217e2393-6e1d-45cb-a592-6b84dee0e2ec) on Refero.
  *
+ * The CardHedger tab's per-class budget tiles (used / limit with a meter, editable limit) over a
+ * limits table follow OpenAI's limits page (379b23fb-5be7-4ecf-b7ce-aa9dfad91d09) and Cofounder's
+ * credits-and-limits cards (399ce73a-cd7d-47a5-a9e0-5f9e8896900b) on Refero.
+ *
  * Data: admin.price_refresh_overview / queue_card_price_refresh / enrichment_overview /
- * notification_overview (supabase/migrations/20261120000000_its117_ops_pipelines.sql).
+ * notification_overview (supabase/migrations/20261120000000_its117_ops_pipelines.sql) and
+ * admin.cardhedger_usage_overview / set_cardhedger_budget (20261121000000_its113_cardhedger_budget.sql).
+ *
+ * Rows are typed as a fixed set of optional keys (not an index signature) so dot access is legal
+ * under noPropertyAccessFromIndexSignature.
  */
-import { useCallback, useEffect, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useState, type ChangeEvent, type ReactNode } from 'react'
 import {
+  useGetCardhedgerUsage,
   useGetEnrichmentOverview,
   useGetNotificationOverview,
   useGetPriceRefreshOverview,
   useQueueCardPriceRefresh,
+  useSetCardhedgerBudget,
 } from '../hooks/backend/admin'
 import { useAuth } from '../context/AuthContext'
 import type { FnResult } from '../context/AuthContext'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../lib/shadcn/card'
 import { Button } from '../lib/shadcn/button'
+import { Input } from '../lib/shadcn/input'
 import { Alert, AlertDescription } from '../lib/shadcn/alert'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../lib/shadcn/table'
 import { Check, Loader2, RefreshCw, RotateCw } from 'lucide-react'
 import { cn } from '../lib/shadcn/utils'
 
-type Tab = 'price' | 'enrichment' | 'notifications'
-type Row = Record<string, unknown>
+type Tab = 'price' | 'enrichment' | 'notifications' | 'cardhedger'
+
+type RowKey =
+  // shared
+  | 'runs' | 'started_at' | 'status' | 'error' | 'claimed' | 'failed' | 'outcome' | 'attempts'
+  | 'card_id' | 'name' | 'set_name' | 'rate_limited' | 'leased_now' | 'last_run_at' | 'last_run_status'
+  // price refresh
+  | 'backlog' | 'outcomes' | 'low_confidence' | 'tracked_cards' | 'stale' | 'unresolved'
+  | 'refreshed_24h' | 'claimed_24h' | 'completed' | 'avg_confidence' | 'p10_confidence'
+  | 'matched_description' | 'match_confidence' | 'refreshed' | 'unchanged'
+  // enrichment
+  | 'unenriched' | 'est_days_remaining' | 'enriched_24h_all_paths' | 'backfill_runs_24h'
+  | 'backfill_failed_runs_24h' | 'backfill_enriched_24h' | 'backfill_claimed_24h'
+  | 'backfill_no_match_24h' | 'backfill_card_failures_24h' | 'stale_leases' | 'vendor_outcomes'
+  | 'vendor' | 'avg_score' | 'p10_score' | 'p50_score' | 'low_score_hits' | 'image_url'
+  | 'matched_title' | 'best_score' | 'enriched' | 'no_match'
+  // notifications
+  | 'wishlist_hits' | 'individual' | 'summary' | 'dedupe_rows' | 'dedupe_seeded' | 'since'
+  | 'by_type' | 'type' | 'category' | 'sent' | 'users' | 'read' | 'dismissed' | 'last_sent'
+  // CardHedger
+  | 'budget' | 'today' | 'daily' | 'recent_failures' | 'alerts' | 'endpoint_class' | 'daily_limit'
+  | 'scheduled_share' | 'used' | 'scheduled_used' | 'denied' | 'caller' | 'endpoint' | 'calls'
+  | 'scheduled_calls' | 'budget_denied' | 'errors' | 'retries' | 'p95_ms' | 'day'
+  | 'pct_of_current_limit' | 'called_at' | 'alert_key' | 'sent_at'
+type Row = { [K in RowKey]?: unknown }
 
 const TABS: { value: Tab; label: string }[] = [
   { value: 'price', label: 'Price refresh' },
   { value: 'enrichment', label: 'Enrichment' },
   { value: 'notifications', label: 'Notifications' },
+  { value: 'cardhedger', label: 'CardHedger' },
 ]
 
 // ── Formatting ──────────────────────────────────────────────────────────────────────────────────
@@ -60,14 +96,14 @@ function obj(value: unknown): Row {
   return value && typeof value === 'object' && !Array.isArray(value) ? (value as Row) : {}
 }
 
-const BAD_STATUS = new Set(['failed', 'error', 'rate_limited'])
+const BAD_STATUS = new Set(['failed', 'error', 'rate_limited', 'budget_exhausted'])
 
 function Status({ value }: { value: unknown }) {
   const s = typeof value === 'string' ? value : '—'
   return <span className={cn(BAD_STATUS.has(s) ? 'font-medium text-red-600 dark:text-red-400' : 'text-foreground')}>{s}</span>
 }
 
-function Kpi({ label, value, sub, bad }: { label: string; value: string; sub?: string; bad?: boolean }) {
+function Kpi({ label, value, sub, bad }: { label: string; value: string; sub?: string | undefined; bad?: boolean | undefined }) {
   return (
     <div className="rounded-lg border border-border px-4 py-3">
       <div className="text-xs text-muted-foreground">{label}</div>
@@ -77,7 +113,7 @@ function Kpi({ label, value, sub, bad }: { label: string; value: string; sub?: s
   )
 }
 
-function Section({ title, hint, children }: { title: string; hint?: string; children: ReactNode }) {
+function Section({ title, hint, children }: { title: string; hint?: string | undefined; children: ReactNode }) {
   return (
     <div className="space-y-2">
       <div>
@@ -311,6 +347,152 @@ function Notifications({ data }: { data: Row }) {
   )
 }
 
+const CLASS_LABELS: Partial<Record<string, string>> = {
+  search: 'Search',
+  match: 'AI match',
+  prices: 'Prices',
+  other: 'Other',
+}
+
+function pct(used: unknown, limit: unknown): number {
+  const u = Number(used)
+  const l = Number(limit)
+  return l > 0 && Number.isFinite(u) ? Math.min(100, Math.round((100 * u) / l)) : 0
+}
+
+function BudgetTile({ row, saving, onSave }: { row: Row; saving: boolean; onSave: (cls: string, limit: number) => Promise<boolean> }) {
+  const cls = String(row.endpoint_class)
+  const limit = Number(row.daily_limit)
+  const share = Number(row.scheduled_share)
+  const usedPct = pct(row.used, row.daily_limit)
+  const high = usedPct >= 80
+  const [editing, setEditing] = useState(false)
+  const [draft, setDraft] = useState(String(limit))
+  const valid = /^\d+$/.test(draft.trim())
+  const save = async () => {
+    if (!valid) return
+    if (await onSave(cls, Number(draft.trim()))) setEditing(false)
+  }
+  return (
+    <div className="space-y-2 rounded-lg border border-border px-4 py-3">
+      <div className="flex items-center justify-between">
+        <div className="text-xs text-muted-foreground">{CLASS_LABELS[cls] ?? cls}</div>
+        {!editing ? (
+          <Button variant="ghost" size="sm" className="h-7 px-2" onClick={() => { setDraft(String(limit)); setEditing(true) }}>
+            Edit limit
+          </Button>
+        ) : null}
+      </div>
+      <div className={cn('text-xl font-semibold tabular-nums', high ? 'text-red-600 dark:text-red-400' : 'text-foreground')}>
+        {n(row.used)} <span className="text-sm font-normal text-muted-foreground">/ {n(limit)}</span>
+      </div>
+      <div className="h-1.5 overflow-hidden rounded-full bg-muted" role="meter" aria-valuemin={0} aria-valuemax={100} aria-valuenow={usedPct} aria-label={`${cls} budget used`}>
+        <div className={cn('h-full rounded-full', high ? 'bg-red-500' : 'bg-primary')} style={{ width: `${usedPct}%` }} />
+      </div>
+      <div className="text-xs text-muted-foreground">
+        Scheduled {n(row.scheduled_used)} of {n(Math.floor(limit * share))} · {n(row.denied)} denied
+      </div>
+      {editing ? (
+        <div className="flex items-center gap-2">
+          <Input value={draft} onChange={(e: ChangeEvent<HTMLInputElement>) => setDraft(e.target.value)} inputMode="numeric" className="h-8" aria-label={`${cls} daily limit`} />
+          <Button size="sm" disabled={!valid || saving} onClick={() => void save()}>
+            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Save'}
+          </Button>
+          <Button size="sm" variant="ghost" onClick={() => setEditing(false)}>
+            Cancel
+          </Button>
+        </div>
+      ) : null}
+    </div>
+  )
+}
+
+function CardHedger({ data, saving, onSave }: { data: Row; saving: boolean; onSave: (cls: string, limit: number) => Promise<boolean> }) {
+  const budget = list(data.budget)
+  return (
+    <div className="space-y-6">
+      <Section title="Today's budget (UTC)" hint="Calls per endpoint class. Scheduled jobs may only use their share; live searches get the rest. A new limit applies from the next call.">
+        {budget.length === 0 ? (
+          <p className="text-sm text-muted-foreground">No budget configured.</p>
+        ) : (
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            {budget.map((b) => (
+              <BudgetTile key={String(b.endpoint_class)} row={b} saving={saving} onSave={onSave} />
+            ))}
+          </div>
+        )}
+      </Section>
+
+      <Section title="Today by caller">
+        <SimpleTable
+          head={['Caller · endpoint', 'Calls', 'Scheduled', 'Denied', '429s', 'Errors', 'Retries', 'P95 ms']}
+          empty="No CardHedger calls today."
+          rows={list(data.today).map((t) => [
+            <span key="c">
+              <span className="font-mono text-xs text-foreground">{String(t.caller)}</span>
+              <span className="text-muted-foreground"> · {String(t.endpoint)}</span>
+            </span>,
+            n(t.calls),
+            n(t.scheduled_calls),
+            n(t.budget_denied),
+            n(t.rate_limited),
+            n(t.errors),
+            n(t.retries),
+            n(t.p95_ms),
+          ])}
+        />
+      </Section>
+
+      <Section title="Last 30 days" hint="Daily use against the current limit, for quota conversations with CardHedger.">
+        <SimpleTable
+          head={['Day · class', 'Used', '% of limit', 'Scheduled', 'Denied', '429s', 'Errors', 'P95 ms']}
+          empty="No usage recorded yet."
+          rows={list(data.daily).map((d) => [
+            <span key="d">
+              {String(d.day)}
+              <span className="text-muted-foreground"> · {String(d.endpoint_class)}</span>
+            </span>,
+            n(d.used),
+            d.pct_of_current_limit == null ? '—' : `${n(d.pct_of_current_limit)}%`,
+            n(d.scheduled_used),
+            n(d.denied),
+            n(d.rate_limited),
+            n(d.errors),
+            n(d.p95_ms),
+          ])}
+        />
+      </Section>
+
+      <Section title="Failures (24 hours)" hint="Calls that were rate limited, over budget, or got an error response.">
+        <SimpleTable
+          head={['When · caller', 'Endpoint', 'Status', 'Retries', 'Why']}
+          empty="No failures in 24 hours."
+          rows={list(data.recent_failures).map((f) => [
+            <span key="w">
+              {when(f.called_at)}
+              <span className="text-muted-foreground"> · {String(f.caller)}</span>
+            </span>,
+            String(f.endpoint),
+            n(f.status),
+            n(f.retries),
+            <span key="y" className="inline-block max-w-[20rem] truncate align-bottom" title={String(f.error ?? '')}>
+              {f.budget_denied ? 'over budget' : f.rate_limited ? 'rate limited' : String(f.error ?? '—')}
+            </span>,
+          ])}
+        />
+      </Section>
+
+      <Section title="Alerts sent" hint="Checked hourly. Each alert goes to owners and ops at most once per UTC day.">
+        <SimpleTable
+          head={['Sent', 'Alert']}
+          empty="No alerts in 30 days."
+          rows={list(data.alerts).map((a) => [when(a.sent_at), <span key="a" className="font-mono text-xs">{String(a.alert_key)}</span>])}
+        />
+      </Section>
+    </div>
+  )
+}
+
 // ── Page ────────────────────────────────────────────────────────────────────────────────────────
 export default function Pipelines() {
   const { accessToken, callAdmin } = useAuth()
@@ -319,6 +501,8 @@ export default function Pipelines() {
   const { trigger: triggerEnrichment } = useGetEnrichmentOverview()
   const { trigger: triggerNotifications } = useGetNotificationOverview()
   const { trigger: triggerQueue } = useQueueCardPriceRefresh()
+  const { trigger: triggerCardhedger } = useGetCardhedgerUsage()
+  const { trigger: triggerSetBudget } = useSetCardhedgerBudget()
 
   const [tab, setTab] = useState<Tab>('price')
   const [hours, setHours] = useState(168)
@@ -327,6 +511,7 @@ export default function Pipelines() {
   const [error, setError] = useState<string | null>(null)
   const [queued, setQueued] = useState<Set<string>>(new Set())
   const [queueing, setQueueing] = useState<string | null>(null)
+  const [savingBudget, setSavingBudget] = useState(false)
 
   const load = useCallback(async () => {
     if (!signedIn) return
@@ -337,7 +522,9 @@ export default function Pipelines() {
         ? triggerPrice({ accessToken: token })
         : tab === 'enrichment'
           ? triggerEnrichment({ accessToken: token })
-          : triggerNotifications({ accessToken: token, hours }),
+          : tab === 'notifications'
+            ? triggerNotifications({ accessToken: token, hours })
+            : triggerCardhedger({ accessToken: token }),
     )) as FnResult | undefined
     setLoading(false)
     if (!res?.ok) {
@@ -345,7 +532,7 @@ export default function Pipelines() {
       return
     }
     setData((prev) => ({ ...prev, [tab]: obj(res.data) }))
-  }, [signedIn, callAdmin, tab, hours, triggerPrice, triggerEnrichment, triggerNotifications])
+  }, [signedIn, callAdmin, tab, hours, triggerPrice, triggerEnrichment, triggerNotifications, triggerCardhedger])
 
   useEffect(() => {
     void load()
@@ -363,6 +550,19 @@ export default function Pipelines() {
     setQueued((prev) => new Set(prev).add(cardId))
   }
 
+  const saveBudget = async (endpointClass: string, dailyLimit: number): Promise<boolean> => {
+    setSavingBudget(true)
+    setError(null)
+    const res = (await callAdmin((token) => triggerSetBudget({ accessToken: token, endpointClass, dailyLimit }))) as FnResult | undefined
+    setSavingBudget(false)
+    if (!res?.ok) {
+      setError(res?.message ?? 'Could not save the limit.')
+      return false
+    }
+    void load()
+    return true
+  }
+
   const current = data[tab]
 
   return (
@@ -370,7 +570,7 @@ export default function Pipelines() {
       <CardHeader className="flex-row flex-wrap items-center justify-between gap-3 space-y-0">
         <div>
           <CardTitle>Pipelines</CardTitle>
-          <CardDescription>Background work on staging: price refresh, image enrichment and notifications.</CardDescription>
+          <CardDescription>Background work on staging: price refresh, image enrichment, notifications and CardHedger usage.</CardDescription>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           {tab === 'notifications' ? (
@@ -435,8 +635,10 @@ export default function Pipelines() {
           <PriceRefresh data={current} onQueue={(id) => void queue(id)} queued={queued} queueing={queueing} />
         ) : tab === 'enrichment' ? (
           <Enrichment data={current} />
-        ) : (
+        ) : tab === 'notifications' ? (
           <Notifications data={current} />
+        ) : (
+          <CardHedger data={current} saving={savingBudget} onSave={saveBudget} />
         )}
       </CardContent>
     </Card>

@@ -3,7 +3,7 @@
 // This enables autocomplete, go to definition, etc.
 
 // Setup type definitions for built-in Supabase Runtime APIs
-import { fetchCardHedgeResults } from '@cardhedge'
+import { createCardHedgeClient } from '@cardhedge'
 import { canonicalGradeKey, canonicalGradesPrices } from '@grade-key'
 import { CardImageFields } from '@types'
 import {
@@ -181,8 +181,9 @@ async function refreshCardPrices(
   const { supa: _supa, srole: _srole } = fetchGlobalVars()
   const pcBase = Deno.env.get('PRICECHARTING_API_BASE')
   const pcKey = Deno.env.get('PRICECHARTING_API_KEY')
-  const chBase = Deno.env.get('CARDHEDGE_API_BASE')
-  const chKey = Deno.env.get('CARDHEDGE_API_KEY')
+  // Over the CardHedger budget the search throws, allSettled swallows it, and the card keeps
+  // its stored prices (ITS-113).
+  const cardhedge = createCardHedgeClient('fetch-card', supabase)
 
   // Lower vendor number = higher priority; we record which vendor contributed each grade
   // so higher-priority data overwrites lower-priority data for the same key.
@@ -220,13 +221,8 @@ async function refreshCardPrices(
           if (val != null && val > 0) prices[grade] = val
         }
         pricesByVendor.push({ priority: 2, prices, latestPrice: raw['loose-price'] ?? null })
-      } else if (provider === 'cardhedge' && chBase && chKey) {
-        const results = await fetchCardHedgeResults(
-          `${card.name} ${card.set_name ?? ''}`.trim(),
-          chKey,
-          chBase,
-          20
-        )
+      } else if (provider === 'cardhedge' && cardhedge) {
+        const results = await cardhedge.search(`${card.name} ${card.set_name ?? ''}`.trim(), 20)
         const match = results.find((r) => r.card_id === external_id)
         if (!match?.prices) return
         const prices: Record<string, number> = {}
