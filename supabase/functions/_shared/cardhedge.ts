@@ -1,7 +1,10 @@
 // The one CardHedger HTTP chokepoint (ITS-113). Every CardHedger request goes through
 // CardHedgeClient.request, which:
 //   1. takes one call from the global daily budget (public.consume_cardhedger_budget) — denied
-//      throws BudgetExhaustedError without calling CardHedger;
+//      throws BudgetExhaustedError without calling CardHedger. With claimBlock > 1 (scheduled
+//      jobs) units are claimed in blocks and spent locally, so most calls skip the round trip;
+//      reserve(cls, n) claims a known number up front. release() hands unspent units back
+//      (public.release_cardhedger_budget) and must run before the client is dropped;
 //   2. calls through fetchWithBackoff (3 retries on 429/5xx, RateLimitedError when 429 persists);
 //   3. writes one public.cardhedger_calls row, best-effort.
 // One request costs one budget unit however many retries it takes; retries are in the ledger.
@@ -59,6 +62,13 @@ export type CardHedgeClientOptions = {
   /** Scheduled jobs may only use the budget's scheduled_share; live callers get the rest. */
   scheduled?: boolean
   consumeBudget?: (cls: EndpointClass, n: number, scheduled: boolean) => Promise<boolean>
+  /** Gives unspent claimed units back to the given UTC day's budget. */
+  releaseBudget?: (cls: EndpointClass, n: number, scheduled: boolean, day: string) => Promise<void>
+  /**
+   * Units claimed per budget round trip (default 1). A denied block falls back to a single
+   * unit, so the tail of a budget is still usable. Call release() when done.
+   */
+  claimBlock?: number
   recordCall?: (row: CardHedgeCallRecord) => Promise<void>
   /** Lets a ledger write outlive the response (EdgeRuntime.waitUntil); awaited otherwise. */
   waitUntil?: (p: Promise<unknown>) => void
@@ -76,6 +86,70 @@ export function cardhedgeClient(opts: CardHedgeClientOptions) {
   const doFetch = opts.fetch ?? fetch
   const now = opts.now ?? Date.now
   const scheduled = opts.scheduled ?? false
+  const block = Math.max(1, Math.floor(opts.claimBlock ?? 1))
+  const utcDay = () => new Date(now()).toISOString().slice(0, 10)
+
+  // Claimed-but-unspent units per class, tagged with the UTC day they were counted against.
+  const pool = new Map<EndpointClass, { n: number; day: string }>()
+  // Claims for a class run one at a time, so concurrent requests share a block instead of
+  // each claiming their own.
+  const locks = new Map<EndpointClass, Promise<unknown>>()
+  function withLock<T>(cls: EndpointClass, fn: () => Promise<T>): Promise<T> {
+    const next = (locks.get(cls) ?? Promise.resolve()).then(fn, fn)
+    locks.set(
+      cls,
+      next.catch(() => {})
+    )
+    return next
+  }
+
+  /** true/false from the budget; null when the check itself failed (callers fail open). */
+  async function claim(cls: EndpointClass, n: number): Promise<boolean | null> {
+    try {
+      return await opts.consumeBudget!(cls, n, scheduled)
+    } catch (err) {
+      console.warn('[cardhedge] budget check failed; allowing', String(err))
+      return null
+    }
+  }
+
+  function addToPool(cls: EndpointClass, n: number, day: string) {
+    const held = pool.get(cls)
+    if (held && held.day === day) held.n += n
+    else {
+      if (held?.n) void giveBack(cls, held)
+      pool.set(cls, { n, day })
+    }
+  }
+
+  function giveBack(cls: EndpointClass, held: { n: number; day: string }): Promise<void> {
+    if (!opts.releaseBudget || held.n < 1) return Promise.resolve()
+    const p = opts
+      .releaseBudget(cls, held.n, scheduled, held.day)
+      .catch((err) => console.warn('[cardhedge] budget release failed', String(err)))
+    if (opts.waitUntil) opts.waitUntil(p)
+    return p
+  }
+
+  /** One unit for one request: from the pool, else a block claim, else a single unit. */
+  const take = (cls: EndpointClass): Promise<boolean> =>
+    withLock(cls, async () => {
+      const day = utcDay()
+      const held = pool.get(cls)
+      if (held && held.day === day && held.n > 0) {
+        held.n--
+        return true
+      }
+      if (block > 1) {
+        const ok = await claim(cls, block)
+        if (ok === null) return true
+        if (ok) {
+          addToPool(cls, block - 1, day)
+          return true
+        }
+      }
+      return (await claim(cls, 1)) ?? true
+    })
 
   const record = async (row: Omit<CardHedgeCallRecord, 'caller' | 'scheduled'>) => {
     if (!opts.recordCall) return
@@ -91,13 +165,7 @@ export function cardhedgeClient(opts: CardHedgeClientOptions) {
     const cls = endpointClass(endpoint)
     const base = { endpoint, endpoint_class: cls }
 
-    let allowed = true
-    if (opts.consumeBudget) {
-      allowed = await opts.consumeBudget(cls, 1, scheduled).catch((err) => {
-        console.warn('[cardhedge] budget check failed; allowing', String(err))
-        return true
-      })
-    }
+    const allowed = opts.consumeBudget ? await take(cls) : true
     if (!allowed) {
       await record({
         ...base,
@@ -165,6 +233,28 @@ export function cardhedgeClient(opts: CardHedgeClientOptions) {
     caller: opts.caller,
     request,
 
+    /**
+     * Claims n units of cls up front for calls about to be made (e.g. one per grade). false
+     * when the budget can't cover all n; the calls then claim one at a time as usual.
+     */
+    reserve(cls: EndpointClass, n: number): Promise<boolean> {
+      if (!opts.consumeBudget || n < 1) return Promise.resolve(true)
+      return withLock(cls, async () => {
+        const day = utcDay()
+        const ok = await claim(cls, n)
+        if (ok) addToPool(cls, n, day)
+        return ok === true
+      })
+    },
+
+    /** Gives every unspent claimed unit back. Awaited unless waitUntil is set. */
+    async release(): Promise<void> {
+      const held = [...pool]
+      pool.clear()
+      const all = Promise.all(held.map(([cls, h]) => giveBack(cls, h)))
+      if (!opts.waitUntil) await all
+    },
+
     /** POST card-search. */
     async search(query: string, limit: number): Promise<CardHedgeCard[]> {
       const resp = await request('card-search', {
@@ -231,7 +321,11 @@ export function createCardHedgeClient(
   caller: string,
   // deno-lint-ignore no-explicit-any
   supabase: any,
-  { scheduled = false, backoff }: { scheduled?: boolean; backoff?: BackoffOptions } = {}
+  {
+    scheduled = false,
+    backoff,
+    claimBlock,
+  }: { scheduled?: boolean; backoff?: BackoffOptions; claimBlock?: number } = {}
 ): CardHedgeClient | null {
   const apiBase = Deno.env.get('CARDHEDGE_API_BASE') ?? ''
   const apiKey = Deno.env.get('CARDHEDGE_API_KEY') ?? ''
@@ -245,6 +339,7 @@ export function createCardHedgeClient(
     caller,
     scheduled,
     backoff,
+    claimBlock,
     consumeBudget: async (cls, n, sched) => {
       const { data, error } = await db.rpc('consume_cardhedger_budget', {
         p_class: cls,
@@ -253,6 +348,15 @@ export function createCardHedgeClient(
       })
       if (error) throw new Error(error.message)
       return data !== false
+    },
+    releaseBudget: async (cls, n, sched, day) => {
+      const { error } = await db.rpc('release_cardhedger_budget', {
+        p_class: cls,
+        p_n: n,
+        p_scheduled: sched,
+        p_day: day,
+      })
+      if (error) throw new Error(error.message)
     },
     recordCall: async (row) => {
       const { error } = await db.from('cardhedger_calls').insert(row)

@@ -21,6 +21,20 @@ request it:
 If the budget check itself errors (DB trouble), the call is allowed: per-run caps and backoff
 still apply.
 
+**Block claims.** To save a round trip per call, units can be claimed several at a time and
+spent locally:
+
+- `createCardHedgeClient(caller, supabase, { claimBlock: n })` claims `n` units per budget check.
+  The scheduled jobs use 10. A refused block falls back to a single unit, so the last few units
+  of a budget are still usable.
+- `client.reserve(class, n)` claims a known number up front. `fetch-card-history` reserves one
+  `prices` unit per grade. If the budget can't cover all `n`, each call claims its own unit.
+- `client.release()` hands unspent units back (`public.release_cardhedger_budget`) to the UTC
+  day they were claimed on. Call it before the client goes out of scope; units not released
+  stay counted as used until midnight UTC.
+- Concurrent calls in one client share a block. Only a refused single unit counts in
+  `cardhedger_usage.denied`.
+
 | Endpoint class | Endpoints                              | Daily limit | Scheduled share |
 | -------------- | -------------------------------------- | ----------- | --------------- |
 | `search`       | `card-search`                          | 5,000       | 80 % (4,000)    |
