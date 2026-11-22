@@ -25,6 +25,7 @@ import { createSupabaseServiceClient, logEvent, rid, vendorUUID } from '@utils'
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
 
 const BATCH_SIZE = Number(Deno.env.get('PRICE_REFRESH_BATCH_SIZE') ?? '25')
+const CLAIM_BLOCK = 10
 const LEASE_SECONDS = Number(Deno.env.get('PRICE_REFRESH_LEASE_SECONDS') ?? '600')
 const STALE_HOURS = Number(Deno.env.get('PRICE_REFRESH_STALE_HOURS') ?? '24')
 const THROTTLE_MS = Number(Deno.env.get('PRICE_REFRESH_THROTTLE_MS') ?? '300')
@@ -72,7 +73,11 @@ Deno.serve(async (req) => {
   const reqId = rid()
   if (!isServiceRequest(req)) return json({ error: 'Unauthorized' }, 401)
 
-  const cardhedge = createCardHedgeClient('tracked-price-refresh', supabase, { scheduled: true })
+  // Budget units are claimed CLAIM_BLOCK at a time and the rest released at the end of the run.
+  const cardhedge = createCardHedgeClient('tracked-price-refresh', supabase, {
+    scheduled: true,
+    claimBlock: CLAIM_BLOCK,
+  })
   if (!cardhedge) {
     logEvent('warn', reqId, 'price_refresh.skipped', { reason: 'cardhedge_not_configured' })
     await startRun(reqId, 'skipped')
@@ -209,6 +214,7 @@ Deno.serve(async (req) => {
     if (THROTTLE_MS > 0 && i < cards.length - 1) await sleep(THROTTLE_MS)
   }
 
+  await cardhedge.release()
   await finishRun(reqId, runId, { status, claimed: cards.length, ...stats })
   logEvent('info', reqId, 'price_refresh.done', { runId, status, claimed: cards.length, ...stats })
   return json({ ok: true, status, claimed: cards.length, ...stats })

@@ -210,6 +210,9 @@ Deno.serve(async (req) => {
   }
 
   // ── 2. History calls per grade, a few at a time ───────────────────────────────
+  // One budget round trip for every grade; if the budget can't cover them all, each call
+  // claims its own unit and the tail is skipped.
+  await cardhedge.reserve('prices', gradeMap.length)
   let overBudget = false
   const results = await mapLimit(
     gradeMap,
@@ -225,6 +228,7 @@ Deno.serve(async (req) => {
       }
     }
   )
+  await cardhedge.release()
   if (overBudget && results.every((r) => r.status === 'rejected')) return budgetSkipped()
 
   // ── 3. Collect + upsert all price points ──────────────────────────────────────

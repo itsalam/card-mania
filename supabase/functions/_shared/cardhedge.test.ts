@@ -165,3 +165,119 @@ Deno.test('with waitUntil, the ledger write is handed off instead of awaited', a
   resolveWrite()
   await handed[0]
 })
+
+// ── Block claims (claimBlock / reserve / release) ──
+
+function blockHarness(budgetLeft: number, overrides: Partial<CardHedgeClientOptions> = {}) {
+  const claims: number[] = []
+  const released: Array<{ cls: string; n: number; scheduled: boolean; day: string }> = []
+  let left = budgetLeft
+  const h = harness([], {
+    scheduled: true,
+    claimBlock: 5,
+    consumeBudget: (_cls, n) => {
+      claims.push(n)
+      if (n > left) return Promise.resolve(false)
+      left -= n
+      return Promise.resolve(true)
+    },
+    releaseBudget: (cls, n, scheduled, day) => {
+      released.push({ cls, n, scheduled, day })
+      return Promise.resolve()
+    },
+    ...overrides,
+  })
+  return { ...h, claims, released }
+}
+
+Deno.test('with claimBlock, one round trip covers a block of calls', async () => {
+  const { client, claims, calls, released } = blockHarness(100)
+  for (let i = 0; i < 7; i++) await client.search('q', 5)
+  assertEquals(calls.length, 7)
+  assertEquals(claims, [5, 5], 'two block claims for seven calls')
+  await client.release()
+  assertEquals(released, [{ cls: 'search', n: 3, scheduled: true, day: '1970-01-01' }])
+  await client.release()
+  assertEquals(released.length, 1, 'units are released once')
+})
+
+Deno.test('blocks are per endpoint class', async () => {
+  const { client, claims, released } = blockHarness(100)
+  await client.search('q', 5)
+  await client.allPrices('x')
+  assertEquals(claims, [5, 5])
+  await client.release()
+  assertEquals(
+    released.map((r) => [r.cls, r.n]),
+    [
+      ['search', 4],
+      ['prices', 4],
+    ]
+  )
+})
+
+Deno.test('a refused block falls back to single units, so the tail is usable', async () => {
+  const { client, claims, calls } = blockHarness(2)
+  await client.search('q', 5)
+  await client.search('q', 5)
+  await assertRejects(() => client.search('q', 5), BudgetExhaustedError)
+  assertEquals(claims, [5, 1, 5, 1, 5, 1])
+  assertEquals(calls.length, 2)
+})
+
+Deno.test('concurrent requests share one block claim', async () => {
+  const { client, claims, calls } = blockHarness(100)
+  await Promise.all([1, 2, 3, 4].map(() => client.allPrices('x')))
+  assertEquals(calls.length, 4)
+  assertEquals(claims, [5])
+})
+
+Deno.test('reserve claims a known number of calls up front', async () => {
+  const { client, claims, calls, released } = blockHarness(100, { claimBlock: 1 })
+  assert(await client.reserve('prices', 3))
+  for (let i = 0; i < 4; i++) await client.history('c', 'PSA 10')
+  assertEquals(calls.length, 4)
+  assertEquals(claims, [3, 1], 'three from the reservation, the fourth claims its own')
+  await client.release()
+  assertEquals(released, [])
+})
+
+Deno.test('a refused reserve leaves each call to claim its own unit', async () => {
+  const { client, claims } = blockHarness(1, { claimBlock: 1 })
+  assertEquals(await client.reserve('prices', 3), false)
+  await client.history('c', 'PSA 10')
+  await assertRejects(() => client.history('c', 'PSA 9'), BudgetExhaustedError)
+  assertEquals(claims, [3, 1, 1])
+})
+
+Deno.test('a failing block claim fails open without pooling units', async () => {
+  const { client, calls } = blockHarness(0, {
+    consumeBudget: () => Promise.reject(new Error('db down')),
+  })
+  await client.search('q', 5)
+  await client.search('q', 5)
+  assertEquals(calls.length, 2)
+  const { client: c2, released } = blockHarness(0, {
+    consumeBudget: () => Promise.reject(new Error('db down')),
+  })
+  await c2.search('q', 5)
+  await c2.release()
+  assertEquals(released, [])
+})
+
+Deno.test('units held across UTC midnight go back to the day they were claimed on', async () => {
+  let t = Date.UTC(2026, 10, 21, 23, 59)
+  const { client, claims, released } = blockHarness(100, { now: () => t })
+  await client.search('q', 5)
+  t = Date.UTC(2026, 10, 22, 0, 1)
+  await client.search('q', 5)
+  assertEquals(claims, [5, 5], "yesterday's units are not spent today")
+  await client.release()
+  assertEquals(
+    released.map((r) => [r.day, r.n]),
+    [
+      ['2026-11-21', 4],
+      ['2026-11-22', 4],
+    ]
+  )
+})

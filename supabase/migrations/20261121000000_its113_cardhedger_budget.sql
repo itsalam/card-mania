@@ -4,6 +4,8 @@
 -- which:
 --   1. asks public.consume_cardhedger_budget(class, n, scheduled) before calling. Denied:
 --      scheduled jobs end their run as 'budget_exhausted'; live paths serve cached/DB data.
+--      Scheduled jobs claim blocks of units and hand unspent ones back with
+--      public.release_cardhedger_budget, so most of their calls skip the round trip.
 --   2. writes one public.cardhedger_calls row per request (best-effort).
 --
 -- Budget: one row per endpoint class in public.cardhedger_budget, editable without a deploy
@@ -90,14 +92,48 @@ begin
   if v_ok then
     return true;
   end if;
-  update public.cardhedger_usage u set denied = u.denied + 1
-   where u.day = v_day and u.endpoint_class = p_class;
+  -- A refused block claim (p_n > 1) falls back to single units in the client, so only a
+  -- refused single unit is a refused call.
+  if p_n = 1 then
+    update public.cardhedger_usage u set denied = u.denied + 1
+     where u.day = v_day and u.endpoint_class = p_class;
+  end if;
   return false;
 end;
 $$;
 
 revoke all on function public.consume_cardhedger_budget(text, int, boolean) from public, anon, authenticated;
 grant execute on function public.consume_cardhedger_budget(text, int, boolean) to service_role;
+
+-- Hands back units a client claimed in a block but didn't spend, to the UTC day they were
+-- claimed on (a block claimed just before midnight goes back to yesterday's row).
+create or replace function public.release_cardhedger_budget(
+  p_class text,
+  p_n int,
+  p_scheduled boolean default false,
+  p_day date default null
+)
+returns void
+language plpgsql
+volatile
+security definer
+set search_path = ''
+as $$
+begin
+  if p_n is null or p_n < 1 then
+    raise exception 'p_n must be at least 1' using errcode = '22023';
+  end if;
+  update public.cardhedger_usage u
+     set used = greatest(u.used - p_n, 0),
+         scheduled_used = case when p_scheduled then greatest(u.scheduled_used - p_n, 0)
+                               else u.scheduled_used end
+   where u.day = coalesce(p_day, (now() at time zone 'utc')::date)
+     and u.endpoint_class = p_class;
+end;
+$$;
+
+revoke all on function public.release_cardhedger_budget(text, int, boolean, date) from public, anon, authenticated;
+grant execute on function public.release_cardhedger_budget(text, int, boolean, date) to service_role;
 
 -- ── Per-call ledger ────────────────────────────────────────────────────────────────────────────
 create table if not exists public.cardhedger_calls (
