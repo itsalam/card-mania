@@ -7,7 +7,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(30);
+select plan(38);
 
 insert into auth.users (id, instance_id, aud, role, email, encrypted_password, email_confirmed_at, raw_app_meta_data, raw_user_meta_data, is_sso_user, is_anonymous, created_at, updated_at)
 select ('11130000-0000-0000-0000-0000000000a' || n)::uuid, '00000000-0000-0000-0000-000000000000',
@@ -49,7 +49,7 @@ select ok(public.consume_cardhedger_budget('search', 1, false), 'the last unit i
 select ok(not public.consume_cardhedger_budget('search', 1, false), 'past the daily limit, live calls are denied too');
 select is((select row(used, scheduled_used, denied)::text from public.cardhedger_usage
             where endpoint_class = 'search' and day = (now() at time zone 'utc')::date),
-          '(10,5,3)', 'usage counts every allowed unit and every denial');
+          '(10,5,2)', 'usage counts every allowed unit, and every refused single unit');
 
 -- Yesterday being full doesn't affect today.
 insert into public.cardhedger_usage (day, endpoint_class, used) values
@@ -64,6 +64,8 @@ select throws_ok($$ select public.consume_cardhedger_budget('search') $$, '42501
   'clients cannot take from the budget');
 select throws_ok($$ select count(*) from public.cardhedger_calls $$, '42501', null, 'or read the call ledger');
 select throws_ok($$ select count(*) from public.cardhedger_usage_today $$, '42501', null, 'or the usage views');
+select throws_ok($$ select public.release_cardhedger_budget('search', 1) $$, '42501', null,
+  'or give units back');
 select pg_temp.act_as(null);
 select throws_ok($$ select public.consume_cardhedger_budget('search') $$, '42501', null, 'nor can anon');
 reset role;
@@ -107,6 +109,26 @@ select is((select count(*)::int from public.notifications
             where user_id = '11130000-0000-0000-0000-0000000000a2' and type = 'ops_alert'),
           0, 'editors are not notified');
 select is(admin.send_ops_alerts(), '{}'::text[], 'an alert is sent at most once a day');
+
+-- ── Releasing block claims ──
+select ok(not public.consume_cardhedger_budget('search', 5, false), 'a block past the limit is refused');
+select is((select denied from public.cardhedger_usage
+            where endpoint_class = 'search' and day = (now() at time zone 'utc')::date), 2,
+          'a refused block is not counted as a refused call (the client falls back to one unit)');
+select lives_ok($$ select public.release_cardhedger_budget('search', 3, true, (now() at time zone 'utc')::date) $$,
+  'unspent scheduled units can be released');
+select is((select row(used, scheduled_used)::text from public.cardhedger_usage
+            where endpoint_class = 'search' and day = (now() at time zone 'utc')::date),
+          '(7,2)', 'a release gives back used and scheduled units');
+select lives_ok($$ select public.release_cardhedger_budget('search', 50, false) $$,
+  'releasing more than was used doesn''t fail');
+select is((select row(used, scheduled_used)::text from public.cardhedger_usage
+            where endpoint_class = 'search' and day = (now() at time zone 'utc')::date),
+          '(0,2)', 'usage never goes below zero, and a live release leaves scheduled units');
+select public.release_cardhedger_budget('match', 10, false, (now() at time zone 'utc')::date - 1);
+select is((select used from public.cardhedger_usage
+            where endpoint_class = 'match' and day = (now() at time zone 'utc')::date - 1), 990,
+          'units go back to the day they were claimed on');
 
 -- ── Console ──
 select pg_temp.act_as('11130000-0000-0000-0000-0000000000a2');

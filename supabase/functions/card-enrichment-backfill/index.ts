@@ -58,6 +58,7 @@ import {
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
 
 const BATCH_SIZE = Number(Deno.env.get('ENRICHMENT_BATCH_SIZE') ?? '15')
+const CLAIM_BLOCK = 10
 const THROTTLE_MS = Number(Deno.env.get('ENRICHMENT_THROTTLE_MS') ?? '250')
 // Pause between vendor calls within one card's cascade (e.g. CardHedge miss ->
 // eBay). 0 = back-to-back; raise if a vendor starts pushing back.
@@ -122,8 +123,10 @@ Deno.serve(async (req) => {
     certId: Deno.env.get('EBAY_CERT_ID') ?? '',
     marketplace: Deno.env.get('EBAY_MARKETPLACE_ID') ?? 'EBAY_US',
   }
+  // Budget units are claimed CLAIM_BLOCK at a time and the rest released at the end of the run.
   const cardhedge = createCardHedgeClient('card-enrichment-backfill', supabase, {
     scheduled: true,
+    claimBlock: CLAIM_BLOCK,
   })
 
   // Live blend priority order (CardHedge 1, eBay 3; PriceCharting has no images).
@@ -331,6 +334,7 @@ Deno.serve(async (req) => {
     await sleep(THROTTLE_MS)
   }
 
+  await cardhedge?.release()
   const status = stopped ?? 'completed'
   const summary = { ok: true, status, claimed: cards.length, ...stats, hitsByVendor }
   logEvent('info', reqId, 'backfill.run_complete', { runId, ...summary })
