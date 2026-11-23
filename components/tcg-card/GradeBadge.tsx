@@ -1,34 +1,20 @@
 import { Text } from '@/components/ui/text/base-text'
 import { formatLabel } from '@/components/utils'
+import { gradePriceKey, splitGradeKey } from '@/supabase/functions/_shared/grade-key'
 import { View } from 'react-native'
 import { Colors } from 'react-native-ui-lib'
 
-/**
- * Builds the canonical price key for a grader slug + grade value — the client twin of SQL
- * `public.grade_key` (10 → "psa10", 9.5 → "bgs9_5"); "ungraded" when either is missing.
- */
-export function gradePriceKey(slug?: string | null, gradeValue?: number | null): string {
-  if (!slug || gradeValue == null) return 'ungraded'
-  const grade = Number.isInteger(gradeValue)
-    ? String(gradeValue)
-    : String(gradeValue).replace('.', '_')
-  return `${slug.toLowerCase()}${grade}`
-}
+export { gradePriceKey }
 
 /**
- * Splits a price_key into grader + grade. Keys are canonical "psa10" / "bgs9_5" / "ungraded"
- * (SQL `public.grade_key`); legacy spellings ("bgs9.5", "psa10.0") are still accepted.
+ * Splits a price_key into grader + grade (any spelling the SQL `public.normalize_grade_key`
+ * accepts). An unrecognised key is shown as its label with no grade.
  */
 export function parseGrade(
   priceKey?: string | null
 ): { company: string; grade: string } | 'raw' | null {
   if (!priceKey) return null
-  if (priceKey === 'ungraded') return 'raw'
-  const match = priceKey.match(/^([a-z]+)[_ ]?(\d+(?:[._]\d+)?)$/i)
-  if (!match) return { company: formatLabel(priceKey), grade: '' }
-  // grade_value is numeric, so whole grades arrive as "5.0" — show "5", keep "9.5".
-  const grade = match[2].replace('_', '.').replace(/\.0+$/, '')
-  return { company: match[1].toUpperCase(), grade }
+  return splitGradeKey(priceKey) ?? { company: formatLabel(priceKey), grade: '' }
 }
 
 /**
