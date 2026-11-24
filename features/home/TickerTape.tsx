@@ -10,8 +10,8 @@ import { formatPrice } from '@/components/utils'
 import { useSetting } from '@/features/settings'
 import { CardImage } from '@/features/tcg-card-views/card-image'
 import { DisplayData } from '@/features/tcg-card-views/types'
-import { TrendingDown, TrendingUp } from 'lucide-react-native'
-import { Fragment, useCallback, useEffect, useMemo, useState } from 'react'
+import { BadgeCheck, SlidersHorizontal, TrendingDown, TrendingUp } from 'lucide-react-native'
+import { Fragment, ReactNode, useCallback, useEffect, useMemo, useState } from 'react'
 import { LayoutChangeEvent, Pressable, StyleProp, View, ViewStyle } from 'react-native'
 import Animated, {
   cancelAnimation,
@@ -22,6 +22,7 @@ import Animated, {
   withSequence,
   withTiming,
 } from 'react-native-reanimated'
+import Svg, { Path } from 'react-native-svg'
 import { Colors } from 'react-native-ui-lib'
 
 // Home ticker tape: 7-day price moves for cards the user owns or watches, each with a small
@@ -31,7 +32,13 @@ import { Colors } from 'react-native-ui-lib'
 // Design refs: TradingView watchlist (https://mobbin.com/screens/7927fcd8-c7d7-4763-a0e8-bf25f38a1a5c)
 // for the name · price · change-% entry format; Fidelity market futures
 // (https://mobbin.com/screens/dc93b9c6-e354-4acb-a00c-540e78f8d921) for the compact horizontal
-// quote row.
+// quote row; TradingView quote header
+// (https://mobbin.com/screens/644ed184-5002-4179-bdb3-7a69ddcdb03d) and Lightyear's status chips
+// (https://mobbin.com/screens/1b2a74ed-950e-4617-8826-f2b347a85aaa) for the small inline "Owned"
+// pill beside the price change. The "Price change" title sits in a shoulder tab rising from the
+// band's top-left edge — the outward form of the app's ShoulderCutoutDescriptor backgrounds
+// (Background.tsx) — which the home screen lifts into the empty space beside the breakdown's
+// "View breakdown" chip.
 
 const BAND_HEIGHT = 64
 /** Marquee speed in px/s — slow enough to read a name and price while it moves. */
@@ -42,6 +49,135 @@ const THUMB_HEIGHT = 42
 const THUMB_WIDTH = Math.round(THUMB_HEIGHT * CARD_ASPECT_RATIO)
 /** Prices and changes use the monospace stats face (as card detail prices do) so digits align. */
 const NUMBER_FONT = 'SpaceMono'
+/** Height of the shoulder tab rising from the band's top-left edge to hold the title. */
+export const TICKER_SHOULDER_HEIGHT = 20
+/** Radius of the tab's convex top-right corner and its concave join to the band's top. */
+const SHOULDER_RADIUS = 8
+const SHOULDER_PADDING_X = 4
+
+/**
+ * The band with an outward shoulder tab on its top-left. `fill` is the whole shape; `outline` is
+ * its top edge (over the tab, down its right side, across the band) plus the bottom hairline —
+ * the band is full-bleed, so no side borders. Strokes sit on half-pixel lines to stay crisp.
+ */
+function shoulderPaths(width: number, height: number, tabWidth: number) {
+  const r = SHOULDER_RADIUS
+  const h = TICKER_SHOULDER_HEIGHT
+  const x = tabWidth
+  const top = (o: number) =>
+    `M 0 ${o} L ${x - r} ${o} ` +
+    // convex top-right corner of the tab
+    `A ${r} ${r} 0 0 1 ${x - o} ${r} L ${x - o} ${h - r} ` +
+    // concave join into the band's top edge
+    `A ${r} ${r} 0 0 0 ${x + r} ${h + o} L ${width} ${h + o}`
+  return {
+    fill: `${top(0)} L ${width} ${height} L 0 ${height} Z`,
+    outline: `${top(0.5)} M 0 ${height - 0.5} L ${width} ${height - 0.5}`,
+  }
+}
+
+/**
+ * Glass band with a "Price change" shoulder tab on its top-left. The tab is laid out above the
+ * band (the frame is TICKER_SHOULDER_HEIGHT + BAND_HEIGHT tall), so a parent can pull it up with
+ * a negative top margin to tuck the tab into spare space above.
+ */
+function TickerFrame({
+  children,
+  style,
+  accessibilityLabel,
+}: {
+  children: ReactNode
+  style?: StyleProp<ViewStyle>
+  accessibilityLabel?: string
+}) {
+  const [width, setWidth] = useState(0)
+  const [tabWidth, setTabWidth] = useState(0)
+  const glass = glassSurfaceStyle()
+  const height = TICKER_SHOULDER_HEIGHT + BAND_HEIGHT
+  const paths = width && tabWidth ? shoulderPaths(width, height, tabWidth) : null
+
+  return (
+    <View
+      style={[{ height }, style]}
+      accessibilityLabel={accessibilityLabel}
+      onLayout={(e) => setWidth(e.nativeEvent.layout.width)}
+    >
+      {paths && (
+        <Svg width={width} height={height} style={{ position: 'absolute' }} pointerEvents="none">
+          {/* Opaque base first: the glass fill is translucent, and the tab overlaps the
+              breakdown card's bottom border, which would otherwise show through it. */}
+          <Path d={paths.fill} fill={Colors.$backgroundDefault} />
+          <Path d={paths.fill} fill={glass.backgroundColor} />
+          <Path d={paths.outline} stroke={glass.borderColor} strokeWidth={1} fill="none" />
+        </Svg>
+      )}
+      <View
+        onLayout={(e) => setTabWidth(Math.ceil(e.nativeEvent.layout.width))}
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          height: TICKER_SHOULDER_HEIGHT,
+          paddingLeft: 8,
+          paddingRight: SHOULDER_PADDING_X + SHOULDER_RADIUS / 2,
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: 4,
+        }}
+      >
+        <Text variant="stats" style={{ fontSize: 11, lineHeight: 13, color: Colors.$textNeutral }}>
+          Price changes
+        </Text>
+        {/* Ticker feed settings (choose what the tape shows) — not built yet, so disabled. */}
+        <Pressable
+          disabled
+          hitSlop={8}
+          accessibilityRole="button"
+          accessibilityLabel="Ticker settings"
+          accessibilityHint="Coming soon"
+          accessibilityState={{ disabled: true }}
+          style={{ opacity: 0.4 }}
+        >
+          <SlidersHorizontal size={12} color={Colors.$iconDefault} />
+        </Pressable>
+      </View>
+      <View
+        style={{
+          marginTop: TICKER_SHOULDER_HEIGHT,
+          height: BAND_HEIGHT,
+          overflow: 'hidden',
+          justifyContent: 'center',
+        }}
+      >
+        {children}
+      </View>
+    </View>
+  )
+}
+
+/** Marks a ticker entry as a card from the user's own collection (vs. a wishlist watch). */
+function OwnedBadge() {
+  return (
+    <View
+      style={{
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 3,
+        borderRadius: 999,
+        borderWidth: 1,
+        borderColor: Colors.rgba(Colors.$backgroundPrimaryHeavy, 0.5),
+        backgroundColor: Colors.rgba(Colors.$backgroundPrimaryHeavy, 0.2),
+        paddingHorizontal: 6,
+        paddingVertical: 2,
+      }}
+    >
+      <BadgeCheck size={10} color={Colors.$textPrimary} />
+      <Text variant="stats" style={{ fontSize: 10, lineHeight: 13, color: Colors.$textDefault }}>
+        Owned
+      </Text>
+    </View>
+  )
+}
 
 function ChangeLabel({ pct }: { pct: number | null }) {
   if (pct == null || pct === 0) {
@@ -86,13 +222,17 @@ function TickerEntry({ item }: { item: TickerItem }) {
     kind: 'card',
     item: { id: item.ref_id, name: item.name, set_name: item.set_name },
   })
+  const isOwned = item.source === 'owned'
+  const isGraded = item.price_key !== 'ungraded'
   return (
     <Pressable
       ref={cardElement}
       onPress={handlePress}
       hitSlop={{ top: 6, bottom: 6 }}
       accessibilityRole="button"
-      accessibilityLabel={`${tickerName(item.name)}, ${formatPrice(item.current_cents)}, ${
+      accessibilityLabel={`${tickerName(item.name)}${isOwned ? ', owned' : ''}, ${formatPrice(
+        item.current_cents
+      )}, ${
         item.change_pct == null ? 'no change data' : `${item.change_pct}% over ${TICKER_DAYS} days`
       }`}
       style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
@@ -114,26 +254,18 @@ function TickerEntry({ item }: { item: TickerItem }) {
             {tickerName(item.name)}
           </Text>
 
-          {item.price_key !== 'ungraded' && (
+          {isGraded && (
             // Hug its own width — as a column child it would otherwise stretch across the entry.
             <View style={{ alignSelf: 'flex-start' }}>
               <GradeBadge priceKey={item.price_key} />
             </View>
           )}
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-            <Text
-              numberOfLines={1}
-              style={{ fontSize: 10, lineHeight: 12, maxWidth: 200, color: Colors.$textNeutral }}
-            >
-              {tickerName(item.set_name)}
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+            <Text style={{ fontFamily: NUMBER_FONT, fontSize: 15, lineHeight: 17 }}>
+              {formatPrice(item.current_cents)}
             </Text>
-
-            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-              <Text style={{ fontFamily: NUMBER_FONT, fontSize: 15, lineHeight: 17 }}>
-                {formatPrice(item.current_cents)}
-              </Text>
-              <ChangeLabel pct={item.change_pct} />
-            </View>
+            <ChangeLabel pct={item.change_pct} />
+            {isOwned && <OwnedBadge />}
           </View>
         </View>
       </View>
@@ -224,30 +356,19 @@ export function TickerTape({ style }: { style?: StyleProp<ViewStyle> }) {
   const { data: items = [], isLoading } = useTickerItems()
   const reduceMotion = useSetting('reduceMotion').value
 
-  // Full-bleed band: glass fill with hairlines top and bottom only, edge to edge.
-  const band: ViewStyle = {
-    height: BAND_HEIGHT,
-    overflow: 'hidden',
-    justifyContent: 'center',
-    ...glassSurfaceStyle(),
-    borderLeftWidth: 0,
-    borderRightWidth: 0,
-  }
-
   if (isLoading) {
     return (
-      <View style={[band, { paddingHorizontal: 16 }, style]}>
-        <Skeleton style={{ height: 16, width: '70%', borderRadius: 999 }} />
-      </View>
+      <TickerFrame style={style}>
+        <View style={{ paddingHorizontal: 16 }}>
+          <Skeleton style={{ height: 16, width: '70%', borderRadius: 999 }} />
+        </View>
+      </TickerFrame>
     )
   }
   if (!items.length) return null
 
   return (
-    <View
-      style={[band, style]}
-      accessibilityLabel={`Price moves over the last ${TICKER_DAYS} days`}
-    >
+    <TickerFrame style={style} accessibilityLabel={`Price moves over the last ${TICKER_DAYS} days`}>
       {reduceMotion ? (
         <FadeScrollView
           horizontal
@@ -259,6 +380,6 @@ export function TickerTape({ style }: { style?: StyleProp<ViewStyle> }) {
       ) : (
         <Marquee items={items} />
       )}
-    </View>
+    </TickerFrame>
   )
 }

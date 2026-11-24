@@ -3,18 +3,11 @@ import { useUnreadCount } from '@/client/notifications'
 import { FadeScrollView } from '@/components/ui/fade-scroll'
 import { Tabs, TabsContent, TabsLabel, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Text } from '@/components/ui/text/base-text'
+import { CollapsibleHeaderEventsProvider, useCollaspableHeader } from '@/features/collection/ui'
 import { MainSearchBar } from '@/features/mainSearchbar'
 import { OnboardingTarget } from '@/features/onboarding'
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs'
 import { useRouter } from 'expo-router'
-import { GestureDetector } from 'react-native-gesture-handler'
-import Animated, {
-  interpolate,
-  useAnimatedReaction,
-  useAnimatedStyle,
-} from 'react-native-reanimated'
-import { scheduleOnRN } from 'react-native-worklets'
-import { CollapsibleHeaderEventsProvider, useCollaspableHeader } from '@/features/collection/ui'
 import {
   Bell,
   Compass,
@@ -27,15 +20,22 @@ import {
 } from 'lucide-react-native'
 import React, { useCallback, useEffect, useState } from 'react'
 import { RefreshControl, StyleSheet, TouchableOpacity, View } from 'react-native'
+import { GestureDetector } from 'react-native-gesture-handler'
+import Animated, {
+  interpolate,
+  useAnimatedReaction,
+  useAnimatedStyle,
+} from 'react-native-reanimated'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Colors } from 'react-native-ui-lib'
+import { scheduleOnRN } from 'react-native-worklets'
 import { RecentlyViewed } from './cards/RecentlyViewed'
 import { useExploreSections } from './ExplorePage'
 import { useFeedSections } from './FeedPage'
 import { PortfolioSummary } from './PortfolioSummary'
-import { TickerTape } from './TickerTape'
 import { TabValue, tabValues, useHomePageStore } from './provider'
 import { HomeRefreshProvider, useHomeRefreshControl } from './refresh-provider'
+import { TickerTape } from './TickerTape'
 
 // Header row: fits the logo (the tallest item) with a little room, so alignItems: 'center' has a
 // definite band to center against. The logo stays larger than the round buttons, and search, the
@@ -303,7 +303,11 @@ function HomeContent({
                   />
                 </OnboardingTarget>
               </CollapsibleHeaderEventsProvider>
-              <TickerTape style={{ marginBottom: 8 }} />
+              {/* Lift the ticker so its left shoulder tab rises into the empty space beside the
+                  breakdown's centered "View breakdown" chip. PortfolioSummary leaves 18px below
+                  its card's border (the chip's lower half + padding); this lift tucks the tab
+                  into that space. */}
+              <TickerTape style={{ marginTop: -(10 + 1), marginBottom: 8 }} />
             </View>
           </Animated.View>
 
