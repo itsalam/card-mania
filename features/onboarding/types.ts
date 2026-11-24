@@ -51,6 +51,14 @@ export type OnboardingStep = {
    *  `insets.top` back in for any step with this flag; every other (non-modal) target is
    *  unaffected. */
   modalPresentation?: boolean
+  /** True when this step's target lives on a screen the user only reaches by real navigation
+   *  (e.g. the new-collection screen after tapping "+"). Every step's target is checked before
+   *  the step is shown (see findAvailableStep in OnboardingProvider.tsx): an unmounted target
+   *  normally means the element doesn't exist here, so the step is skipped. A step with this
+   *  flag is kept instead — the overlay hides while its target is missing and reappears the
+   *  moment the target mounts, rather than skipping it or dimming the screen with nothing to
+   *  point at. */
+  awaitsNavigation?: boolean
 }
 
 export type TargetMeasurement = {

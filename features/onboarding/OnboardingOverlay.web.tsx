@@ -1,9 +1,12 @@
 import React, { useEffect, useState } from 'react'
 import { Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native'
 import { Colors } from 'react-native-ui-lib'
-import { useOnboardingStore } from './OnboardingProvider'
+import { getTourProgress, useOnboardingStore } from './OnboardingProvider'
 import { TOURS } from './steps'
 import { OnboardingStep, TargetMeasurement } from './types'
+
+/** How long a mounted target gets to produce a measurement before its step is skipped. */
+const UNMEASURED_STEP_GRACE_MS = 1000
 
 const PANEL_HEIGHT = 168
 const PANEL_MARGIN = 16
@@ -172,6 +175,7 @@ function OnboardingOverlayContent({ mounted }: { mounted: boolean }) {
   const currentIndex = useOnboardingStore((s) => s.currentIndex)
   const measurements = useOnboardingStore((s) => s.measurements)
   const registry = useOnboardingStore((s) => s._registry)
+  const skippedSteps = useOnboardingStore((s) => s.skippedSteps)
   const { next, back, skip } = useOnboardingStore()
   const { width: screenW, height: screenH } = useWindowDimensions()
   const [opacity, setOpacity] = useState(0)
@@ -193,6 +197,19 @@ function OnboardingOverlayContent({ mounted }: { mounted: boolean }) {
     return () => clearTimeout(t)
   }, [currentIndex])
 
+  // A mounted target that never measures (zero-sized, e.g. inside a collapsed header) would
+  // leave the overlay with nothing to highlight — give it a moment, then skip the step.
+  const pendingStepId = active ? steps[currentIndex]?.id : undefined
+  const pendingMeasured = pendingStepId ? Boolean(measurements[pendingStepId]) : true
+  useEffect(() => {
+    if (!pendingStepId || pendingMeasured) return
+    const t = setTimeout(
+      () => useOnboardingStore.getState().skipUnmeasurableStep(pendingStepId),
+      UNMEASURED_STEP_GRACE_MS
+    )
+    return () => clearTimeout(t)
+  }, [pendingStepId, pendingMeasured])
+
   if (!mounted) return null
 
   const step = steps[currentIndex]
@@ -200,7 +217,9 @@ function OnboardingOverlayContent({ mounted }: { mounted: boolean }) {
   const measurement = rawMeasurement
     ? inflateMeasurement(rawMeasurement, step?.spotlightPadding)
     : undefined
-  const canGoBack = currentIndex > 0 && registry.has(steps[currentIndex - 1].id)
+  // Counter and Back only count steps whose target exists (see getTourProgress).
+  const progress = getTourProgress(steps, registry, currentIndex, skippedSteps)
+  const canGoBack = progress.canGoBack
 
   return (
     <View
@@ -239,7 +258,7 @@ function OnboardingOverlayContent({ mounted }: { mounted: boolean }) {
               fillRule: 'evenodd',
             } as any)
           )
-        : // No measurement yet — full dim
+        : // No measurement yet (first frame) — full dim; see the grace-period effect
           React.createElement('div', {
             style: {
               position: 'absolute',
@@ -270,31 +289,14 @@ function OnboardingOverlayContent({ mounted }: { mounted: boolean }) {
         <SpotlightPanel
           step={step}
           measurement={measurement}
-          currentIndex={currentIndex}
-          totalSteps={steps.length}
+          currentIndex={progress.index}
+          totalSteps={progress.total}
           screenH={screenH}
           canGoBack={canGoBack}
           onNext={next}
           onBack={back}
           onSkip={skip}
         />
-      )}
-      {!measurement && (
-        <Pressable
-          onPress={skip}
-          style={[
-            styles.btnSecondary,
-            {
-              position: 'absolute',
-              top: 60,
-              right: SCREEN_PADDING,
-              borderColor: Colors.$outlineDefault,
-              backgroundColor: Colors.$backgroundDefault,
-            } as any,
-          ]}
-        >
-          <Text style={[styles.btnSecondaryText, { color: Colors.$textDefault }]}>Skip</Text>
-        </Pressable>
       )}
     </View>
   )

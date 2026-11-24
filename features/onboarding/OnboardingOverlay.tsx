@@ -19,9 +19,12 @@ import Animated, {
 import { FullWindowOverlay } from 'react-native-screens'
 import { ClipPath, Defs, Path, Rect, Svg } from 'react-native-svg'
 import { Colors } from 'react-native-ui-lib'
-import { useOnboardingStore } from './OnboardingProvider'
+import { getTourProgress, useOnboardingStore } from './OnboardingProvider'
 import { TOURS } from './steps'
 import { OnboardingStep, TargetMeasurement } from './types'
+
+/** How long a mounted target gets to produce a measurement before its step is skipped. */
+const UNMEASURED_STEP_GRACE_MS = 1000
 
 const PANEL_HEIGHT = 160
 const PANEL_MARGIN = 20
@@ -197,6 +200,7 @@ function OnboardingOverlayContent({ mounted }: { mounted: boolean }) {
   const currentIndex = useOnboardingStore((s) => s.currentIndex)
   const measurements = useOnboardingStore((s) => s.measurements)
   const registry = useOnboardingStore((s) => s._registry)
+  const skippedSteps = useOnboardingStore((s) => s.skippedSteps)
   const { next, back, skip } = useOnboardingStore()
   const { width: screenW, height: screenH } = useWindowDimensions()
   const steps = TOURS[tourId]
@@ -220,6 +224,19 @@ function OnboardingOverlayContent({ mounted }: { mounted: boolean }) {
     )
   }, [currentIndex])
 
+  // A mounted target that never measures (zero-sized, e.g. inside a collapsed header) would
+  // leave the overlay with nothing to highlight — give it a moment, then skip the step.
+  const pendingStepId = active ? steps[currentIndex]?.id : undefined
+  const pendingMeasured = pendingStepId ? Boolean(measurements[pendingStepId]) : true
+  useEffect(() => {
+    if (!pendingStepId || pendingMeasured) return
+    const t = setTimeout(
+      () => useOnboardingStore.getState().skipUnmeasurableStep(pendingStepId),
+      UNMEASURED_STEP_GRACE_MS
+    )
+    return () => clearTimeout(t)
+  }, [pendingStepId, pendingMeasured])
+
   if (!mounted) return null
 
   const step = steps[currentIndex]
@@ -227,96 +244,68 @@ function OnboardingOverlayContent({ mounted }: { mounted: boolean }) {
   const measurement = rawMeasurement
     ? inflateMeasurement(rawMeasurement, step?.spotlightPadding)
     : undefined
-  // Only offer Back if the previous step's target is actually mounted right now — for the
-  // Collections guided tour, steps 2-4 are reached via real screen navigation (see
-  // COLLECTION_TOUR_STEPS' comment in steps.ts), so the previous step's screen may no longer be
-  // mounted, and Back would land on the same "waiting for measurement" dead end the orphaned
-  // collection-graphs step used to hit.
-  const canGoBack = currentIndex > 0 && registry.has(steps[currentIndex - 1].id)
+  // Counter and Back only count steps whose target exists (see getTourProgress) — Back skips
+  // earlier steps whose screen has been left behind.
+  const progress = getTourProgress(steps, registry, currentIndex, skippedSteps)
+  const canGoBack = progress.canGoBack
 
   return (
     <Animated.View style={[StyleSheet.absoluteFill, overlayStyle]} pointerEvents="box-none">
-      {measurement ? (
-        <>
-          <Svg
-            width={screenW}
-            height={screenH}
-            style={StyleSheet.absoluteFill}
-            pointerEvents="none"
-          >
-            <Defs>
-              <ClipPath id="spotlight-hole">
-                <Path fillRule="evenodd" d={buildCutoutPath(screenW, screenH, measurement)} />
-              </ClipPath>
-            </Defs>
-            <Rect
-              x={0}
-              y={0}
+      {
+        measurement ? (
+          <>
+            <Svg
               width={screenW}
               height={screenH}
-              fill="rgba(0,0,0,0.75)"
-              clipPath="url(#spotlight-hole)"
-            />
-          </Svg>
+              style={StyleSheet.absoluteFill}
+              pointerEvents="none"
+            >
+              <Defs>
+                <ClipPath id="spotlight-hole">
+                  <Path fillRule="evenodd" d={buildCutoutPath(screenW, screenH, measurement)} />
+                </ClipPath>
+              </Defs>
+              <Rect
+                x={0}
+                y={0}
+                width={screenW}
+                height={screenH}
+                fill="rgba(0,0,0,0.75)"
+                clipPath="url(#spotlight-hole)"
+              />
+            </Svg>
 
-          {/* spotlight border ring */}
-          <View
-            pointerEvents="none"
-            style={{
-              position: 'absolute',
-              left: measurement.x - 3,
-              top: measurement.y - 3,
-              width: measurement.width + 6,
-              height: measurement.height + 6,
-              borderRadius: 11,
-              borderWidth: 2,
-              borderColor: Colors.rgba(Colors.$textDefault, 0.35),
-            }}
-          />
-
-          {step && (
-            <SpotlightPanel
-              step={step}
-              measurement={measurement}
-              currentIndex={currentIndex}
-              totalSteps={steps.length}
-              screenH={screenH}
-              canGoBack={canGoBack}
-              onNext={next}
-              onBack={back}
-              onSkip={skip}
-            />
-          )}
-        </>
-      ) : (
-        // Waiting for measurement — full dim, plus a Skip escape hatch. The Collections guided
-        // tour's steps live behind real navigation (create a collection, open it) — if the user
-        // abandons that flow instead of completing it, this target never mounts and the tour
-        // would otherwise be stuck here with no way out.
-        <View
-          style={[
-            StyleSheet.absoluteFill,
-            { backgroundColor: Colors.rgba(Colors.$backgroundDark, 0.75) },
-          ]}
-          pointerEvents="box-none"
-        >
-          <Pressable
-            onPress={skip}
-            style={[
-              styles.btnSecondary,
-              {
+            {/* spotlight border ring */}
+            <View
+              pointerEvents="none"
+              style={{
                 position: 'absolute',
-                top: 60,
-                right: SCREEN_PADDING,
-                borderColor: Colors.$outlineDefault,
-                backgroundColor: Colors.$backgroundDefault,
-              },
-            ]}
-          >
-            <Text style={[styles.btnSecondaryText, { color: Colors.$textDefault }]}>Skip</Text>
-          </Pressable>
-        </View>
-      )}
+                left: measurement.x - 3,
+                top: measurement.y - 3,
+                width: measurement.width + 6,
+                height: measurement.height + 6,
+                borderRadius: 11,
+                borderWidth: 2,
+                borderColor: Colors.rgba(Colors.$textDefault, 0.35),
+              }}
+            />
+
+            {step && (
+              <SpotlightPanel
+                step={step}
+                measurement={measurement}
+                currentIndex={progress.index}
+                totalSteps={progress.total}
+                screenH={screenH}
+                canGoBack={canGoBack}
+                onNext={next}
+                onBack={back}
+                onSkip={skip}
+              />
+            )}
+          </>
+        ) : null /* not measured yet — the grace-period effect above skips it if it never does */
+      }
     </Animated.View>
   )
 }
