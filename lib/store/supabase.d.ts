@@ -3030,105 +3030,6 @@ export type Database = {
       }
     }
     Functions: {
-      accept_offer: {
-        Args: { p_offer_id: string }
-        Returns: {
-          buyer_shipping_address: Json | null
-          created_at: string | null
-          id: string
-          offer_id: string
-          status: string
-          updated_at: string | null
-        }
-      }
-      cancel_offer: {
-        Args: { p_offer_id: string }
-        Returns: {
-          buyer_id: string
-          buyer_note: string | null
-          created_at: string | null
-          id: string
-          seller_id: string
-          status: string
-          total_amount: number
-          updated_at: string | null
-        }
-      }
-      confirm_transaction_receipt: {
-        Args: { p_offer_id: string }
-        Returns: {
-          buyer_shipping_address: Json | null
-          created_at: string | null
-          id: string
-          offer_id: string
-          status: string
-          updated_at: string | null
-        }
-      }
-      create_offer: {
-        Args: {
-          p_buyer_note?: string
-          p_items: Json
-          p_seller_id: string
-          p_total_amount?: number
-        }
-        Returns: {
-          buyer_id: string
-          buyer_note: string | null
-          created_at: string | null
-          id: string
-          seller_id: string
-          status: string
-          total_amount: number
-          updated_at: string | null
-        }
-      }
-      decline_offer: {
-        Args: { p_offer_id: string }
-        Returns: {
-          buyer_id: string
-          buyer_note: string | null
-          created_at: string | null
-          id: string
-          seller_id: string
-          status: string
-          total_amount: number
-          updated_at: string | null
-        }
-      }
-      dispute_transaction: {
-        Args: { p_offer_id: string }
-        Returns: {
-          buyer_shipping_address: Json | null
-          created_at: string | null
-          id: string
-          offer_id: string
-          status: string
-          updated_at: string | null
-        }
-      }
-      mark_transaction_shipped: {
-        Args: { p_offer_id: string }
-        Returns: {
-          buyer_shipping_address: Json | null
-          created_at: string | null
-          id: string
-          offer_id: string
-          status: string
-          updated_at: string | null
-        }
-      }
-      set_transaction_shipping_address: {
-        Args: { p_address: Json; p_offer_id: string }
-        Returns: {
-          buyer_shipping_address: Json | null
-          created_at: string | null
-          id: string
-          offer_id: string
-          status: string
-          updated_at: string | null
-        }
-      }
       _clamp_nonnegative: { Args: { val: number }; Returns: number }
       _collection_item_value_cents: {
         Args: {
@@ -3142,6 +3043,52 @@ export type Database = {
       _collection_top_card_id: {
         Args: { p_collection_id: string }
         Returns: string
+      }
+      _lock_offer_for_transition: {
+        Args: {
+          p_action: string
+          p_actor: string
+          p_allowed_statuses: string[]
+          p_offer_id: string
+        }
+        Returns: {
+          buyer_id: string
+          buyer_note: string | null
+          created_at: string | null
+          id: string
+          seller_id: string
+          status: string
+          total_amount: number
+          updated_at: string | null
+        }
+        SetofOptions: {
+          from: '*'
+          to: 'offers'
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      _lock_transaction_for_transition: {
+        Args: {
+          p_action: string
+          p_actor: string
+          p_allowed_statuses: string[]
+          p_offer_id: string
+        }
+        Returns: {
+          buyer_shipping_address: Json | null
+          created_at: string | null
+          id: string
+          offer_id: string
+          status: string
+          updated_at: string | null
+        }
+        SetofOptions: {
+          from: '*'
+          to: 'transactions'
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
       _marketplace_base_listings: {
         Args: never
@@ -3223,6 +3170,23 @@ export type Database = {
         }
         Returns: number
       }
+      accept_offer: {
+        Args: { p_offer_id: string }
+        Returns: {
+          buyer_shipping_address: Json | null
+          created_at: string | null
+          id: string
+          offer_id: string
+          status: string
+          updated_at: string | null
+        }
+        SetofOptions: {
+          from: '*'
+          to: 'transactions'
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       add_to_collection: {
         Args: {
           p_collection_id: string
@@ -3255,6 +3219,25 @@ export type Database = {
           hits: number
           last_seen: string
         }[]
+      }
+      cancel_offer: {
+        Args: { p_offer_id: string }
+        Returns: {
+          buyer_id: string
+          buyer_note: string | null
+          created_at: string | null
+          id: string
+          seller_id: string
+          status: string
+          total_amount: number
+          updated_at: string | null
+        }
+        SetofOptions: {
+          from: '*'
+          to: 'offers'
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
       canonical_genre: { Args: { p: string }; Returns: string }
       check_email_registered: { Args: { p_email: string }; Returns: boolean }
@@ -3449,6 +3432,23 @@ export type Database = {
         Args: { p_dead_tokens?: string[]; p_results: Json }
         Returns: undefined
       }
+      confirm_transaction_receipt: {
+        Args: { p_offer_id: string }
+        Returns: {
+          buyer_shipping_address: Json | null
+          created_at: string | null
+          id: string
+          offer_id: string
+          status: string
+          updated_at: string | null
+        }
+        SetofOptions: {
+          from: '*'
+          to: 'transactions'
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       consume_cardhedger_budget: {
         Args: { p_class: string; p_n?: number; p_scheduled?: boolean }
         Returns: boolean
@@ -3457,11 +3457,71 @@ export type Database = {
         Args: { p_desc?: string; p_is_public?: boolean; p_name: string }
         Returns: string
       }
+      create_offer: {
+        Args: {
+          p_buyer_note?: string
+          p_items: Json
+          p_seller_id: string
+          p_total_amount?: number
+        }
+        Returns: {
+          buyer_id: string
+          buyer_note: string | null
+          created_at: string | null
+          id: string
+          seller_id: string
+          status: string
+          total_amount: number
+          updated_at: string | null
+        }
+        SetofOptions: {
+          from: '*'
+          to: 'offers'
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       curated_tag_upsert: {
         Args: { p_name: string; p_slug: string; p_weight?: number }
         Returns: string
       }
       curated_tags_import: { Args: { payload: Json }; Returns: Json }
+      decline_offer: {
+        Args: { p_offer_id: string }
+        Returns: {
+          buyer_id: string
+          buyer_note: string | null
+          created_at: string | null
+          id: string
+          seller_id: string
+          status: string
+          total_amount: number
+          updated_at: string | null
+        }
+        SetofOptions: {
+          from: '*'
+          to: 'offers'
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      dispute_transaction: {
+        Args: { p_offer_id: string }
+        Returns: {
+          buyer_shipping_address: Json | null
+          created_at: string | null
+          id: string
+          offer_id: string
+          status: string
+          updated_at: string | null
+        }
+        SetofOptions: {
+          from: '*'
+          to: 'transactions'
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       due_marketplace_feeds: {
         Args: { p_force?: boolean; p_keys?: string[] }
         Returns: {
@@ -3789,6 +3849,23 @@ export type Database = {
         Args: { p_card_id: string; p_status: string }
         Returns: undefined
       }
+      mark_transaction_shipped: {
+        Args: { p_offer_id: string }
+        Returns: {
+          buyer_shipping_address: Json | null
+          created_at: string | null
+          id: string
+          offer_id: string
+          status: string
+          updated_at: string | null
+        }
+        SetofOptions: {
+          from: '*'
+          to: 'transactions'
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       marketplace_feed_filter_errors: {
         Args: { p_filter: Json }
         Returns: string[]
@@ -3921,6 +3998,23 @@ export type Database = {
         Returns: boolean
       }
       set_push_preferences: { Args: { p_patch: Json }; Returns: Json }
+      set_transaction_shipping_address: {
+        Args: { p_address: Json; p_offer_id: string }
+        Returns: {
+          buyer_shipping_address: Json | null
+          created_at: string | null
+          id: string
+          offer_id: string
+          status: string
+          updated_at: string | null
+        }
+        SetofOptions: {
+          from: '*'
+          to: 'transactions'
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { '': string }; Returns: string[] }
       suggest_tags: {
