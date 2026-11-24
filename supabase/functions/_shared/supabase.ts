@@ -3030,6 +3030,105 @@ export type Database = {
       }
     }
     Functions: {
+      accept_offer: {
+        Args: { p_offer_id: string }
+        Returns: {
+          buyer_shipping_address: Json | null
+          created_at: string | null
+          id: string
+          offer_id: string
+          status: string
+          updated_at: string | null
+        }
+      }
+      cancel_offer: {
+        Args: { p_offer_id: string }
+        Returns: {
+          buyer_id: string
+          buyer_note: string | null
+          created_at: string | null
+          id: string
+          seller_id: string
+          status: string
+          total_amount: number
+          updated_at: string | null
+        }
+      }
+      confirm_transaction_receipt: {
+        Args: { p_offer_id: string }
+        Returns: {
+          buyer_shipping_address: Json | null
+          created_at: string | null
+          id: string
+          offer_id: string
+          status: string
+          updated_at: string | null
+        }
+      }
+      create_offer: {
+        Args: {
+          p_buyer_note?: string
+          p_items: Json
+          p_seller_id: string
+          p_total_amount?: number
+        }
+        Returns: {
+          buyer_id: string
+          buyer_note: string | null
+          created_at: string | null
+          id: string
+          seller_id: string
+          status: string
+          total_amount: number
+          updated_at: string | null
+        }
+      }
+      decline_offer: {
+        Args: { p_offer_id: string }
+        Returns: {
+          buyer_id: string
+          buyer_note: string | null
+          created_at: string | null
+          id: string
+          seller_id: string
+          status: string
+          total_amount: number
+          updated_at: string | null
+        }
+      }
+      dispute_transaction: {
+        Args: { p_offer_id: string }
+        Returns: {
+          buyer_shipping_address: Json | null
+          created_at: string | null
+          id: string
+          offer_id: string
+          status: string
+          updated_at: string | null
+        }
+      }
+      mark_transaction_shipped: {
+        Args: { p_offer_id: string }
+        Returns: {
+          buyer_shipping_address: Json | null
+          created_at: string | null
+          id: string
+          offer_id: string
+          status: string
+          updated_at: string | null
+        }
+      }
+      set_transaction_shipping_address: {
+        Args: { p_address: Json; p_offer_id: string }
+        Returns: {
+          buyer_shipping_address: Json | null
+          created_at: string | null
+          id: string
+          offer_id: string
+          status: string
+          updated_at: string | null
+        }
+      }
       _clamp_nonnegative: { Args: { val: number }; Returns: number }
       _collection_item_value_cents: {
         Args: {

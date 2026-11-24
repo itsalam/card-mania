@@ -20,6 +20,7 @@ import { Modal } from '@/components/ui/modal'
 import { Separator } from '@/components/ui/separator'
 import { getGradingDisplayString } from '@/features/collection/helpers'
 import { useCurrency } from '@/features/settings/hooks/useCurrency'
+import { useUserStore } from '@/lib/store/useUserStore'
 import { Check, DollarSign } from 'lucide-react-native'
 
 export const CollectionInfoCard = (props: { collectionItemId: string; cardId: string }) => {
@@ -54,6 +55,14 @@ export const CollectionInfoCard = (props: { collectionItemId: string; cardId: st
   const openCart = useOpenCart()
 
   const loadingInfo = !Boolean(collectionItem && collectionInfo && cardData)
+
+  // Only storefront collections are for sale (create_offer rejects anything else), and you
+  // can't buy your own items.
+  const authUserId = useUserStore((s) => s.user?.id)
+  const isPurchasable =
+    Boolean(collectionInfo?.is_storefront) &&
+    Boolean(collectionItem) &&
+    collectionItem?.user_id !== authUserId
 
   return (
     <View
@@ -137,64 +146,72 @@ export const CollectionInfoCard = (props: { collectionItemId: string; cardId: st
             {` x Qty: ${displayData?.quantity}`}
           </SkeletonText>
         </View>
-        <X size={20} color={Colors.$textDefault} />
-        <NumberTicker
-          disabled={loadingInfo}
-          containerStyle={{
-            opacity: loadingInfo ? 0.6 : 1,
-            height: 40,
-            alignItems: 'flex-start',
-            justifyContent: 'flex-start',
+        {isPurchasable && (
+          <>
+            <X size={20} color={Colors.$textDefault} />
+            <NumberTicker
+              disabled={loadingInfo}
+              containerStyle={{
+                opacity: loadingInfo ? 0.6 : 1,
+                height: 40,
+                alignItems: 'flex-start',
+                justifyContent: 'flex-start',
+              }}
+              min={0}
+              max={collectionItem?.quantity ?? 0}
+              initialNumber={loadingInfo ? undefined : selectedQuantity}
+              onChangeNumber={setSelectedQuantity}
+            />
+            <TouchableOpacity
+              onPress={() => setPriceModalVisible(true)}
+              disabled={loadingInfo}
+              style={{
+                opacity: loadingInfo ? 0.4 : 1,
+                position: 'absolute',
+                right: 0,
+                justifyContent: 'center',
+                height: 40,
+              }}
+            >
+              <Ellipsis color={Colors.$iconDefault} />
+            </TouchableOpacity>
+          </>
+        )}
+      </View>
+      {isPurchasable && (
+        <View>
+          <Button
+            size={'lg'}
+            disabled={loadingInfo || selectedQuantity === 0}
+            onPress={() => {
+              if (!collectionItem) return
+              const price = finalPrice ?? 0
+              addToCart({
+                data: collectionItem,
+                cart: {
+                  price,
+                  originalPrice: price,
+                  quantity: selectedQuantity,
+                  maxQuantity: collectionItem.quantity ?? 1,
+                },
+              })
+              openCart()
+            }}
+          >
+            <Text>Add to Deal</Text>
+          </Button>
+        </View>
+      )}
+      {isPurchasable && (
+        <OverridePriceModal
+          visible={priceModalVisible}
+          onDismiss={() => setPriceModalVisible(false)}
+          data={{
+            price: finalPrice ?? undefined,
+            setPrice: setOverridePrice,
           }}
-          min={0}
-          max={collectionItem?.quantity ?? 0}
-          initialNumber={loadingInfo ? undefined : selectedQuantity}
-          onChangeNumber={setSelectedQuantity}
         />
-        <TouchableOpacity
-          onPress={() => setPriceModalVisible(true)}
-          disabled={loadingInfo}
-          style={{
-            opacity: loadingInfo ? 0.4 : 1,
-            position: 'absolute',
-            right: 0,
-            justifyContent: 'center',
-            height: 40,
-          }}
-        >
-          <Ellipsis color={Colors.$iconDefault} />
-        </TouchableOpacity>
-      </View>
-      <View>
-        <Button
-          size={'lg'}
-          disabled={loadingInfo || selectedQuantity === 0}
-          onPress={() => {
-            if (!collectionItem) return
-            const price = finalPrice ?? 0
-            addToCart({
-              data: collectionItem,
-              cart: {
-                price,
-                originalPrice: price,
-                quantity: selectedQuantity,
-                maxQuantity: collectionItem.quantity ?? 1,
-              },
-            })
-            openCart()
-          }}
-        >
-          <Text>Add to Deal</Text>
-        </Button>
-      </View>
-      <OverridePriceModal
-        visible={priceModalVisible}
-        onDismiss={() => setPriceModalVisible(false)}
-        data={{
-          price: finalPrice ?? undefined,
-          setPrice: setOverridePrice,
-        }}
-      />
+      )}
     </View>
   )
 }

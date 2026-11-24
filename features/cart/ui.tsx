@@ -412,7 +412,13 @@ export function CartSheetInner() {
                             showToast({
                               autoDismiss: 5000,
                               title: 'Error',
-                              message: 'Failed to send offer. Please try again.',
+                              // create_offer's validation errors (unlisted item, not enough
+                              // stock) are written for the buyer; anything else is generic.
+                              message: ['22023', 'P0002'].includes(
+                                (err as { code?: string })?.code ?? ''
+                              )
+                                ? (err as Error).message
+                                : 'Failed to send offer. Please try again.',
                               preset: 'failure',
                             })
                           }

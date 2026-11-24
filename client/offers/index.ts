@@ -8,39 +8,26 @@ import { Offer, OfferStatus, SubmitOfferPayload } from './types'
 
 const offersQk = (role: 'buyer' | 'seller') => ['offers', role] as const
 
+// ITS-122: one RPC writes the offer and its items in a single transaction, checking that
+// each item is the seller's and in stock.
 async function submitOfferFn(payload: SubmitOfferPayload): Promise<Offer> {
-  const user = await requireUser()
+  await requireUser()
   const supabase = getSupabase()
 
-  const total_amount =
-    payload.total_amount ??
-    payload.items.reduce((sum, item) => sum + item.offered_price_per_unit * item.quantity, 0)
+  const { data, error } = await supabase.rpc('create_offer', {
+    p_seller_id: payload.seller_id,
+    p_items: payload.items.map((item) => ({
+      collection_item_id: item.collection_item_id,
+      quantity: item.quantity,
+      offered_price_per_unit: item.offered_price_per_unit,
+      card_snapshot: item.card_snapshot ?? null,
+    })),
+    p_buyer_note: payload.buyer_note,
+    p_total_amount: payload.total_amount,
+  })
 
-  const { data: offer, error: offerError } = await supabase
-    .from('offers')
-    .insert({
-      buyer_id: user.id,
-      seller_id: payload.seller_id,
-      buyer_note: payload.buyer_note ?? null,
-      total_amount,
-    })
-    .select()
-    .single()
-
-  if (offerError || !offer) throw offerError ?? new Error('Failed to create offer')
-
-  const offerItems = payload.items.map((item) => ({
-    offer_id: offer.id,
-    collection_item_id: item.collection_item_id,
-    quantity: item.quantity,
-    offered_price_per_unit: item.offered_price_per_unit,
-    card_snapshot: item.card_snapshot ?? null,
-  }))
-
-  const { error: itemsError } = await supabase.from('offer_items').insert(offerItems)
-  if (itemsError) throw itemsError
-
-  return offer as unknown as Offer
+  if (error || !data) throw error ?? new Error('Failed to create offer')
+  return data as unknown as Offer
 }
 
 export function useSubmitOffer() {
@@ -89,24 +76,23 @@ export function useUpdateOfferStatus() {
   const qc = useQueryClient()
 
   return useMutation({
-    mutationFn: async ({ offerId, status }: { offerId: string; status: OfferStatus }) => {
-      const supabase = getSupabase()
-
-      const { data: offer, error } = await supabase
-        .from('offers')
-        .update({ status })
-        .eq('id', offerId)
-        .select()
-        .single()
-
-      if (error || !offer) throw error ?? new Error('Failed to update offer status')
-
-      if (status === 'accepted') {
-        const { error: txError } = await supabase.from('transactions').insert({ offer_id: offerId })
-        if (txError) throw txError
-      }
-
-      return offer as unknown as Offer
+    mutationFn: async ({
+      offerId,
+      status,
+    }: {
+      offerId: string
+      status: Extract<OfferStatus, 'accepted' | 'declined' | 'cancelled'>
+    }): Promise<void> => {
+      // ITS-121/122: status changes go through RPCs that check the caller and the
+      // transition. accept_offer also creates the transaction, checks stock and declines
+      // competing offers the remaining stock can't fill.
+      const rpc = {
+        accepted: 'accept_offer',
+        declined: 'decline_offer',
+        cancelled: 'cancel_offer',
+      } as const
+      const { error } = await getSupabase().rpc(rpc[status], { p_offer_id: offerId })
+      if (error) throw error
     },
     onMutate: async ({ offerId, status }) => {
       await qc.cancelQueries({ queryKey: ['offers'] })
@@ -127,7 +113,9 @@ export function useUpdateOfferStatus() {
       reportError({ context: 'useUpdateOfferStatus', error: err, metadata: { vars } })
     },
     onSettled: () => {
+      // Accepting can also decline competing offers and creates a transaction.
       qc.invalidateQueries({ queryKey: ['offers'] })
+      qc.invalidateQueries({ queryKey: ['transactions'] })
     },
   })
 }

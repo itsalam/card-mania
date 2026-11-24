@@ -12,31 +12,18 @@ const PAYLOAD: SubmitOfferPayload = {
   items: [{ collection_item_id: 'ci-1', quantity: 1, offered_price_per_unit: 500 }],
 }
 
-/** Minimal thenable that mirrors the chainable shape of a Supabase query builder. */
-function chain(promise: Promise<{ data: unknown; error: unknown }>) {
-  const c: any = {
-    select: () => c,
-    insert: () => c,
-    single: () => promise,
-    then: (onFulfilled: any, onRejected?: any) => promise.then(onFulfilled, onRejected),
-  }
-  return c
-}
-
 describe('useSubmitOffer', () => {
   beforeEach(() => {
     jest.clearAllMocks()
     mockClient.auth.getUser.mockResolvedValue({ data: { user: { id: 'buyer-1' } }, error: null })
   })
 
-  it('is pending while the insert is in flight and settles once it resolves', async () => {
+  it('is pending while create_offer is in flight and settles once it resolves', async () => {
     let resolveOffer: (v: { data: unknown; error: unknown }) => void = () => {}
     const offerPromise = new Promise<{ data: unknown; error: unknown }>((resolve) => {
       resolveOffer = resolve
     })
-    mockClient.from.mockImplementation((table: string) =>
-      table === 'offers' ? chain(offerPromise) : chain(Promise.resolve({ data: [], error: null }))
-    )
+    mockClient.rpc.mockImplementation(() => offerPromise)
 
     const { wrapper } = createWrapper()
     const { result } = await renderHook(() => useSubmitOffer(), { wrapper })
@@ -60,9 +47,7 @@ describe('useSubmitOffer', () => {
     const offerPromise = new Promise<{ data: unknown; error: unknown }>((resolve) => {
       resolveOffer = resolve
     })
-    mockClient.from.mockImplementation((table: string) =>
-      table === 'offers' ? chain(offerPromise) : chain(Promise.resolve({ data: [], error: null }))
-    )
+    mockClient.rpc.mockImplementation(() => offerPromise)
 
     const { wrapper } = createWrapper()
     const { result } = await renderHook(() => useSubmitOffer(), { wrapper })
@@ -80,8 +65,12 @@ describe('useSubmitOffer', () => {
     resolveOffer({ data: { id: 'offer-1' }, error: null })
     await waitFor(() => expect(result.current.isSuccess).toBe(true))
 
-    // Exactly one submission's worth of table writes (offers + offer_items).
-    expect(mockClient.from).toHaveBeenCalledTimes(2)
+    // Exactly one submission: a single create_offer call writes the offer and its items.
+    expect(mockClient.rpc).toHaveBeenCalledTimes(1)
+    expect(mockClient.rpc).toHaveBeenCalledWith(
+      'create_offer',
+      expect.objectContaining({ p_seller_id: 'seller-1' })
+    )
   })
 
   it('surfaces the error to the caller via onError without throwing', async () => {
@@ -103,6 +92,6 @@ describe('useSubmitOffer', () => {
     expect(onError).toHaveBeenCalledTimes(1)
     expect(onError.mock.calls[0][0]).toBeInstanceOf(Error)
     expect(onError.mock.calls[0][0].message).toBe('not authenticated')
-    expect(mockClient.from).not.toHaveBeenCalled()
+    expect(mockClient.rpc).not.toHaveBeenCalled()
   })
 })
