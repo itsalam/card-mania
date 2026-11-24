@@ -6,14 +6,61 @@ import React, { useEffect, useRef } from 'react'
 import { View } from 'react-native'
 import { create } from 'zustand'
 import { TOURS } from './steps'
-import { OnboardingStepId, TargetMeasurement, TourId } from './types'
+import { OnboardingStep, OnboardingStepId, TargetMeasurement, TourId } from './types'
+
+type Registry = Map<OnboardingStepId, React.RefObject<View | null>>
+
+/** A step can be shown when its target is mounted right now, or (awaitsNavigation) when it's
+ *  expected to mount once the user navigates to its screen. */
+const isStepAvailable = (step: OnboardingStep, registry: Registry) =>
+  registry.has(step.id) || step.awaitsNavigation === true
+
+/** First index from `from`, walking by `dir`, whose step can be shown — -1 if none. Every move
+ *  through a tour goes through this, so a step whose element doesn't exist on screen is skipped
+ *  instead of stranding the tour on a dimmed screen with nothing but a Skip button. Back only
+ *  lands on mounted targets (`mountedOnly`): an earlier step's screen may have been left
+ *  behind, and Back shouldn't wait on navigation. */
+export function findAvailableStep(
+  steps: OnboardingStep[],
+  registry: Registry,
+  from: number,
+  dir: 1 | -1,
+  mountedOnly = false
+): number {
+  for (let i = from; i >= 0 && i < steps.length; i += dir) {
+    if (mountedOnly ? registry.has(steps[i].id) : isStepAvailable(steps[i], registry)) return i
+  }
+  return -1
+}
+
+/** Step counter/Back state for the panel, counting only steps that will actually be shown:
+ *  earlier steps minus those skipped this run, plus later steps that are available right now. */
+export function getTourProgress(
+  steps: OnboardingStep[],
+  registry: Registry,
+  currentIndex: number,
+  skipped: OnboardingStepId[]
+) {
+  const before = steps.slice(0, currentIndex).filter((st) => !skipped.includes(st.id)).length
+  const after = steps.slice(currentIndex + 1).filter((st) => isStepAvailable(st, registry)).length
+  return {
+    index: before,
+    total: before + 1 + after,
+    canGoBack: findAvailableStep(steps, registry, currentIndex - 1, -1, true) !== -1,
+  }
+}
 
 type OnboardingStore = {
   active: boolean
   tourId: TourId
   currentIndex: number
   measurements: Partial<Record<OnboardingStepId, TargetMeasurement>>
-  _registry: Map<OnboardingStepId, React.RefObject<View | null>>
+  _registry: Registry
+  /** The current step's target isn't mounted yet (awaitsNavigation) — the overlay is hidden
+   *  and registerTarget re-shows it when that target mounts. */
+  waitingForTarget: boolean
+  /** Steps skipped this run because their target wasn't mounted — keeps the counter honest. */
+  skippedSteps: OnboardingStepId[]
   start(tourId?: TourId): void
   /** Reopens the overlay at wherever this tour last left off (in-memory currentIndex) if it's
    *  already been engaged this session, rather than start()'s hard reset to step 0 — "start the
@@ -37,6 +84,13 @@ type OnboardingStore = {
   registerTarget(id: OnboardingStepId, ref: React.RefObject<View | null>): void
   unregisterTarget(id: OnboardingStepId): void
   setMeasurement(id: OnboardingStepId, m: TargetMeasurement): void
+  /** Internal: move to `index`, showing the overlay if its target is mounted, otherwise
+   *  hiding it until the target registers. Callers pick `index` via findAvailableStep. */
+  _goTo(index: number): void
+  /** Skips the current step because its target never produced a usable measurement (mounted
+   *  but zero-sized, e.g. inside a collapsed header). Called by the overlay after a grace
+   *  period, so a step never sits on a dimmed screen with nothing highlighted. */
+  skipUnmeasurableStep(id: OnboardingStepId): void
 }
 
 export const useOnboardingStore = create<OnboardingStore>((set, get) => ({
@@ -45,9 +99,15 @@ export const useOnboardingStore = create<OnboardingStore>((set, get) => ({
   currentIndex: 0,
   measurements: {},
   _registry: new Map(),
+  waitingForTarget: false,
+  skippedSteps: [],
 
   registerTarget: (id, ref) => {
-    get()._registry.set(id, ref)
+    const s = get()
+    s._registry.set(id, ref)
+    if (s.waitingForTarget && TOURS[s.tourId][s.currentIndex]?.id === id) {
+      set({ active: true, waitingForTarget: false })
+    }
   },
 
   unregisterTarget: (id) => {
@@ -61,13 +121,43 @@ export const useOnboardingStore = create<OnboardingStore>((set, get) => ({
 
   setMeasurement: (id, m) => set((s) => ({ measurements: { ...s.measurements, [id]: m } })),
 
-  start: (tourId = 'main') => set({ active: true, tourId, currentIndex: 0, measurements: {} }),
+  start: (tourId = 'main') => {
+    const steps = TOURS[tourId]
+    const first = findAvailableStep(steps, get()._registry, 0, 1)
+    // Nothing to point at on this screen — don't start (and don't persist completion, so the
+    // tour can still run once its elements exist).
+    if (first === -1) return
+    set({
+      tourId,
+      measurements: {},
+      skippedSteps: steps.slice(0, first).map((st) => st.id),
+    })
+    get()._goTo(first)
+  },
 
   resumeOrStart: (tourId) => {
     const s = get()
     if (s.tourId === tourId && s.currentIndex >= 0) {
-      // In-progress (or dropped mid-tour) — reopen at the current step rather than resetting.
-      set({ active: true })
+      // In-progress (or dropped mid-tour) — reopen at the current step rather than resetting,
+      // or the next one that can be shown if the current step's element is gone.
+      const steps = TOURS[tourId]
+      const current = steps[s.currentIndex]
+      if (current.awaitsNavigation && !s._registry.has(current.id)) {
+        // The navigation this step waits on was abandoned (e.g. "+" tapped, then the
+        // new-collection screen closed). Pick up at the nearest earlier step that's on screen
+        // — the one whose action leads there — rather than waiting invisibly.
+        const prev = findAvailableStep(steps, s._registry, s.currentIndex - 1, -1, true)
+        if (prev !== -1) return get()._goTo(prev)
+      }
+      const target = findAvailableStep(steps, s._registry, s.currentIndex, 1)
+      if (target === -1) return get().complete()
+      set({
+        skippedSteps: [
+          ...s.skippedSteps,
+          ...steps.slice(s.currentIndex, target).map((st) => st.id),
+        ],
+      })
+      get()._goTo(target)
     } else {
       // Never engaged this session, or fully completed (complete() sets currentIndex: -1) —
       // nothing to resume, so this is what "the next section" actually is: the beginning.
@@ -75,19 +165,39 @@ export const useOnboardingStore = create<OnboardingStore>((set, get) => ({
     }
   },
 
-  next: () => {
-    const { currentIndex, tourId } = get()
-    const steps = TOURS[tourId]
-    if (currentIndex < steps.length - 1) {
-      set({ currentIndex: currentIndex + 1 })
+  _goTo: (index) => {
+    const { tourId, _registry } = get()
+    const step = TOURS[tourId][index]
+    if (_registry.has(step.id)) {
+      set({ active: true, currentIndex: index, waitingForTarget: false })
     } else {
-      get().complete()
+      // awaitsNavigation and not mounted yet — hide until registerTarget sees it.
+      set({ active: false, currentIndex: index, waitingForTarget: true })
     }
   },
 
+  next: () => {
+    const { currentIndex, tourId, _registry, skippedSteps } = get()
+    const steps = TOURS[tourId]
+    const target = findAvailableStep(steps, _registry, currentIndex + 1, 1)
+    if (target === -1) return get().complete()
+    set({
+      skippedSteps: [...skippedSteps, ...steps.slice(currentIndex + 1, target).map((st) => st.id)],
+    })
+    get()._goTo(target)
+  },
+
+  skipUnmeasurableStep: (id) => {
+    const { tourId, currentIndex, active, measurements, skippedSteps } = get()
+    if (!active || TOURS[tourId][currentIndex]?.id !== id || measurements[id]) return
+    set({ skippedSteps: [...skippedSteps, id] })
+    get().next()
+  },
+
   back: () => {
-    const { currentIndex } = get()
-    if (currentIndex > 0) set({ currentIndex: currentIndex - 1 })
+    const { currentIndex, tourId, _registry } = get()
+    const target = findAvailableStep(TOURS[tourId], _registry, currentIndex - 1, -1, true)
+    if (target !== -1) set({ currentIndex: target })
   },
 
   skip: () => {
@@ -101,7 +211,7 @@ export const useOnboardingStore = create<OnboardingStore>((set, get) => ({
       // not" (see COLLECTION_TOUR_STEPS' comment in steps.ts). complete() would reset
       // currentIndex to -1, which advanceIfCurrentStep can never match again — permanently
       // stranding the tour the moment a user skips instead of pressing "+".
-      set({ active: false })
+      set({ active: false, waitingForTarget: false })
     } else {
       get().complete()
     }
@@ -113,7 +223,7 @@ export const useOnboardingStore = create<OnboardingStore>((set, get) => ({
     // undefined, so a later advanceIfCurrentStep call can never accidentally re-match a stale
     // index (e.g. the user skipped mid-tour, currentIndex happened to sit on some step id, and
     // an unrelated later press of that same element would otherwise silently reopen the tour).
-    set({ active: false, currentIndex: -1 })
+    set({ active: false, currentIndex: -1, waitingForTarget: false, skippedSteps: [] })
     persistTourComplete(tourId).catch(console.error)
   },
 

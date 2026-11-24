@@ -27,9 +27,10 @@ export const ONBOARDING_STEPS: OnboardingStep[] = [
   },
   {
     id: 'collection-graphs',
-    title: 'Track your items',
-    description: "View your collections prices overtime and see how it's value progresses.",
+    title: 'Track Your Items',
+    description: "Follow your collection's value over time in the breakdown.",
     panelPosition: 'below',
+    // Lives inside the home breakdown accordion — PortfolioSummary opens it for this step.
   },
 ]
 
@@ -77,6 +78,8 @@ export const COLLECTION_TOUR_STEPS: OnboardingStep[] = [
     title: 'Name Your Collection',
     description: 'Give it a name and description so you can find it later.',
     panelPosition: 'below',
+    // On the new-collection screen, reached by tapping "+" (collection-new-button).
+    awaitsNavigation: true,
   },
   {
     id: 'collection-storefront-toggle',
@@ -96,6 +99,8 @@ export const COLLECTION_TOUR_STEPS: OnboardingStep[] = [
     title: 'Add Your First Card',
     description: 'Tap Add to bring in your first card.',
     panelPosition: 'above',
+    // On the created collection's screen, reached by saving the new collection.
+    awaitsNavigation: true,
   },
 ]
 

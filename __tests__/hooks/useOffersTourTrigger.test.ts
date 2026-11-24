@@ -44,7 +44,12 @@ describe('useOffersTourTrigger', () => {
       tourId: 'main',
       currentIndex: 0,
       measurements: {},
+      _registry: new Map(),
+      waitingForTarget: false,
+      skippedSteps: [],
     })
+    // The cart's Send Offer button is on screen — the tour only starts against a real target.
+    useOnboardingStore.getState().registerTarget('offers-send-offer', { current: null })
     useUserStore.setState({
       user: { id: 'user-1' } as any,
       status: 'authenticated',
@@ -63,6 +68,17 @@ describe('useOffersTourTrigger', () => {
       timeout: 2000,
     })
     expect(useOnboardingStore.getState().tourId).toBe('offers')
+  })
+
+  it('does not start when the Send Offer button is not on screen', async () => {
+    mockActivationStatus(false)
+    useOnboardingStore.getState().unregisterTarget('offers-send-offer')
+    const { wrapper } = createWrapper()
+
+    await renderHook(() => useOffersTourTrigger(), { wrapper })
+    await sleep(700)
+
+    expect(useOnboardingStore.getState().active).toBe(false)
   })
 
   it('does not start when has_offer is already true', async () => {

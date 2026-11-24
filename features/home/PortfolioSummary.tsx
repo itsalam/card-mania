@@ -2,6 +2,9 @@ import { useCollectionTotal, useWishlistTotal } from '@/client/collections/query
 import { Text } from '@/components/ui/text/base-text'
 import { formatCompactPrice } from '@/components/utils'
 import { useCollectionHistory } from '@/features/collection/hooks'
+import { OnboardingTarget } from '@/features/onboarding/OnboardingTarget'
+import { useOnboardingStore } from '@/features/onboarding/OnboardingProvider'
+import { TOURS } from '@/features/onboarding/steps'
 import { ChevronDown, ChevronUp, TrendingDown, TrendingUp } from 'lucide-react-native'
 import { MotiView } from 'moti'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
@@ -126,6 +129,15 @@ export function PortfolioSummary({
     if (event.type === 'dismissed') setOpen(false, { instant: true })
   })
 
+  // The tour's "Track Your Items" step spotlights the expanded breakdown, which is clipped while
+  // collapsed — open it when the tour reaches that step.
+  const graphsStepActive = useOnboardingStore(
+    (s) => s.active && TOURS[s.tourId][s.currentIndex]?.id === 'collection-graphs'
+  )
+  useEffect(() => {
+    if (graphsStepActive) setOpen(true)
+  }, [graphsStepActive, setOpen])
+
   const { data: wishlistTotal = 0 } = useWishlistTotal()
   const { data: sellingTotal = 0 } = useCollectionTotal({ collectionType: 'selling' })
   const { data: vaultTotal = 0 } = useCollectionTotal({ collectionType: 'vault' })
@@ -195,34 +207,37 @@ export function PortfolioSummary({
           transition={{ type: 'timing', duration: instant ? 0 : BREAKDOWN_TOGGLE_MS }}
           style={{ overflow: 'hidden' }}
         >
-          <View
-            onLayout={(e) => {
-              const h = Math.ceil(e.nativeEvent.layout.height)
-              if (h === breakdownHeight.current) return
-              breakdownHeight.current = h
-              if (h > 0) setBreakdownOpenHeight(h)
-              // Content grew or shrank while open (e.g. the charts loaded): the header's
-              // height changes with it.
-              if (expandedRef.current) reportSize(BREAKDOWN_TOGGLE_MS)
-            }}
-          >
-            <CollectionBreakdown
-              selectedCollections={selectedCollections}
-              onToggleCollection={onToggleCollection}
-              style={{ paddingTop: 12, paddingBottom: 8, paddingHorizontal: 4 }}
-            />
+          {/* The whole expanded breakdown is the tour's "Track Your Items" spotlight. */}
+          <OnboardingTarget id="collection-graphs">
             <View
-              style={{
-                borderTopWidth: 1,
-                borderTopColor: BORDER_COLOR_COLLAPSED,
-                marginTop: 4,
-                overflow: 'hidden',
-                borderRadius: 12,
+              onLayout={(e) => {
+                const h = Math.ceil(e.nativeEvent.layout.height)
+                if (h === breakdownHeight.current) return
+                breakdownHeight.current = h
+                if (h > 0) setBreakdownOpenHeight(h)
+                // Content grew or shrank while open (e.g. the charts loaded): the header's
+                // height changes with it.
+                if (expandedRef.current) reportSize(BREAKDOWN_TOGGLE_MS)
               }}
             >
-              <Graphs height={GRAPH_HEIGHT} selectedCollections={selectedCollections} />
+              <CollectionBreakdown
+                selectedCollections={selectedCollections}
+                onToggleCollection={onToggleCollection}
+                style={{ paddingTop: 12, paddingBottom: 8, paddingHorizontal: 4 }}
+              />
+              <View
+                style={{
+                  borderTopWidth: 1,
+                  borderTopColor: BORDER_COLOR_COLLAPSED,
+                  marginTop: 4,
+                  overflow: 'hidden',
+                  borderRadius: 12,
+                }}
+              >
+                <Graphs height={GRAPH_HEIGHT} selectedCollections={selectedCollections} />
+              </View>
             </View>
-          </View>
+          </OnboardingTarget>
         </MotiView>
       </MotiView>
 
