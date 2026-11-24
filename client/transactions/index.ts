@@ -27,26 +27,23 @@ export function useUpdateTransactionStatus() {
   const qc = useQueryClient()
 
   return useMutation({
-    mutationFn: async ({ offerId, status }: { offerId: string; status: TransactionStatus }) => {
-      const supabase = getSupabase()
-
-      const { data, error } = await supabase
-        .from('transactions')
-        .update({ status })
-        .eq('offer_id', offerId)
-        .select()
-        .single()
-
+    mutationFn: async ({
+      offerId,
+      status,
+    }: {
+      offerId: string
+      status: Exclude<TransactionStatus, 'pending'>
+    }) => {
+      // ITS-121: each transition is its own RPC that checks the caller (seller ships, buyer
+      // confirms receipt, either disputes) and the current status. Confirming receipt also
+      // completes the offer in the same transaction.
+      const rpc = {
+        shipped: 'mark_transaction_shipped',
+        completed: 'confirm_transaction_receipt',
+        disputed: 'dispute_transaction',
+      } as const
+      const { data, error } = await getSupabase().rpc(rpc[status], { p_offer_id: offerId })
       if (error || !data) throw error ?? new Error('Failed to update transaction')
-
-      if (status === 'completed') {
-        const { error: offerError } = await supabase
-          .from('offers')
-          .update({ status: 'completed' })
-          .eq('id', offerId)
-        if (offerError) throw offerError
-      }
-
       return data
     },
     onSuccess: (_data, { offerId }) => {
@@ -64,13 +61,10 @@ export function useConfirmShippingAddress() {
 
   return useMutation({
     mutationFn: async ({ offerId, address }: { offerId: string; address: ShippingAddress }) => {
-      const supabase = getSupabase()
-      const { data, error } = await supabase
-        .from('transactions')
-        .update({ buyer_shipping_address: address as any })
-        .eq('offer_id', offerId)
-        .select()
-        .single()
+      const { data, error } = await getSupabase().rpc('set_transaction_shipping_address', {
+        p_offer_id: offerId,
+        p_address: address,
+      })
       if (error || !data) throw error ?? new Error('Failed to save shipping address')
       return data
     },

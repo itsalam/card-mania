@@ -135,6 +135,7 @@ export function TransactionScreen({ offerId }: { offerId: string }) {
                   offerId={offerId}
                   isBuyer={!isSeller}
                   confirmedAddress={data.buyer_shipping_address}
+                  canEdit={data.status === 'pending'}
                 />
               </CollapsibleSection>
 

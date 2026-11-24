@@ -139,10 +139,13 @@ export function ShippingAddressSection({
   offerId,
   isBuyer,
   confirmedAddress,
+  canEdit = true,
 }: {
   offerId: string
   isBuyer: boolean
   confirmedAddress: unknown
+  /** False once the order has shipped — the server only accepts changes while pending. */
+  canEdit?: boolean
 }) {
   const profile = useUserStore((s) => s.profile)
   const { showToast } = useToast()
@@ -219,11 +222,13 @@ export function ShippingAddressSection({
       {!editing && saved ? (
         <>
           <ConfirmedAddressBadge address={saved} />
-          <TouchableOpacity onPress={() => setEditing(true)} style={sectionStyles.editLink}>
-            <Text variant="small" style={sectionStyles.editLinkText}>
-              Edit address
-            </Text>
-          </TouchableOpacity>
+          {canEdit && (
+            <TouchableOpacity onPress={() => setEditing(true)} style={sectionStyles.editLink}>
+              <Text variant="small" style={sectionStyles.editLinkText}>
+                Edit address
+              </Text>
+            </TouchableOpacity>
+          )}
         </>
       ) : (
         <>
