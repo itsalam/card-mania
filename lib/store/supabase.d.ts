@@ -1589,11 +1589,50 @@ export type Database = {
           },
         ]
       }
+      offer_revisions: {
+        Row: {
+          author_id: string
+          author_role: string
+          created_at: string
+          id: string
+          note: string | null
+          offer_id: string
+          total_amount: number
+        }
+        Insert: {
+          author_id: string
+          author_role: string
+          created_at?: string
+          id?: string
+          note?: string | null
+          offer_id: string
+          total_amount: number
+        }
+        Update: {
+          author_id?: string
+          author_role?: string
+          created_at?: string
+          id?: string
+          note?: string | null
+          offer_id?: string
+          total_amount?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'offer_revisions_offer_id_fkey'
+            columns: ['offer_id']
+            isOneToOne: false
+            referencedRelation: 'offers'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       offers: {
         Row: {
           buyer_id: string
           buyer_note: string | null
           created_at: string | null
+          expires_at: string
           id: string
           seller_id: string
           status: string
@@ -1604,6 +1643,7 @@ export type Database = {
           buyer_id: string
           buyer_note?: string | null
           created_at?: string | null
+          expires_at?: string
           id?: string
           seller_id: string
           status?: string
@@ -1614,6 +1654,7 @@ export type Database = {
           buyer_id?: string
           buyer_note?: string | null
           created_at?: string | null
+          expires_at?: string
           id?: string
           seller_id?: string
           status?: string
@@ -3055,6 +3096,7 @@ export type Database = {
           buyer_id: string
           buyer_note: string | null
           created_at: string | null
+          expires_at: string
           id: string
           seller_id: string
           status: string
@@ -3226,6 +3268,7 @@ export type Database = {
           buyer_id: string
           buyer_note: string | null
           created_at: string | null
+          expires_at: string
           id: string
           seller_id: string
           status: string
@@ -3453,6 +3496,26 @@ export type Database = {
         Args: { p_class: string; p_n?: number; p_scheduled?: boolean }
         Returns: boolean
       }
+      counter_offer: {
+        Args: { p_note?: string; p_offer_id: string; p_total_amount: number }
+        Returns: {
+          buyer_id: string
+          buyer_note: string | null
+          created_at: string | null
+          expires_at: string
+          id: string
+          seller_id: string
+          status: string
+          total_amount: number
+          updated_at: string | null
+        }
+        SetofOptions: {
+          from: '*'
+          to: 'offers'
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       create_collection: {
         Args: { p_desc?: string; p_is_public?: boolean; p_name: string }
         Returns: string
@@ -3468,6 +3531,7 @@ export type Database = {
           buyer_id: string
           buyer_note: string | null
           created_at: string | null
+          expires_at: string
           id: string
           seller_id: string
           status: string
@@ -3492,6 +3556,7 @@ export type Database = {
           buyer_id: string
           buyer_note: string | null
           created_at: string | null
+          expires_at: string
           id: string
           seller_id: string
           status: string
@@ -3570,6 +3635,10 @@ export type Database = {
       ensure_pinned_group_for_user: {
         Args: { p_user_id: string }
         Returns: string
+      }
+      expire_offers: {
+        Args: never
+        Returns: number
       }
       generate_wishlist_hit_notifications: {
         Args: { p_max_per_user?: number }

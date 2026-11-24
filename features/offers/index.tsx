@@ -1,12 +1,7 @@
-import { useMyOffers, useUpdateOfferStatus } from '@/client/offers'
+import { useMyOffers } from '@/client/offers'
 import { Offer } from '@/client/offers/types'
-import { useToast } from '@/components/Toast'
-import { Button } from '@/components/ui/button'
-import { Separator } from '@/components/ui/separator'
-import { Text } from '@/components/ui/text/base-text'
-import { useRouter } from 'expo-router'
 import { ScrollView, View } from 'react-native'
-import { Colors } from 'react-native-ui-lib'
+import { OfferActions, OfferHistory, OfferTurnStrip } from './negotiation'
 import { EmptyState, LoadingSkeleton, OfferCardBase, styles } from './ui'
 
 export function OfferInboxPage() {
@@ -31,75 +26,13 @@ export function OfferInboxPage() {
 }
 
 export function InboxOfferCard({ offer }: { offer: Offer }) {
-  const { mutate: updateStatus, isPending } = useUpdateOfferStatus()
-  const { showToast } = useToast()
-  const router = useRouter()
-
-  const handleAction = (status: 'accepted' | 'declined') => {
-    updateStatus(
-      { offerId: offer.id, status },
-      {
-        onSuccess: () => {
-          showToast({
-            title: status === 'accepted' ? 'Offer Accepted' : 'Offer Declined',
-            message:
-              status === 'accepted'
-                ? 'The offer has been accepted and a transaction created.'
-                : 'The offer has been declined.',
-          })
-        },
-        onError: () => {
-          showToast({
-            title: 'Error',
-            message: 'Failed to update offer. Please try again.',
-          })
-        },
-      }
-    )
-  }
-
   return (
-    <OfferCardBase offer={offer}>
-      {offer.status === 'pending' && (
-        <>
-          <Separator orientation="horizontal" style={styles.separator} />
-          <View style={styles.actions}>
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={isPending}
-              onPress={() => handleAction('declined')}
-              style={styles.actionButton}
-            >
-              <Text style={[styles.declineText, { color: Colors.$textDefault }]}>Decline</Text>
-            </Button>
-            <Button
-              variant="primary"
-              size="sm"
-              disabled={isPending}
-              onPress={() => handleAction('accepted')}
-              style={styles.actionButton}
-            >
-              <Text>Accept</Text>
-            </Button>
-          </View>
-        </>
-      )}
-      {offer.status === 'accepted' && (
-        <>
-          <Separator orientation="horizontal" style={styles.separator} />
-          <View style={styles.actions}>
-            <Button
-              variant="outline"
-              size="sm"
-              style={styles.actionButton}
-              onPress={() => router.push(`/transactions/${offer.id}`)}
-            >
-              <Text>View Deal</Text>
-            </Button>
-          </View>
-        </>
-      )}
+    <OfferCardBase
+      offer={offer}
+      afterHeader={<OfferTurnStrip offer={offer} role="seller" />}
+      history={<OfferHistory offer={offer} role="seller" />}
+    >
+      <OfferActions offer={offer} role="seller" />
     </OfferCardBase>
   )
 }
