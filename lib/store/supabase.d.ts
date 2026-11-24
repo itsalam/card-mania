@@ -3071,6 +3071,13 @@ export type Database = {
       }
     }
     Functions: {
+      _assert_offer_turn: {
+        Args: {
+          p_action: string
+          p_offer: Database['public']['Tables']['offers']['Row']
+        }
+        Returns: string
+      }
       _clamp_nonnegative: { Args: { val: number }; Returns: number }
       _collection_item_value_cents: {
         Args: {
@@ -3162,6 +3169,7 @@ export type Database = {
           variants: string[]
         }[]
       }
+      _offer_responder: { Args: { p_status: string }; Returns: string }
       _push_preferences: { Args: { p_user_id: string }; Returns: Json }
       _push_suppression_reason: {
         Args: {
@@ -3636,10 +3644,7 @@ export type Database = {
         Args: { p_user_id: string }
         Returns: string
       }
-      expire_offers: {
-        Args: never
-        Returns: number
-      }
+      expire_offers: { Args: never; Returns: number }
       generate_wishlist_hit_notifications: {
         Args: { p_max_per_user?: number }
         Returns: number
@@ -3958,6 +3963,7 @@ export type Database = {
       }
       normalize_grade_key: { Args: { p_key: string }; Returns: string }
       normalize_grades_prices: { Args: { p: Json }; Returns: Json }
+      offer_response_window: { Args: never; Returns: string }
       publish_snapshot: {
         Args: {
           p_collection_id: string
