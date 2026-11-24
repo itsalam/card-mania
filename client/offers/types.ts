@@ -1,6 +1,14 @@
 import { z } from 'zod'
 
-export const OfferStatus = z.enum(['pending', 'accepted', 'declined', 'cancelled', 'completed'])
+export const OfferStatus = z.enum([
+  'pending',
+  'countered',
+  'accepted',
+  'declined',
+  'cancelled',
+  'expired',
+  'completed',
+])
 export type OfferStatus = z.infer<typeof OfferStatus>
 
 export const TransactionStatus = z.enum(['pending', 'shipped', 'completed', 'disputed'])
@@ -25,6 +33,18 @@ export const OfferItem = z.object({
 })
 export type OfferItem = z.infer<typeof OfferItem>
 
+// ITS-142: each proposal (the original offer, then every counter) is one revision.
+export const OfferRevision = z.object({
+  id: z.string().uuid(),
+  offer_id: z.string().uuid(),
+  author_id: z.string().uuid(),
+  author_role: z.enum(['buyer', 'seller']),
+  total_amount: z.number(),
+  note: z.string().nullable(),
+  created_at: z.string(),
+})
+export type OfferRevision = z.infer<typeof OfferRevision>
+
 export const Offer = z.object({
   id: z.string().uuid(),
   buyer_id: z.string().uuid(),
@@ -34,7 +54,9 @@ export const Offer = z.object({
   total_amount: z.number(),
   created_at: z.string(),
   updated_at: z.string(),
+  expires_at: z.string(),
   offer_items: z.array(OfferItem).optional(),
+  offer_revisions: z.array(OfferRevision).optional(),
 })
 export type Offer = z.infer<typeof Offer>
 

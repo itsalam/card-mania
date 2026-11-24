@@ -1,5 +1,10 @@
 import { useMyOffers } from '@/client/offers'
-import { Offer, OfferStatus } from '@/client/offers/types'
+import {
+  OFFER_STATUS_FILTERS,
+  OfferStatusFilter,
+  matchesStatusFilters,
+} from '@/client/offers/state'
+import { Offer } from '@/client/offers/types'
 import { ChipRowContainer, ToggleBadge } from '@/components/ui/badge'
 import { SearchBar } from '@/components/ui/search'
 import { Text } from '@/components/ui/text/base-text'
@@ -32,15 +37,6 @@ const VIEW_FILTERS: { value: ViewFilter; label: string }[] = [
   { value: 'my-offers', label: 'My Offers' },
 ]
 
-const STATUS_FILTERS: { value: OfferStatus | 'all'; label: string }[] = [
-  { value: 'all', label: 'All' },
-  { value: 'pending', label: 'Pending' },
-  { value: 'accepted', label: 'Accepted' },
-  { value: 'declined', label: 'Declined' },
-  { value: 'cancelled', label: 'Cancelled' },
-  { value: 'completed', label: 'Completed' },
-]
-
 const SORT_OPTIONS: { value: SortOption; label: string }[] = [
   { value: 'newest', label: 'Newest' },
   { value: 'oldest', label: 'Oldest' },
@@ -69,7 +65,7 @@ export default function WebOffersPage() {
   const [navQuery, setNavQuery] = useState('')
   const [scrolled, setScrolled] = useState(false)
   const [view, setView] = useState<ViewFilter>('inbox')
-  const [activeStatuses, setActiveStatuses] = useState<Set<OfferStatus>>(new Set())
+  const [activeStatuses, setActiveStatuses] = useState<Set<OfferStatusFilter>>(new Set())
   const [sort, setSort] = useState<SortOption>('newest')
   const [searchQuery, setSearchQuery] = useState('')
 
@@ -98,12 +94,14 @@ export default function WebOffersPage() {
 
   const filtered = sortOffers(
     baseOffers.filter((o) => {
-      if (activeStatuses.size > 0 && !activeStatuses.has(o.status as OfferStatus)) return false
+      if (!matchesStatusFilters(o, activeStatuses)) return false
       if (!query) return true
       const itemMatch = (o.offer_items ?? []).some((item) =>
         (item.card_snapshot?.title ?? '').toLowerCase().includes(query)
       )
-      const noteMatch = (o.buyer_note ?? '').toLowerCase().includes(query)
+      const noteMatch =
+        (o.buyer_note ?? '').toLowerCase().includes(query) ||
+        (o.offer_revisions ?? []).some((r) => (r.note ?? '').toLowerCase().includes(query))
       const counterpartyId = view === 'inbox' ? o.buyer_id : o.seller_id
       const profile = profiles[counterpartyId]
       const nameMatch =
@@ -296,14 +294,14 @@ export default function WebOffersPage() {
 
           {/* Status chips */}
           <ChipRowContainer label="Statuses">
-            {STATUS_FILTERS.map((f) => (
+            {OFFER_STATUS_FILTERS.map((f) => (
               <ToggleBadge
                 key={f.value}
                 label={f.label}
                 checked={
                   f.value === 'all'
                     ? activeStatuses.size === 0
-                    : activeStatuses.has(f.value as OfferStatus)
+                    : activeStatuses.has(f.value as OfferStatusFilter)
                 }
                 onPress={() => {
                   if (f.value === 'all') {
@@ -312,13 +310,14 @@ export default function WebOffersPage() {
                   }
                   setActiveStatuses((prev) => {
                     const next = new Set(prev)
-                    if (next.has(f.value as OfferStatus)) next.delete(f.value as OfferStatus)
-                    else next.add(f.value as OfferStatus)
+                    if (next.has(f.value as OfferStatusFilter))
+                      next.delete(f.value as OfferStatusFilter)
+                    else next.add(f.value as OfferStatusFilter)
                     return next
                   })
                 }}
                 rightElement={
-                  f.value !== 'all' && activeStatuses.has(f.value as OfferStatus) ? (
+                  f.value !== 'all' && activeStatuses.has(f.value as OfferStatusFilter) ? (
                     <X size={14} color={Colors.$textDefault} strokeWidth={3} />
                   ) : null
                 }

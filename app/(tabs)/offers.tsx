@@ -1,6 +1,11 @@
 import { GradientBackground } from '@/components/Background'
 import { useMyOffers } from '@/client/offers'
-import { Offer, OfferStatus } from '@/client/offers/types'
+import {
+  OFFER_STATUS_FILTERS,
+  OfferStatusFilter,
+  matchesStatusFilters,
+} from '@/client/offers/state'
+import { Offer } from '@/client/offers/types'
 import {
   PAGE_HEADER_CONTAINER_STYLE,
   PAGE_HEADER_TITLE_STYLE,
@@ -39,15 +44,6 @@ const VIEW_FILTERS: { value: ViewFilter; label: string }[] = [
   { value: 'my-offers', label: 'My Offers' },
 ]
 
-const STATUS_FILTERS: { value: OfferStatus | 'all'; label: string }[] = [
-  { value: 'all', label: 'All' },
-  { value: 'pending', label: 'Pending' },
-  { value: 'accepted', label: 'Accepted' },
-  { value: 'declined', label: 'Declined' },
-  { value: 'cancelled', label: 'Cancelled' },
-  { value: 'completed', label: 'Completed' },
-]
-
 const SORT_OPTIONS: { value: SortOption; label: string }[] = [
   { value: 'newest', label: 'Newest' },
   { value: 'oldest', label: 'Oldest' },
@@ -72,7 +68,7 @@ function sortOffers(offers: Offer[], sort: SortOption): Offer[] {
 
 export default function OffersRoute() {
   const [view, setView] = useState<ViewFilter>('inbox')
-  const [activeStatuses, setActiveStatuses] = useState<Set<OfferStatus>>(new Set())
+  const [activeStatuses, setActiveStatuses] = useState<Set<OfferStatusFilter>>(new Set())
   const [sort, setSort] = useState<SortOption>('newest')
   const [searchQuery, setSearchQuery] = useState('')
   const [sortModalVisible, setSortModalVisible] = useState(false)
@@ -110,7 +106,7 @@ export default function OffersRoute() {
   const query = searchQuery.trim().toLowerCase()
   const filtered = sortOffers(
     baseOffers.filter((o) => {
-      if (activeStatuses.size > 0 && !activeStatuses.has(o.status as OfferStatus)) return false
+      if (!matchesStatusFilters(o, activeStatuses)) return false
       if (!query) return true
 
       // card title (snapshot stored on offer item at offer time)
@@ -119,7 +115,9 @@ export default function OffersRoute() {
       )
 
       // buyer note
-      const noteMatch = (o.buyer_note ?? '').toLowerCase().includes(query)
+      const noteMatch =
+        (o.buyer_note ?? '').toLowerCase().includes(query) ||
+        (o.offer_revisions ?? []).some((r) => (r.note ?? '').toLowerCase().includes(query))
 
       // counterparty display name or username (resolved from user_profile)
       const counterpartyId = view === 'inbox' ? o.buyer_id : o.seller_id
@@ -172,7 +170,7 @@ export default function OffersRoute() {
           />
         </View>
         <ChipRowContainer label={'Statuses'}>
-          {STATUS_FILTERS.map((f) => (
+          {OFFER_STATUS_FILTERS.map((f) => (
             <ToggleBadge
               key={f.value}
               onPress={() => {
@@ -181,10 +179,10 @@ export default function OffersRoute() {
                 } else {
                   setActiveStatuses((prev) => {
                     const next = new Set(prev)
-                    if (next.has(f.value as OfferStatus)) {
-                      next.delete(f.value as OfferStatus)
+                    if (next.has(f.value as OfferStatusFilter)) {
+                      next.delete(f.value as OfferStatusFilter)
                     } else {
-                      next.add(f.value as OfferStatus)
+                      next.add(f.value as OfferStatusFilter)
                     }
                     return next
                   })
@@ -195,7 +193,7 @@ export default function OffersRoute() {
               checked={
                 f.value === 'all'
                   ? activeStatuses.size === 0
-                  : activeStatuses.has(f.value as OfferStatus)
+                  : activeStatuses.has(f.value as OfferStatusFilter)
               }
               rightElement={
                 f.value !== 'all' && activeStatuses.has(f.value) ? (

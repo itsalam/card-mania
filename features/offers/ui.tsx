@@ -1,5 +1,6 @@
 import { useCardQuery } from '@/client/card'
 import { useViewSingleCollectionItem } from '@/client/collections/query'
+import { effectiveOfferStatus } from '@/client/offers/state'
 import { Offer, OfferItem, OfferStatus } from '@/client/offers/types'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
@@ -151,17 +152,21 @@ export function LoadingSkeleton() {
 function StatusBadge({ status }: { status: OfferStatus }) {
   const colors: Record<OfferStatus, string> = {
     pending: Colors.$backgroundSuccessHeavy,
+    countered: Colors.$backgroundWarningLight,
     accepted: Colors.$backgroundSuccessLight,
     declined: Colors.$backgroundDangerLight,
     cancelled: Colors.$backgroundNeutralMedium,
+    expired: Colors.$backgroundNeutralMedium,
     completed: Colors.$backgroundSuccessLight,
   }
 
   const labels: Record<OfferStatus, string> = {
     pending: 'Pending',
+    countered: 'Countered',
     accepted: 'Accepted',
     declined: 'Declined',
     cancelled: 'Cancelled',
+    expired: 'Expired',
     completed: 'Completed',
   }
 
@@ -178,11 +183,18 @@ export function OfferCardBase({
   offer,
   children,
   counterpartyId,
+  afterHeader,
+  history,
 }: {
   offer: Offer
   children?: ReactNode
   counterpartyId?: string
+  /** ITS-140: whose move it is and time left (OfferTurnStrip). */
+  afterHeader?: ReactNode
+  /** ITS-142: proposal history (OfferHistory); replaces the single note once there's a counter. */
+  history?: ReactNode
 }) {
+  const hasHistory = (offer.offer_revisions?.length ?? 0) > 1
   const items = offer.offer_items ?? []
   const computedTotal = items.reduce(
     (sum, item) => sum + item.offered_price_per_unit * item.quantity,
@@ -213,8 +225,10 @@ export function OfferCardBase({
             {offer.created_at ? formatDate(offer.created_at) : ''}
           </Text>
         </View>
-        <StatusBadge status={offer.status} />
+        <StatusBadge status={effectiveOfferStatus(offer)} />
       </View>
+
+      {afterHeader}
 
       <Separator orientation="horizontal" style={styles.separator} />
 
@@ -237,8 +251,10 @@ export function OfferCardBase({
         </View>
       </View>
 
-      {/* Note */}
-      {offer.buyer_note ? (
+      {/* Note, or the full negotiation once there's been a counter */}
+      {hasHistory ? (
+        history
+      ) : offer.buyer_note ? (
         <>
           <Separator orientation="horizontal" style={styles.separator} />
           <View style={styles.noteContainer}>

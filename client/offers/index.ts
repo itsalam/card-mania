@@ -62,9 +62,10 @@ export function useMyOffers(role: 'buyer' | 'seller') {
 
       const { data, error } = await supabase
         .from('offers')
-        .select('*, offer_items(*)')
+        .select('*, offer_items(*), offer_revisions(*)')
         .eq(column, user.id)
         .order('created_at', { ascending: false })
+        .order('created_at', { referencedTable: 'offer_revisions', ascending: true })
 
       if (error) throw error
       return (data ?? []) as unknown as Offer[]
@@ -116,6 +117,40 @@ export function useUpdateOfferStatus() {
       // Accepting can also decline competing offers and creates a transaction.
       qc.invalidateQueries({ queryKey: ['offers'] })
       qc.invalidateQueries({ queryKey: ['transactions'] })
+    },
+  })
+}
+
+// ITS-142: counter the current terms (the total, plus an optional note). The server checks
+// it's the caller's turn and the offer hasn't lapsed, flips pending ↔ countered and resets
+// the 72h window. A counter is a proposal the other side may accept, so it isn't applied
+// optimistically: the caller shows a pending state until the server confirms.
+export function useCounterOffer() {
+  const qc = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({
+      offerId,
+      totalAmount,
+      note,
+    }: {
+      offerId: string
+      totalAmount: number
+      note?: string
+    }): Promise<Offer> => {
+      const { data, error } = await getSupabase().rpc('counter_offer', {
+        p_offer_id: offerId,
+        p_total_amount: totalAmount,
+        p_note: note?.trim() || undefined,
+      })
+      if (error || !data) throw error ?? new Error('Failed to send counteroffer')
+      return data as unknown as Offer
+    },
+    onError: (err, vars) => {
+      reportError({ context: 'useCounterOffer', error: err, metadata: { vars } })
+    },
+    onSettled: () => {
+      qc.invalidateQueries({ queryKey: ['offers'] })
     },
   })
 }
