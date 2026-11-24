@@ -1,4 +1,4 @@
-import { useCollectionTotal, useWishlistTotal } from '@/client/collections/query'
+import { useCollectionTotal } from '@/client/collections/query'
 import { Text } from '@/components/ui/text/base-text'
 import { formatCompactPrice } from '@/components/utils'
 import { useCollectionHistory } from '@/features/collection/hooks'
@@ -29,10 +29,12 @@ function StatCard({
   label,
   value,
   trend,
+  caption,
 }: {
   label: string
   value: string
   trend?: number | null
+  caption?: string
 }) {
   const trendColor =
     trend == null
@@ -63,6 +65,15 @@ function StatCard({
           {value}
         </Text>
       </View>
+      {caption ? (
+        <Text
+          variant="small"
+          numberOfLines={1}
+          style={{ color: Colors.$textNeutral, fontSize: 11 }}
+        >
+          {caption}
+        </Text>
+      ) : null}
     </View>
   )
 }
@@ -138,36 +149,28 @@ export function PortfolioSummary({
     if (graphsStepActive) setOpen(true)
   }, [graphsStepActive, setOpen])
 
-  const { data: wishlistTotal = 0 } = useWishlistTotal()
+  // ITS-123: Total Value is what you own. Triggers mirror every Selling item into the Vault,
+  // so the Vault already includes what's for sale (adding Selling counted it twice), and
+  // Wishlist cards aren't owned. Selling is shown as a share of the total; Wishlist stays in
+  // the breakdown below.
   const { data: sellingTotal = 0 } = useCollectionTotal({ collectionType: 'selling' })
   const { data: vaultTotal = 0 } = useCollectionTotal({ collectionType: 'vault' })
-
-  const { data: wishlistHistory } = useCollectionHistory({ collectionType: 'wishlist' })
-  const { data: sellingHistory } = useCollectionHistory({ collectionType: 'selling' })
   const { data: vaultHistory } = useCollectionHistory({ collectionType: 'vault' })
 
-  const totalValue = wishlistTotal + sellingTotal + vaultTotal
+  const totalValue = vaultTotal
+  const forSaleCaption =
+    sellingTotal > 0 ? `incl. ${formatCompactPrice(sellingTotal)} for sale` : undefined
 
-  const cardCount = useMemo(() => {
-    const wCount = wishlistHistory?.[wishlistHistory.length - 1]?.quantity_total ?? 0
-    const sCount = sellingHistory?.[sellingHistory.length - 1]?.quantity_total ?? 0
-    const vCount = vaultHistory?.[vaultHistory.length - 1]?.quantity_total ?? 0
-    return wCount + sCount + vCount
-  }, [wishlistHistory, sellingHistory, vaultHistory])
+  const cardCount = vaultHistory?.[vaultHistory.length - 1]?.quantity_total ?? 0
 
   const pctChange = useMemo(() => {
     const byDay = new Map<string, number>()
-    const addHistory = (history: typeof vaultHistory) => {
-      history?.forEach(({ snapshotted_at, total_cents }) => {
-        const d = new Date(snapshotted_at)
-        d.setHours(0, 0, 0, 0)
-        const day = String(d.getTime())
-        byDay.set(day, (byDay.get(day) ?? 0) + total_cents)
-      })
-    }
-    addHistory(wishlistHistory)
-    addHistory(sellingHistory)
-    addHistory(vaultHistory)
+    vaultHistory?.forEach(({ snapshotted_at, total_cents }) => {
+      const d = new Date(snapshotted_at)
+      d.setHours(0, 0, 0, 0)
+      // Several snapshots in a day: keep the latest (history is oldest first).
+      byDay.set(String(d.getTime()), total_cents)
+    })
 
     const sorted = [...byDay.entries()].sort((a, b) => Number(a[0]) - Number(b[0]))
     if (sorted.length < 2) return null
@@ -175,7 +178,7 @@ export function PortfolioSummary({
     const newest = sorted[sorted.length - 1][1]
     if (!oldest) return null
     return ((newest - oldest) / oldest) * 100
-  }, [wishlistHistory, sellingHistory, vaultHistory])
+  }, [vaultHistory])
 
   const pctLabel = pctChange != null ? `${pctChange > 0 ? '+' : ''}${pctChange.toFixed(1)}%` : '—'
 
@@ -196,7 +199,11 @@ export function PortfolioSummary({
       >
         {/* Stat cards — always visible */}
         <View style={{ flexDirection: 'row', gap: 8 }}>
-          <StatCard label="Total Value" value={formatCompactPrice(totalValue)} />
+          <StatCard
+            label="Total Value"
+            value={formatCompactPrice(totalValue)}
+            caption={forSaleCaption}
+          />
           <StatCard label="Cards" value={String(cardCount)} />
           <StatCard label="Change" value={pctLabel} trend={pctChange} />
         </View>
