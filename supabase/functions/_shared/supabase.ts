@@ -996,6 +996,7 @@ export type Database = {
           is_storefront: boolean | null
           is_vault: boolean | null
           is_wishlist: boolean
+          item_sort: string
           name: string
           updated_at: string
           user_id: string
@@ -1015,6 +1016,7 @@ export type Database = {
           is_storefront?: boolean | null
           is_vault?: boolean | null
           is_wishlist?: boolean
+          item_sort?: string
           name: string
           updated_at?: string
           user_id: string
@@ -1034,6 +1036,7 @@ export type Database = {
           is_storefront?: boolean | null
           is_vault?: boolean | null
           is_wishlist?: boolean
+          item_sort?: string
           name?: string
           updated_at?: string
           user_id?: string
@@ -3292,6 +3295,13 @@ export type Database = {
       }
       canonical_genre: { Args: { p: string }; Returns: string }
       check_email_registered: { Args: { p_email: string }; Returns: boolean }
+      card_popularity: {
+        Args: { p_ref_ids: string[] }
+        Returns: {
+          ref_id: string
+          score: number
+        }[]
+      }
       claim_cards_for_backfill_enrichment: {
         Args: { p_lease_seconds?: number; p_limit: number }
         Returns: {
@@ -3342,8 +3352,11 @@ export type Database = {
           p_collection_id: string
           p_group?: boolean
           p_page_param?: string
+          p_page_offset?: number
+          p_page_position?: number
           p_page_size?: number
           p_search?: string
+          p_sort?: string
         }
         Returns: {
           back_id: string
@@ -3372,6 +3385,8 @@ export type Database = {
           quantity: number
           ref_id: string
           set_name: string
+          sort_created_at: string
+          sort_position: number
           updated_at: string
           user_id: string
           variants: string[]
@@ -4007,6 +4022,10 @@ export type Database = {
       }
       remove_pinned_collection: {
         Args: { p_collection_id: string }
+        Returns: undefined
+      }
+      reorder_collection_items: {
+        Args: { p_collection_id: string; p_ref_ids: string[] }
         Returns: undefined
       }
       resolve_external_refs: {

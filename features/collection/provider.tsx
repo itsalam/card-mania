@@ -69,6 +69,9 @@ type CollectionsState = {
   resetSearchQuery: () => void
   showEditView: boolean
   setShowEditView: (showEditView: boolean) => void
+  /** ITS-200: the collection whose list is in reorder mode, or null. */
+  reorderingId: string | null
+  setReorderingId: (id: string | null) => void
   newCollectionInfo?: CollectionLike
   setNewCollectionInfo: (ci: CollectionLike) => void
 }
@@ -81,9 +84,12 @@ export const createCollectionPageStore = (preferenceState: PreferenceState) =>
     currentPage: defaultPages[0],
     exploreLayout: 'grid',
     setExploreLayout: (layout) => set({ exploreLayout: layout }),
-    setCurrentPage: (page) => set({ currentPage: page, showEditView: page === 'new' }),
+    setCurrentPage: (page) =>
+      set({ currentPage: page, showEditView: page === 'new', reorderingId: null }),
     showEditView: false,
     setShowEditView: (showEditView) => set({ showEditView }),
+    reorderingId: null,
+    setReorderingId: (reorderingId) => set({ reorderingId }),
     expanded: false,
     setIsExpanded: (expanded) => set({ expanded }),
     searchQuery: undefined,

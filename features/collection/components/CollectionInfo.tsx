@@ -12,6 +12,7 @@ import {
   FolderCheck,
   FolderPlus,
   LucideIcon,
+  ArrowUpDown,
   Pencil,
   Pin,
   PinOff,
@@ -95,6 +96,7 @@ function CollectionInfoContent({
   onEdit?: () => void
 }) {
   const [showDeleteModal, setShowDeleteModal] = useState(false)
+  const { setReorderingId } = useCollectionsPageStore()
 
   const authUserId = useUserStore((s) => s.user?.id)
   const { data: collection } = useGetCollection({ collectionId })
@@ -186,6 +188,19 @@ function CollectionInfoContent({
             onEdit?.()
           },
         },
+        // ITS-200. Selling mirrors storefront items, so its order isn't the user's to set.
+        ...(collection && !collection.is_selling && isOwned
+          ? {
+              reorder: {
+                label: 'Reorder',
+                icon: ArrowUpDown,
+                onClick() {
+                  // Reorder happens in place on this page's list (see CollectionPageLayout).
+                  setReorderingId(collection.id)
+                },
+              },
+            }
+          : {}),
         delete: {
           label: 'Delete',
           icon: Trash,

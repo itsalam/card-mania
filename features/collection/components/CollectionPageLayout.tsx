@@ -10,6 +10,15 @@ import { TCard } from '@/constants/types'
 import { CollectionItemQueryView, CollectionRow } from '@/lib/store/functions/types'
 
 import { useIsWishlisted } from '@/client/card/wishlist'
+import {
+  COLLECTION_SORTS,
+  CollectionItemSort,
+  collectionSort,
+  useSetCollectionSort,
+} from '@/client/collections/order'
+import { useToast } from '@/components/Toast'
+import { useUserStore } from '@/lib/store/useUserStore'
+import { keepPreviousData } from '@tanstack/react-query'
 import { CollectionLike } from '@/client/collections/types'
 import { CARD_LIST_GAP, LIST_THUMBNAIL_HEIGHT } from '@/components/tcg-card/consts'
 import { FadeScrollView } from '@/components/ui/fade-scroll'
@@ -17,11 +26,11 @@ import { Tabs } from '@/components/ui/tabs'
 import { Text } from '@/components/ui/text/base-text'
 import { useCollectionTourTrigger } from '@/features/onboarding'
 import { CollectionCardItemEntries } from '@/features/tcg-card-views/DetailCardView/pages/add-to-collections/components'
-import { CardListView } from '@/features/tcg-card-views/ListCard'
+import { CardListView, ROW_CONTENT_PADDING } from '@/features/tcg-card-views/ListCard'
 import { useRefresh } from '@/lib/hooks/useRefresh'
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs'
 import { ChevronDown, X } from 'lucide-react-native'
-import React, { useCallback, useMemo, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Pressable, RefreshControl, View } from 'react-native'
 import { FlatList, GestureDetector } from 'react-native-gesture-handler'
 import Animated, {
@@ -35,6 +44,8 @@ import Animated, {
   interpolateColor,
   LinearTransition,
   useAnimatedStyle,
+  useDerivedValue,
+  useScrollViewOffset,
   useSharedValue,
   withDelay,
   withTiming,
@@ -50,6 +61,9 @@ import CollectionBreakdown from './CollectionBreakdown'
 import { CollectionGroupContainer } from './CollectionGroupContainer'
 import { CollectionInfo } from './CollectionInfo'
 import { ScreenHeader } from './Header'
+import { ReorderBar, useReorderMode } from './reorder/shared'
+import { SortableList, SortableOverlay } from './reorder/SortableList'
+import { CollectionSortMenu } from './SortMenu'
 import { CollectionTabList } from './TabList'
 
 type ListEntry =
@@ -465,8 +479,14 @@ const DefaultCollectionView = ({ direction }: { direction: 'forward' | 'backward
 }
 
 const DetailCollectionView = ({ direction }: { direction: 'forward' | 'backward' }) => {
-  const { currentPage, setCurrentPage, preferenceState, pinnedCollectionsState } =
-    useCollectionsPageStore()
+  const {
+    currentPage,
+    setCurrentPage,
+    preferenceState,
+    pinnedCollectionsState,
+    reorderingId,
+    setReorderingId,
+  } = useCollectionsPageStore()
   const tabBarHeight = useBottomTabBarHeight()
 
   // 'default' is a UI-only page with no backing collection; only wishlist/selling/vault have real IDs
@@ -487,9 +507,40 @@ const DetailCollectionView = ({ direction }: { direction: 'forward' | 'backward'
 
   const { data: collection } = useGetCollection(getCollectionIdArgs(currentPage))
   const { data: allCollections } = useViewCollectionForUser()
+  // ITS-200: the owner's sort is saved on the collection; anyone else can re-sort it for
+  // themselves (not saved).
+  const authUserId = useUserStore((s) => s.user?.id)
+  const isOwner = !!collection && collection.user_id === authUserId
+  const [viewerSort, setViewerSort] = useState<CollectionItemSort | null>(null)
+  useEffect(() => setViewerSort(null), [collection?.id])
+  const savedSort = collectionSort(collection)
+  const sort: CollectionItemSort = isOwner ? savedSort : (viewerSort ?? savedSort)
+  const { mutate: saveSort } = useSetCollectionSort(collection?.id)
+  const { showToast } = useToast()
+  const changeSort = useCallback(
+    (next: CollectionItemSort) => {
+      if (!isOwner) {
+        setViewerSort(next)
+        return
+      }
+      saveSort(next, {
+        onError: () =>
+          showToast({ title: "Couldn't change the sort", message: 'Please try again.' }),
+      })
+    },
+    [isOwner, saveSort, showToast]
+  )
+
   const { query: collectionItemsQuery } = useGetCollectionItems<CollectionItemQueryView & TCard>(
     collectionItemsArgs,
-    { pageSize: 20 },
+    {
+      pageSize: 20,
+      sort,
+      // Wait for the collection so the first fetch already uses its sort.
+      enabled: !!collection,
+      // Keep showing the current cards while a new sort loads.
+      placeholderData: keepPreviousData,
+    },
     true
   )
   const { isLoading: isLoadingItems, refetch: refetchCollectionItems } = collectionItemsQuery
@@ -498,6 +549,17 @@ const DetailCollectionView = ({ direction }: { direction: 'forward' | 'backward'
   const collectionItems = useMemo(() => {
     return collectionItemsQuery.data?.pages.flat() ?? []
   }, [collectionItemsQuery.data])
+
+  // ITS-200: reorder mode runs on this same list. The page only loads its first page of cards,
+  // so reorder mode loads them all and works on that copy until Done.
+  const reordering = !!collection?.id && reorderingId === collection.id && !collection.is_selling
+  const exitReorder = useCallback(() => setReorderingId(null), [setReorderingId])
+  const reorder = useReorderMode(collection?.id, reordering, exitReorder, sort)
+  const sortableItems = useMemo<(CollectionItemQueryView & TCard)[]>(() => {
+    if (isLoadingItems) return Array(4).fill({ kind: 'skeleton' })
+    if (reordering && reorder.rows) return reorder.rows as (CollectionItemQueryView & TCard)[]
+    return collectionItems
+  }, [isLoadingItems, reordering, reorder.rows, collectionItems])
 
   const listData = useMemo<ListEntry[]>(() => {
     if (isLoadingItems) {
@@ -533,10 +595,35 @@ const DetailCollectionView = ({ direction }: { direction: 'forward' | 'backward'
     onHeaderLayout,
     expandProgress,
     headerCollapsing,
+    virtualOffset,
+    measuredHeaderHeight,
+    contentHeight,
+    containerHeight,
   } = useCollaspableHeader({
     disable: collectionItems.length > 0,
     resetKeys: [currentPage, collection?.id],
   })
+
+  // Auto-scroll while dragging a card near the top or bottom edge.
+  const maxVirtualOffset = useDerivedValue(
+    () => measuredHeaderHeight.value + Math.max(0, contentHeight.value - containerHeight.value)
+  )
+  // The scroll view also scrolls natively, so virtualOffset can lag its real position; the
+  // drag re-syncs from this before it auto-scrolls.
+  const realScrollY = useScrollViewOffset(scrollViewRef)
+  const syncedOffset = useDerivedValue(
+    () => expandProgress.value * measuredHeaderHeight.value + realScrollY.value
+  )
+  const autoScroll = useMemo(
+    () => ({
+      offset: virtualOffset,
+      max: maxVirtualOffset,
+      current: syncedOffset,
+      viewport: scrollViewRef,
+      bottomInset: tabBarHeight,
+    }),
+    [virtualOffset, maxVirtualOffset, syncedOffset, scrollViewRef, tabBarHeight]
+  )
 
   const borderAnimatedStyle = useAnimatedStyle(() => ({
     borderTopWidth: interpolate(expandProgress.value, [0, 1], [2, 0]),
@@ -598,15 +685,26 @@ const DetailCollectionView = ({ direction }: { direction: 'forward' | 'backward'
             collectionItem={{ ...data, id: data.collection_item_id }}
             navigateTo="/profile/[shop-item]"
             renderAccessories={({ isLoading }) => (
-              <CollectionCardItemEntries
-                key={`${collection?.id}-${cardId}`}
-                isLoading={isLoading}
-                card={card}
-                //@ts-ignore
-                collection={collection!}
-                isShown
-                editable
-              />
+              // ITS-200: in reorder mode SortableOverlay dims just these entries, with the drag
+              // icon on top; the art and title stay clear.
+              // flexGrow: the entries fill the accessory column (their Options tab pins to its
+              // bottom), so the wrapper has to as well for the overlay to cover all of them.
+              <View style={{ position: 'relative', alignSelf: 'stretch', flexGrow: 1 }}>
+                <CollectionCardItemEntries
+                  key={`${collection?.id}-${cardId}`}
+                  isLoading={isLoading}
+                  card={card}
+                  //@ts-ignore
+                  collection={collection!}
+                  isShown
+                  editable
+                />
+                <SortableOverlay
+                  // The Options tab sits past the column's bottom padding, flush with the row's
+                  // edge; extend the overlay to match. The row's rounded clip trims the corner.
+                  style={{ bottom: -ROW_CONTENT_PADDING, borderBottomRightRadius: 0 }}
+                />
+              </View>
             )}
             isLoading={isLoadingItems}
           />
@@ -637,6 +735,12 @@ const DetailCollectionView = ({ direction }: { direction: 'forward' | 'backward'
       return renderCardItem(item.data, false)
     },
     [renderCardItem, navigateToCollection]
+  )
+
+  const sortableKey = useCallback(
+    (d: CollectionItemQueryView & TCard, index: number) =>
+      d?.ref_id ? `card-${d.ref_id}` : `skeleton-${index}`,
+    []
   )
 
   const keyExtractor = useCallback(
@@ -693,22 +797,64 @@ const DetailCollectionView = ({ direction }: { direction: 'forward' | 'backward'
           </Animated.View>
           <Animated.View style={[borderAnimatedStyle, { borderColor: Colors.$outlineNeutral }]}>
             <FolderTabsContainer>
-              <AnimatedCollectionItemList
-                initialNumToRender={10}
-                scrollEnabled={false}
-                style={{ flex: 1 }}
-                bounces={false}
-                data={listData}
-                contentContainerStyle={{
-                  display: 'flex',
-                  gap: CARD_LIST_GAP,
-                  paddingTop: collection?.is_selling ? 0 : 18,
-                  paddingBottom: 20,
-                }}
-                ListEmptyComponent={EmptyColelctionList}
-                keyExtractor={keyExtractor}
-                renderItem={renderItem}
-              />
+              {reordering && (
+                <ReorderBar
+                  onCancel={reorder.cancel}
+                  onDone={reorder.done}
+                  changed={reorder.changed}
+                  isLoading={reorder.isLoading}
+                  error={reorder.error}
+                  sort={sort}
+                />
+              )}
+              {!reordering && collection && (isLoadingItems || collectionItems.length > 0) && (
+                <View style={{ paddingHorizontal: 16, paddingTop: 14 }}>
+                  <CollectionSortMenu
+                    value={sort}
+                    onChange={changeSort}
+                    // Selling mirrors the storefront and can't be hand-ordered.
+                    options={
+                      collection.is_selling
+                        ? COLLECTION_SORTS.filter((o) => o.value !== 'custom')
+                        : COLLECTION_SORTS
+                    }
+                    isUpdating={collectionItemsQuery.isPlaceholderData}
+                    hint={!isOwner && viewerSort ? 'Only for you' : undefined}
+                  />
+                </View>
+              )}
+              {collection?.is_selling ? (
+                <AnimatedCollectionItemList
+                  initialNumToRender={10}
+                  scrollEnabled={false}
+                  style={{ flex: 1 }}
+                  bounces={false}
+                  data={listData}
+                  contentContainerStyle={{
+                    display: 'flex',
+                    gap: CARD_LIST_GAP,
+                    paddingTop: 12,
+                    paddingBottom: 20,
+                  }}
+                  ListEmptyComponent={EmptyColelctionList}
+                  keyExtractor={keyExtractor}
+                  renderItem={renderItem}
+                />
+              ) : (
+                <SortableList
+                  items={sortableItems}
+                  keyOf={sortableKey}
+                  renderItem={(d) => renderCardItem(d, false)}
+                  reordering={reordering}
+                  dragEnabled={reordering && !!reorder.rows}
+                  onMove={reorder.move}
+                  gap={CARD_LIST_GAP}
+                  itemLabel={(d) => d.name ?? 'card'}
+                  autoScroll={autoScroll}
+                  style={{ paddingTop: reordering ? 18 : 12, paddingBottom: 20 }}
+                  ListEmptyComponent={<EmptyColelctionList />}
+                />
+              )}
             </FolderTabsContainer>
           </Animated.View>
         </View>

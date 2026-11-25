@@ -491,6 +491,9 @@ export function useCollaspableHeader(opts?: {
     measuredHeaderHeight,
     expandProgress,
     virtualOffset,
+    /** Height of the scroll view's content and of the scroll view itself. */
+    contentHeight,
+    containerHeight,
     pullDistance,
     pullRefreshTrigger,
   }

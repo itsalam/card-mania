@@ -202,7 +202,9 @@ otp_expiry = 86400
 
 [auth.sms]
 # Allow/disallow new user signups via SMS to your project.
-enable_signup = false
+# true locally: the CLI only turns phone sign-in on when this is set. Codes go through
+# [auth.hook.send_sms] below and are always 111111 (scripts/local-dev-auth.sh).
+enable_signup = true
 # If enabled, users need to confirm their phone number before signing in.
 enable_confirmations = false
 # Template for sending OTP to users
@@ -222,6 +224,15 @@ max_frequency = "5s"
 # inactivity_timeout = "8h"
 
 # This hook runs before a new user is created and allows developers to reject the request based on the incoming user object.
+# Local development: phone sign-in with no SMS provider. GoTrue hands each SMS to this hook
+# instead of sending it; dev.send_sms_noop drops it, and supabase/local/dev-auth.sql makes 111111
+# the code. Run scripts/local-dev-auth.sh after `supabase start` / `db reset` to create the
+# function. Local stack only: never `supabase config push` this to staging, where the function
+# doesn't exist and real SMS would stop.
+[auth.hook.send_sms]
+enabled = true
+uri = "pg-functions://postgres/dev/send_sms_noop"
+
 # [auth.hook.before_user_created]
 # enabled = true
 # uri = "pg-functions://postgres/auth/before-user-created-hook"
@@ -232,12 +243,14 @@ max_frequency = "5s"
 # uri = "pg-functions://<database>/<schema>/<hook_name>"
 
 # Configure one of the supported SMS providers: `twilio`, `twilio_verify`, `messagebird`, `textlocal`, `vonage`.
+# Local stack: enabled only so the CLI turns phone sign-in on. These are placeholders, not
+# credentials; [auth.hook.send_sms] takes every message, so Twilio is never called locally.
 [auth.sms.twilio]
-enabled = false
-account_sid = ""
-message_service_sid = ""
-# DO NOT commit your Twilio auth token to git. Use environment variable substitution instead:
-auth_token = "env(SUPABASE_AUTH_SMS_TWILIO_AUTH_TOKEN)"
+enabled = true
+account_sid = "local-dev-placeholder"
+message_service_sid = "local-dev-placeholder"
+# DO NOT commit a real Twilio auth token to git. Use environment variable substitution instead.
+auth_token = "local-dev-placeholder"
 
 # Multi-factor-authentication is available to Supabase Pro plan.
 [auth.mfa]
