@@ -81,8 +81,14 @@ echo
 # ── preflight: tooling + auth ───────────────────────────────────────────────
 
 command -v supabase >/dev/null || die "Supabase CLI not found"
-supabase projects list 2>/dev/null | grep -q "$PROJECT_REF" ||
-  die "Supabase CLI can't see project $PROJECT_REF — run 'supabase login'"
+# Keep the CLI's own error: "can't see the project" can mean no login, a malformed or expired
+# SUPABASE_ACCESS_TOKEN, or an account without access, and only the CLI's message says which.
+if ! PROJECTS_OUT="$(supabase projects list 2>&1 </dev/null)"; then
+  printf '%s\n' "$PROJECTS_OUT" | grep -v -e 'new version' -e 'recommend updating' >&2
+  die "Supabase CLI couldn't list projects (error above). Locally: 'supabase login'. In CI: check SUPABASE_ACCESS_TOKEN is current and is exactly sbp_ + 40 hex characters (no spaces or quotes)."
+fi
+grep -q "$PROJECT_REF" <<<"$PROJECTS_OUT" ||
+  die "Supabase CLI is signed in, but its account can't see project $PROJECT_REF"
 green "✓ Supabase CLI authenticated"
 
 LINKED_REF="$(cat supabase/.temp/project-ref 2>/dev/null || true)"
