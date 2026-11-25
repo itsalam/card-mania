@@ -1,10 +1,10 @@
--- pgTAP: collection order (ITS-200). Owner O's collection K holds cards A, B (two copies), C,
--- added in that order. X is another user.
+-- pgTAP: collection order and sorts (ITS-200). Owner O's collection K holds cards A, B (two
+-- copies), C, added in that order. X is another user.
 
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(17);
+select plan(32);
 
 insert into auth.users (id, instance_id, aud, role, email, encrypted_password, email_confirmed_at, raw_app_meta_data, raw_user_meta_data, is_sso_user, is_anonymous, created_at, updated_at)
 values
@@ -13,9 +13,9 @@ values
 
 insert into public.cards (id, name, set_name, genre, grades_prices)
 values ('20000000-0000-0000-0000-00000000000a', 'Zzyx CIO A', 'S', 'Baseball', '{"ungraded": 100}'),
-       ('20000000-0000-0000-0000-00000000000b', 'Zzyx CIO B', 'S', 'Baseball', '{"ungraded": 100}'),
-       ('20000000-0000-0000-0000-00000000000c', 'Zzyx CIO C', 'S', 'Baseball', '{"ungraded": 100}'),
-       ('20000000-0000-0000-0000-00000000000d', 'Zzyx CIO D', 'S', 'Baseball', '{"ungraded": 100}');
+       ('20000000-0000-0000-0000-00000000000b', 'Zzyx CIO B', 'S', 'Baseball', '{"ungraded": 500}'),
+       ('20000000-0000-0000-0000-00000000000c', 'Zzyx CIO C', 'S', 'Baseball', '{}'),
+       ('20000000-0000-0000-0000-00000000000d', 'Zzyx CIO D', 'S', 'Baseball', '{"ungraded": 300}');
 
 insert into public.collections (id, user_id, name)
 values ('20000000-0000-0000-0000-0000000000d1', '20000000-0000-0000-0000-0000000000a1', 'Zzyx CIO K');
@@ -38,6 +38,16 @@ returns text language sql as $$
   select string_agg(right(name, 1), '' order by ord)
     from (select name, row_number() over () as ord
             from public.collection_item_query('20000000-0000-0000-0000-0000000000d1', p_after, null, p_size, p_group, p_pos)) q
+$$;
+
+-- Card names in a sort, offset-paged.
+create function pg_temp.sorted(p_sort text, p_group boolean default true, p_size int default 20, p_offset int default 0)
+returns text language sql as $$
+  select string_agg(right(name, 1), '' order by ord)
+    from (select name, row_number() over () as ord
+            from public.collection_item_query('20000000-0000-0000-0000-0000000000d1',
+                   p_page_size => p_size, p_group => p_group, p_sort => p_sort,
+                   p_page_offset => p_offset)) q
 $$;
 
 select pg_temp.act_as('20000000-0000-0000-0000-0000000000a1');
@@ -79,6 +89,55 @@ insert into public.collection_items (collection_id, user_id, item_kind, ref_id, 
 values ('20000000-0000-0000-0000-0000000000d1', '20000000-0000-0000-0000-0000000000a1', 'card', '20000000-0000-0000-0000-00000000000d', 1);
 select is(pg_temp.names(true), 'DACB', 'a newly added card shows above the custom order');
 
+-- ── sorts (D 300, A 100, B 500 over two copies, C unpriced) ─────────────────
+select is(pg_temp.sorted(null), 'DACB', 'no p_sort: the collection''s item_sort (custom after reorder)');
+select is(pg_temp.sorted('newest'), 'DCBA', 'newest: by newest copy');
+select is(pg_temp.sorted('oldest'), 'ABCD', 'oldest: by oldest copy');
+select is(pg_temp.sorted('price_desc'), 'BDAC', 'price high to low, unpriced last');
+select is(pg_temp.sorted('price_asc'), 'ADBC', 'price low to high, unpriced still last');
+select is(pg_temp.sorted('newest', false), 'DCBBA', 'ungrouped newest keeps every copy');
+select is(pg_temp.sorted('price_desc', true, 2, 2), 'AC', 'offset paging: page 2 of a price sort');
+
+-- Popularity: wishlists elsewhere count, even ones the caller can't see.
+-- C is on both users' wishlists, A on X's only.
+reset role;
+create function pg_temp.wishlist(p_uid uuid) returns uuid language plpgsql as $$
+declare v uuid;
+begin
+  select id into v from public.collections where user_id = p_uid and is_wishlist limit 1;
+  if v is null then
+    insert into public.collections (user_id, name, is_wishlist)
+    values (p_uid, 'Zzyx CIO wishlist', true) returning id into v;
+  end if;
+  return v;
+end $$;
+insert into public.collection_items (collection_id, user_id, item_kind, ref_id, quantity)
+values (pg_temp.wishlist('20000000-0000-0000-0000-0000000000b1'), '20000000-0000-0000-0000-0000000000b1', 'card', '20000000-0000-0000-0000-00000000000c', 1),
+       (pg_temp.wishlist('20000000-0000-0000-0000-0000000000b1'), '20000000-0000-0000-0000-0000000000b1', 'card', '20000000-0000-0000-0000-00000000000a', 1),
+       (pg_temp.wishlist('20000000-0000-0000-0000-0000000000a1'), '20000000-0000-0000-0000-0000000000a1', 'card', '20000000-0000-0000-0000-00000000000c', 1);
+select pg_temp.act_as('20000000-0000-0000-0000-0000000000a1');
+select is(pg_temp.sorted('popular'), 'CADB', 'popular: most wishlisted first, then newest');
+select ok(
+  (select score from public.card_popularity(array['20000000-0000-0000-0000-00000000000c']::uuid[])) > 0,
+  'card_popularity scores a wishlisted card above zero'
+);
+select is(
+  (select score from public.card_popularity(array['20000000-0000-0000-0000-00000000000d']::uuid[])),
+  0::numeric, 'card_popularity: no signal is zero'
+);
+
+-- The owner's chosen sort becomes the default.
+update public.collections set item_sort = 'price_desc' where id = '20000000-0000-0000-0000-0000000000d1';
+select is(pg_temp.sorted(null), 'BDAC', 'no p_sort follows a saved item_sort');
+select is(pg_temp.names(true), 'DACB', 'legacy cursor clients still get the custom order');
+
+reset role;
+select throws_ok(
+  $$ update public.collections set item_sort = 'random' where id = '20000000-0000-0000-0000-0000000000d1' $$,
+  '23514', null, 'item_sort only takes known sorts'
+);
+select pg_temp.act_as('20000000-0000-0000-0000-0000000000a1');
+
 -- ── guards ──────────────────────────────────────────────────────────────────
 select throws_ok(
   $$ select public.reorder_collection_items('20000000-0000-0000-0000-0000000000d1',
@@ -114,7 +173,21 @@ select throws_ok(
   'P0002', 'Collection not found', 'another user can''t reorder it'
 );
 
+-- Saving an order switches the collection back to the custom sort.
 reset role;
+update public.collections set item_sort = 'price_desc' where id = '20000000-0000-0000-0000-0000000000d1';
+select pg_temp.act_as('20000000-0000-0000-0000-0000000000a1');
+select lives_ok(
+  $$ select public.reorder_collection_items('20000000-0000-0000-0000-0000000000d1',
+       array['20000000-0000-0000-0000-00000000000b', '20000000-0000-0000-0000-00000000000d', '20000000-0000-0000-0000-00000000000a', '20000000-0000-0000-0000-00000000000c']::uuid[]) $$,
+  'owner saves a new order from a price sort'
+);
+reset role;
+select is(
+  (select item_sort from public.collections where id = '20000000-0000-0000-0000-0000000000d1'),
+  'custom', 'reorder switches item_sort to custom'
+);
+
 set local role anon;
 select throws_ok(
   $$ select public.reorder_collection_items('20000000-0000-0000-0000-0000000000d1', array[]::uuid[]) $$,
@@ -126,7 +199,7 @@ reset role;
 select is(
   (select count(*)::int from public.collection_item_events ev
     where ev.collection_id = '20000000-0000-0000-0000-0000000000d1'),
-  5, 'reorder writes no collection_item_events (only the 5 inserts)'
+  5, 'reorder and sort changes write no collection_item_events (only the 5 inserts)'
 );
 
 select * from finish();

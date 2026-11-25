@@ -37,7 +37,6 @@ import {
 } from '../hooks'
 import { DefaultPageTypes, useCollectionsPageStore } from '../provider'
 import { DeleteModal } from './DeleteModal'
-import { ReorderCollectionSheet } from './reorder'
 
 type Option = {
   label: string
@@ -97,7 +96,7 @@ function CollectionInfoContent({
   onEdit?: () => void
 }) {
   const [showDeleteModal, setShowDeleteModal] = useState(false)
-  const [showReorder, setShowReorder] = useState(false)
+  const { setReorderingId } = useCollectionsPageStore()
 
   const authUserId = useUserStore((s) => s.user?.id)
   const { data: collection } = useGetCollection({ collectionId })
@@ -196,7 +195,8 @@ function CollectionInfoContent({
                 label: 'Reorder',
                 icon: ArrowUpDown,
                 onClick() {
-                  setShowReorder(true)
+                  // Reorder happens in place on this page's list (see CollectionPageLayout).
+                  setReorderingId(collection.id)
                 },
               },
             }
@@ -329,13 +329,6 @@ function CollectionInfoContent({
             )
           )}
         </View>
-        {showActions && collection?.id && (
-          <ReorderCollectionSheet
-            collectionId={collection.id}
-            visible={showReorder}
-            onClose={() => setShowReorder(false)}
-          />
-        )}
         {showActions && (
           <DeleteModal
             showDeleteModal={showDeleteModal}

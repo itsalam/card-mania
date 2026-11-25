@@ -1,8 +1,4 @@
-import {
-  CollectionPageCursor,
-  collectionPageCursorArgs,
-  nextCollectionPageCursor,
-} from '@/client/collections/order'
+import { collectionPageArgs, nextCollectionPageOffset } from '@/client/collections/order'
 import { DEFAULT_INF_Q_OPTIONS, useViewCollectionItems } from '@/client/collections/query'
 import { CollectionIdArgs, InfQueryOptions, InifiniteQueryParams } from '@/client/collections/types'
 import { TCard } from '@/constants/types'
@@ -407,13 +403,14 @@ function getCollectionItemsArgs<T extends CollectionItemRow>(
   const finalOpts = { ...DEFAULT_INF_Q_OPTIONS, ...opts } as InfQueryOptions<T>
   const shouldGroup = group ?? Boolean(collectionId)
   if (collectionId) {
-    const { pageSize, search, kind, ...queryOpts } = finalOpts
+    const { pageSize, search, kind, sort, ...queryOpts } = finalOpts
     return {
       ...queryOpts,
       queryKey: [
         ...qk.collectionItems(collectionId),
         'infinite',
         shouldGroup ? 'grouped' : 'ungrouped',
+        sort ?? 'saved',
       ],
       queryFn: async ({ pageParam }) => {
         const { data, error } = await getSupabase().rpc('collection_item_query', {
@@ -421,16 +418,16 @@ function getCollectionItemsArgs<T extends CollectionItemRow>(
           p_search: search,
           p_page_size: pageSize,
           p_group: shouldGroup,
-          ...collectionPageCursorArgs(pageParam as CollectionPageCursor | null),
+          ...collectionPageArgs(pageParam as number, sort),
         })
         if (error) throw error
         return (data ?? []) as unknown as T[]
       },
-      // ITS-200: lists sort by position, then newest first, so the cursor carries both.
-      getNextPageParam(lastPage) {
-        return nextCollectionPageCursor(lastPage as any, pageSize ?? 20)
+      // ITS-200: offset paging works for every sort (custom, date, price, popularity).
+      getNextPageParam(lastPage, allPages) {
+        return nextCollectionPageOffset(lastPage as any, allPages as any, pageSize ?? 20)
       },
-      initialPageParam: null as CollectionPageCursor | null,
+      initialPageParam: 0 as number,
     }
   } else if (collectionType) {
     //@ts-ignore
@@ -557,14 +554,20 @@ function getDefaultCollectionPageQueryArgs<T extends CollectionItemRow>(
   opts?: InfQueryOptions<T>,
   group?: boolean
 ) {
-  let { pageSize, search, kind } = { ...DEFAULT_INF_Q_OPTIONS, ...opts }
+  let { pageSize, search, kind, sort } = { ...DEFAULT_INF_Q_OPTIONS, ...opts }
   const queryKey = [
-    [...qk.collectionItems(collectionType), 'infinite', group ? 'grouped' : 'ungrouped'],
+    [
+      ...qk.collectionItems(collectionType),
+      'infinite',
+      group ? 'grouped' : 'ungrouped',
+      sort ?? 'saved',
+    ],
   ]
 
   const args = {
     queryKey,
-    getNextPageParam: (lastPage) => nextCollectionPageCursor(lastPage as any, pageSize ?? 20),
+    getNextPageParam: (lastPage, allPages) =>
+      nextCollectionPageOffset(lastPage as any, allPages as any, pageSize ?? 20),
     queryFn: async ({ pageParam }) => {
       const collectionId = await collecitonIdPromise?.()
       if (!collectionId) return []
@@ -574,14 +577,14 @@ function getDefaultCollectionPageQueryArgs<T extends CollectionItemRow>(
         p_search: search,
         p_page_size: pageSize,
         p_group: group,
-        ...collectionPageCursorArgs(pageParam as CollectionPageCursor | null),
+        ...collectionPageArgs(pageParam as number, sort),
       })
 
       if (error) throw error
       //@ts-ignore
       return (data ?? []) as CollectionItemRow[]
     },
-    initialPageParam: null as CollectionPageCursor | null,
+    initialPageParam: 0 as number,
   } as InifiniteQueryParams<CollectionItemRow>
 
   return args as any as InifiniteQueryParams

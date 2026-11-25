@@ -92,6 +92,8 @@ export type CollectionReturn = CollectionItemQueryRow
 
 export type InfQueryOptions<T extends CollectionItemRow> = {
   pageSize?: number
+  /** ITS-200: sort to use; omitted, the server uses the collection's own item_sort. */
+  sort?: import('./order').CollectionItemSort
   search?: string // e.g. filter by card title (requires a title column in cards)
   kind?: ItemKinds
 } & Partial<InifiniteQueryParams<T>>

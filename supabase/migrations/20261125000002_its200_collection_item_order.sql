@@ -1,23 +1,86 @@
--- ITS-200: collectors can reorder the cards in their own collections.
+-- ITS-200: collectors can reorder the cards in their own collections, and every collection has a
+-- sort.
 --
--- collection_items.position (default 0) existed but nothing set or read it; lists were always
--- newest first. Now:
---   * collection_item_query sorts by position, then newest first. A collection that has never
---     been reordered has every position at 0, so its order is unchanged.
---   * reorder_collection_items saves an order: positions 1..n, by card. Copies of the same card
---     (one grouped row in the app) share a position and move together.
---   * New cards keep the default position 0, so they land above the custom-ordered ones,
---     newest first.
+-- Sorts (collections.item_sort, chosen by the owner; anyone viewing can pass their own p_sort):
+--   custom      position, then newest first. collection_items.position (default 0) existed but
+--               nothing set or read it. A collection that has never been reordered has every
+--               position at 0, so this is newest first. New cards keep position 0, so they land
+--               above the custom-ordered ones.
+--   newest      date added, newest first
+--   oldest      date added, oldest first
+--   price_desc  market value for the item's grade, highest first; unpriced cards last
+--   price_asc   market value, lowest first; unpriced cards last
+--   popular     the app-wide card popularity score (wishlists + completed sales, the same s_pop
+--               formula as search and the marketplace sections), highest first
+-- Grouped lists (one row per card) sort a card by its newest copy, its oldest copy or its most
+-- valuable copy.
 --
--- Paging moves from a created_at cursor to (position, created_at). The new p_page_position
--- parameter is optional: installed builds that send only p_page_param are treated as position
--- 0, which is exact for collections that were never reordered.
+-- reorder_collection_items saves an order: positions 1..n, by card (copies move together), and
+-- switches the collection to the custom sort.
+--
+-- Paging: clients that send p_page_offset get offset paging in any sort. Installed builds that
+-- don't send it keep the (position, created_at) cursor in the custom sort: p_page_position is
+-- optional, and a build that sends only p_page_param is treated as position 0, which is exact for
+-- collections that were never reordered.
 --
 -- Also fixes grouped paging: the old `ref_rank <= page_size` filter ranked groups across the
 -- whole collection, so every page after the first came back empty. The final LIMIT already
 -- caps the page.
 
+alter table public.collections
+  add column if not exists item_sort text not null default 'custom'
+    constraint collections_item_sort_check
+      check (item_sort in ('custom', 'newest', 'oldest', 'price_desc', 'price_asc', 'popular'));
+
+comment on column public.collections.item_sort is
+  'ITS-200: how the collection''s cards are sorted by default. See collection_item_query.';
+
+-- Popularity score (0..1) for the given cards. Same formula as s_pop in search_cards_blended and
+-- popularity_score in _marketplace_base_listings: wishlist count and completed-sale count,
+-- log-scaled, weighted by search_config. SECURITY DEFINER so it counts every wishlist, not only
+-- the caller's; it returns scores, never whose wishlists they are.
+create or replace function public.card_popularity(p_ref_ids uuid[])
+returns table (ref_id uuid, score numeric)
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  with cfg as (
+    select pop_wishlist_weight, pop_sale_weight, pop_log_divisor
+      from public.search_config where id = 1
+  ),
+  wishlist_counts as (
+    select ci.ref_id, count(*) as cnt
+      from public.collection_items ci
+      join public.collections col on col.id = ci.collection_id and col.is_wishlist = true
+     where ci.item_kind = 'card' and ci.ref_id = any(p_ref_ids)
+     group by ci.ref_id
+  ),
+  sale_counts as (
+    select ci.ref_id, count(*) as cnt
+      from public.transactions t
+      join public.offer_items oi on oi.offer_id = t.offer_id
+      join public.collection_items ci on ci.id = oi.collection_item_id
+     where t.status = 'completed' and ci.ref_id = any(p_ref_ids)
+     group by ci.ref_id
+  )
+  select r.ref_id,
+         least(1.0,
+           (  cfg.pop_wishlist_weight * log(1.0 + coalesce(wl.cnt, 0)::numeric)
+            + cfg.pop_sale_weight     * log(1.0 + coalesce(sl.cnt, 0)::numeric)
+           ) / cfg.pop_log_divisor)
+    from unnest(p_ref_ids) as r(ref_id)
+    cross join cfg
+    left join wishlist_counts wl on wl.ref_id = r.ref_id
+    left join sale_counts sl on sl.ref_id = r.ref_id
+$$;
+
+revoke all on function public.card_popularity(uuid[]) from public;
+grant execute on function public.card_popularity(uuid[]) to anon, authenticated, service_role;
+
 drop function if exists public.collection_item_query(uuid, timestamptz, text, integer, boolean);
+drop function if exists public.collection_item_query(uuid, timestamptz, text, integer, boolean, integer);
 
 create function public.collection_item_query(
   p_collection_id uuid,
@@ -25,7 +88,11 @@ create function public.collection_item_query(
   p_search text default null,
   p_page_size integer default 20,
   p_group boolean default false,
-  p_page_position integer default null
+  p_page_position integer default null,
+  -- null: the collection's item_sort (offset paging) or custom (legacy cursor paging)
+  p_sort text default null,
+  -- rows to skip; sending it (0 for the first page) switches to offset paging
+  p_page_offset integer default null
 )
 returns table (
   collection_item_id uuid, collection_id uuid, collection_ref uuid, user_id uuid,
@@ -35,14 +102,23 @@ returns table (
   grades_prices jsonb, genre text, last_updated timestamptz, front_id text, back_id text,
   extras text[], price_key text, collection_item_value integer, primary_image_cache_id uuid,
   primary_image_storage_path text, primary_image_width integer, primary_image_height integer,
-  -- The row's sort key, for the next page's cursor (pass as p_page_position / p_page_param).
+  -- The row's legacy cursor (p_page_position / p_page_param). Offset clients ignore it.
   sort_position integer, sort_created_at timestamptz
 )
 language sql
 stable
 set search_path to 'public'
 as $function$
-with base as (
+with settings as (
+    select case
+             when p_page_offset is null then 'custom'
+             else coalesce(
+               p_sort,
+               (select col.item_sort from public.collections col where col.id = p_collection_id),
+               'custom')
+           end as sort
+),
+raw as (
     select
         ci.id              as collection_item_id,
         ci.collection_id,
@@ -71,13 +147,7 @@ with base as (
         cii.image_cache_id as primary_image_cache_id,
         cii.storage_path   as primary_image_storage_path,
         cii.width          as primary_image_width,
-        cii.height         as primary_image_height,
-        max(ci.created_at) over (partition by ci.ref_id) as ref_latest_created_at,
-        min(ci.position)   over (partition by ci.ref_id) as ref_position,
-        row_number() over (
-            partition by ci.ref_id
-            order by ci.created_at desc
-        )                                                 as ref_rownum
+        cii.height         as primary_image_height
     from
         public.collection_items ci
         left join public.cards c
@@ -102,19 +172,52 @@ with base as (
             )
         )
 ),
+valued as (
+    select *, coalesce((grades_prices ->> price_key)::int, 0) as item_value
+    from raw
+),
+base as (
+    select
+        v.*,
+        max(v.created_at) over (partition by v.ref_id) as ref_latest_created_at,
+        min(v.created_at) over (partition by v.ref_id) as ref_first_created_at,
+        min(v."position") over (partition by v.ref_id) as ref_position,
+        max(v.item_value) over (partition by v.ref_id) as ref_max_value,
+        row_number() over (
+            partition by v.ref_id
+            order by v.created_at desc
+        )                                                as ref_rownum
+    from valued v
+),
+-- Scores only when sorting by popularity; otherwise an empty lookup.
+pop as (
+    select p.ref_id, p.score
+    from public.card_popularity(
+        case when (select sort from settings) = 'popular'
+             then array(select distinct b.ref_id from base b where b.item_kind = 'card'::public.item_kind)
+             else '{}'::uuid[] end
+    ) p
+),
 keyed as (
     select
-        *,
-        case when p_group then ref_position else "position" end              as k_position,
-        case when p_group then ref_latest_created_at else created_at end     as k_created_at
-    from base
-    where p_group = false or ref_rownum = 1
+        b.*,
+        case when p_group then b.ref_position else b."position" end                  as k_position,
+        case when p_group then b.ref_latest_created_at else b.created_at end         as k_created_at,
+        case when p_group then b.ref_first_created_at else b.created_at end          as k_first_created_at,
+        -- 0 means no price for this grade: sort it last either way.
+        nullif(case when p_group then b.ref_max_value else b.item_value end, 0)      as k_value,
+        coalesce(pop.score, 0)                                                       as k_popularity
+    from base b
+    left join pop on pop.ref_id = b.ref_id
+    where p_group = false or b.ref_rownum = 1
 ),
 filtered as (
     select *
     from keyed
     where
-        p_page_param is null
+        -- Legacy cursor paging (custom sort only).
+        p_page_offset is not null
+        or p_page_param is null
         or k_position > coalesce(p_page_position, 0)
         or (k_position = coalesce(p_page_position, 0) and k_created_at < p_page_param)
 )
@@ -143,7 +246,7 @@ select
     r.back_id,
     r.extras,
     r.price_key,
-    coalesce((r.grades_prices ->> r.price_key)::int, 0) as collection_item_value,
+    r.item_value as collection_item_value,
     r.primary_image_cache_id,
     r.primary_image_storage_path,
     r.primary_image_width,
@@ -151,15 +254,27 @@ select
     r.k_position   as sort_position,
     r.k_created_at as sort_created_at
 from filtered r
-order by r.k_position asc, r.k_created_at desc, r.ref_id, r.collection_item_id
-limit coalesce(p_page_size, 20);
+cross join settings s
+order by
+    case when s.sort = 'custom'     then r.k_position end asc,
+    case when s.sort = 'oldest'     then r.k_first_created_at end asc,
+    case when s.sort = 'price_desc' then r.k_value end desc nulls last,
+    case when s.sort = 'price_asc'  then r.k_value end asc nulls last,
+    case when s.sort = 'popular'    then r.k_popularity end desc,
+    -- custom and newest, and the tie-break for everything else: newest first.
+    r.k_created_at desc,
+    r.ref_id,
+    r.collection_item_id
+limit coalesce(p_page_size, 20)
+offset coalesce(p_page_offset, 0);
 $function$;
 
-grant execute on function public.collection_item_query(uuid, timestamptz, text, integer, boolean, integer)
+grant execute on function public.collection_item_query(uuid, timestamptz, text, integer, boolean, integer, text, integer)
   to anon, authenticated, service_role;
 
--- Saves the order of a collection's cards. p_ref_ids lists every card in the collection once,
--- first to last; all copies of a card get that card's position (1-based).
+-- Saves the order of a collection's cards and switches it to the custom sort. p_ref_ids lists
+-- every card in the collection once, first to last; all copies of a card get that card's
+-- position (1-based).
 create or replace function public.reorder_collection_items(p_collection_id uuid, p_ref_ids uuid[])
 returns void
 language plpgsql
@@ -210,6 +325,9 @@ begin
    where ci.collection_id = p_collection_id
      and ci.ref_id = o.ref_id
      and ci.position is distinct from o.ord::int;
+
+  update public.collections set item_sort = 'custom'
+   where id = p_collection_id and item_sort <> 'custom';
 end;
 $$;
 
