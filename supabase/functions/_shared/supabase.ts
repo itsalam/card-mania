@@ -3098,7 +3098,6 @@ export type Database = {
         }
       }
       canonical_genre: { Args: { p: string }; Returns: string }
-      check_email_registered: { Args: { p_email: string }; Returns: boolean }
       card_popularity: {
         Args: { p_ref_ids: string[] }
         Returns: {
@@ -3106,6 +3105,7 @@ export type Database = {
           score: number
         }[]
       }
+      check_email_registered: { Args: { p_email: string }; Returns: boolean }
       claim_cards_for_backfill_enrichment: {
         Args: { p_lease_seconds?: number; p_limit: number }
         Returns: {
@@ -3155,8 +3155,8 @@ export type Database = {
         Args: {
           p_collection_id: string
           p_group?: boolean
-          p_page_param?: string
           p_page_offset?: number
+          p_page_param?: string
           p_page_position?: number
           p_page_size?: number
           p_search?: string
