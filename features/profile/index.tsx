@@ -17,6 +17,7 @@ import { GestureBlockerProvider, useCollaspableHeader } from '../collection/ui'
 import { Body } from './components/body'
 import { ProfileHeader, SubHeader } from './components/profile-header'
 import { ProfileTabList } from './components/tab-list'
+import { CollectionsPage } from './pages/collections'
 import { PostsPage } from './pages/posts'
 import { StorefrontPage } from './pages/storefront'
 import { tabsRecords, TabType, UserProfilePageStoreProvider, useUserProfilePage } from './providers'
@@ -117,6 +118,7 @@ function ProfilePageLayoutInner({ presentedAsModal }: { presentedAsModal?: boole
   )
 
   const tabContent: Partial<Record<TabType, ReactNode>> = {
+    collections: <CollectionsPage />,
     posts: <PostsPage />,
     storefront: <StorefrontPage />,
   }

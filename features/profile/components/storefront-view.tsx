@@ -21,9 +21,19 @@ import { useState } from 'react'
 import { Alert, StyleSheet, View } from 'react-native'
 import { BorderRadiuses, Colors, TouchableOpacity } from 'react-native-ui-lib'
 
-type CollectionPreviewProps = { collectionId?: string; isOwnProfile?: boolean }
+type CollectionPreviewProps = {
+  collectionId?: string
+  isOwnProfile?: boolean
+  /** 'collection' (ITS-124): a read-only public collection, so no cart/deal actions and
+   *  items open the card page rather than the shop item. */
+  variant?: 'storefront' | 'collection'
+}
 
-export function StorefrontView({ collectionId, isOwnProfile }: CollectionPreviewProps) {
+export function StorefrontView({
+  collectionId,
+  isOwnProfile,
+  variant = 'storefront',
+}: CollectionPreviewProps) {
   const { data: collection } = useGetCollection({ collectionId })
   return (
     <View
@@ -36,14 +46,25 @@ export function StorefrontView({ collectionId, isOwnProfile }: CollectionPreview
       }}
     >
       <CollectionInfo collectionId={collectionId} />
-      {collection && <StorefrontPreviewItems collection={collection} isOwnProfile={isOwnProfile} />}
+      {collection && (
+        <StorefrontPreviewItems
+          collection={collection}
+          isOwnProfile={isOwnProfile}
+          variant={variant}
+        />
+      )}
     </View>
   )
 }
 
-type CollectionPreviewItemProps = { collection: CollectionLike; isOwnProfile?: boolean }
+type CollectionPreviewItemProps = {
+  collection: CollectionLike
+  isOwnProfile?: boolean
+  variant: 'storefront' | 'collection'
+}
 
-function StorefrontPreviewItems({ collection, isOwnProfile }: CollectionPreviewItemProps) {
+function StorefrontPreviewItems({ collection, isOwnProfile, variant }: CollectionPreviewItemProps) {
+  const isStorefront = variant === 'storefront'
   const { query } = useGetCollectionItems({ collectionId: collection?.id }, undefined, false)
   const { data, isPending } = query
   const flatData = data?.pages.flat() ?? []
@@ -112,9 +133,11 @@ function StorefrontPreviewItems({ collection, isOwnProfile }: CollectionPreviewI
               style={{ padding: 8 }}
               card={collectionItem}
               expanded={true}
-              navigateTo="/profile/[shop-item]"
+              navigateTo={isStorefront ? '/profile/[shop-item]' : '/cards/[card]'}
               renderAccessories={
-                isOwnProfile ? undefined : (props) => <StorefrontAccessories {...props} />
+                isOwnProfile || !isStorefront
+                  ? undefined
+                  : (props) => <StorefrontAccessories {...props} />
               }
             />
           </View>

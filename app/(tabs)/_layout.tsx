@@ -10,16 +10,7 @@ import { BottomTabBarProps } from '@react-navigation/bottom-tabs'
 import { PortalHost } from '@rn-primitives/portal'
 import * as Haptics from 'expo-haptics'
 import { Tabs } from 'expo-router'
-import {
-  ArrowLeftRight,
-  Bell,
-  Home,
-  Inbox,
-  Layers,
-  Scan,
-  ShoppingBag,
-  User,
-} from 'lucide-react-native'
+import { ArrowLeftRight, Bell, Home, Inbox, Layers, ShoppingBag, User } from 'lucide-react-native'
 import React from 'react'
 import { Platform, Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native'
 import { Gesture, GestureDetector } from 'react-native-gesture-handler'
@@ -320,14 +311,6 @@ export default function TabLayout() {
           options={{
             title: 'Notifications',
             tabBarIcon: ({ color }) => <NotificationTabIcon color={color} />,
-            tabBarItemStyle: { display: 'none' },
-          }}
-        />
-        <Tabs.Screen
-          name="scan"
-          options={{
-            title: 'Scan',
-            tabBarIcon: ({ color }) => <Scan size={24} color={color} />,
             tabBarItemStyle: { display: 'none' },
           }}
         />
