@@ -3342,6 +3342,7 @@ export type Database = {
           p_collection_id: string
           p_group?: boolean
           p_page_param?: string
+          p_page_position?: number
           p_page_size?: number
           p_search?: string
         }
@@ -3372,6 +3373,8 @@ export type Database = {
           quantity: number
           ref_id: string
           set_name: string
+          sort_created_at: string
+          sort_position: number
           updated_at: string
           user_id: string
           variants: string[]
@@ -4007,6 +4010,10 @@ export type Database = {
       }
       remove_pinned_collection: {
         Args: { p_collection_id: string }
+        Returns: undefined
+      }
+      reorder_collection_items: {
+        Args: { p_collection_id: string; p_ref_ids: string[] }
         Returns: undefined
       }
       resolve_external_refs: {

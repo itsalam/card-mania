@@ -12,6 +12,7 @@ import {
   FolderCheck,
   FolderPlus,
   LucideIcon,
+  ArrowUpDown,
   Pencil,
   Pin,
   PinOff,
@@ -36,6 +37,7 @@ import {
 } from '../hooks'
 import { DefaultPageTypes, useCollectionsPageStore } from '../provider'
 import { DeleteModal } from './DeleteModal'
+import { ReorderCollectionSheet } from './reorder'
 
 type Option = {
   label: string
@@ -95,6 +97,7 @@ function CollectionInfoContent({
   onEdit?: () => void
 }) {
   const [showDeleteModal, setShowDeleteModal] = useState(false)
+  const [showReorder, setShowReorder] = useState(false)
 
   const authUserId = useUserStore((s) => s.user?.id)
   const { data: collection } = useGetCollection({ collectionId })
@@ -186,6 +189,18 @@ function CollectionInfoContent({
             onEdit?.()
           },
         },
+        // ITS-200. Selling mirrors storefront items, so its order isn't the user's to set.
+        ...(collection && !collection.is_selling && isOwned
+          ? {
+              reorder: {
+                label: 'Reorder',
+                icon: ArrowUpDown,
+                onClick() {
+                  setShowReorder(true)
+                },
+              },
+            }
+          : {}),
         delete: {
           label: 'Delete',
           icon: Trash,
@@ -314,6 +329,13 @@ function CollectionInfoContent({
             )
           )}
         </View>
+        {showActions && collection?.id && (
+          <ReorderCollectionSheet
+            collectionId={collection.id}
+            visible={showReorder}
+            onClose={() => setShowReorder(false)}
+          />
+        )}
         {showActions && (
           <DeleteModal
             showDeleteModal={showDeleteModal}

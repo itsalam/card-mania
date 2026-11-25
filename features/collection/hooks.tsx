@@ -1,3 +1,8 @@
+import {
+  CollectionPageCursor,
+  collectionPageCursorArgs,
+  nextCollectionPageCursor,
+} from '@/client/collections/order'
 import { DEFAULT_INF_Q_OPTIONS, useViewCollectionItems } from '@/client/collections/query'
 import { CollectionIdArgs, InfQueryOptions, InifiniteQueryParams } from '@/client/collections/types'
 import { TCard } from '@/constants/types'
@@ -413,19 +418,19 @@ function getCollectionItemsArgs<T extends CollectionItemRow>(
       queryFn: async ({ pageParam }) => {
         const { data, error } = await getSupabase().rpc('collection_item_query', {
           p_collection_id: collectionId,
-          p_page_param: pageParam as string,
           p_search: search,
           p_page_size: pageSize,
           p_group: shouldGroup,
+          ...collectionPageCursorArgs(pageParam as CollectionPageCursor | null),
         })
         if (error) throw error
         return (data ?? []) as unknown as T[]
       },
+      // ITS-200: lists sort by position, then newest first, so the cursor carries both.
       getNextPageParam(lastPage) {
-        if (!lastPage?.length || lastPage.length < pageSize) return null
-        return lastPage[lastPage.length - 1].created_at
+        return nextCollectionPageCursor(lastPage as any, pageSize ?? 20)
       },
-      initialPageParam: null as string | null,
+      initialPageParam: null as CollectionPageCursor | null,
     }
   } else if (collectionType) {
     //@ts-ignore
@@ -559,27 +564,24 @@ function getDefaultCollectionPageQueryArgs<T extends CollectionItemRow>(
 
   const args = {
     queryKey,
-    getNextPageParam: (lastPage) =>
-      lastPage?.length && lastPage.length >= pageSize
-        ? lastPage[lastPage.length - 1].created_at
-        : null,
+    getNextPageParam: (lastPage) => nextCollectionPageCursor(lastPage as any, pageSize ?? 20),
     queryFn: async ({ pageParam }) => {
       const collectionId = await collecitonIdPromise?.()
       if (!collectionId) return []
 
       const { data, error } = await getSupabase().rpc('collection_item_query', {
         p_collection_id: collectionId,
-        p_page_param: pageParam as string,
         p_search: search,
         p_page_size: pageSize,
         p_group: group,
+        ...collectionPageCursorArgs(pageParam as CollectionPageCursor | null),
       })
 
       if (error) throw error
       //@ts-ignore
       return (data ?? []) as CollectionItemRow[]
     },
-    initialPageParam: null as string | null,
+    initialPageParam: null as CollectionPageCursor | null,
   } as InifiniteQueryParams<CollectionItemRow>
 
   return args as any as InifiniteQueryParams
