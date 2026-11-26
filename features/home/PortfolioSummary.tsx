@@ -30,18 +30,8 @@ const GRAPH_HEIGHT = 284
 const BREAKDOWN_FALLBACK_HEIGHT = 400
 const BREAKDOWN_TOGGLE_MS = 280
 
-function StatCard({
-  label,
-  value,
-  trend,
-  caption,
-}: {
-  label: string
-  value: string
-  trend?: number | null
-  caption?: string
-}) {
-  const trendColor =
+function trendStyle(trend?: number | null) {
+  const color =
     trend == null
       ? Colors.$textDefault
       : trend > 0
@@ -49,36 +39,75 @@ function StatCard({
         : trend < 0
           ? Colors.red30
           : Colors.$textDefault
-  const TrendIcon = trend == null || trend === 0 ? null : trend > 0 ? TrendingUp : TrendingDown
+  const Icon = trend == null || trend === 0 ? null : trend > 0 ? TrendingUp : TrendingDown
+  return { color, Icon }
+}
 
+const STAT_CARD_STYLE: ViewStyle = {
+  backgroundColor: Colors.$backgroundNeutral,
+  borderRadius: 12,
+}
+
+// Layout: one wide Total Value card beside a stack of compact stats, so each card is only as
+// tall as its content (TradingView home widgets, a tall tile beside a stacked list:
+// https://mobbin.com/screens/31b5708d-94a7-4d9f-a483-a25b8958552e).
+function TotalValueCard({ value, lines }: { value: string; lines: string[] }) {
+  return (
+    <View style={[STAT_CARD_STYLE, { flex: 1, padding: 12, gap: 2, justifyContent: 'center' }]}>
+      <Text variant="small" style={{ color: Colors.$textNeutral }}>
+        Total Value
+      </Text>
+      <Text variant="h3" numberOfLines={1} adjustsFontSizeToFit>
+        {value}
+      </Text>
+      {lines.map((line) => (
+        <Text
+          key={line}
+          variant="small"
+          numberOfLines={1}
+          style={{ color: Colors.$textNeutral, fontSize: 11 }}
+        >
+          {line}
+        </Text>
+      ))}
+    </View>
+  )
+}
+
+function CompactStat({
+  label,
+  value,
+  trend,
+}: {
+  label: string
+  value: string
+  trend?: number | null
+}) {
+  const { color, Icon } = trendStyle(trend)
   return (
     <View
-      style={{
-        flex: 1,
-        backgroundColor: Colors.$backgroundNeutral,
-        borderRadius: 12,
-        padding: 12,
-        gap: 4,
-      }}
+      style={[
+        STAT_CARD_STYLE,
+        {
+          flex: 1,
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: 12,
+          paddingHorizontal: 12,
+          paddingVertical: 8,
+        },
+      ]}
     >
       <Text variant="small" style={{ color: Colors.$textNeutral }}>
         {label}
       </Text>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-        {TrendIcon && <TrendIcon size={14} color={trendColor} />}
-        <Text variant="h4" style={{ color: trendColor }}>
+        {Icon && <Icon size={14} color={color} />}
+        <Text variant="h4" numberOfLines={1} style={{ color }}>
           {value}
         </Text>
       </View>
-      {caption ? (
-        <Text
-          variant="small"
-          numberOfLines={2}
-          style={{ color: Colors.$textNeutral, fontSize: 11 }}
-        >
-          {caption}
-        </Text>
-      ) : null}
     </View>
   )
 }
@@ -163,10 +192,10 @@ export function PortfolioSummary({
   const { data: valuation } = useCollectionValuation({ collectionType: 'vault' })
 
   const { total: totalValue, pc, forSale } = splitOwnedValue(vaultTotal, sellingTotal)
-  const splitCaption =
+  const splitLines =
     totalValue > 0
-      ? `PC ${formatCompactPrice(pc)} · For sale ${formatCompactPrice(forSale)}`
-      : undefined
+      ? [`PC ${formatCompactPrice(pc)}`, `For sale ${formatCompactPrice(forSale)}`]
+      : []
   // "Prices as of" the oldest price behind the total, plus any cards with no price for their grade.
   const pricesAsOf = formatPriceDate(valuation?.pricesAsOf)
   const unpriced = valuation?.unpricedQuantity ?? 0
@@ -215,13 +244,11 @@ export function PortfolioSummary({
       >
         {/* Stat cards — always visible */}
         <View style={{ flexDirection: 'row', gap: 8 }}>
-          <StatCard
-            label="Total Value"
-            value={formatCompactPrice(totalValue)}
-            caption={splitCaption}
-          />
-          <StatCard label="Cards" value={String(cardCount)} />
-          <StatCard label="Change" value={pctLabel} trend={pctChange} />
+          <TotalValueCard value={formatCompactPrice(totalValue)} lines={splitLines} />
+          <View style={{ flex: 1, gap: 8 }}>
+            <CompactStat label="Cards" value={String(cardCount)} />
+            <CompactStat label="Change" value={pctLabel} trend={pctChange} />
+          </View>
         </View>
         {freshnessLine ? (
           <Text
