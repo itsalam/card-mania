@@ -3106,6 +3106,10 @@ export type Database = {
         }[]
       }
       check_email_registered: { Args: { p_email: string }; Returns: boolean }
+      card_prices_as_of: {
+        Args: { p_last_updated: string; p_prices_refreshed_at: string }
+        Returns: string
+      }
       claim_cards_for_backfill_enrichment: {
         Args: { p_lease_seconds?: number; p_limit: number }
         Returns: {
@@ -3217,6 +3221,16 @@ export type Database = {
           p_search?: string
         }
         Returns: Json
+      }
+      collection_valuation: {
+        Args: { p_collection_id: string }
+        Returns: {
+          newest_price_at: string
+          priced_quantity: number
+          prices_as_of: string
+          total_cents: number
+          unpriced_quantity: number
+        }[]
       }
       collection_items_by_ref: {
         Args: {

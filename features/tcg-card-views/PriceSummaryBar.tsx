@@ -1,4 +1,5 @@
 import { fmtCardValue } from '@/components/graphs/helpers'
+import { formatPriceDate } from '@/client/collections/valuation'
 import { Text } from '@/components/ui/text/base-text'
 import React, { useMemo } from 'react'
 import { View } from 'react-native'
@@ -8,13 +9,15 @@ type Props = {
   priceData: Record<string, string | number>[]
   selectedGrades: string[]
   gradeColors: Record<string, string>
+  /** ITS-133: when the card's prices were last updated (see cardPricesAsOf). */
+  updatedAt?: string | null
 }
 
 function toMs(v: string | number): number {
   return typeof v === 'number' ? v : new Date(v).getTime()
 }
 
-export function PriceSummaryBar({ priceData, selectedGrades, gradeColors }: Props) {
+export function PriceSummaryBar({ priceData, selectedGrades, gradeColors, updatedAt }: Props) {
   const stats = useMemo(() => {
     if (!priceData.length || !selectedGrades.length) return null
 
@@ -63,73 +66,85 @@ export function PriceSummaryBar({ priceData, selectedGrades, gradeColors }: Prop
           ? (Colors.$textDanger as string)
           : Colors.$textNeutral
 
+  const updated = formatPriceDate(updatedAt)
+
   return (
-    <View
-      style={{
-        flexDirection: 'row',
-        backgroundColor: Colors.$backgroundElevated,
-        borderRadius: 12,
-        borderWidth: 1,
-        borderColor: Colors.rgba(Colors.$outlineNeutral, 0.4),
-        borderLeftWidth: 3,
-        borderLeftColor: primaryColor ?? (Colors.$outlineNeutral as string),
-        overflow: 'hidden',
-      }}
-    >
-      {/* Last Sale */}
-      <View style={{ flex: 1, padding: 10, gap: 2 }}>
-        <Text
-          style={{
-            fontSize: 11,
-            color: Colors.$textNeutral,
-            letterSpacing: 0.5,
-            fontWeight: '600',
-          }}
-        >
-          LAST SALE
-        </Text>
-        <Text style={{ fontSize: 17, fontWeight: '700', color: Colors.$textDefault }}>
-          {stats.lastPrice != null ? fmtCardValue(stats.lastPrice) : '—'}
-        </Text>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-          {stats.lastDate && (
-            <Text style={{ fontSize: 11, color: Colors.$textNeutral }} numberOfLines={1}>
-              {stats.lastDate}
-            </Text>
-          )}
-          {stats.delta != null && stats.deltaPct != null && (
-            <Text style={{ fontSize: 11, fontWeight: '600', color: deltaColor }} numberOfLines={1}>
-              {stats.delta >= 0 ? '+' : '-'}
-              {fmtCardValue(Math.abs(stats.delta))} ({stats.deltaPct >= 0 ? '+' : ''}
-              {stats.deltaPct.toFixed(1)}%)
-            </Text>
-          )}
+    <View style={{ gap: 4 }}>
+      <View
+        style={{
+          flexDirection: 'row',
+          backgroundColor: Colors.$backgroundElevated,
+          borderRadius: 12,
+          borderWidth: 1,
+          borderColor: Colors.rgba(Colors.$outlineNeutral, 0.4),
+          borderLeftWidth: 3,
+          borderLeftColor: primaryColor ?? (Colors.$outlineNeutral as string),
+          overflow: 'hidden',
+        }}
+      >
+        {/* Last Sale */}
+        <View style={{ flex: 1, padding: 10, gap: 2 }}>
+          <Text
+            style={{
+              fontSize: 11,
+              color: Colors.$textNeutral,
+              letterSpacing: 0.5,
+              fontWeight: '600',
+            }}
+          >
+            LAST SALE
+          </Text>
+          <Text style={{ fontSize: 17, fontWeight: '700', color: Colors.$textDefault }}>
+            {stats.lastPrice != null ? fmtCardValue(stats.lastPrice) : '—'}
+          </Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+            {stats.lastDate && (
+              <Text style={{ fontSize: 11, color: Colors.$textNeutral }} numberOfLines={1}>
+                {stats.lastDate}
+              </Text>
+            )}
+            {stats.delta != null && stats.deltaPct != null && (
+              <Text
+                style={{ fontSize: 11, fontWeight: '600', color: deltaColor }}
+                numberOfLines={1}
+              >
+                {stats.delta >= 0 ? '+' : '-'}
+                {fmtCardValue(Math.abs(stats.delta))} ({stats.deltaPct >= 0 ? '+' : ''}
+                {stats.deltaPct.toFixed(1)}%)
+              </Text>
+            )}
+          </View>
+        </View>
+
+        <View style={{ width: 1, backgroundColor: Colors.$outlineNeutral, opacity: 0.4 }} />
+
+        {/* 3-Month Range */}
+        <View style={{ flex: 1, padding: 10, gap: 2 }}>
+          <Text
+            style={{
+              fontSize: 11,
+              color: Colors.$textNeutral,
+              letterSpacing: 0.5,
+              fontWeight: '600',
+            }}
+          >
+            3M RANGE
+          </Text>
+          <Text
+            style={{ fontSize: 15, fontWeight: '700', color: Colors.$textDefault }}
+            numberOfLines={1}
+          >
+            {stats.priceMin != null && stats.priceMax != null
+              ? `${fmtCardValue(stats.priceMin)} – ${fmtCardValue(stats.priceMax)}`
+              : '—'}
+          </Text>
         </View>
       </View>
-
-      <View style={{ width: 1, backgroundColor: Colors.$outlineNeutral, opacity: 0.4 }} />
-
-      {/* 3-Month Range */}
-      <View style={{ flex: 1, padding: 10, gap: 2 }}>
-        <Text
-          style={{
-            fontSize: 11,
-            color: Colors.$textNeutral,
-            letterSpacing: 0.5,
-            fontWeight: '600',
-          }}
-        >
-          3M RANGE
+      {updated ? (
+        <Text style={{ fontSize: 11, color: Colors.$textNeutral, paddingHorizontal: 2 }}>
+          Prices updated {updated}
         </Text>
-        <Text
-          style={{ fontSize: 15, fontWeight: '700', color: Colors.$textDefault }}
-          numberOfLines={1}
-        >
-          {stats.priceMin != null && stats.priceMax != null
-            ? `${fmtCardValue(stats.priceMin)} – ${fmtCardValue(stats.priceMax)}`
-            : '—'}
-        </Text>
-      </View>
+      ) : null}
     </View>
   )
 }

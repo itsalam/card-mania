@@ -1,4 +1,5 @@
 import { useCardQuery } from '@/client/card'
+import { cardPricesAsOf } from '@/client/collections/valuation'
 import { CollectionItemImage, useCollectionItemPhotos } from '@/client/collections/photos'
 import { useViewSingleCollectionItem } from '@/client/collections/query'
 import { useImageProxy } from '@/client/image-proxy'
@@ -293,6 +294,7 @@ export default function FocusCardView({
                         priceData={mergedPriceData}
                         selectedGrades={selectedGrades}
                         gradeColors={gradeColors}
+                        updatedAt={cardPricesAsOf(cardData)}
                       />
                     </View>
                   )}

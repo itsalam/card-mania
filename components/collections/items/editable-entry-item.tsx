@@ -457,7 +457,8 @@ export const CollectionItemEntry = ({
                   }
                   loading={isLoading ?? false}
                 >
-                  {price ? formatPrice(price) : '--.--'}
+                  {/* ITS-133: no price for this grade counts as $0; say so. */}
+                  {price ? formatPrice(price) : 'No price'}
                 </SkeletonText>
               </View>
             </View>

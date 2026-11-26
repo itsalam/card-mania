@@ -1,4 +1,9 @@
 import { useCollectionTotal } from '@/client/collections/query'
+import {
+  formatPriceDate,
+  splitOwnedValue,
+  useCollectionValuation,
+} from '@/client/collections/valuation'
 import { Text } from '@/components/ui/text/base-text'
 import { formatCompactPrice } from '@/components/utils'
 import { useCollectionHistory } from '@/features/collection/hooks'
@@ -68,7 +73,7 @@ function StatCard({
       {caption ? (
         <Text
           variant="small"
-          numberOfLines={1}
+          numberOfLines={2}
           style={{ color: Colors.$textNeutral, fontSize: 11 }}
         >
           {caption}
@@ -149,17 +154,28 @@ export function PortfolioSummary({
     if (graphsStepActive) setOpen(true)
   }, [graphsStepActive, setOpen])
 
-  // ITS-123: Total Value is what you own. Triggers mirror every Selling item into the Vault,
-  // so the Vault already includes what's for sale (adding Selling counted it twice), and
-  // Wishlist cards aren't owned. Selling is shown as a share of the total; Wishlist stays in
-  // the breakdown below.
+  // ITS-123 / ITS-133 (docs/collections/valuation.md): Total Value is what you own, the Vault.
+  // Triggers mirror every Selling item into the Vault, so Selling is the For Sale share and
+  // PC (kept) is the rest. Wishlist cards aren't owned; they stay in the breakdown below.
   const { data: sellingTotal = 0 } = useCollectionTotal({ collectionType: 'selling' })
   const { data: vaultTotal = 0 } = useCollectionTotal({ collectionType: 'vault' })
   const { data: vaultHistory } = useCollectionHistory({ collectionType: 'vault' })
+  const { data: valuation } = useCollectionValuation({ collectionType: 'vault' })
 
-  const totalValue = vaultTotal
-  const forSaleCaption =
-    sellingTotal > 0 ? `incl. ${formatCompactPrice(sellingTotal)} for sale` : undefined
+  const { total: totalValue, pc, forSale } = splitOwnedValue(vaultTotal, sellingTotal)
+  const splitCaption =
+    totalValue > 0
+      ? `PC ${formatCompactPrice(pc)} · For sale ${formatCompactPrice(forSale)}`
+      : undefined
+  // "Prices as of" the oldest price behind the total, plus any cards with no price for their grade.
+  const pricesAsOf = formatPriceDate(valuation?.pricesAsOf)
+  const unpriced = valuation?.unpricedQuantity ?? 0
+  const freshnessLine = [
+    pricesAsOf ? `Prices as of ${pricesAsOf}` : null,
+    unpriced > 0 ? `${unpriced} ${unpriced === 1 ? 'card has' : 'cards have'} no price` : null,
+  ]
+    .filter(Boolean)
+    .join(' · ')
 
   const cardCount = vaultHistory?.[vaultHistory.length - 1]?.quantity_total ?? 0
 
@@ -202,11 +218,20 @@ export function PortfolioSummary({
           <StatCard
             label="Total Value"
             value={formatCompactPrice(totalValue)}
-            caption={forSaleCaption}
+            caption={splitCaption}
           />
           <StatCard label="Cards" value={String(cardCount)} />
           <StatCard label="Change" value={pctLabel} trend={pctChange} />
         </View>
+        {freshnessLine ? (
+          <Text
+            variant="small"
+            numberOfLines={1}
+            style={{ color: Colors.$textNeutral, fontSize: 11, marginTop: 6, paddingHorizontal: 4 }}
+          >
+            {freshnessLine}
+          </Text>
+        ) : null}
 
         {/* Accordion — expands inside the card; outer page ScrollView handles scrolling */}
         <MotiView
