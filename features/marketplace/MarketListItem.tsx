@@ -1,4 +1,5 @@
 import { FeaturedListing } from '@/client/marketplace'
+import { listingPrice } from '@/client/collections/listing'
 import { Avatar, AvatarFallback, AvatarFallbackText, AvatarImage } from '@/components/ui/avatar'
 import { Text } from '@/components/ui/text/base-text'
 import { formatPrice } from '@/components/utils'
@@ -17,6 +18,8 @@ export function MarketListItem({ item }: { item: MarketListItemData }) {
   const sellerHandle = item.seller_username ?? item.seller_display_name ?? 'Unknown'
   const sellerInitial = sellerHandle.charAt(0).toUpperCase()
   const isGraded = Boolean(item.grading_company) && item.price_key !== 'ungraded'
+  // ITS-134: the seller's asking price, or the market price for older listings.
+  const price = listingPrice(item)
 
   const displayData: DisplayData = useMemo(
     () => ({
@@ -26,7 +29,7 @@ export function MarketListItem({ item }: { item: MarketListItemData }) {
       subHeading: item.set_name ?? undefined,
       // Drives the GradeBadge ItemListView draws on the art.
       metadata: isGraded ? item.price_key : 'ungraded',
-      displayPrice: item.market_value ? item.market_value / 100 : null,
+      displayPrice: price.cents ? price.cents / 100 : null,
       imageProxyArgs: {
         variant: 'tiny',
         shape: 'card',
@@ -34,7 +37,7 @@ export function MarketListItem({ item }: { item: MarketListItemData }) {
         imageType: 'front',
       },
     }),
-    [item, isGraded]
+    [item, isGraded, price.cents]
   )
 
   return (
@@ -47,8 +50,13 @@ export function MarketListItem({ item }: { item: MarketListItemData }) {
           <View className="flex-1 flex flex-col justify-start gap-2">
             {/* Price */}
             <Text className="text-4xl font-bold" style={{ color: Colors.$textDefault }}>
-              {formatPrice(item.market_value)}
+              {formatPrice(price.cents)}
             </Text>
+            {!price.isAsking && (
+              <Text variant="small" style={{ color: Colors.$textNeutral }}>
+                Market price
+              </Text>
+            )}
           </View>
 
           {/* Seller pill */}

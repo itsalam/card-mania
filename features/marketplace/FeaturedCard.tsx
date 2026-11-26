@@ -1,4 +1,5 @@
 import { useImageProxy } from '@/client/image-proxy'
+import { listingPrice } from '@/client/collections/listing'
 import { FeaturedListing } from '@/client/marketplace'
 import { CARD_ASPECT_RATIO } from '@/components/consts'
 import { cardArtRadius, THUMBNAIL_WIDTH } from '@/components/tcg-card/consts'
@@ -50,9 +51,9 @@ function CardThumbnail({
       )}
 
       {/* Price badge */}
-      {item.market_value > 0 && (
+      {listingPrice(item).cents > 0 && (
         <View style={styles.priceBadge}>
-          <Text style={styles.priceText}>{formatPrice(item.market_value)}</Text>
+          <Text style={styles.priceText}>{formatPrice(listingPrice(item).cents)}</Text>
         </View>
       )}
 
@@ -80,6 +81,8 @@ export function FeaturedCard({
   const sellerHandle = item.seller_username ?? item.seller_display_name ?? 'Unknown'
   const sellerInitial = sellerHandle.charAt(0).toUpperCase()
   const isGraded = item.price_key !== 'ungraded' && item.grading_company
+  // ITS-134: the seller's asking price, or the market price for older listings.
+  const price = listingPrice(item)
 
   if (!isOpen) {
     return <CardThumbnail item={item} width={width} />
@@ -106,7 +109,10 @@ export function FeaturedCard({
           </View>
         )}
 
-        <Text style={styles.priceDetail}>{formatPrice(item.market_value)}</Text>
+        <Text style={styles.priceDetail}>{formatPrice(price.cents)}</Text>
+        {!price.isAsking && (
+          <Text style={{ color: Colors.$textNeutral, fontSize: 11 }}>Market price</Text>
+        )}
 
         <View style={styles.sellerRow}>
           <Avatar alt={sellerHandle} size="xs">

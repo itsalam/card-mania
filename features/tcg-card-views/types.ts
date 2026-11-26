@@ -13,6 +13,8 @@ export type DisplayData = {
   subHeading?: string
   metadata?: string
   displayPrice?: number | null
+  /** ITS-134: displayPrice is the seller's asking price, not the market price. */
+  isAskingPrice?: boolean
   imageProxyArgs: ImageProxyOpts
   onPress?: () => void
   quantity?: number
