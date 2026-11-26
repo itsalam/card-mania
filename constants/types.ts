@@ -50,6 +50,8 @@ export const Card = z.object({
   release_date: z.string().optional().nullable(),
   genre: z.string().optional(),
   last_updated: z.string().optional(),
+  // ITS-133: when the scheduled job last refreshed prices (see cardPricesAsOf).
+  prices_refreshed_at: z.string().optional().nullable(),
 })
 
 export const TCollection = z.object({

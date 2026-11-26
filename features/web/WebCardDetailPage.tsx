@@ -1,4 +1,5 @@
 import { useCardQuery } from '@/client/card'
+import { cardPricesAsOf } from '@/client/collections/valuation'
 import { usePriceChartingDataBatch } from '@/client/chart-data'
 import { useImageProxy } from '@/client/image-proxy'
 import { GradientBackground } from '@/components/Background'
@@ -359,6 +360,7 @@ export default function WebCardDetailPage({ cardId }: { cardId: string }) {
                       priceData={priceChartingData.priceData}
                       selectedGrades={activeGrades}
                       gradeColors={gradeColors}
+                      updatedAt={cardPricesAsOf(card)}
                     />
                   ) : null}
 
