@@ -142,12 +142,12 @@ select throws_ok(
 
 select pg_temp.act_as('12100000-0000-0000-0000-0000000000a1');
 
--- Seller accepts B2's single unit of L1 first: L1 drops to 1, so B1's offer for 2 can
--- no longer be filled and is auto-declined.
+-- Seller accepts B2's single unit of L1 first: one copy is held (ITS-135), leaving 1
+-- available, so B1's offer for 2 can no longer be filled and is auto-declined.
 select lives_ok($$ select public.accept_offer((select id from ids where k = 'o_l1_b2')) $$, 'seller accepts a pending offer');
 select is((select status from public.offers where id = (select id from ids where k = 'o_l1_b2')), 'accepted', 'accept_offer: offer is accepted');
 select is((select count(*) from public.transactions where offer_id = (select id from ids where k = 'o_l1_b2')), 1::bigint, 'accept_offer: transaction created in the same call');
-select is((select quantity from public.collection_items where id = '12100000-0000-0000-0000-0000000000e1'), 1, 'accept_offer: stock decremented');
+select is((select quantity - held_quantity from public.collection_items where id = '12100000-0000-0000-0000-0000000000e1'), 1, 'accept_offer: accepted copies are held, not available');
 select is((select status from public.offers where id = (select id from ids where k = 'o1')), 'declined', 'accept_offer: competitor the stock can no longer fill is declined');
 
 select throws_ok(
@@ -155,7 +155,7 @@ select throws_ok(
   '22023', null, 'cannot accept an already-accepted offer'
 );
 
--- L2: accept B1, which sells the last unit (listing deleted) and declines B2's L2 offer.
+-- L2: accept B1, which holds the last unit and declines B2's L2 offer.
 select lives_ok($$ select public.accept_offer((select id from ids where k = 'o_l2_b1')) $$, 'seller accepts the last unit');
 select is((select status from public.offers where id = (select id from ids where k = 'o_l2_b2')), 'declined', 'accept_offer: competitor on a sold-out listing is declined');
 

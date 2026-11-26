@@ -111,21 +111,15 @@ describe('useDeleteCollectionItemPhoto', () => {
     mockClient.storage = { from: jest.fn() }
   })
 
-  it('optimistically removes the photo from the cached list, before storage/db calls resolve', async () => {
-    let resolveRemove: (v: { data: unknown; error: unknown }) => void = () => {}
-    mockClient.storage.from.mockReturnValue({
-      remove: jest.fn(
-        () =>
-          new Promise((resolve) => {
-            resolveRemove = resolve
-          })
-      ),
-    })
-    mockClient.from.mockImplementation(() => ({
-      delete: () => ({
-        eq: () => Promise.resolve({ error: null }),
-      }),
-    }))
+  it('optimistically removes the photo from the cached list, before the server responds', async () => {
+    let resolveRpc: (v: { data: unknown; error: unknown }) => void = () => {}
+    mockClient.rpc.mockReturnValue(
+      new Promise((resolve) => {
+        resolveRpc = resolve
+      })
+    )
+    const remove = jest.fn().mockResolvedValue({ data: [], error: null })
+    mockClient.storage.from.mockReturnValue({ remove })
 
     const { client, wrapper } = createWrapper()
     const key = photosQueryKey(COLLECTION_ITEM_ID)
@@ -145,19 +139,32 @@ describe('useDeleteCollectionItemPhoto', () => {
       expect(client.getQueryData<CollectionItemImage[]>(key)?.map((p) => p.id)).toEqual(['b'])
     })
 
-    resolveRemove({ data: {}, error: null })
+    resolveRpc({ data: 'user-uploads/u/a.jpg', error: null })
     await waitFor(() => expect(result.current.isSuccess).toBe(true))
+    expect(mockClient.rpc).toHaveBeenCalledWith('delete_collection_item_photo', { p_photo_id: 'a' })
+    expect(remove).toHaveBeenCalledWith(['user-uploads/u/a.jpg'])
   })
 
-  it('rolls back the optimistic removal when the storage delete errors', async () => {
-    mockClient.storage.from.mockReturnValue({
-      remove: jest.fn().mockResolvedValue({ data: null, error: new Error('storage failed') }),
+  it('keeps the file when another copy still uses it (ITS-135)', async () => {
+    mockClient.rpc.mockResolvedValue({ data: null, error: null })
+    const remove = jest.fn()
+    mockClient.storage.from.mockReturnValue({ remove })
+
+    const { wrapper } = createWrapper()
+    const { result } = await renderHook(() => useDeleteCollectionItemPhoto(COLLECTION_ITEM_ID), {
+      wrapper,
     })
-    mockClient.from.mockImplementation(() => ({
-      delete: () => ({
-        eq: () => Promise.resolve({ error: null }),
-      }),
-    }))
+    await act(() => {
+      result.current.mutate(photo({ id: 'a' }))
+    })
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true))
+    expect(remove).not.toHaveBeenCalled()
+  })
+
+  it('rolls back the optimistic removal when the server delete errors', async () => {
+    mockClient.rpc.mockResolvedValue({ data: null, error: new Error('delete failed') })
+    mockClient.storage.from.mockReturnValue({ remove: jest.fn() })
 
     const { client, wrapper } = createWrapper()
     const key = photosQueryKey(COLLECTION_ITEM_ID)
