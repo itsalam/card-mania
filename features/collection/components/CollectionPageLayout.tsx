@@ -382,7 +382,7 @@ const DefaultCollectionView = ({ direction }: { direction: 'forward' | 'backward
           style={[headerAnimatedStyle, { overflow: 'hidden' }]}
         >
           <View onLayout={onHeaderLayout}>
-            <CollectionBreakdown style={{ paddingTop: 12, paddingHorizontal: 12 }} />
+            <CollectionBreakdown style={{ marginTop: 12, marginHorizontal: 12 }} />
           </View>
         </Animated.View>
 

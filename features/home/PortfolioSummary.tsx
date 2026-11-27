@@ -15,7 +15,7 @@ import { MotiView } from 'moti'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Pressable, StyleProp, View, ViewStyle } from 'react-native'
 import { Colors } from 'react-native-ui-lib'
-import CollectionBreakdown from '../collection/components/CollectionBreakdown'
+import CollectionBreakdown, { BreakdownSeries } from '../collection/components/CollectionBreakdown'
 import { useCollapsibleHeaderEvent, useCollapsibleHeaderEvents } from '../collection/ui'
 import { Graphs } from './Breakdowns'
 
@@ -24,10 +24,9 @@ const BORDER_COLOR_EXPANDED = Colors.$outlinePrimary
 const BORDER_WIDTH = 2
 const CHIP_HEIGHT = 24
 const GRAPH_HEIGHT = 284
-// CollectionBreakdown ~70px + Graphs ~284px + padding
-// Open height until the breakdown has been measured (CollectionBreakdown ~70px + Graphs ~284px
+// Open height until the breakdown has been measured (CollectionBreakdown ~130px + Graphs ~284px
 // + padding); after that it opens to exactly its measured height, so nothing is cut off.
-const BREAKDOWN_FALLBACK_HEIGHT = 400
+const BREAKDOWN_FALLBACK_HEIGHT = 460
 const BREAKDOWN_TOGGLE_MS = 280
 
 function trendStyle(trend?: number | null) {
@@ -64,83 +63,6 @@ function TotalValueCard({ value }: { value: string }) {
       <Text variant="h3" numberOfLines={1} adjustsFontSizeToFit>
         {value}
       </Text>
-    </View>
-  )
-}
-
-// What Total Value is made of, shown only with the breakdown open: a PC / For sale bar with a
-// row per share, and the price freshness note underneath. Colors match the Vault and Selling
-// entries in CollectionBreakdown.
-function ValueSplit({ pc, forSale, footnote }: { pc: number; forSale: number; footnote: string }) {
-  const total = pc + forSale
-  const rows = [
-    { label: 'PC', value: pc, color: Colors.violet30 },
-    { label: 'For sale', value: forSale, color: Colors.blue30 },
-  ]
-  return (
-    <View
-      style={{
-        marginTop: 8,
-        padding: 12,
-        gap: 8,
-        borderRadius: 12,
-        backgroundColor: Colors.rgba(Colors.$backgroundNeutral, 0.5),
-        borderWidth: 1,
-        borderColor: Colors.rgba(Colors.$outlineNeutral, 0.4),
-      }}
-    >
-      {total > 0 ? (
-        <>
-          <View
-            style={{
-              flexDirection: 'row',
-              height: 6,
-              borderRadius: 99,
-              overflow: 'hidden',
-              gap: 2,
-              backgroundColor: Colors.$backgroundNeutral,
-            }}
-          >
-            {rows.map((r) =>
-              r.value > 0 ? (
-                <View key={r.label} style={{ flex: r.value / total, backgroundColor: r.color }} />
-              ) : null
-            )}
-          </View>
-          {rows.map((r) => (
-            <View
-              key={r.label}
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-              }}
-            >
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: r.color }} />
-                <Text variant="small" style={{ color: Colors.$textNeutral }}>
-                  {r.label}
-                </Text>
-              </View>
-              <Text variant="small">
-                {formatCompactPrice(r.value)}
-                <Text variant="small" style={{ color: Colors.$textNeutralLight }}>
-                  {`  ${Math.round((r.value / total) * 100)}%`}
-                </Text>
-              </Text>
-            </View>
-          ))}
-        </>
-      ) : null}
-      {footnote ? (
-        <Text
-          variant="small"
-          numberOfLines={1}
-          style={{ color: Colors.$textNeutralLight, fontSize: 11 }}
-        >
-          {footnote}
-        </Text>
-      ) : null}
     </View>
   )
 }
@@ -185,12 +107,12 @@ function CompactStat({
 }
 
 export function PortfolioSummary({
-  selectedCollections,
-  onToggleCollection,
+  selectedSeries,
+  onToggleSeries,
   style,
 }: {
-  selectedCollections: string[]
-  onToggleCollection: (type: string) => void
+  selectedSeries: string[]
+  onToggleSeries: (series: BreakdownSeries) => void
   style?: StyleProp<ViewStyle>
 }) {
   const [expanded, setExpanded] = useState(false)
@@ -263,7 +185,7 @@ export function PortfolioSummary({
   const { data: vaultHistory } = useCollectionHistory({ collectionType: 'vault' })
   const { data: valuation } = useCollectionValuation({ collectionType: 'vault' })
 
-  const { total: totalValue, pc, forSale } = splitOwnedValue(vaultTotal, sellingTotal)
+  const { total: totalValue } = splitOwnedValue(vaultTotal, sellingTotal)
   // "Prices as of" the oldest price behind the total, plus any cards with no price for their grade.
   const pricesAsOf = formatPriceDate(valuation?.pricesAsOf)
   const unpriced = valuation?.unpricedQuantity ?? 0
@@ -338,13 +260,11 @@ export function PortfolioSummary({
                 if (expandedRef.current) reportSize(BREAKDOWN_TOGGLE_MS)
               }}
             >
-              {totalValue > 0 || freshnessLine ? (
-                <ValueSplit pc={pc} forSale={forSale} footnote={freshnessLine} />
-              ) : null}
               <CollectionBreakdown
-                selectedCollections={selectedCollections}
-                onToggleCollection={onToggleCollection}
-                style={{ paddingTop: 12, paddingBottom: 8, paddingHorizontal: 4 }}
+                selectedSeries={selectedSeries}
+                onToggleSeries={onToggleSeries}
+                footnote={freshnessLine}
+                style={{ marginTop: 8, marginBottom: 8 }}
               />
               <View
                 style={{
@@ -355,7 +275,7 @@ export function PortfolioSummary({
                   borderRadius: 12,
                 }}
               >
-                <Graphs height={GRAPH_HEIGHT} selectedCollections={selectedCollections} />
+                <Graphs height={GRAPH_HEIGHT} selectedSeries={selectedSeries} />
               </View>
             </View>
           </OnboardingTarget>

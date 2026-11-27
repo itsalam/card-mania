@@ -370,7 +370,9 @@ export function PriceGraph<
     const priceW = cardPriceFont.measureText(priceStr).width
     const labelW = Math.max(
       0,
-      ...(yKeys as string[]).map((k) => cardLabelFont.measureText(k.replace(/_price$/, '')).width)
+      ...(yKeys as string[]).map(
+        (k) => cardLabelFont.measureText(k.replace(/_price$/, '').replace(/_/g, ' ')).width
+      )
     )
     const { width: cardW } = wrapContent(Math.max(priceW, labelW), 0, { padX: 8 })
     const DOT_RADIUS = 4

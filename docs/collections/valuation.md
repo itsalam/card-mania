@@ -2,8 +2,8 @@
 
 What "Total Value" means and which prices back it.
 
-- Migration: `supabase/migrations/20261126000000_its133_collection_valuation.sql`
-- Tests: `supabase/tests/collection_valuation.sql`, `__tests__/client/collectionValuation.test.ts`
+- Migrations: `supabase/migrations/20261126000000_its133_collection_valuation.sql`, `20261126100000_its133_one_snapshot_per_transaction.sql`
+- Tests: `supabase/tests/collection_valuation.sql`, `supabase/tests/collection_value_history.sql`, `__tests__/client/collectionValuation.test.ts`
 - Client: `client/collections/valuation.ts`
 
 ## Decisions (Nov 25, 2026)
@@ -18,9 +18,16 @@ What "Total Value" means and which prices back it.
 
 ## Where it shows
 
-- **Home → Total Value** (`features/home/PortfolioSummary.tsx`): the Vault total, the caption "PC $X · For sale $Y", and the freshness line from `collection_valuation(vault)`.
+- **Home → Total Value** (`features/home/PortfolioSummary.tsx`): the Vault total. "View breakdown" opens the breakdown below.
+- **Breakdown** (`features/collection/components/CollectionBreakdown.tsx`, on Home and the Collection page): PC and For sale with one bar and their share of what you own, then the Wishlist on its own row marked "Not owned" (no share, since it isn't owned). On Home it adds the freshness line from `collection_valuation(vault)`, and each row toggles its line on the chart (PC, For sale, Wishlist; `features/home/Breakdowns.tsx`).
 - **Card detail** (`PriceSummaryBar`, native and web): "Prices updated &lt;date&gt;".
 - **Collection rows** (`editable-entry-item.tsx`): a copy whose grade has no price shows "No price" instead of a blank amount.
+
+## Value history
+
+`collection_value_history` holds one snapshot per collection per transaction (unique on `collection_id, snapshotted_at`). Snapshots are written when `collection_totals` changes, and the writers upsert, so an action that touches several rows (List for Sale, a sale, mirrors) leaves one row with the settled total. Before Nov 26, 2026 each statement appended its own row at the same timestamp, and the chart and the Cards stat could pick an in-between value (e.g. a listed card counted twice in the Vault).
+
+The chart's PC line is the day's Vault minus Selling, each carried forward over days without a snapshot.
 
 ## `collection_valuation(collection_id)`
 

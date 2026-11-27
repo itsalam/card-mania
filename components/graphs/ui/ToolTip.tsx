@@ -251,7 +251,7 @@ export function ToolTip({
             <PointValueCard
               isActive={seriesIsActive}
               cx={targetX}
-              label={key.replace(/_price$/, '')}
+              label={key.replace(/_price$/, '').replace(/_/g, ' ')}
               cy={yKeys[key].position}
               valueSV={yKeys[key].value}
               formatValue={denormFormatValue}
