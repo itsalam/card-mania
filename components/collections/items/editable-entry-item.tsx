@@ -107,7 +107,8 @@ function EntryDivider() {
         width: 1,
         alignSelf: 'stretch',
         marginVertical: 4,
-        marginHorizontal: 8,
+        // Tight, so the price gets the width.
+        marginHorizontal: 4,
         backgroundColor: Colors.rgba(Colors.$outlineNeutral, 0.6),
       }}
     />
@@ -415,62 +416,35 @@ export const CollectionItemEntry = ({
               alignItems: 'center',
               display: 'flex',
               flexDirection: 'row',
-              flexWrap: 'wrap',
             }}
           >
             {/* Grade as plain text right before the stepper ("PSA 10", "RAW") — no pill. */}
             <GradeLabel priceKey={gradePriceKey(currentGrader?.slug, currentGrade?.grade_value)} />
             <EntryDivider />
+            {/* The price takes all the width the grade, quantity and grip leave, at full size;
+                everything else keeps its natural width. */}
             <View
               style={{
-                flex: 1,
-                alignItems: 'center',
-                display: 'flex',
+                flexGrow: 1,
+                flexShrink: 1,
+                minWidth: 0,
                 flexDirection: 'row',
-                flexWrap: 'wrap',
-                alignSelf: 'stretch',
-                alignContent: 'center',
-              }}
-            >
-              <View
-                style={{
-                  alignItems: 'center',
-                  display: 'flex',
-                  flexDirection: 'row',
-                  flex: 1,
-                  justifyContent: 'flex-end',
-                  paddingHorizontal: 8,
-                }}
-              >
-                <SkeletonText
-                  numberOfLines={1}
-                  adjustsFontSizeToFit
-                  minimumFontScale={0.8}
-                  className="text-base uppercase font-spaceMono"
-                  defaultDimensions={{ height: 15, width: 66 }}
-                  style={
-                    price
-                      ? null
-                      : {
-                          color: Colors.$textNeutralLight,
-                        }
-                  }
-                  loading={isLoading ?? false}
-                >
-                  {/* ITS-133: no price for this grade counts as $0; say so. */}
-                  {price ? formatPrice(price) : 'No price'}
-                </SkeletonText>
-              </View>
-            </View>
-            {/* Quantity sits on the right, just left of the grip: "$price × [− n +]". */}
-            <View
-              style={{
-                flex: 1,
-                maxWidth: 20,
-                minWidth: 15,
                 alignItems: 'center',
+                justifyContent: 'flex-end',
+                gap: 4,
               }}
             >
+              <SkeletonText
+                numberOfLines={1}
+                className="text-base uppercase font-spaceMono"
+                defaultDimensions={{ height: 15, width: 66 }}
+                style={price ? null : { color: Colors.$textNeutralLight }}
+                loading={isLoading ?? false}
+              >
+                {/* ITS-133: no price for this grade counts as $0; say so. */}
+                {price ? formatPrice(price) : 'No price'}
+              </SkeletonText>
+              {/* Quantity sits on the right, just left of the grip: "$price × [− n +]". */}
               <X size={8} color={Colors.$iconDefault} />
             </View>
             <EntryDivider />
