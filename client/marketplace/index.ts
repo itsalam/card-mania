@@ -28,6 +28,8 @@ export type FeaturedListing = {
   price_key: string
   market_value: number
   popularity_score: number | null
+  /** ITS-134: the seller's asking price (cents); null means it sells at market_value. */
+  asking_price_cents?: number | null
 }
 
 export type PublicStorefront = {

@@ -1,4 +1,5 @@
 import { useIsWishlisted, useToggleWishlist } from '@/client/card/wishlist'
+import { availableQuantity } from '@/client/collections/listing'
 import { CollectionItem, CollectionLike } from '@/client/collections/types'
 import {
   CARD_LIST_GAP,
@@ -134,6 +135,7 @@ function StorefrontPreviewItems({ collection, isOwnProfile, variant }: Collectio
               card={collectionItem}
               expanded={true}
               navigateTo={isStorefront ? '/profile/[shop-item]' : '/cards/[card]'}
+              preferAskingPrice={isStorefront}
               renderAccessories={
                 isOwnProfile || !isStorefront
                   ? undefined
@@ -179,7 +181,8 @@ function StorefrontAccessories(props: ItemListViewProps) {
           price: displayData?.displayPrice ?? 0,
           originalPrice: displayData?.displayPrice ?? 0,
           quantity: 1,
-          maxQuantity: (collectionItem as any).quantity ?? 1,
+          // ITS-135: copies on hold for an accepted offer can't be bought.
+          maxQuantity: Math.max(1, availableQuantity(collectionItem as any)),
         },
       })
 
