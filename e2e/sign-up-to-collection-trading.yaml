@@ -1,4 +1,10 @@
 appId: com.smoodee.cardmania
+# Runs against the local stack. Every local sign-in uses 111111 (scripts/local-dev-auth.sh);
+# the account comes from the e2e seed (ITS-201). Override with
+#   maestro test -e EMAIL=you@example.com -e PASSWORD=... e2e/sign-up-to-collection-trading.yaml
+env:
+  EMAIL: e2e-seller@cardmania.local
+  PASSWORD: '111111'
 ---
 - launchApp:
     clearState: true
@@ -7,9 +13,9 @@ appId: com.smoodee.cardmania
 - tapOn: 'email'
 - tapOn:
     id: 'email_input'
-- inputText: 'vincentthan.hlam@gmail.com'
+- inputText: ${EMAIL}
 - tapOn: 'Continue'
 - tapOn: 'Password'
-- inputText: '789456123V'
+- inputText: ${PASSWORD}
 - tapOn: 'Sign in'
 - assertVisible: '.*Welcome back.*'
