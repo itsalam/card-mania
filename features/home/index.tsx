@@ -33,6 +33,8 @@ import { RecentlyViewed } from './cards/RecentlyViewed'
 import { useExploreSections } from './ExplorePage'
 import { useFeedSections } from './FeedPage'
 import { PortfolioSummary } from './PortfolioSummary'
+import { BREAKDOWN_SERIES, BreakdownSeries } from '../collection/components/CollectionBreakdown'
+
 import { TabValue, tabValues, useHomePageStore } from './provider'
 import { HomeRefreshProvider, useHomeRefreshControl } from './refresh-provider'
 import { TickerTape } from './TickerTape'
@@ -117,14 +119,11 @@ export default function HomeScreen() {
   const router = useRouter()
   const { data: unreadCount = 0 } = useUnreadCount()
 
-  const [selectedCollections, setSelectedCollections] = useState<string[]>([
-    'wishlist',
-    'selling',
-    'vault',
-  ])
-  const toggleCollection = useCallback((type: string) => {
-    setSelectedCollections((prev) =>
-      prev.includes(type) ? prev.filter((t) => t !== type) : [...prev, type]
+  // Which value lines the Home chart shows (PC, For sale, Wishlist); all on by default.
+  const [selectedSeries, setSelectedSeries] = useState<string[]>([...BREAKDOWN_SERIES])
+  const toggleSeries = useCallback((series: BreakdownSeries) => {
+    setSelectedSeries((prev) =>
+      prev.includes(series) ? prev.filter((t) => t !== series) : [...prev, series]
     )
   }, [])
 
@@ -199,8 +198,8 @@ export default function HomeScreen() {
 
       <HomeRefreshProvider>
         <HomeContent
-          selectedCollections={selectedCollections}
-          onToggleCollection={toggleCollection}
+          selectedSeries={selectedSeries}
+          onToggleSeries={toggleSeries}
           currentPage={currentPage}
           setCurrentPage={setCurrentPage}
         />
@@ -210,13 +209,13 @@ export default function HomeScreen() {
 }
 
 function HomeContent({
-  selectedCollections,
-  onToggleCollection,
+  selectedSeries,
+  onToggleSeries,
   currentPage,
   setCurrentPage,
 }: {
-  selectedCollections: string[]
-  onToggleCollection: (type: string) => void
+  selectedSeries: string[]
+  onToggleSeries: (series: BreakdownSeries) => void
   currentPage: string
   setCurrentPage: (v: string) => void
 }) {
@@ -298,8 +297,8 @@ function HomeContent({
                 <OnboardingTarget id="collection-breakdown">
                   <PortfolioSummary
                     style={{ paddingTop: 12, paddingBottom: 8, marginHorizontal: 12 }}
-                    selectedCollections={selectedCollections}
-                    onToggleCollection={onToggleCollection}
+                    selectedSeries={selectedSeries}
+                    onToggleSeries={onToggleSeries}
                   />
                 </OnboardingTarget>
               </CollapsibleHeaderEventsProvider>

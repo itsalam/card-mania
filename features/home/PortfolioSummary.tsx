@@ -15,7 +15,7 @@ import { MotiView } from 'moti'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Pressable, StyleProp, View, ViewStyle } from 'react-native'
 import { Colors } from 'react-native-ui-lib'
-import CollectionBreakdown from '../collection/components/CollectionBreakdown'
+import CollectionBreakdown, { BreakdownSeries } from '../collection/components/CollectionBreakdown'
 import { useCollapsibleHeaderEvent, useCollapsibleHeaderEvents } from '../collection/ui'
 import { Graphs } from './Breakdowns'
 
@@ -24,24 +24,13 @@ const BORDER_COLOR_EXPANDED = Colors.$outlinePrimary
 const BORDER_WIDTH = 2
 const CHIP_HEIGHT = 24
 const GRAPH_HEIGHT = 284
-// CollectionBreakdown ~70px + Graphs ~284px + padding
-// Open height until the breakdown has been measured (CollectionBreakdown ~70px + Graphs ~284px
+// Open height until the breakdown has been measured (CollectionBreakdown ~130px + Graphs ~284px
 // + padding); after that it opens to exactly its measured height, so nothing is cut off.
-const BREAKDOWN_FALLBACK_HEIGHT = 400
+const BREAKDOWN_FALLBACK_HEIGHT = 460
 const BREAKDOWN_TOGGLE_MS = 280
 
-function StatCard({
-  label,
-  value,
-  trend,
-  caption,
-}: {
-  label: string
-  value: string
-  trend?: number | null
-  caption?: string
-}) {
-  const trendColor =
+function trendStyle(trend?: number | null) {
+  const color =
     trend == null
       ? Colors.$textDefault
       : trend > 0
@@ -49,47 +38,81 @@ function StatCard({
         : trend < 0
           ? Colors.red30
           : Colors.$textDefault
-  const TrendIcon = trend == null || trend === 0 ? null : trend > 0 ? TrendingUp : TrendingDown
+  const Icon = trend == null || trend === 0 ? null : trend > 0 ? TrendingUp : TrendingDown
+  return { color, Icon }
+}
 
+// Lighter than the Neutral fill they had, with a hairline edge so each stat reads as its own
+// tile inside the bordered summary card.
+const STAT_CARD_STYLE: ViewStyle = {
+  backgroundColor: Colors.$backgroundElevated,
+  borderRadius: 12,
+  borderWidth: 1,
+  borderColor: Colors.rgba(Colors.$outlineNeutral, 0.4),
+}
+
+// Layout: one wide Total Value card beside a stack of compact stats, so each card is only as
+// tall as its content (TradingView home widgets, a tall tile beside a stacked list:
+// https://mobbin.com/screens/31b5708d-94a7-4d9f-a483-a25b8958552e).
+function TotalValueCard({ value }: { value: string }) {
+  return (
+    <View style={[STAT_CARD_STYLE, { flex: 1, padding: 12, gap: 2, justifyContent: 'center' }]}>
+      <Text variant="small" style={{ color: Colors.$textNeutral }}>
+        Total Value
+      </Text>
+      <Text variant="h3" numberOfLines={1} adjustsFontSizeToFit>
+        {value}
+      </Text>
+    </View>
+  )
+}
+
+function CompactStat({
+  label,
+  value,
+  trend,
+}: {
+  label: string
+  value: string
+  trend?: number | null
+}) {
+  const { color, Icon } = trendStyle(trend)
   return (
     <View
-      style={{
-        flex: 1,
-        backgroundColor: Colors.$backgroundNeutral,
-        borderRadius: 12,
-        padding: 12,
-        gap: 4,
-      }}
+      style={[
+        STAT_CARD_STYLE,
+        {
+          // Grow from the content height, never squeeze below it.
+          flexGrow: 1,
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: 12,
+          paddingHorizontal: 12,
+          paddingVertical: 8,
+        },
+      ]}
     >
       <Text variant="small" style={{ color: Colors.$textNeutral }}>
         {label}
       </Text>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-        {TrendIcon && <TrendIcon size={14} color={trendColor} />}
-        <Text variant="h4" style={{ color: trendColor }}>
+        {Icon && <Icon size={14} color={color} />}
+        <Text variant="h4" numberOfLines={1} style={{ color }}>
           {value}
         </Text>
       </View>
-      {caption ? (
-        <Text
-          variant="small"
-          numberOfLines={2}
-          style={{ color: Colors.$textNeutral, fontSize: 11 }}
-        >
-          {caption}
-        </Text>
-      ) : null}
     </View>
   )
 }
 
 export function PortfolioSummary({
-  selectedCollections,
-  onToggleCollection,
+  selectedSeries,
+  onToggleSeries,
   style,
 }: {
-  selectedCollections: string[]
-  onToggleCollection: (type: string) => void
+  selectedSeries: string[]
+  onToggleSeries: (series: BreakdownSeries) => void
   style?: StyleProp<ViewStyle>
 }) {
   const [expanded, setExpanded] = useState(false)
@@ -162,11 +185,7 @@ export function PortfolioSummary({
   const { data: vaultHistory } = useCollectionHistory({ collectionType: 'vault' })
   const { data: valuation } = useCollectionValuation({ collectionType: 'vault' })
 
-  const { total: totalValue, pc, forSale } = splitOwnedValue(vaultTotal, sellingTotal)
-  const splitCaption =
-    totalValue > 0
-      ? `PC ${formatCompactPrice(pc)} · For sale ${formatCompactPrice(forSale)}`
-      : undefined
+  const { total: totalValue } = splitOwnedValue(vaultTotal, sellingTotal)
   // "Prices as of" the oldest price behind the total, plus any cards with no price for their grade.
   const pricesAsOf = formatPriceDate(valuation?.pricesAsOf)
   const unpriced = valuation?.unpricedQuantity ?? 0
@@ -215,23 +234,12 @@ export function PortfolioSummary({
       >
         {/* Stat cards — always visible */}
         <View style={{ flexDirection: 'row', gap: 8 }}>
-          <StatCard
-            label="Total Value"
-            value={formatCompactPrice(totalValue)}
-            caption={splitCaption}
-          />
-          <StatCard label="Cards" value={String(cardCount)} />
-          <StatCard label="Change" value={pctLabel} trend={pctChange} />
+          <TotalValueCard value={formatCompactPrice(totalValue)} />
+          <View style={{ flex: 1, gap: 8 }}>
+            <CompactStat label="Cards" value={String(cardCount)} />
+            <CompactStat label="Change" value={pctLabel} trend={pctChange} />
+          </View>
         </View>
-        {freshnessLine ? (
-          <Text
-            variant="small"
-            numberOfLines={1}
-            style={{ color: Colors.$textNeutral, fontSize: 11, marginTop: 6, paddingHorizontal: 4 }}
-          >
-            {freshnessLine}
-          </Text>
-        ) : null}
 
         {/* Accordion — expands inside the card; outer page ScrollView handles scrolling */}
         <MotiView
@@ -253,9 +261,10 @@ export function PortfolioSummary({
               }}
             >
               <CollectionBreakdown
-                selectedCollections={selectedCollections}
-                onToggleCollection={onToggleCollection}
-                style={{ paddingTop: 12, paddingBottom: 8, paddingHorizontal: 4 }}
+                selectedSeries={selectedSeries}
+                onToggleSeries={onToggleSeries}
+                footnote={freshnessLine}
+                style={{ marginTop: 8, marginBottom: 8 }}
               />
               <View
                 style={{
@@ -266,7 +275,7 @@ export function PortfolioSummary({
                   borderRadius: 12,
                 }}
               >
-                <Graphs height={GRAPH_HEIGHT} selectedCollections={selectedCollections} />
+                <Graphs height={GRAPH_HEIGHT} selectedSeries={selectedSeries} />
               </View>
             </View>
           </OnboardingTarget>
