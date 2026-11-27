@@ -35,7 +35,11 @@ import {
   useTouchPinnedCollection,
   useTouchSavedCollection,
 } from '../hooks'
-import { DefaultPageTypes, useCollectionsPageStore } from '../provider'
+import {
+  DefaultPageTypes,
+  useCollectionsPageStore,
+  useOptionalCollectionsPageStore,
+} from '../provider'
 import { DeleteModal } from './DeleteModal'
 
 type Option = {
@@ -96,7 +100,8 @@ function CollectionInfoContent({
   onEdit?: () => void
 }) {
   const [showDeleteModal, setShowDeleteModal] = useState(false)
-  const { setReorderingId } = useCollectionsPageStore()
+  // Undefined outside the collection page (e.g. a profile), where there's no list to reorder.
+  const setReorderingId = useOptionalCollectionsPageStore((s) => s.setReorderingId)
 
   const authUserId = useUserStore((s) => s.user?.id)
   const { data: collection } = useGetCollection({ collectionId })
@@ -189,7 +194,7 @@ function CollectionInfoContent({
           },
         },
         // ITS-200. Selling mirrors storefront items, so its order isn't the user's to set.
-        ...(collection && !collection.is_selling && isOwned
+        ...(collection && !collection.is_selling && isOwned && setReorderingId
           ? {
               reorder: {
                 label: 'Reorder',
