@@ -43,15 +43,19 @@ function trendStyle(trend?: number | null) {
   return { color, Icon }
 }
 
+// Lighter than the Neutral fill they had, with a hairline edge so each stat reads as its own
+// tile inside the bordered summary card.
 const STAT_CARD_STYLE: ViewStyle = {
-  backgroundColor: Colors.$backgroundNeutral,
+  backgroundColor: Colors.$backgroundElevated,
   borderRadius: 12,
+  borderWidth: 1,
+  borderColor: Colors.rgba(Colors.$outlineNeutral, 0.4),
 }
 
 // Layout: one wide Total Value card beside a stack of compact stats, so each card is only as
 // tall as its content (TradingView home widgets, a tall tile beside a stacked list:
 // https://mobbin.com/screens/31b5708d-94a7-4d9f-a483-a25b8958552e).
-function TotalValueCard({ value, lines }: { value: string; lines: string[] }) {
+function TotalValueCard({ value }: { value: string }) {
   return (
     <View style={[STAT_CARD_STYLE, { flex: 1, padding: 12, gap: 2, justifyContent: 'center' }]}>
       <Text variant="small" style={{ color: Colors.$textNeutral }}>
@@ -60,16 +64,83 @@ function TotalValueCard({ value, lines }: { value: string; lines: string[] }) {
       <Text variant="h3" numberOfLines={1} adjustsFontSizeToFit>
         {value}
       </Text>
-      {lines.map((line) => (
+    </View>
+  )
+}
+
+// What Total Value is made of, shown only with the breakdown open: a PC / For sale bar with a
+// row per share, and the price freshness note underneath. Colors match the Vault and Selling
+// entries in CollectionBreakdown.
+function ValueSplit({ pc, forSale, footnote }: { pc: number; forSale: number; footnote: string }) {
+  const total = pc + forSale
+  const rows = [
+    { label: 'PC', value: pc, color: Colors.violet30 },
+    { label: 'For sale', value: forSale, color: Colors.blue30 },
+  ]
+  return (
+    <View
+      style={{
+        marginTop: 8,
+        padding: 12,
+        gap: 8,
+        borderRadius: 12,
+        backgroundColor: Colors.rgba(Colors.$backgroundNeutral, 0.5),
+        borderWidth: 1,
+        borderColor: Colors.rgba(Colors.$outlineNeutral, 0.4),
+      }}
+    >
+      {total > 0 ? (
+        <>
+          <View
+            style={{
+              flexDirection: 'row',
+              height: 6,
+              borderRadius: 99,
+              overflow: 'hidden',
+              gap: 2,
+              backgroundColor: Colors.$backgroundNeutral,
+            }}
+          >
+            {rows.map((r) =>
+              r.value > 0 ? (
+                <View key={r.label} style={{ flex: r.value / total, backgroundColor: r.color }} />
+              ) : null
+            )}
+          </View>
+          {rows.map((r) => (
+            <View
+              key={r.label}
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+              }}
+            >
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: r.color }} />
+                <Text variant="small" style={{ color: Colors.$textNeutral }}>
+                  {r.label}
+                </Text>
+              </View>
+              <Text variant="small">
+                {formatCompactPrice(r.value)}
+                <Text variant="small" style={{ color: Colors.$textNeutralLight }}>
+                  {`  ${Math.round((r.value / total) * 100)}%`}
+                </Text>
+              </Text>
+            </View>
+          ))}
+        </>
+      ) : null}
+      {footnote ? (
         <Text
-          key={line}
           variant="small"
           numberOfLines={1}
-          style={{ color: Colors.$textNeutral, fontSize: 11 }}
+          style={{ color: Colors.$textNeutralLight, fontSize: 11 }}
         >
-          {line}
+          {footnote}
         </Text>
-      ))}
+      ) : null}
     </View>
   )
 }
@@ -89,7 +160,8 @@ function CompactStat({
       style={[
         STAT_CARD_STYLE,
         {
-          flex: 1,
+          // Grow from the content height, never squeeze below it.
+          flexGrow: 1,
           flexDirection: 'row',
           alignItems: 'center',
           justifyContent: 'space-between',
@@ -192,10 +264,6 @@ export function PortfolioSummary({
   const { data: valuation } = useCollectionValuation({ collectionType: 'vault' })
 
   const { total: totalValue, pc, forSale } = splitOwnedValue(vaultTotal, sellingTotal)
-  const splitLines =
-    totalValue > 0
-      ? [`PC ${formatCompactPrice(pc)}`, `For sale ${formatCompactPrice(forSale)}`]
-      : []
   // "Prices as of" the oldest price behind the total, plus any cards with no price for their grade.
   const pricesAsOf = formatPriceDate(valuation?.pricesAsOf)
   const unpriced = valuation?.unpricedQuantity ?? 0
@@ -244,21 +312,12 @@ export function PortfolioSummary({
       >
         {/* Stat cards — always visible */}
         <View style={{ flexDirection: 'row', gap: 8 }}>
-          <TotalValueCard value={formatCompactPrice(totalValue)} lines={splitLines} />
+          <TotalValueCard value={formatCompactPrice(totalValue)} />
           <View style={{ flex: 1, gap: 8 }}>
             <CompactStat label="Cards" value={String(cardCount)} />
             <CompactStat label="Change" value={pctLabel} trend={pctChange} />
           </View>
         </View>
-        {freshnessLine ? (
-          <Text
-            variant="small"
-            numberOfLines={1}
-            style={{ color: Colors.$textNeutral, fontSize: 11, marginTop: 6, paddingHorizontal: 4 }}
-          >
-            {freshnessLine}
-          </Text>
-        ) : null}
 
         {/* Accordion — expands inside the card; outer page ScrollView handles scrolling */}
         <MotiView
@@ -279,6 +338,9 @@ export function PortfolioSummary({
                 if (expandedRef.current) reportSize(BREAKDOWN_TOGGLE_MS)
               }}
             >
+              {totalValue > 0 || freshnessLine ? (
+                <ValueSplit pc={pc} forSale={forSale} footnote={freshnessLine} />
+              ) : null}
               <CollectionBreakdown
                 selectedCollections={selectedCollections}
                 onToggleCollection={onToggleCollection}

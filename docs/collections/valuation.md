@@ -8,13 +8,13 @@ What "Total Value" means and which prices back it.
 
 ## Decisions (Nov 25, 2026)
 
-| Question                   | Decision                                                                                                                                                                                                       |
-| -------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| What is Total Value?       | **What you own: the Vault.** Shown split into **PC** (kept) and **For Sale**. Selling items are mirrored into the Vault, so For Sale = the Selling total and PC = Vault − For Sale. Never count Selling twice. |
-| Is the wishlist included?  | **No.** Wishlist cards aren't owned. The wishlist keeps its own figure in the breakdown.                                                                                                                       |
-| Which price backs an item? | **The latest CardHedger price for the item's grade** (`cards.grades_prices`, refreshed on a schedule; daily history in `card_price_history`). No price for that grade counts as **$0** and shows "No price".   |
-| How fresh is a price?      | The later of the scheduled refresh (`cards.prices_refreshed_at`) and an on-demand fetch (`cards.last_updated`): `public.card_prices_as_of(...)`.                                                               |
-| How is freshness shown?    | Home: **"Prices as of &lt;date&gt;"** under the total, using the oldest price behind it, plus "N cards have no price". Card detail: **"Prices updated &lt;date&gt;"** under the price summary.                 |
+| Question                   | Decision                                                                                                                                                                                                                                                 |
+| -------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| What is Total Value?       | **What you own: the Vault.** Shown split into **PC** (kept) and **For Sale**. Selling items are mirrored into the Vault, so For Sale = the Selling total and PC = Vault − For Sale. Never count Selling twice.                                           |
+| Is the wishlist included?  | **No.** Wishlist cards aren't owned. The wishlist keeps its own figure in the breakdown.                                                                                                                                                                 |
+| Which price backs an item? | **The latest CardHedger price for the item's grade** (`cards.grades_prices`, refreshed on a schedule; daily history in `card_price_history`). No price for that grade counts as **$0** and shows "No price".                                             |
+| How fresh is a price?      | The later of the scheduled refresh (`cards.prices_refreshed_at`) and an on-demand fetch (`cards.last_updated`): `public.card_prices_as_of(...)`.                                                                                                         |
+| How is freshness shown?    | Home: **"Prices as of &lt;date&gt;"** in the Total Value split (PC / For sale) that opens with "View breakdown", using the oldest price behind it, plus "N cards have no price". Card detail: **"Prices updated &lt;date&gt;"** under the price summary. |
 
 ## Where it shows
 
