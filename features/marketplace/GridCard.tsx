@@ -1,4 +1,5 @@
 import { useImageProxy } from '@/client/image-proxy'
+import { listingPrice } from '@/client/collections/listing'
 import { CardTile } from '@/components/tcg-card/CardTile'
 import { CARD_LIST_GAP } from '@/components/tcg-card/consts'
 import { GradeBadge } from '@/components/tcg-card/GradeBadge'
@@ -37,7 +38,7 @@ export function GridCard({ item, width }: { item: FeaturedCardItem; width: numbe
       width={width}
       title={item.name ?? undefined}
       subtitle={item.set_name ?? undefined}
-      price={item.market_value}
+      price={listingPrice(item).cents}
       badge={<GradeBadge priceKey={isGraded ? item.price_key : 'ungraded'} />}
       onPress={() =>
         router.push({ pathname: '/cards/[card]', params: { card: item.ref_id } } as any)

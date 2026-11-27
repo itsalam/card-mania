@@ -1,4 +1,5 @@
 import { CollectionLike } from '@/client/collections/types'
+import { availableQuantity, listingPrice } from '@/client/collections/listing'
 import { useToast } from '@/components/Toast'
 import { SearchBar } from '@/components/ui/search'
 import { Text } from '@/components/ui/text/base-text'
@@ -115,16 +116,29 @@ function CollectionGrid({
     addItem({
       data: { ...item, id: item.collection_item_id } as any,
       cart: {
-        price: Math.round((item.latest_price ?? 0) * 100),
-        originalPrice: Math.round((item.latest_price ?? 0) * 100),
+        // ITS-134: the seller's asking price, else the market value for the card's grade.
+        price: listingPrice({
+          asking_price_cents: item.asking_price_cents,
+          market_value: item.collection_item_value,
+        }).cents,
+        originalPrice: listingPrice({
+          asking_price_cents: item.asking_price_cents,
+          market_value: item.collection_item_value,
+        }).cents,
         quantity: 1,
-        maxQuantity: item.quantity ?? 1,
+        maxQuantity: Math.max(1, availableQuantity(item)),
       },
     })
     showToast({ message: `${item.name ?? 'Card'} added to cart` })
   }
 
   const flatData = (data?.pages.flat() ?? []) as (CollectionItemQueryView & TCard)[]
+  // ITS-134: what a buyer pays (asking price, else the market value for the grade).
+  const sellPrice = (item: CollectionItemQueryView) =>
+    listingPrice({
+      asking_price_cents: item.asking_price_cents,
+      market_value: item.collection_item_value,
+    }).cents
 
   const filtered = flatData
     .filter((item) => {
@@ -132,8 +146,8 @@ function CollectionGrid({
       return item.name?.toLowerCase().includes(searchQuery.toLowerCase())
     })
     .sort((a, b) => {
-      if (sortOrder === 'price_asc') return (a.latest_price ?? 0) - (b.latest_price ?? 0)
-      if (sortOrder === 'price_desc') return (b.latest_price ?? 0) - (a.latest_price ?? 0)
+      if (sortOrder === 'price_asc') return sellPrice(a) - sellPrice(b)
+      if (sortOrder === 'price_desc') return sellPrice(b) - sellPrice(a)
       // newest: sort by collection_item_id descending (proxy for insertion order)
       return (b.collection_item_id ?? '').localeCompare(a.collection_item_id ?? '')
     })
@@ -210,6 +224,7 @@ function CollectionGrid({
                   <ShoppingCart size={14} color={inCart ? '#fff' : Colors.$iconNeutralLight} />
                 </View>
               }
+              preferAskingPrice
               renderAccessories={(props) => <GridTileInfo {...props} />}
             />
           </View>

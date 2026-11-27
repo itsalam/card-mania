@@ -676,6 +676,8 @@ export type Database = {
       }
       collection_items: {
         Row: {
+          asking_currency: string
+          asking_price_cents: number | null
           collection_id: string
           collection_ref: string | null
           created_at: string
@@ -684,6 +686,7 @@ export type Database = {
           held_quantity: number
           id: string
           item_kind: Database['public']['Enums']['item_kind']
+          mirror_of: string | null
           position: number
           price_snapshot: Json | null
           price_snapshot_at: string | null
@@ -695,6 +698,8 @@ export type Database = {
           variants: string[] | null
         }
         Insert: {
+          asking_currency?: string
+          asking_price_cents?: number | null
           collection_id: string
           collection_ref?: string | null
           created_at?: string
@@ -703,6 +708,7 @@ export type Database = {
           held_quantity?: number
           id?: string
           item_kind?: Database['public']['Enums']['item_kind']
+          mirror_of?: string | null
           position?: number
           price_snapshot?: Json | null
           price_snapshot_at?: string | null
@@ -714,6 +720,8 @@ export type Database = {
           variants?: string[] | null
         }
         Update: {
+          asking_currency?: string
+          asking_price_cents?: number | null
           collection_id?: string
           collection_ref?: string | null
           created_at?: string
@@ -722,6 +730,7 @@ export type Database = {
           held_quantity?: number
           id?: string
           item_kind?: Database['public']['Enums']['item_kind']
+          mirror_of?: string | null
           position?: number
           price_snapshot?: Json | null
           price_snapshot_at?: string | null
@@ -1001,6 +1010,7 @@ export type Database = {
           is_selling: boolean | null
           is_storefront: boolean | null
           is_vault: boolean | null
+          is_listing_default: boolean
           is_wishlist: boolean
           item_sort: string
           name: string
@@ -1021,6 +1031,7 @@ export type Database = {
           is_selling?: boolean | null
           is_storefront?: boolean | null
           is_vault?: boolean | null
+          is_listing_default?: boolean
           is_wishlist?: boolean
           item_sort?: string
           name: string
@@ -1041,6 +1052,7 @@ export type Database = {
           is_selling?: boolean | null
           is_storefront?: boolean | null
           is_vault?: boolean | null
+          is_listing_default?: boolean
           is_wishlist?: boolean
           item_sort?: string
           name?: string
@@ -2961,6 +2973,7 @@ export type Database = {
       _marketplace_base_listings: {
         Args: never
         Returns: {
+          asking_price_cents: number | null
           back_id: string
           collection_id: string
           collection_item_id: string
@@ -3179,6 +3192,9 @@ export type Database = {
           p_sort?: string
         }
         Returns: {
+          asking_price_cents: number | null
+          held_quantity: number
+          mirror_of: string | null
           back_id: string
           collection_id: string
           collection_item_id: string
@@ -3662,6 +3678,7 @@ export type Database = {
       get_recommended_listings: {
         Args: { result_limit?: number }
         Returns: {
+          asking_price_cents: number | null
           back_id: string
           collection_id: string
           collection_item_id: string
@@ -3771,6 +3788,10 @@ export type Database = {
       mark_card_price_refresh: {
         Args: { p_card_id: string; p_status: string }
         Returns: undefined
+      }
+      list_for_sale: {
+        Args: { p_asking_price_cents: number; p_item_id: string; p_quantity: number }
+        Returns: Database['public']['Tables']['collection_items']['Row']
       }
       mark_transaction_shipped: {
         Args: { p_offer_id: string }
@@ -3926,6 +3947,10 @@ export type Database = {
         Returns: boolean
       }
       set_push_preferences: { Args: { p_patch: Json }; Returns: Json }
+      set_asking_price: {
+        Args: { p_asking_price_cents: number; p_item_id: string }
+        Returns: Database['public']['Tables']['collection_items']['Row']
+      }
       set_transaction_shipping_address: {
         Args: { p_address: Json; p_offer_id: string }
         Returns: {
@@ -4064,6 +4089,10 @@ export type Database = {
       write_marketplace_section: {
         Args: { p_key: string; p_rows: Json }
         Returns: number
+      }
+      unlist_item: {
+        Args: { p_item_id: string }
+        Returns: Database['public']['Tables']['collection_items']['Row']
       }
     }
     Enums: {

@@ -6,6 +6,10 @@ import {
   PriceModalPayload,
   VariantsSelect,
 } from '@/components/collections/items/editable-entry-item'
+import {
+  ListForSaleModal,
+  ManageListingModal,
+} from '@/components/collections/items/list-for-sale-sheet'
 import { CollectionItemPhotosModal } from '@/components/collections/items/photos-modal'
 import { CORNER_TAB_RADIUS, CornerTab } from '@/components/tcg-card/CornerTab'
 import { Spinner } from '@/components/ui/spinner'
@@ -18,6 +22,8 @@ import {
   EllipsisVertical,
   Image as ImageIcon,
   Plus,
+  Store,
+  Tag,
   TriangleAlert,
   Undo2,
 } from 'lucide-react-native'
@@ -85,6 +91,9 @@ export const CollectionCardItemEntries = ({
   const [priceChangeEntry, setPriceChangeEntry] = useState<PriceModalPayload | null>(null)
   const [menuOpen, setMenuOpen] = useState(false)
   const [photosModalOpen, setPhotosModalOpen] = useState(false)
+  // ITS-134: List for Sale (PC copies in the Vault) and Manage listing (copies for sale).
+  const [listSheetOpen, setListSheetOpen] = useState(false)
+  const [manageSheetOpen, setManageSheetOpen] = useState(false)
   const handleDismiss = useCallback(() => {
     setShowModal(false)
   }, [refetch])
@@ -118,6 +127,27 @@ export const CollectionCardItemEntries = ({
     [sortedEntries]
   )
   const canManagePhotos = Boolean(editable && primaryEntry)
+
+  const persisted = useMemo(
+    () =>
+      sortedEntries.filter(
+        (e) => (e as any).id && !String((e as any).id).includes('temp')
+      ) as CollectionItem[],
+    [sortedEntries]
+  )
+  // PC copies: Vault rows that aren't mirrors of a listing.
+  const pcEntries = useMemo(
+    () =>
+      collection?.is_vault ? persisted.filter((e) => !e.mirror_of && (e.quantity ?? 0) > 0) : [],
+    [persisted, collection?.is_vault]
+  )
+  // Copies for sale: a storefront listing, or its Selling / Vault mirror.
+  const listedEntries = useMemo(
+    () => persisted.filter((e) => Boolean(e.mirror_of) || Boolean(collection?.is_storefront)),
+    [persisted, collection?.is_storefront]
+  )
+  const canList = Boolean(editable) && pcEntries.length > 0
+  const canManageListing = Boolean(editable) && listedEntries.length > 0
 
   useEffect(() => {
     isMountedRef.current = true
@@ -297,6 +327,42 @@ export const CollectionCardItemEntries = ({
               <ImageIcon size={18} color={Colors.$iconGeneral} style={{ marginRight: 8 }} />
               <Text variant="default">Upload Photos</Text>
             </TouchableOpacity>
+            {canList && (
+              <TouchableOpacity
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  paddingVertical: 14,
+                  paddingHorizontal: 16,
+                }}
+                onPress={() => {
+                  setMenuOpen(false)
+                  setListSheetOpen(true)
+                }}
+                accessibilityRole="button"
+              >
+                <Tag size={18} color={Colors.$iconGeneral} style={{ marginRight: 8 }} />
+                <Text variant="default">List for sale</Text>
+              </TouchableOpacity>
+            )}
+            {canManageListing && (
+              <TouchableOpacity
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  paddingVertical: 14,
+                  paddingHorizontal: 16,
+                }}
+                onPress={() => {
+                  setMenuOpen(false)
+                  setManageSheetOpen(true)
+                }}
+                accessibilityRole="button"
+              >
+                <Store size={18} color={Colors.$iconGeneral} style={{ marginRight: 8 }} />
+                <Text variant="default">{'Price & listing'}</Text>
+              </TouchableOpacity>
+            )}
           </View>
         </Modal>
       )}
@@ -305,6 +371,22 @@ export const CollectionCardItemEntries = ({
           visible={photosModalOpen}
           onDismiss={() => setPhotosModalOpen(false)}
           collectionItemId={String((primaryEntry as any).id)}
+        />
+      )}
+      {canList && (
+        <ListForSaleModal
+          visible={listSheetOpen}
+          onDismiss={() => setListSheetOpen(false)}
+          card={card}
+          entries={pcEntries}
+        />
+      )}
+      {canManageListing && (
+        <ManageListingModal
+          visible={manageSheetOpen}
+          onDismiss={() => setManageSheetOpen(false)}
+          card={card}
+          entries={listedEntries}
         />
       )}
       <PriceChangeModal

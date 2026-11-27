@@ -67,7 +67,7 @@ export const MainInfoAccessories = ({ displayData, gain, hide }: ItemListViewPro
                 color: Colors.$textDefault,
               }}
             >
-              {formatPrice(displayData.displayPrice * 100)}
+              {formatPrice(displayData.displayPrice)}
             </Text>
           ) : (
             <Text
@@ -275,12 +275,18 @@ export const DefaultAccessories = ({
   )
 }
 
-export type CardListViewProps = { card: TCard & Partial<CollectionItemQueryView> } & Omit<
-  ItemListViewProps,
-  'item' | 'displayData'
->
+export type CardListViewProps = {
+  card: TCard & Partial<CollectionItemQueryView>
+  /** ITS-134: show the seller's asking price (storefront rows) instead of the market value. */
+  preferAskingPrice?: boolean
+} & Omit<ItemListViewProps, 'item' | 'displayData'>
 
-export function CardListView({ card, collectionItem, ...props }: CardListViewProps) {
+export function CardListView({
+  card,
+  collectionItem,
+  preferAskingPrice,
+  ...props
+}: CardListViewProps) {
   // `collection_item_query` / `viewSingleCollectionItem` embed the item's primary photo
   // directly on `collectionItem` now (`primary_image_cache_id`, always `string | null`
   // rather than `undefined` when present) — skip the separate usePrimaryPhoto round trip
@@ -298,6 +304,7 @@ export function CardListView({ card, collectionItem, ...props }: CardListViewPro
     primaryPhotoLoading,
     metadata: card?.price_key ? { price_key: card?.price_key } : undefined,
     isLoading: props.isLoading,
+    preferAskingPrice,
   })
 
   //@ts-ignore
@@ -358,7 +365,7 @@ export const ItemListView = forwardRef<View, ItemListViewProps>(function ItemLis
         title={displayData?.title}
         subtitle={displayData?.subHeading}
         badge={!props.hide?.grade && <GradeBadge priceKey={displayData?.metadata} />}
-        price={displayData?.displayPrice ? displayData.displayPrice * 100 : null}
+        price={displayData?.displayPrice ?? null}
         changePercent={props.gain}
         isLoading={props.isLoading}
         onPress={press}

@@ -100,6 +100,7 @@ export const getCardDisplayData = ({
   primaryPhotoLoading,
   isLoading,
   metadata,
+  preferAskingPrice,
 }: {
   card?: TCard
   collectionItem?: CollectionItem
@@ -126,8 +127,17 @@ export const getCardDisplayData = ({
   primaryPhotoLoading?: boolean
   metadata?: Metadata
   isLoading?: boolean
+  /**
+   * ITS-134: for a card that's for sale (storefront, card detail, cart), show the seller's
+   * asking price when there is one. Collection views leave this off and keep the market value.
+   */
+  preferAskingPrice?: boolean
 }) => {
   const isIncomplete = Boolean(card) && isLoading
+  const askingPrice =
+    preferAskingPrice && (collectionItem as { asking_price_cents?: number | null } | undefined)
+      ? ((collectionItem as { asking_price_cents?: number | null }).asking_price_cents ?? null)
+      : null
   // CollectionItem (table row) vs CollectionItemQueryView (RPC row) diverge on a few
   // nullability details (e.g. collection_ref); getDisplayPrice only reads
   // collection_item_value, which both shapes carry identically.
@@ -194,7 +204,9 @@ export const getCardDisplayData = ({
           // other way around, so list items keep a uniform card shape regardless of what
           // aspect ratio the user's photo was taken in.
           aspectRatio: card?.image?.aspectRatio ?? undefined,
-          displayPrice: displayPriceFix ?? null,
+          displayPrice: askingPrice && askingPrice > 0 ? askingPrice : (displayPriceFix ?? null),
+          // True when displayPrice is the seller's asking price (ITS-134).
+          isAskingPrice: Boolean(askingPrice && askingPrice > 0),
           metadata: metadata?.price_key,
           quantity: collectionItem?.quantity,
         }
