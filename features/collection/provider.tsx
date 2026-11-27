@@ -151,3 +151,14 @@ export const useCollectionsPageStore = () => {
     throw new Error('useCollectionsPageStore must be used within CreateNewCollectionsProvider')
   return useStore(store)
 }
+
+// For components that also render outside the collection page (e.g. CollectionInfo on a
+// profile): undefined there instead of throwing. useStore needs a store, so a never-used empty
+// one stands in.
+const EMPTY_STORE = createStore<CollectionsState>(() => ({}) as CollectionsState)
+export function useOptionalCollectionsPageStore<T>(
+  selector: (state: CollectionsState) => T
+): T | undefined {
+  const store = useContext(CollectionPageContext)
+  return useStore(store ?? EMPTY_STORE, (state) => (store ? selector(state) : undefined))
+}
