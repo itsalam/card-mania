@@ -28,8 +28,8 @@ import { TCard } from '@/constants/types'
 import { getGradingDisplayString } from '@/features/collection/helpers'
 import { DollarSign } from 'lucide-react-native'
 import { useEffect, useMemo, useState } from 'react'
-import { Pressable, View } from 'react-native'
-import { Colors } from 'react-native-ui-lib'
+import { View } from 'react-native'
+import { Colors, TouchableOpacity } from 'react-native-ui-lib'
 
 type Entry = Partial<CollectionItem> & { id?: string; quantity?: number }
 
@@ -78,7 +78,7 @@ function EntryPicker({
       {entries.map((entry, i) => {
         const active = i === selected
         return (
-          <Pressable
+          <TouchableOpacity
             key={entry.id ?? i}
             onPress={() => onSelect(i)}
             accessibilityRole="button"
@@ -98,7 +98,7 @@ function EntryPicker({
             >
               {entryLabel(entry)}
             </Text>
-          </Pressable>
+          </TouchableOpacity>
         )
       })}
     </View>
@@ -156,6 +156,40 @@ function ErrorLine({ error }: { error: unknown }) {
     <Text variant="small" style={{ color: Colors.$textDanger }}>
       {message}
     </Text>
+  )
+}
+
+// The sheet's drag gesture (components/ui/modal.tsx) swallows taps on Pressable-based
+// buttons, so actions go through ui-lib's TouchableOpacity, as in PriceChangeModal.
+function SheetButton({
+  label,
+  onPress,
+  disabled,
+  variant,
+  accessibilityHint,
+}: {
+  label: string
+  onPress: () => void
+  disabled?: boolean
+  variant?: 'default' | 'outline'
+  accessibilityHint?: string
+}) {
+  return (
+    <TouchableOpacity
+      onPress={onPress}
+      disabled={disabled}
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      accessibilityHint={accessibilityHint}
+      accessibilityState={{ disabled: Boolean(disabled) }}
+      style={{ opacity: disabled ? 0.5 : 1 }}
+    >
+      <View pointerEvents="none">
+        <Button size="lg" variant={variant}>
+          <Text>{label}</Text>
+        </Button>
+      </View>
+    </TouchableOpacity>
   )
 }
 
@@ -222,8 +256,8 @@ export function ListForSaleModal({
         />
         <ErrorLine error={list.error} />
         <Separator orientation="horizontal" />
-        <Button
-          size="lg"
+        <SheetButton
+          label={list.isPending ? 'Listing…' : `List ${quantity} for ${formatPrice(cents ?? 0)}`}
           disabled={!valid || list.isPending}
           onPress={() => {
             if (!valid || !entry?.id || cents == null) return
@@ -232,12 +266,7 @@ export function ListForSaleModal({
               { onSuccess: onDismiss }
             )
           }}
-          accessibilityLabel="List for sale"
-        >
-          <Text>
-            {list.isPending ? 'Listing…' : `List ${quantity} for ${formatPrice(cents ?? 0)}`}
-          </Text>
-        </Button>
+        />
       </View>
     </Modal>
   )
@@ -294,35 +323,31 @@ export function ManageListingModal({
           hint={market > 0 ? `Market price for this grade: ${formatPrice(market)}` : undefined}
         />
         <ErrorLine error={setPrice.error ?? unlist.error} />
-        <Button
-          size="lg"
+        <SheetButton
+          label={setPrice.isPending ? 'Saving…' : 'Save price'}
           disabled={!priceValid || busy || !entry?.id}
           onPress={() => {
             if (!entry?.id || cents == null) return
             setPrice.mutate({ itemId: entry.id, askingPriceCents: cents }, { onSuccess: onDismiss })
           }}
-        >
-          <Text>{setPrice.isPending ? 'Saving…' : 'Save price'}</Text>
-        </Button>
+        />
         <Separator orientation="horizontal" />
-        <Button
-          size="lg"
+        <SheetButton
           variant="outline"
+          label={
+            unlist.isPending
+              ? 'Removing…'
+              : onHold
+                ? 'On hold for a sale in progress'
+                : `Remove from sale (${availableQuantity(entry ?? {})} back to PC)`
+          }
           disabled={busy || onHold || !entry?.id}
           onPress={() => {
             if (!entry?.id) return
             unlist.mutate(entry.id, { onSuccess: onDismiss })
           }}
           accessibilityHint="Moves these copies back into your PC"
-        >
-          <Text>
-            {unlist.isPending
-              ? 'Removing…'
-              : onHold
-                ? 'On hold for a sale in progress'
-                : `Remove from sale (${availableQuantity(entry ?? {})} back to PC)`}
-          </Text>
-        </Button>
+        />
       </View>
     </Modal>
   )

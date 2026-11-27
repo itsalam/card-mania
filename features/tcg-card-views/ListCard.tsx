@@ -67,7 +67,7 @@ export const MainInfoAccessories = ({ displayData, gain, hide }: ItemListViewPro
                 color: Colors.$textDefault,
               }}
             >
-              {formatPrice(displayData.displayPrice * 100)}
+              {formatPrice(displayData.displayPrice)}
             </Text>
           ) : (
             <Text
@@ -365,7 +365,7 @@ export const ItemListView = forwardRef<View, ItemListViewProps>(function ItemLis
         title={displayData?.title}
         subtitle={displayData?.subHeading}
         badge={!props.hide?.grade && <GradeBadge priceKey={displayData?.metadata} />}
-        price={displayData?.displayPrice ? displayData.displayPrice * 100 : null}
+        price={displayData?.displayPrice ?? null}
         changePercent={props.gain}
         isLoading={props.isLoading}
         onPress={press}

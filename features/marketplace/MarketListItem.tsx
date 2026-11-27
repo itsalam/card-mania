@@ -29,7 +29,7 @@ export function MarketListItem({ item }: { item: MarketListItemData }) {
       subHeading: item.set_name ?? undefined,
       // Drives the GradeBadge ItemListView draws on the art.
       metadata: isGraded ? item.price_key : 'ungraded',
-      displayPrice: price.cents ? price.cents / 100 : null,
+      displayPrice: price.cents || null,
       imageProxyArgs: {
         variant: 'tiny',
         shape: 'card',

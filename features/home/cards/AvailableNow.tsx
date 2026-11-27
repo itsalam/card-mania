@@ -46,7 +46,7 @@ function hitDisplayData(hit: WishlistHit): DisplayData {
     title: hit.name ?? 'Unknown Card',
     subHeading: hit.set_name ?? undefined,
     metadata: hit.price_key,
-    displayPrice: hit.current_price_cents ? hit.current_price_cents / 100 : null,
+    displayPrice: hit.current_price_cents || null,
     imageProxyArgs: { variant: 'tiny', shape: 'card', cardId: hit.ref_id, imageType: 'front' },
   }
 }

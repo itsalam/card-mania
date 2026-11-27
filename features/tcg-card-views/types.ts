@@ -12,6 +12,7 @@ export type DisplayData = {
   title: string
   subHeading?: string
   metadata?: string
+  /** In cents, like every stored price (grades_prices, latest_price, asking_price_cents). */
   displayPrice?: number | null
   /** ITS-134: displayPrice is the seller's asking price, not the market price. */
   isAskingPrice?: boolean
