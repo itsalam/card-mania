@@ -1,4 +1,5 @@
 import { useCardQuery } from '@/client/card'
+import { availableQuantity } from '@/client/collections/listing'
 import { gradePriceKey } from '@/components/tcg-card/GradeBadge'
 import { useViewSingleCollectionItem } from '@/client/collections/query'
 import { Button } from '@/components/ui/button'
@@ -42,6 +43,8 @@ export const CollectionInfoCard = (props: { collectionItemId: string; cardId: st
             collectionItem?.grade_condition?.grade_value
           ),
         },
+        // ITS-134: a listed card sells at the seller's asking price when there is one.
+        preferAskingPrice: true,
       }),
     [cardData, collectionItem]
   )
@@ -143,8 +146,13 @@ export const CollectionInfoCard = (props: { collectionItemId: string; cardId: st
             }}
             loading={loadingInfo}
           >
-            {` x Qty: ${displayData?.quantity}`}
+            {` x Qty: ${collectionItem ? availableQuantity(collectionItem) : (displayData?.quantity ?? '')}`}
           </SkeletonText>
+          {!loadingInfo && displayData?.displayPrice && !displayData?.isAskingPrice ? (
+            <Text variant="small" style={{ color: Colors.$textNeutral, alignSelf: 'flex-end' }}>
+              Market price
+            </Text>
+          ) : null}
         </View>
         {isPurchasable && (
           <>
@@ -158,7 +166,7 @@ export const CollectionInfoCard = (props: { collectionItemId: string; cardId: st
                 justifyContent: 'flex-start',
               }}
               min={0}
-              max={collectionItem?.quantity ?? 0}
+              max={collectionItem ? availableQuantity(collectionItem) : 0}
               initialNumber={loadingInfo ? undefined : selectedQuantity}
               onChangeNumber={setSelectedQuantity}
             />
@@ -192,7 +200,7 @@ export const CollectionInfoCard = (props: { collectionItemId: string; cardId: st
                   price,
                   originalPrice: price,
                   quantity: selectedQuantity,
-                  maxQuantity: collectionItem.quantity ?? 1,
+                  maxQuantity: Math.max(1, availableQuantity(collectionItem)),
                 },
               })
               openCart()
