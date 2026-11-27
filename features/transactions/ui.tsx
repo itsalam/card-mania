@@ -1,9 +1,5 @@
-import { OfferItem, TransactionStatus, TransactionWithOffer } from '@/client/offers/types'
-import {
-  useAddOfferItemsToCollection,
-  useRemoveOfferItemsFromCollection,
-} from '@/client/transactions'
-import { useToast } from '@/components/Toast'
+import { TransactionStatus, TransactionWithOffer } from '@/client/offers/types'
+import { collectionTransferLabel } from '@/client/transactions/transfer'
 import { formatPrice } from '@/components/utils'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -14,16 +10,8 @@ import { Text } from '@/components/ui/text/base-text'
 import { PublicProfile, useProfiles } from '@/features/users/client/load-user'
 import { UserContact } from '@/features/users/components/UserAvatars'
 import { getTransactionActions } from './actions'
-import {
-  AlertTriangle,
-  Check,
-  CheckSquare,
-  Package,
-  ShoppingBag,
-  Square,
-} from 'lucide-react-native'
+import { AlertTriangle, Check, CheckSquare, Lock, Package, ShoppingBag } from 'lucide-react-native'
 import { StyleSheet, TouchableOpacity, View } from 'react-native'
-import { useState } from 'react'
 import { Colors } from 'react-native-ui-lib'
 
 // ── Status timeline ───────────────────────────────────────────────────────────
@@ -368,73 +356,27 @@ const skeletonStyles = StyleSheet.create({
   cardThumb: { width: 48, aspectRatio: 5 / 7 },
 })
 
-// ── Collection sync tick ──────────────────────────────────────────────────────
+// ── Collection transfer status ───────────────────────────────────────────────
 
-export function CollectionSyncTick({ isBuyer, items }: { isBuyer: boolean; items: OfferItem[] }) {
-  const [synced, setSynced] = useState(false)
-  const { mutate: addToCollection, isPending: isAdding } = useAddOfferItemsToCollection()
-  const { mutate: removeFromCollection, isPending: isRemoving } =
-    useRemoveOfferItemsFromCollection()
-  const { showToast } = useToast()
-  const isPending = isAdding || isRemoving
-
-  // Seller: items already decremented from their selling collection by DB trigger
-  if (!isBuyer) {
-    return (
-      <View style={tickStyles.row}>
-        <CheckSquare size={16} color={Colors.$backgroundSuccessHeavy} />
-        <Text variant="small" style={tickStyles.labelDone}>
-          Removed from selling collection
-        </Text>
-      </View>
-    )
-  }
-
-  const handleToggle = () => {
-    if (isPending) return
-    if (synced) {
-      setSynced(false)
-      removeFromCollection(
-        { items },
-        {
-          onSuccess: () => showToast({ title: 'Removed from collection', message: '' }),
-          onError: () => {
-            setSynced(true)
-            showToast({ title: 'Error', message: 'Could not remove from collection.' })
-          },
-        }
-      )
-    } else {
-      setSynced(true)
-      addToCollection(
-        { items },
-        {
-          onSuccess: () => showToast({ title: 'Added to collection', message: '' }),
-          onError: () => {
-            setSynced(false)
-            showToast({ title: 'Error', message: 'Could not add to collection.' })
-          },
-        }
-      )
-    }
-  }
-
+// ITS-135: the server holds the seller's copies when the offer is accepted and moves them to
+// the buyer's Vault when the buyer confirms receipt (docs/collections/ownership-transfer.md).
+// This only reports where the cards are; there's nothing to tap.
+export function CollectionTransferStatus({
+  isBuyer,
+  status,
+}: {
+  isBuyer: boolean
+  status: TransactionStatus
+}) {
+  const done = status === 'completed'
+  const Icon = done ? CheckSquare : Lock
   return (
-    <TouchableOpacity
-      onPress={handleToggle}
-      activeOpacity={0.7}
-      style={tickStyles.row}
-      disabled={isPending}
-    >
-      {synced ? (
-        <CheckSquare size={16} color={Colors.$backgroundSuccessHeavy} />
-      ) : (
-        <Square size={16} color={Colors.$iconNeutral} />
-      )}
-      <Text variant="small" style={synced ? tickStyles.labelDone : tickStyles.label}>
-        {isPending ? (synced ? 'Removing…' : 'Adding…') : 'Reflect changes in my collection'}
+    <View style={tickStyles.row} accessibilityRole="text">
+      <Icon size={16} color={done ? Colors.$backgroundSuccessHeavy : Colors.$iconNeutral} />
+      <Text variant="small" style={done ? tickStyles.labelDone : tickStyles.label}>
+        {collectionTransferLabel(isBuyer, status)}
       </Text>
-    </TouchableOpacity>
+    </View>
   )
 }
 

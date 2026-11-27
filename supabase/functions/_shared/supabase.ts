@@ -681,6 +681,7 @@ export type Database = {
           created_at: string
           grade_condition_id: string | null
           grading_company: string | null
+          held_quantity: number
           id: string
           item_kind: Database['public']['Enums']['item_kind']
           position: number
@@ -688,6 +689,7 @@ export type Database = {
           price_snapshot_at: string | null
           quantity: number
           ref_id: string
+          source_offer_item_id: string | null
           updated_at: string
           user_id: string
           variants: string[] | null
@@ -698,6 +700,7 @@ export type Database = {
           created_at?: string
           grade_condition_id?: string | null
           grading_company?: string | null
+          held_quantity?: number
           id?: string
           item_kind?: Database['public']['Enums']['item_kind']
           position?: number
@@ -705,6 +708,7 @@ export type Database = {
           price_snapshot_at?: string | null
           quantity: number
           ref_id: string
+          source_offer_item_id?: string | null
           updated_at?: string
           user_id: string
           variants?: string[] | null
@@ -715,6 +719,7 @@ export type Database = {
           created_at?: string
           grade_condition_id?: string | null
           grading_company?: string | null
+          held_quantity?: number
           id?: string
           item_kind?: Database['public']['Enums']['item_kind']
           position?: number
@@ -722,6 +727,7 @@ export type Database = {
           price_snapshot_at?: string | null
           quantity?: number
           ref_id?: string
+          source_offer_item_id?: string | null
           updated_at?: string
           user_id?: string
           variants?: string[] | null
@@ -2372,25 +2378,31 @@ export type Database = {
         Row: {
           buyer_shipping_address: Json | null
           created_at: string | null
+          holds_stock: boolean
           id: string
           offer_id: string
           status: string
+          transferred_at: string | null
           updated_at: string | null
         }
         Insert: {
           buyer_shipping_address?: Json | null
           created_at?: string | null
+          holds_stock?: boolean
           id?: string
           offer_id: string
           status?: string
+          transferred_at?: string | null
           updated_at?: string | null
         }
         Update: {
           buyer_shipping_address?: Json | null
           created_at?: string | null
+          holds_stock?: boolean
           id?: string
           offer_id?: string
           status?: string
+          transferred_at?: string | null
           updated_at?: string | null
         }
         Relationships: [
@@ -3410,6 +3422,10 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      delete_collection_item_photo: {
+        Args: { p_photo_id: string }
+        Returns: string
       }
       dispute_transaction: {
         Args: { p_offer_id: string }

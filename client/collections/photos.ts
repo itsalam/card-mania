@@ -209,13 +209,19 @@ export function useDeleteCollectionItemPhoto(collectionItemId: string) {
   return useMutation({
     mutationFn: async (photo: CollectionItemImage) => {
       const supabase = getSupabase()
-      const { error: removeError } = await supabase.storage
-        .from('images')
-        .remove([photo.storage_path])
-      if (removeError) throw removeError
-
-      const { error } = await supabase.from('collection_item_images').delete().eq('id', photo.id)
+      // ITS-135: a sold card's photos are shared with the buyer's copy, so the server deletes
+      // the row and only hands back the file path once nothing else uses it.
+      const { data: orphanPath, error } = await supabase.rpc('delete_collection_item_photo', {
+        p_photo_id: photo.id,
+      })
       if (error) throw error
+      if (orphanPath) {
+        // The row is already gone; a file left behind is harmless, so don't fail the delete.
+        const { error: removeError } = await supabase.storage.from('images').remove([orphanPath])
+        if (removeError) {
+          reportError({ context: 'useDeleteCollectionItemPhoto.remove', error: removeError })
+        }
+      }
     },
     onMutate: async (photo) => {
       await qc.cancelQueries({ queryKey })

@@ -32,7 +32,7 @@ import { BorderRadiuses, Colors, TouchableOpacity } from 'react-native-ui-lib'
 import { ChatInputBar, TransactionChatSection } from './chat'
 import { ShippingAddressSection } from './shipping-address'
 import {
-  CollectionSyncTick,
+  CollectionTransferStatus,
   TransactionActionButtons,
   TransactionParties,
   TransactionSkeletonCard,
@@ -173,11 +173,9 @@ export function TransactionScreen({ offerId }: { offerId: string }) {
                   {formatPrice(offer.total_amount)}
                 </Text>
               </View>
-              {data.status === 'completed' && (
-                <View style={styles.syncTickRow}>
-                  <CollectionSyncTick isBuyer={!isSeller} items={items} />
-                </View>
-              )}
+              <View style={styles.syncTickRow}>
+                <CollectionTransferStatus isBuyer={!isSeller} status={data.status} />
+              </View>
               <TransactionActionButtons
                 isSeller={isSeller}
                 status={data.status}
