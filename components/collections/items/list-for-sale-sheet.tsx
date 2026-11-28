@@ -51,7 +51,7 @@ function entryLabel(entry: Entry) {
 
 // Pill picker for which copy group to act on, following the shared toggle convention
 // (CLAUDE.md: bordered pill, tinted active segment).
-function EntryPicker({
+export function EntryPicker({
   entries,
   selected,
   onSelect,
@@ -134,7 +134,7 @@ function PriceField({
   )
 }
 
-function SheetTitle({ title, subtitle }: { title: string; subtitle?: string }) {
+export function SheetTitle({ title, subtitle }: { title: string; subtitle?: string }) {
   return (
     <View style={{ gap: 2, paddingBottom: 12 }}>
       <Text variant="h3" style={{ fontSize: 24, lineHeight: 28 }}>
@@ -149,7 +149,7 @@ function SheetTitle({ title, subtitle }: { title: string; subtitle?: string }) {
   )
 }
 
-function ErrorLine({ error }: { error: unknown }) {
+export function ErrorLine({ error }: { error: unknown }) {
   if (!error) return null
   const message = (error as { message?: string })?.message ?? 'Something went wrong.'
   return (
@@ -161,7 +161,7 @@ function ErrorLine({ error }: { error: unknown }) {
 
 // The sheet's drag gesture (components/ui/modal.tsx) swallows taps on Pressable-based
 // buttons, so actions go through ui-lib's TouchableOpacity, as in PriceChangeModal.
-function SheetButton({
+export function SheetButton({
   label,
   onPress,
   disabled,
