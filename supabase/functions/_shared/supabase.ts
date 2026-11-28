@@ -812,6 +812,20 @@ export type Database = {
             referencedRelation: 'grade_conditions'
             referencedColumns: ['id']
           },
+          {
+            foreignKeyName: 'collection_items_mirror_of_fkey'
+            columns: ['mirror_of']
+            isOneToOne: false
+            referencedRelation: 'collection_items'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'collection_items_source_offer_item_id_fkey'
+            columns: ['source_offer_item_id']
+            isOneToOne: false
+            referencedRelation: 'offer_items'
+            referencedColumns: ['id']
+          },
         ]
       }
       collection_stats: {
@@ -1007,10 +1021,10 @@ export type Database = {
           hide_sold_items: boolean | null
           icon_key: string | null
           id: string
+          is_listing_default: boolean
           is_selling: boolean | null
           is_storefront: boolean | null
           is_vault: boolean | null
-          is_listing_default: boolean
           is_wishlist: boolean
           item_sort: string
           name: string
@@ -1028,10 +1042,10 @@ export type Database = {
           hide_sold_items?: boolean | null
           icon_key?: string | null
           id?: string
+          is_listing_default?: boolean
           is_selling?: boolean | null
           is_storefront?: boolean | null
           is_vault?: boolean | null
-          is_listing_default?: boolean
           is_wishlist?: boolean
           item_sort?: string
           name: string
@@ -1049,10 +1063,10 @@ export type Database = {
           hide_sold_items?: boolean | null
           icon_key?: string | null
           id?: string
+          is_listing_default?: boolean
           is_selling?: boolean | null
           is_storefront?: boolean | null
           is_vault?: boolean | null
-          is_listing_default?: boolean
           is_wishlist?: boolean
           item_sort?: string
           name?: string
@@ -2923,6 +2937,15 @@ export type Database = {
         Args: { p_collection_id: string }
         Returns: string
       }
+      _drop_mirrors: { Args: { p_src_id: string }; Returns: undefined }
+      _insert_mirror: {
+        Args: { p_src: Database['public']['Tables']['collection_items']['Row'] }
+        Returns: undefined
+      }
+      _listing_default_collection: {
+        Args: { p_user_id: string }
+        Returns: string
+      }
       _lock_offer_for_transition: {
         Args: {
           p_action: string
@@ -2958,9 +2981,11 @@ export type Database = {
         Returns: {
           buyer_shipping_address: Json | null
           created_at: string | null
+          holds_stock: boolean
           id: string
           offer_id: string
           status: string
+          transferred_at: string | null
           updated_at: string | null
         }
         SetofOptions: {
@@ -2973,7 +2998,7 @@ export type Database = {
       _marketplace_base_listings: {
         Args: never
         Returns: {
-          asking_price_cents: number | null
+          asking_price_cents: number
           back_id: string
           collection_id: string
           collection_item_id: string
@@ -3001,6 +3026,10 @@ export type Database = {
           variants: string[]
         }[]
       }
+      _mirror_target_collection: {
+        Args: { p_collection_id: string }
+        Returns: string
+      }
       _offer_responder: { Args: { p_status: string }; Returns: string }
       _push_preferences: { Args: { p_user_id: string }; Returns: Json }
       _push_suppression_reason: {
@@ -3011,6 +3040,10 @@ export type Database = {
           p_user_id: string
         }
         Returns: string
+      }
+      _transfer_transaction_items: {
+        Args: { p_tx_id: string }
+        Returns: undefined
       }
       _wishlist_hits: {
         Args: { p_user_id?: string }
@@ -3057,9 +3090,11 @@ export type Database = {
         Returns: {
           buyer_shipping_address: Json | null
           created_at: string | null
+          holds_stock: boolean
           id: string
           offer_id: string
           status: string
+          transferred_at: string | null
           updated_at: string | null
         }
         SetofOptions: {
@@ -3130,11 +3165,11 @@ export type Database = {
           score: number
         }[]
       }
-      check_email_registered: { Args: { p_email: string }; Returns: boolean }
       card_prices_as_of: {
         Args: { p_last_updated: string; p_prices_refreshed_at: string }
         Returns: string
       }
+      check_email_registered: { Args: { p_email: string }; Returns: boolean }
       claim_cards_for_backfill_enrichment: {
         Args: { p_lease_seconds?: number; p_limit: number }
         Returns: {
@@ -3192,9 +3227,7 @@ export type Database = {
           p_sort?: string
         }
         Returns: {
-          asking_price_cents: number | null
-          held_quantity: number
-          mirror_of: string | null
+          asking_price_cents: number
           back_id: string
           collection_id: string
           collection_item_id: string
@@ -3207,10 +3240,12 @@ export type Database = {
           grade_condition_id: string
           grades_prices: Json
           grading_company: string
+          held_quantity: number
           id: string
           item_kind: Database['public']['Enums']['item_kind']
           last_updated: string
           latest_price: number
+          mirror_of: string
           name: string
           position: number
           price_key: string
@@ -3250,16 +3285,6 @@ export type Database = {
         }
         Returns: Json
       }
-      collection_valuation: {
-        Args: { p_collection_id: string }
-        Returns: {
-          newest_price_at: string
-          priced_quantity: number
-          prices_as_of: string
-          total_cents: number
-          unpriced_quantity: number
-        }[]
-      }
       collection_items_by_ref: {
         Args: {
           p_collection_id: string
@@ -3267,18 +3292,23 @@ export type Database = {
           p_ref_id: string
         }
         Returns: {
+          asking_currency: string
+          asking_price_cents: number | null
           collection_id: string
           collection_ref: string | null
           created_at: string
           grade_condition_id: string | null
           grading_company: string | null
+          held_quantity: number
           id: string
           item_kind: Database['public']['Enums']['item_kind']
+          mirror_of: string | null
           position: number
           price_snapshot: Json | null
           price_snapshot_at: string | null
           quantity: number
           ref_id: string
+          source_offer_item_id: string | null
           updated_at: string
           user_id: string
           variants: string[] | null
@@ -3300,6 +3330,16 @@ export type Database = {
           vault_total_cents: number
           wishlist_quantity_total: number
           wishlist_total_cents: number
+        }[]
+      }
+      collection_valuation: {
+        Args: { p_collection_id: string }
+        Returns: {
+          newest_price_at: string
+          priced_quantity: number
+          prices_as_of: string
+          total_cents: number
+          unpriced_quantity: number
         }[]
       }
       collections_with_membership: {
@@ -3349,9 +3389,11 @@ export type Database = {
         Returns: {
           buyer_shipping_address: Json | null
           created_at: string | null
+          holds_stock: boolean
           id: string
           offer_id: string
           status: string
+          transferred_at: string | null
           updated_at: string | null
         }
         SetofOptions: {
@@ -3448,9 +3490,11 @@ export type Database = {
         Returns: {
           buyer_shipping_address: Json | null
           created_at: string | null
+          holds_stock: boolean
           id: string
           offer_id: string
           status: string
+          transferred_at: string | null
           updated_at: string | null
         }
         SetofOptions: {
@@ -3678,7 +3722,7 @@ export type Database = {
       get_recommended_listings: {
         Args: { result_limit?: number }
         Returns: {
-          asking_price_cents: number | null
+          asking_price_cents: number
           back_id: string
           collection_id: string
           collection_item_id: string
@@ -3785,22 +3829,55 @@ export type Database = {
           set_name: string
         }[]
       }
+      list_for_sale: {
+        Args: {
+          p_asking_price_cents: number
+          p_item_id: string
+          p_quantity: number
+        }
+        Returns: {
+          asking_currency: string
+          asking_price_cents: number | null
+          collection_id: string
+          collection_ref: string | null
+          created_at: string
+          grade_condition_id: string | null
+          grading_company: string | null
+          held_quantity: number
+          id: string
+          item_kind: Database['public']['Enums']['item_kind']
+          mirror_of: string | null
+          position: number
+          price_snapshot: Json | null
+          price_snapshot_at: string | null
+          quantity: number
+          ref_id: string
+          source_offer_item_id: string | null
+          updated_at: string
+          user_id: string
+          variants: string[] | null
+        }
+        SetofOptions: {
+          from: '*'
+          to: 'collection_items'
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       mark_card_price_refresh: {
         Args: { p_card_id: string; p_status: string }
         Returns: undefined
-      }
-      list_for_sale: {
-        Args: { p_asking_price_cents: number; p_item_id: string; p_quantity: number }
-        Returns: Database['public']['Tables']['collection_items']['Row']
       }
       mark_transaction_shipped: {
         Args: { p_offer_id: string }
         Returns: {
           buyer_shipping_address: Json | null
           created_at: string | null
+          holds_stock: boolean
           id: string
           offer_id: string
           status: string
+          transferred_at: string | null
           updated_at: string | null
         }
         SetofOptions: {
@@ -3938,6 +4015,37 @@ export type Database = {
           snippet: string
         }[]
       }
+      set_asking_price: {
+        Args: { p_asking_price_cents: number; p_item_id: string }
+        Returns: {
+          asking_currency: string
+          asking_price_cents: number | null
+          collection_id: string
+          collection_ref: string | null
+          created_at: string
+          grade_condition_id: string | null
+          grading_company: string | null
+          held_quantity: number
+          id: string
+          item_kind: Database['public']['Enums']['item_kind']
+          mirror_of: string | null
+          position: number
+          price_snapshot: Json | null
+          price_snapshot_at: string | null
+          quantity: number
+          ref_id: string
+          source_offer_item_id: string | null
+          updated_at: string
+          user_id: string
+          variants: string[] | null
+        }
+        SetofOptions: {
+          from: '*'
+          to: 'collection_items'
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       set_primary_collection_item_photo: {
         Args: { p_photo_id: string }
         Returns: undefined
@@ -3947,18 +4055,16 @@ export type Database = {
         Returns: boolean
       }
       set_push_preferences: { Args: { p_patch: Json }; Returns: Json }
-      set_asking_price: {
-        Args: { p_asking_price_cents: number; p_item_id: string }
-        Returns: Database['public']['Tables']['collection_items']['Row']
-      }
       set_transaction_shipping_address: {
         Args: { p_address: Json; p_offer_id: string }
         Returns: {
           buyer_shipping_address: Json | null
           created_at: string | null
+          holds_stock: boolean
           id: string
           offer_id: string
           status: string
+          transferred_at: string | null
           updated_at: string | null
         }
         SetofOptions: {
@@ -4047,6 +4153,37 @@ export type Database = {
         Args: { p_collection_id: string }
         Returns: undefined
       }
+      unlist_item: {
+        Args: { p_item_id: string }
+        Returns: {
+          asking_currency: string
+          asking_price_cents: number | null
+          collection_id: string
+          collection_ref: string | null
+          created_at: string
+          grade_condition_id: string | null
+          grading_company: string | null
+          held_quantity: number
+          id: string
+          item_kind: Database['public']['Enums']['item_kind']
+          mirror_of: string | null
+          position: number
+          price_snapshot: Json | null
+          price_snapshot_at: string | null
+          quantity: number
+          ref_id: string
+          source_offer_item_id: string | null
+          updated_at: string
+          user_id: string
+          variants: string[] | null
+        }
+        SetofOptions: {
+          from: '*'
+          to: 'collection_items'
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       unregister_push_token: { Args: { p_token: string }; Returns: undefined }
       upsert_collection_items: {
         Args: { p_collection_id: string; p_items: Json; p_owner: string }
@@ -4089,10 +4226,6 @@ export type Database = {
       write_marketplace_section: {
         Args: { p_key: string; p_rows: Json }
         Returns: number
-      }
-      unlist_item: {
-        Args: { p_item_id: string }
-        Returns: Database['public']['Tables']['collection_items']['Row']
       }
     }
     Enums: {
