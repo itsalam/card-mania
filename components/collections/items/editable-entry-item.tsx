@@ -455,7 +455,8 @@ export const CollectionItemEntry = ({
                   containerStyle={{ opacity: isLoading ? 0.6 : 1 }}
                   stepperProps={{ small: true, style: ENTRY_STEPPER_STYLE }}
                   min={0}
-                  max={999}
+                  // ITS-137: a serial number is one physical copy.
+                  max={collectionItem?.serial_number ? 1 : 999}
                   initialNumber={isLoading ? undefined : (draft.quantity ?? 0)}
                   onChangeNumber={(n) => {
                     updateDraft({ quantity: n })
@@ -483,6 +484,17 @@ export const CollectionItemEntry = ({
               </View>
             )}
           </View>
+          {collectionItem?.serial_number ? (
+            // ITS-137: the copy's serial number, e.g. "#12/99".
+            <Text
+              variant="stats"
+              numberOfLines={1}
+              accessibilityLabel={`Serial number ${collectionItem.serial_number}`}
+              style={{ fontSize: 11, paddingTop: 2, color: Colors.$textNeutral }}
+            >
+              {`#${collectionItem.serial_number.replace(/^#/, '')}`}
+            </Text>
+          ) : null}
           {collectionItem?.variants?.length ? (
             <View style={{ flexDirection: 'row', paddingTop: 2 }}>
               {collectionItem.variants?.map((v) => (

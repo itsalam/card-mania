@@ -36,5 +36,5 @@ Returns `total_cents`, `priced_quantity`, `unpriced_quantity`, `prices_as_of` (o
 ## Not decided here
 
 - Smoothing (e.g. averaging recent sales) or falling back to the ungraded price when a grade has no price. Today neither is done.
-- Cost basis and gain/loss: ITS-137.
+- Cost basis and gain/loss: decided in ITS-137, see `docs/collections/item-attributes.md`.
 - The PC / For Sale dashboard and graph: ITS-139.

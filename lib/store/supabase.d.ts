@@ -674,6 +674,38 @@ export type Database = {
           },
         ]
       }
+      collection_item_private: {
+        Row: {
+          collection_item_id: string
+          condition_notes: string | null
+          cost_basis_cents: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          collection_item_id: string
+          condition_notes?: string | null
+          cost_basis_cents?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          collection_item_id?: string
+          condition_notes?: string | null
+          cost_basis_cents?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'collection_item_private_collection_item_id_fkey'
+            columns: ['collection_item_id']
+            isOneToOne: true
+            referencedRelation: 'collection_items'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       collection_items: {
         Row: {
           asking_currency: string
@@ -692,6 +724,7 @@ export type Database = {
           price_snapshot_at: string | null
           quantity: number
           ref_id: string
+          serial_number: string | null
           source_offer_item_id: string | null
           updated_at: string
           user_id: string
@@ -714,6 +747,7 @@ export type Database = {
           price_snapshot_at?: string | null
           quantity: number
           ref_id: string
+          serial_number?: string | null
           source_offer_item_id?: string | null
           updated_at?: string
           user_id: string
@@ -736,6 +770,7 @@ export type Database = {
           price_snapshot_at?: string | null
           quantity?: number
           ref_id?: string
+          serial_number?: string | null
           source_offer_item_id?: string | null
           updated_at?: string
           user_id?: string
@@ -1918,6 +1953,66 @@ export type Database = {
             columns: ['notification_id']
             isOneToOne: false
             referencedRelation: 'notifications'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      realized_sales: {
+        Row: {
+          cost_basis_cents: number | null
+          grade_condition_id: string | null
+          grading_company: string | null
+          id: string
+          item_kind: Database['public']['Enums']['item_kind']
+          offer_item_id: string | null
+          quantity: number
+          realized_at: string
+          ref_id: string | null
+          sale_price_cents: number
+          seller_id: string
+          transaction_id: string | null
+        }
+        Insert: {
+          cost_basis_cents?: number | null
+          grade_condition_id?: string | null
+          grading_company?: string | null
+          id?: string
+          item_kind?: Database['public']['Enums']['item_kind']
+          offer_item_id?: string | null
+          quantity: number
+          realized_at?: string
+          ref_id?: string | null
+          sale_price_cents: number
+          seller_id: string
+          transaction_id?: string | null
+        }
+        Update: {
+          cost_basis_cents?: number | null
+          grade_condition_id?: string | null
+          grading_company?: string | null
+          id?: string
+          item_kind?: Database['public']['Enums']['item_kind']
+          offer_item_id?: string | null
+          quantity?: number
+          realized_at?: string
+          ref_id?: string | null
+          sale_price_cents?: number
+          seller_id?: string
+          transaction_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'realized_sales_offer_item_id_fkey'
+            columns: ['offer_item_id']
+            isOneToOne: true
+            referencedRelation: 'offer_items'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'realized_sales_transaction_id_fkey'
+            columns: ['transaction_id']
+            isOneToOne: false
+            referencedRelation: 'transactions'
             referencedColumns: ['id']
           },
         ]
@@ -3771,6 +3866,19 @@ export type Database = {
       }
       grade_key: { Args: { p_slug: string; p_value: number }; Returns: string }
       is_demo_user: { Args: never; Returns: boolean }
+      item_details: {
+        Args: { p_item_id: string }
+        Returns: {
+          condition_notes: string
+          cost_basis_cents: number
+          item_id: string
+          market_value_cents: number
+          quantity: number
+          root_id: string
+          serial_number: string
+          unrealized_cents: number
+        }[]
+      }
       list_card_genres: {
         Args: never
         Returns: {
@@ -3834,6 +3942,18 @@ export type Database = {
       normalize_grade_key: { Args: { p_key: string }; Returns: string }
       normalize_grades_prices: { Args: { p: Json }; Returns: Json }
       offer_response_window: { Args: never; Returns: string }
+      portfolio_gain: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          cost_cents: number
+          realized_cents: number
+          realized_quantity: number
+          realized_without_cost_quantity: number
+          unrealized_cents: number
+          with_cost_quantity: number
+          without_cost_quantity: number
+        }[]
+      }
       publish_snapshot: {
         Args: {
           p_collection_id: string
@@ -3936,6 +4056,24 @@ export type Database = {
           seller_username: string
           set_name: string
           snippet: string
+        }[]
+      }
+      set_item_details: {
+        Args: {
+          p_condition_notes: string
+          p_cost_basis_cents: number
+          p_item_id: string
+          p_serial_number: string
+        }
+        Returns: {
+          condition_notes: string
+          cost_basis_cents: number
+          item_id: string
+          market_value_cents: number
+          quantity: number
+          root_id: string
+          serial_number: string
+          unrealized_cents: number
         }[]
       }
       set_primary_collection_item_photo: {

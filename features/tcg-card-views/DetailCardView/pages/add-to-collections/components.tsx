@@ -10,6 +10,7 @@ import {
   ListForSaleModal,
   ManageListingModal,
 } from '@/components/collections/items/list-for-sale-sheet'
+import { ItemDetailsModal } from '@/components/collections/items/item-details-sheet'
 import { CollectionItemPhotosModal } from '@/components/collections/items/photos-modal'
 import { CORNER_TAB_RADIUS, CornerTab } from '@/components/tcg-card/CornerTab'
 import { Spinner } from '@/components/ui/spinner'
@@ -21,6 +22,7 @@ import { CollectionItemRow } from '@/lib/store/functions/types'
 import {
   EllipsisVertical,
   Image as ImageIcon,
+  NotebookPen,
   Plus,
   Store,
   Tag,
@@ -94,6 +96,8 @@ export const CollectionCardItemEntries = ({
   // ITS-134: List for Sale (PC copies in the Vault) and Manage listing (copies for sale).
   const [listSheetOpen, setListSheetOpen] = useState(false)
   const [manageSheetOpen, setManageSheetOpen] = useState(false)
+  // ITS-137: cost basis, serial number and condition notes.
+  const [detailsSheetOpen, setDetailsSheetOpen] = useState(false)
   const handleDismiss = useCallback(() => {
     setShowModal(false)
   }, [refetch])
@@ -147,6 +151,9 @@ export const CollectionCardItemEntries = ({
     [persisted, collection?.is_storefront]
   )
   const canList = Boolean(editable) && pcEntries.length > 0
+  // Any row with copies; a mirror edits its listing's details.
+  const detailEntries = useMemo(() => persisted.filter((e) => (e.quantity ?? 0) > 0), [persisted])
+  const canEditDetails = Boolean(editable) && detailEntries.length > 0
   const canManageListing = Boolean(editable) && listedEntries.length > 0
 
   useEffect(() => {
@@ -327,6 +334,24 @@ export const CollectionCardItemEntries = ({
               <ImageIcon size={18} color={Colors.$iconGeneral} style={{ marginRight: 8 }} />
               <Text variant="default">Upload Photos</Text>
             </TouchableOpacity>
+            {canEditDetails && (
+              <TouchableOpacity
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  paddingVertical: 14,
+                  paddingHorizontal: 16,
+                }}
+                onPress={() => {
+                  setMenuOpen(false)
+                  setDetailsSheetOpen(true)
+                }}
+                accessibilityRole="button"
+              >
+                <NotebookPen size={18} color={Colors.$iconGeneral} style={{ marginRight: 8 }} />
+                <Text variant="default">{'Cost, serial & notes'}</Text>
+              </TouchableOpacity>
+            )}
             {canList && (
               <TouchableOpacity
                 style={{
@@ -379,6 +404,14 @@ export const CollectionCardItemEntries = ({
           onDismiss={() => setListSheetOpen(false)}
           card={card}
           entries={pcEntries}
+        />
+      )}
+      {canEditDetails && (
+        <ItemDetailsModal
+          visible={detailsSheetOpen}
+          onDismiss={() => setDetailsSheetOpen(false)}
+          card={card}
+          entries={detailEntries}
         />
       )}
       {canManageListing && (
